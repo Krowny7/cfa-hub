@@ -194,10 +194,13 @@ export async function getLeaderboard(supabase: SupabaseClient, limit = 50): Prom
   }
 }
 
-/** Place du joueur au classement (1 = premier), null s'il n'a pas de ligne. */
-export async function getLeaderboardRank(supabase: SupabaseClient, userId: string): Promise<number | null> {
+/**
+ * Place du joueur au classement (1 = premier), null s'il n'a pas de ligne.
+ * `eloConnu` : l'ELO déjà lu par l'appelant (getMyRating) ; la note n'est alors pas relue.
+ */
+export async function getLeaderboardRank(supabase: SupabaseClient, userId: string, eloConnu?: number): Promise<number | null> {
   try {
-    const { elo } = await getMyRating(supabase, userId);
+    const elo = eloConnu ?? (await getMyRating(supabase, userId)).elo;
     const { data: own } = await supabase.from("ratings").select("user_id").eq("user_id", userId).maybeSingle();
     if (!own) return null;
     const { count, error } = await supabase.from("ratings").select("user_id", { count: "exact", head: true }).gt("elo", elo);

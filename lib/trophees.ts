@@ -187,9 +187,18 @@ export function lignesCiblees(rows: { topic_count: number | null; trophy_count: 
   return rows.map((r) => ({ source: "ciblee" as const, palier: PALIER_DU_TIER[trophyTier(Number(r.topic_count) || 1).key] ?? 1, n: Number(r.trophy_count) || 0 }));
 }
 
-/** Les lignes de get_user_trophees ou de trophees_joueur (n est un bigint : nombre ou texte) ; compter écarte les lignes invalides. */
-export function lignesTrophees(rows: { source: unknown; palier: unknown; n: unknown }[]): LigneTrophee[] {
-  return rows.map((r) => ({ source: r.source as SourceTrophee, palier: Number(r.palier) as PalierTrophee, n: Number(r.n) || 0 }));
+/**
+ * Les lignes de get_user_trophees ou de trophees_joueur (n est un bigint :
+ * nombre ou texte) ; compter écarte les lignes invalides. `dernier` (le
+ * moment du plus récent, que trophees_joueur rend) est gardé quand il est là.
+ */
+export function lignesTrophees(rows: { source: unknown; palier: unknown; n: unknown; dernier?: unknown }[]): LigneTrophee[] {
+  return rows.map((r) => ({
+    source: r.source as SourceTrophee,
+    palier: Number(r.palier) as PalierTrophee,
+    n: Number(r.n) || 0,
+    ...(typeof r.dernier === "string" && Number.isFinite(Date.parse(r.dernier)) ? { dernier: r.dernier } : {}),
+  }));
 }
 
 /**
@@ -226,6 +235,26 @@ export async function lireTrophees(supabase: SupabaseClient, userId: string): Pr
     // réseau ou base : le compte vide ci-dessous
   }
   return { ...compter([]), complet: false };
+}
+
+/** Le dernier trophée gagné : sa source, son palier, quand, son libellé (« Trophée d'or · Les 30 du jour ») et la règle de ce palier. */
+export type DernierGagne = { source: SourceTrophee; palier: PalierTrophee; quand: string; nom: string; regle: string | null };
+
+/**
+ * Le dernier trophée gagné d'après les lignes (champ `dernier`) : la ligne au
+ * `dernier` le plus récent ; à égalité, le palier le plus haut. null si aucune
+ * ligne valide ne dit quand (sans trophees_joueur, les lignes n'ont pas de date).
+ */
+export function dernierGagne(lignes: LigneTrophee[]): DernierGagne | null {
+  let meilleur: (LigneTrophee & { t: number }) | null = null;
+  for (const l of lignes) {
+    if (!estSourceTrophee(l.source) || !estPalierTrophee(l.palier) || !(Math.floor(Number(l.n)) > 0)) continue;
+    const t = l.dernier ? Date.parse(l.dernier) : NaN;
+    if (!Number.isFinite(t)) continue;
+    if (!meilleur || t > meilleur.t || (t === meilleur.t && l.palier > meilleur.palier)) meilleur = { ...l, t };
+  }
+  if (!meilleur || !meilleur.dernier) return null;
+  return { source: meilleur.source, palier: meilleur.palier, quand: meilleur.dernier, nom: nomTrophee(meilleur), regle: SOURCES_TROPHEE[meilleur.source].regle[meilleur.palier] ?? null };
 }
 
 /** Un trophée tout juste gagné, pour l'annonce (« Trophée d'or · Les 30 du jour »). */

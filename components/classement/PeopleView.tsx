@@ -151,7 +151,7 @@ export function PeopleView({
                 ) : view === "groups" && !hasGroups ? (
                   <>
                     <p className="t-h3">{JOUEURS.sansGroupe}</p>
-                    <Link href="/moi?onglet=reglages#reglages" className="ink-link mt-3 inline-block">
+                    <Link href="/moi?onglet=reglages" className="ink-link mt-3 inline-block">
                       {JOUEURS.sansGroupeLien}
                     </Link>
                   </>

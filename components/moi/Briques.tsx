@@ -4,8 +4,8 @@ import { Jauge } from "@/components/classement/AutourDeToi";
 
 // Briques de mise en page de l'espace Moi refait : le fil « ← Moi », le héros
 // (sujet à gauche, courte liste classée à droite) et le bouton plein du
-// héros. Partagées par le cabinet (Cabinet.tsx) et les pages de liste du
-// carnet et des marquées (Registre.tsx). Sans état.
+// héros. Pour les pages de liste du carnet et des marquées (Registre.tsx).
+// Sans état.
 
 /** Le fil d'Ariane des pages de liste. */
 export function FilMoi({ label = "Moi" }: { label?: string }) {

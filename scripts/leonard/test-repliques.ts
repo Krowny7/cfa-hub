@@ -229,7 +229,8 @@ check(
   hote.includes("nouveautesPour(depuis)") && hote.includes('lancer("nouveautes", 0, compte.vueNouveautes)') && hote.includes("lancer(reprise.v, reprise.i, reprise.depuis)"),
 );
 // les cibles de la visite sont posées dans les pages : l'attribut data-leonard,
-// ou dataLeonard passé à un composant qui le pose (TuileCalme) ; hors commentaires
+// ou dataLeonard passé à un composant qui le pose (TuileCalme) ; hors commentaires.
+// « moi-codex » : la ligne Codex (LigneCodex) de la carte du joueur de Moi « La synthèse »
 const CIBLES: Record<string, string> = {
   defi: "components/accueil/Rendezvous.tsx",
   anneau: "components/accueil/Rendezvous.tsx",
@@ -249,8 +250,8 @@ const posee = (f: string, cible: string) => {
 };
 for (const [cible, f] of Object.entries(CIBLES)) check(`cible « ${cible} » posée (${f})`, posee(f, cible));
 check(
-  "la tuile Codex de Moi est une TuileCalme, qui pose son repère",
-  /<TuileCalme[\s\S]*?dataLeonard="moi-codex"/.test(readFileSync(join(RACINE, "components/moi/CodexMoi.tsx"), "utf8")) && readFileSync(join(RACINE, "components/ui/Tuiles.tsx"), "utf8").includes("data-leonard={dataLeonard}"),
+  "la ligne Codex de Moi pose son repère, et la carte du joueur la montre",
+  /export function LigneCodex[\s\S]*?data-leonard="moi-codex"/.test(readFileSync(join(RACINE, "components/moi/CodexMoi.tsx"), "utf8")) && readFileSync(join(RACINE, "components/moi/synthese/CarteJoueur.tsx"), "utf8").includes("<LigneCodex"),
 );
 // toutes les étapes, facultatives comprises : une cible facultative jamais posée
 // faisait sauter l'étape à chaque fois (la visite des nouveautés revenait sans fin)

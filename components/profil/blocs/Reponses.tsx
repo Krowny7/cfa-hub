@@ -64,7 +64,7 @@ export function ReponsesBloc({ d, f, edition }: Ctx): React.ReactNode {
   const precision = lu && lu.precision !== null ? Math.max(0, Math.min(100, Math.round(lu.precision))) : null;
   const avecSources = !!lu && lu.sources.length > 0 && f !== "tuile";
   // le lien du bas : à celui dont c'est la page seulement
-  const detail = "/moi?onglet=stats";
+  const detail = "/moi#matieres";
 
   if (f === "demi")
     return (

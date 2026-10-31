@@ -31,7 +31,7 @@ export function JourJBloc({ d, f, edition }: Ctx): React.ReactNode {
     // Personnaliser, sans date (ou examen passé) : sa coque et l'invitation
     if (f === "demi")
       return (
-        <DemiBande label={V.jourJ} droite={<Lien href="/moi">{V.jourJLien}</Lien>}>
+        <DemiBande label={V.jourJ} droite={<Lien href="/moi?onglet=reglages#objectif">{V.jourJLien}</Lien>}>
           <Cellule etiquette={V.avantExamen} chiffre="—" petit={V.jourJRien} />
         </DemiBande>
       );
@@ -39,7 +39,7 @@ export function JourJBloc({ d, f, edition }: Ctx): React.ReactNode {
       <Coque f={f} label={V.jourJ}>
         <Etiquette f={f} icone={ICONE} titre={V.jourJ} />
         <p className="t-small m-0">{V.jourJInvite}</p>
-        <Lien href="/moi">{V.jourJLien}</Lien>
+        <Lien href="/moi?onglet=reglages#objectif">{V.jourJLien}</Lien>
       </Coque>
     );
   }

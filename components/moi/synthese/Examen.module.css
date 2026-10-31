@@ -1,0 +1,460 @@
+/* Les trois cartes « examen » de la page Moi « La synthèse » : Calcul ou
+   théorie, Ton rythme d'examen, Ta progression. Elles reprennent le papier, les
+   sceaux, les têtes et les pieds de Synthese.module.css (la coque `carte
+   petite`, `titreCarte`, `sous`, `pied`, `legende`) et les jetons posés sur
+   .racine (--noir, --violet, --acquis, --zone-*, --fond-*, --choisi, --piste).
+   Ici, seulement ce qui est propre à ces trois cartes. Règles de DA identiques :
+   un seul vrai liquide par carte (le bouton d'encre, ou la puce active de la
+   superposition) ; tout le reste en aplats. Les mises en page suivent la largeur
+   du bloc (requêtes de conteneur sur .racine), pas celle de l'écran. */
+
+/* ——— la rangée 3 | 4 | 5, qui se recompose quand une carte est masquée ——— */
+.rangee {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+.c3 {
+  grid-column: span 3;
+}
+.c4 {
+  grid-column: span 4;
+}
+.c5 {
+  grid-column: span 5;
+}
+.rangee[data-n="2"] > * {
+  grid-column: span 6;
+}
+.rangee[data-n="1"] > * {
+  grid-column: span 12;
+}
+
+/* ——— l'en-tête des petites cartes : le sceau et le titre, puis le sous-titre ——— */
+.entete {
+  display: grid;
+  gap: 5px;
+}
+.titre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.eyebrowPetit {
+  font-size: 11px;
+}
+.bas {
+  margin-top: auto;
+}
+.vide {
+  display: grid;
+  gap: 12px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/* ——— le bouton d'encre, un peu plus petit que celui de l'objectif ——— */
+a.boutonPetit,
+button.boutonPetit {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  border-radius: 10px;
+}
+
+/* ——— pastilles d'état : rouge et ambre teintés (le liseré porte la teinte), vert « acquis » plein ——— */
+.etat {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.etatR {
+  background: color-mix(in srgb, var(--zone-rouge) 16%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--zone-rouge) 55%, transparent);
+}
+.etatA {
+  background: color-mix(in srgb, var(--zone-ambre) 18%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--zone-ambre) 60%, transparent);
+}
+.etatE {
+  background: var(--acquis);
+  color: #fff;
+}
+
+/* ——— Calcul ou théorie : deux valeurs sur une piste de zones ——— */
+.genres {
+  display: grid;
+  gap: 14px;
+}
+.genre {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.genreTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.genreNom {
+  font-size: 13.5px;
+}
+.genreValeur {
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 400;
+}
+.zp {
+  position: relative;
+  display: block;
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(to right, var(--fond-rouge) 0 50%, var(--fond-ambre) 50% 70%, var(--piste) 70% 100%);
+}
+.zp > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  height: 100%;
+  border-radius: 7px;
+}
+.zR {
+  background: var(--zone-rouge);
+}
+.zA {
+  background: var(--zone-ambre);
+}
+.zE {
+  background: var(--acquis);
+}
+.seuil {
+  position: absolute;
+  left: 70%;
+  top: -5px;
+  bottom: -5px;
+  width: 0;
+  border-left: 2px dashed var(--ink);
+  opacity: 0.6;
+}
+
+/* ——— Ton rythme d'examen : le chiffre, puis une ligne par matière ——— */
+.rythmeTete {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rythmeSur {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.rythmeChiffre {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.rythmeChiffre > b {
+  font-size: 32px;
+  line-height: 0.95;
+  font-weight: 400;
+}
+.rythmeChiffre > span {
+  font-size: 13px;
+  font-weight: 600;
+}
+.lignes {
+  display: grid;
+  gap: 1px;
+}
+.ligne {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 24px;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.ligne:hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.ligne:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 1px;
+}
+.ligne[aria-pressed="true"] {
+  background: var(--choisi);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--violet) 45%, transparent);
+}
+.hors {
+  opacity: 0.55;
+}
+.valeurLigne {
+  text-align: right;
+  font-weight: 600;
+}
+.rt {
+  position: relative;
+  display: block;
+  height: 14px;
+}
+.rt::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--piste);
+}
+.l90 {
+  position: absolute;
+  left: 37.5%;
+  top: -3px;
+  bottom: -3px;
+  width: 0;
+  border-left: 2px dashed var(--ink);
+  opacity: 0.6;
+}
+.ex {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--fond-rouge);
+}
+.exVite {
+  background: var(--line-2);
+}
+.pt {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+}
+.ptR {
+  background: var(--zone-rouge);
+}
+.ptA {
+  background: var(--zone-ambre);
+}
+.ptE {
+  background: var(--acquis);
+}
+.axeLigne {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) 44px;
+  gap: 8px;
+  padding: 0 6px;
+}
+.axe {
+  position: relative;
+  display: block;
+  height: 16px;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-2);
+}
+.axe > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.axe > .axeDebut {
+  transform: none;
+}
+.axe > .axeFin {
+  transform: translateX(-100%);
+}
+.axe > .axeGras {
+  font-weight: 700;
+  color: var(--ink);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: auto;
+}
+.raz {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--violet);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ——— Ta progression : la courbe, sa légende, les puces ——— */
+.courbe {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 640px;
+}
+.courbePetite {
+  display: none;
+}
+.traitSeuil {
+  display: block;
+  flex: none;
+  width: 18px;
+  height: 0;
+  border-top: 2px dashed var(--ink);
+  opacity: 0.6;
+}
+.legendeSup {
+  white-space: normal;
+}
+.puces {
+  display: grid;
+  gap: 6px;
+}
+.pucesListe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.puce {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line-2);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.puce:hover {
+  border-color: var(--ink);
+}
+.puce:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+/* la puce choisie : le vrai liquide (elle porte rl-encre, data-palette et l'EncreVive) */
+.puce[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--pal-1);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+/* ——— mise en page selon la largeur du bloc ——— */
+/* tablette : comme la rangée du bilan, les deux plus petites se partagent la
+   ligne et la plus grande (la progression) passe dessous sur toute la largeur */
+@container (max-width: 1080px) {
+  .rangee[data-n="3"] > .c3,
+  .rangee[data-n="3"] > .c4 {
+    grid-column: span 6;
+  }
+  .rangee[data-n="3"] > .c5 {
+    grid-column: span 12;
+  }
+}
+@container (max-width: 760px) {
+  .rangee {
+    gap: 12px;
+  }
+  .rangee[data-n] > * {
+    grid-column: span 12;
+  }
+  .genres {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .genreNom {
+    font-size: 13px;
+  }
+  .genreValeur {
+    font-size: 26px;
+  }
+  a.boutonPetit,
+  button.boutonPetit {
+    align-self: stretch;
+    width: auto;
+    min-height: 48px;
+  }
+  .ligne,
+  .axeLigne {
+    grid-template-columns: 88px minmax(0, 1fr) 44px;
+  }
+  .rythmeChiffre > b {
+    font-size: 30px;
+  }
+  .actions {
+    gap: 4px 14px;
+  }
+  .raz {
+    min-height: 44px;
+  }
+  .courbeGrande {
+    display: none;
+  }
+  .courbePetite {
+    display: block;
+  }
+  .pucesListe {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -14px;
+    padding: 0 14px 2px;
+  }
+  .pucesListe::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ——— mode discret : le liquide est coupé, la puce choisie devient pleine ——— */
+:global(html[data-discreet="1"]) .puce[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+  text-shadow: none;
+}
+:global(html[data-discreet="1"]) .raz {
+  color: var(--ink);
+}

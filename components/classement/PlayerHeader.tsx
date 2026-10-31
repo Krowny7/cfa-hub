@@ -56,7 +56,7 @@ export function PlayerHeader({ p }: { p: PlayerHeaderData }) {
             </div>
             <div>
               {p.isMe ? (
-                <Link href="/moi?onglet=reglages#reglages" className="btn btn-secondary rl-press">
+                <Link href="/moi?onglet=reglages" className="btn btn-secondary rl-press">
                   <Settings size={15} aria-hidden /> {JOUEURS.reglages}
                 </Link>
               ) : (

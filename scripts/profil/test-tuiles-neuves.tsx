@@ -282,7 +282,7 @@ console.log("# Jour J");
   check("le jour même : « Jour J »", texte(r("jourj", { ...RICHE, jourJ: { ...JOUR_J_RICHE, jours: 0 } }, "tuile")).includes("Jour J") && !texte(r("jourj", { ...RICHE, jourJ: { ...JOUR_J_RICHE, jours: 0 } }, "tuile")).includes("J-0"));
   check("programme non mesuré : la date seule, sans barre", !r("jourj", { ...RICHE, jourJ: { ...JOUR_J_RICHE, couverture: null } }, "tuile").includes("jjBarre") && texte(r("jourj", { ...RICHE, jourJ: { ...JOUR_J_RICHE, couverture: null } }, "tuile")).includes("le 12 novembre"));
   const inv = r("jourj", { ...MOI, jourJ: null }, "tuile", true);
-  check("Personnaliser sans date : l'invitation à la régler dans Moi", inv.includes("Fixe ta date d&#x27;examen") && inv.includes('href="/moi"'));
+  check("Personnaliser sans date : l'invitation à la régler dans Moi (le réglage de l'objectif)", inv.includes("Fixe ta date d&#x27;examen") && inv.includes('href="/moi?onglet=reglages#objectif"'));
   check("demi-bande : J-25, la date, le programme couvert, la barre", texte(r("jourj", RICHE, "demi")).includes("J-25") && texte(r("jourj", RICHE, "demi")).includes(nb("68 %")) && r("jourj", RICHE, "demi").includes("--w:68%"));
   check("Personnaliser : qui voit le jour J", r("jourj", { ...MOI, visibiliteJournal: "friends" }, "tuile", true).includes("Visible par : tes amis") && r("jourj", { ...MOI, visibiliteJournal: "friends" }, "demi", true).includes("Visible par : tes amis") && !r("jourj", MOI, "tuile").includes("Visible par"));
   check("la taille du chiffre se tire de la largeur de la case (cqw), pas de pixels fixes", r("jourj", RICHE, "tuile").includes("--w:") && readFileSync("components/profil/blocs/neuves.module.css", "utf8").includes("100cqw"));

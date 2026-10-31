@@ -247,7 +247,7 @@ for (const [f, n] of [
 {
   const autre = rend(<BlocProfil bloc={{ k: "reponses", f: "tuile" }} f="tuile" d={{ ...RICHE, moi: false }} />);
   const moi = rend(<BlocProfil bloc={{ k: "reponses", f: "heros" }} f="heros" d={{ ...RICHE, moi: true }} />);
-  check("réponses : « Le détail par matière » sur son profil seulement", moi.includes("/moi?onglet=stats") && !autre.includes("/moi?onglet=stats"));
+  check("réponses : « Le détail par matière » sur son profil seulement", moi.includes("/moi#matieres") && !autre.includes("/moi#matieres"));
 }
 
 // chiffres clés en héros et en bande : autant de colonnes que de pièces gardées

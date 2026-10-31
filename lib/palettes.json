@@ -117,6 +117,33 @@
       ]
     },
     {
+      "key": "jade",
+      "nom": "Jade et améthyste",
+      "inspiration": "l'encre d'un cachet : noir de fumée, améthyste et jade sur du papier blanc lilas",
+      "voile": [
+        0.52,
+        0.76
+      ],
+      "couleurs": [
+        {
+          "nom": "noir d'encre",
+          "hex": "#121016"
+        },
+        {
+          "nom": "améthyste",
+          "hex": "#5a3a8f"
+        },
+        {
+          "nom": "jade",
+          "hex": "#2f8f5f"
+        },
+        {
+          "nom": "blanc lilas",
+          "hex": "#f4f2f7"
+        }
+      ]
+    },
+    {
       "key": "florence",
       "nom": "Florence à l'aube",
       "inspiration": "Florence à l'aube",

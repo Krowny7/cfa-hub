@@ -101,3 +101,44 @@ export const PLACEMENT_GAMES = 5;
 export function kFactor(gamesPlayed: number) {
   return gamesPlayed < PLACEMENT_GAMES ? 48 : 32;
 }
+
+/**
+ * Où mène la barre de rang de Moi : la division suivante (« Platine I »), le
+ * palier d'après depuis la division I, ce que la maîtrise exige quand elle
+ * retient le joueur, le sommet, ou le placement. Fonction pure.
+ * Un palier compte trois divisions de 50 ELO (III, II, I) ; la division
+ * suivante commence à `palier.min + 50 × (k + 1)`, et la division I mène au
+ * palier suivant. Bronze, qui n'a pas de seuil bas, part de 950 (son palier
+ * suivant moins 150), comme rankFor.
+ */
+export type VersDivision =
+  | { genre: "placement"; jouees: number; total: number }
+  | { genre: "sommet" }
+  /** la maîtrise retient le joueur : `lock` % requis pour entrer dans `cible` */
+  | { genre: "verrou"; lock: number; cible: string }
+  /** `de` → `vers` : les bornes de la division en cours ; `reste` points d'ELO ; `pct` de la barre (0–100) */
+  | { genre: "division"; de: number; vers: number; reste: number; pct: number; cible: string };
+
+/** @param jouees parties classées jouées : sous PLACEMENT_GAMES, le joueur est en placement */
+export function versDivisionSuivante(elo: number, info: RankInfo, jouees: number = PLACEMENT_GAMES): VersDivision {
+  if (jouees < PLACEMENT_GAMES) return { genre: "placement", jouees: Math.max(0, jouees), total: PLACEMENT_GAMES };
+  const idx = info.tierIndex;
+  if (idx >= TOP_TIER || info.division === null) return { genre: "sommet" };
+  if (info.lockedBy) {
+    const suivant = TIERS[idx + 1];
+    return { genre: "verrou", lock: suivant.lock ?? 0, cible: suivant.name };
+  }
+  const bas = idx === 0 ? TIERS[1].min - 150 : info.tier.min;
+  const k = idx === 0 ? Math.max(0, Math.min(2, Math.floor((elo - bas) / 50))) : DIVISIONS.indexOf(info.division as (typeof DIVISIONS)[number]);
+  let de = bas + 50 * k;
+  let vers = bas + 50 * (k + 1);
+  let cible = `${info.tier.name} ${DIVISIONS[k + 1]}`;
+  if (k >= 2) {
+    // la division I mène au palier suivant ; au dernier palier d'ELO, plus rien au-dessus (le Top 10 se gagne à la place)
+    if (!info.next) return { genre: "sommet" };
+    vers = info.next.min;
+    de = vers - 50;
+    cible = `${info.next.name} ${DIVISIONS[0]}`;
+  }
+  return { genre: "division", de, vers, reste: Math.max(0, Math.round(vers - elo)), pct: Math.max(0, Math.min(100, Math.round((100 * (elo - de)) / (vers - de)))), cible };
+}

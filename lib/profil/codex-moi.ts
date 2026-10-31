@@ -101,13 +101,18 @@ export function titreLigne(id: string): string {
 // ── Le compte et l'historique ──────────────────────────────────────────
 
 /** Le Codex de Moi d'après les lignes du joueur (pur : testé sans base). */
-export function codexMoiDe(lignes: LigneCodexMoi[], o: { sobre: boolean; titre?: (id: string) => string }): CodexMoi {
+export function codexMoiDe(lignes: LigneCodexMoi[], o: { sobre: boolean; titre?: (id: string) => string; historique?: boolean }): CodexMoi {
   const titre = o.titre ?? titreLigne;
   const utiles = lignes.filter((l) => !estMiroir(l.quete_id));
   const faites = utiles.filter(faite);
   // la règle unique de « Récupérer » (lib/codex/recuperer), celle de la vue et du panneau
   const aRecuperer = utiles.filter((l) => attendRecuperer(l, o.sobre)).length;
   const xp = utiles.filter((l) => l.etat === "recompensee").reduce((s, l) => s + xpDe(l), 0);
+
+  // sans historique (la carte du joueur de la page Moi n'en montre pas) : ni tri, ni titres
+  if (o.historique === false) {
+    return { disponible: true, faites: faites.filter((l) => !l.quete_id.startsWith("acte:")).length, xp, aRecuperer, historique: [], plusAnciennes: 0 };
+  }
 
   // les plus récentes d'abord ; les rétroactives (comptées d'office) à part, en dernier
   const datees = faites
@@ -135,8 +140,8 @@ export function codexMoiDe(lignes: LigneCodexMoi[], o: { sobre: boolean; titre?:
   };
 }
 
-/** Lit le Codex de Moi (une requête, sans calcul) ; repli silencieux : CODEX_MOI_VIDE. */
-export async function lireCodexMoi(supabase: SupabaseClient, userId: string, o: { sobre: boolean }): Promise<CodexMoi> {
+/** Lit le Codex de Moi (une requête, sans calcul) ; repli silencieux : CODEX_MOI_VIDE. `historique: false` : le compte seul, sans l'historique ni les titres. */
+export async function lireCodexMoi(supabase: SupabaseClient, userId: string, o: { sobre: boolean; historique?: boolean }): Promise<CodexMoi> {
   try {
     const { data, error } = await supabase
       .from("codex_progression")

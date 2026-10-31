@@ -378,7 +378,7 @@ export const NOUVEAUTES: EtapeTuto[] = [
 export const NOUVEAUTES_V4: EtapeTuto[] = [
   { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Re. J’ai rangé l’atelier. Les quêtes logent maintenant en haut à droite, dans ce sceau : celles du jour, et la suite si tu en veux.", pose: "fier" },
   { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Une quête faite ne paie plus en douce : un chiffre se pose sur le sceau, tu touches « Récupérer », et l’XP est à toi. Avec les récompenses versées d’office, elle arrive seule.", pose: "base" },
-  { page: "/moi", cible: "moi-codex", facultatif: true, texte: "Le Codex a quitté la barre du haut : il t’attend ici, dans Moi, avec l’historique de tes quêtes. Quand tu veux, sans obligation.", pose: "base" },
+  { page: "/moi", cible: "moi-codex", facultatif: true, texte: "Le Codex a quitté la barre du haut : il t’attend ici, dans Moi, sur ta carte de joueur. Quand tu veux, sans obligation.", pose: "base" },
 ];
 
 /**

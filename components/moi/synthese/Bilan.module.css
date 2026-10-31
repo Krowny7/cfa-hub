@@ -1,0 +1,410 @@
+/* Le bilan de la page Moi « La synthèse » : la rangée Tes lacunes | Tes forces |
+   Où gagner des points. Reprend les jetons posés par .racine de
+   Synthese.module.css (--noir, --violet, --acquis, --zone-rouge, --zone-ambre,
+   --fond-rouge, --fond-ambre, --piste) et ses motifs (cartes petites, pied
+   « Ce que ça veut dire », sceau noir, lien violet) : les cartes sont en
+   papier comme les autres, sans liquide sauf le bouton d'encre de Tes lacunes
+   et celui de Où gagner. Les mises en page suivent la largeur du bloc
+   (requêtes de conteneur de .racine), pas celle de l'écran. */
+
+/* ——— la rangée : 5 | 4 | 3 colonnes ; une carte masquée recompose le reste ——— */
+.rangee {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+  /* elle porte l'ancre #points-faibles quand « Tes lacunes » est masquée */
+  scroll-margin-top: 96px;
+}
+.rangee[data-n="3"] > .c5 {
+  grid-column: span 5;
+}
+.rangee[data-n="3"] > .c4 {
+  grid-column: span 4;
+}
+.rangee[data-n="3"] > .c3 {
+  grid-column: span 3;
+}
+.rangee[data-n="2"] > * {
+  grid-column: span 6;
+}
+.rangee[data-n="1"] > * {
+  grid-column: span 12;
+}
+
+/* chaque carte : l'ancre des liens « #points-faibles » et « #gagner » garde la barre du haut visible */
+.carteBilan {
+  scroll-margin-top: 96px;
+}
+
+/* ——— l'en-tête d'une carte ——— */
+.entete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.compteur {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.carteBilan .compteur b {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+/* ——— les listes de notions ——— */
+.liste {
+  display: grid;
+}
+.nom {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.nom > b {
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+.nom > span {
+  flex: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.note {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+/* une lacune : nom et valeur, matière et écart, barre fine ; les deux boutons à droite sur toute la hauteur */
+.lacune {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "nom actions"
+    "mat actions"
+    "barre actions";
+  column-gap: 12px;
+  row-gap: 4px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.lacune > .nom {
+  grid-area: nom;
+}
+.lacune > .note {
+  grid-area: mat;
+}
+.lacune > .zone {
+  grid-area: barre;
+}
+.actions {
+  grid-area: actions;
+  display: flex;
+  gap: 6px;
+}
+.mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1.5px solid var(--pencil-2);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.mini:hover {
+  border-color: var(--ink);
+}
+
+/* une force : nom et valeur, matière et écart, barre fine */
+.force {
+  display: grid;
+  gap: 5px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+
+/* ——— la barre fine à zones : fond rouge sous 50, ambre de 50 à 69, libre au-dessus ; repère pointillé à 70 ——— */
+.zone {
+  position: relative;
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--fond-rouge) 0 50%, var(--fond-ambre) 50% 70%, var(--piste) 70% 100%);
+}
+.zone > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+.zr {
+  background: var(--zone-rouge);
+}
+.za {
+  background: var(--zone-ambre);
+}
+.ze {
+  background: var(--acquis);
+}
+.seuil {
+  position: absolute;
+  left: 70%;
+  top: -4px;
+  bottom: -4px;
+  width: 0;
+  border-left: 2px dashed var(--ink);
+  opacity: 0.6;
+}
+
+/* ——— les boutons ——— */
+/* le bouton d'encre d'une carte (Bouton, Encre.tsx) en petit ; le sélecteur composé garde l'avantage sur .bouton */
+.carteBilan .action {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  border-radius: 10px;
+}
+.duree {
+  font-weight: 600;
+  opacity: 0.82;
+}
+/* la rangée d'actions du bas de carte : collée en bas, qui passe à la ligne */
+.bas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 18px;
+  margin-top: auto;
+}
+.bas .action {
+  flex: none;
+}
+/* le bouton secondaire en contour (jamais de liquide) */
+.plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--noir);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.plus:hover {
+  background: var(--choisi);
+}
+
+/* ——— les encarts (atouts, paliers de note) ——— */
+.encart {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--well);
+  border: 1px solid var(--line);
+}
+.etiquette {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.atouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.atout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1.5px solid var(--pencil-2);
+  border-radius: 99px;
+  background: var(--surface);
+  font-size: 12.5px;
+}
+.atout > b {
+  font-weight: 700;
+}
+.atout > span {
+  font-weight: 700;
+}
+
+/* ——— Où gagner des points ——— */
+.gains {
+  display: grid;
+  gap: 3px;
+}
+.gain {
+  display: grid;
+  grid-template-columns: 14px 92px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+}
+.rang {
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.gain > b {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.gainValeur {
+  text-align: right;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+/* la barre d'un gain : noire pour les trois premières, violette ensuite */
+.piste {
+  position: relative;
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--piste);
+}
+.piste > i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--noir);
+}
+.piste.violet > i {
+  background: var(--violet);
+}
+/* la barre des paliers de note : la préparation (couleur de sa zone), les gains des trois premières (noir), les autres (violet) */
+.palier {
+  position: relative;
+  display: block;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: linear-gradient(to right, var(--fond-rouge) 0 50%, var(--fond-ambre) 50% 70%, var(--piste) 70% 100%);
+}
+.palier > i {
+  position: absolute;
+  top: 0;
+  display: block;
+  height: 100%;
+}
+.palier .seuil {
+  top: 0;
+  bottom: 0;
+}
+.palierNoir {
+  background: var(--noir);
+}
+.palierViolet {
+  background: var(--violet);
+}
+.paliers {
+  display: grid;
+  gap: 3px;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.paliers > li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.paliers > li > b {
+  flex: none;
+  width: 40px;
+  font-weight: 700;
+}
+
+/* ——— états vides ——— */
+.vide {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--well);
+  border: 1px dashed var(--pencil-2);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+/* ——— mise en page selon la largeur du bloc ——— */
+@container (max-width: 1080px) {
+  .rangee[data-n="3"] > .c5 {
+    grid-column: span 12;
+  }
+  .rangee[data-n="3"] > .c4,
+  .rangee[data-n="3"] > .c3 {
+    grid-column: span 6;
+  }
+}
+@container (max-width: 760px) {
+  .rangee {
+    gap: 12px;
+  }
+  .rangee[data-n="3"] > .c5,
+  .rangee[data-n="3"] > .c4,
+  .rangee[data-n="3"] > .c3,
+  .rangee[data-n="2"] > *,
+  .rangee[data-n="1"] > * {
+    grid-column: span 12;
+  }
+  /* la matière et la barre à gauche, les deux boutons à droite sous le nom */
+  .lacune {
+    grid-template-areas:
+      "nom nom"
+      "mat actions"
+      "barre actions";
+    row-gap: 5px;
+  }
+  .mini {
+    min-height: 44px;
+  }
+  .plus {
+    min-height: 44px;
+  }
+  .carteBilan .action {
+    align-self: stretch;
+    width: auto;
+    min-height: 48px;
+  }
+  .bas {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .gain {
+    grid-template-columns: 14px 90px minmax(0, 1fr) 40px;
+  }
+}

@@ -1,0 +1,2220 @@
+/* La page Moi « La synthèse » (maquette D), dans la palette « jade et
+   améthyste » (lib/palettes.ts : SyntheseView pose --pal-1 noir, --pal-2
+   améthyste, --pal-3 jade, --pal-4 blanc lilas sur la racine). Règles de DA :
+   - le vrai liquide (EncreVive dans un élément .rl-encre[data-palette]) ne sert
+     qu'aux boutons d'action principaux et aux options actives des sélecteurs ;
+   - tout le reste est en aplats : sceaux, pavé J-n, barres, cases, pastilles ;
+   - le jade n'est que la couleur du liquide (texte blanc à 4:1 seulement) : les
+     cases et états « acquis » prennent --acquis (7:1) ;
+   - rouge et ambre sont des couleurs de DONNÉES (zones de maîtrise), pas
+     d'encre ; les métaux des trophées et les insignes gardent les leurs.
+   Les mises en page suivent la largeur du bloc (requêtes de conteneur), pas
+   celle de l'écran. Jetons du site, jour et nuit ; animations coupées en
+   mouvement réduit, liquide coupé en mode discret. */
+
+/* le cadre de la page : un conteneur autour de la racine, pour que les
+   requêtes de conteneur de la racine elle-même (son écart au téléphone)
+   trouvent un parent à mesurer (un conteneur ne s'interroge pas lui-même) */
+.cadre {
+  container-type: inline-size;
+}
+.racine {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+  color: var(--ink);
+  /* la palette, nommée par rôle */
+  --noir: var(--pal-1);
+  --violet: var(--pal-2);
+  --blanc: var(--pal-4);
+  /* le texte posé sur un aplat noir */
+  --sur-noir: #fff;
+  --sur-noir-2: color-mix(in srgb, #fff 72%, transparent);
+  /* acquis : le vert des cases « acquise » et des états réussis (texte blanc, 7:1) */
+  --acquis: #22643f;
+  /* surlignage, sélection et encadré « Ce que ça veut dire » : de l'améthyste dilué */
+  --surligne: color-mix(in srgb, var(--violet) 18%, transparent);
+  --choisi: color-mix(in srgb, var(--violet) 10%, transparent);
+  --lire-fond: color-mix(in srgb, var(--violet) 5%, transparent);
+  --lire-bord: color-mix(in srgb, var(--violet) 20%, transparent);
+  /* zones de données : rouge sous 50 %, ambre de 50 à 69 % */
+  --zone-rouge: #b4412f;
+  --zone-ambre: #a2823c;
+  --pastille-ambre: #c9a24a;
+  --fond-rouge: #e2c9c2;
+  --fond-ambre: #e4d9be;
+  /* creux : pistes des barres et des pastilles */
+  --piste: var(--well);
+}
+/* nuit : l'améthyste s'éclaircit, les aplats noirs deviennent l'encre claire du site (icône sombre dessus) */
+:global(html[data-theme="nuit"]) .racine {
+  --violet: color-mix(in srgb, var(--pal-2) 55%, white);
+  --noir: var(--ink);
+  --sur-noir: var(--paper);
+  --sur-noir-2: color-mix(in srgb, var(--paper) 72%, transparent);
+  --fond-rouge: color-mix(in srgb, var(--zone-rouge) 28%, var(--surface));
+  --fond-ambre: color-mix(in srgb, var(--zone-ambre) 28%, var(--surface));
+}
+.racine :where(h1, h2, h3, p, ul, ol, dl, dd) {
+  margin: 0;
+}
+.racine :where(ul, ol) {
+  padding: 0;
+  list-style: none;
+}
+.racine :where(h2, h3) {
+  text-wrap: balance;
+}
+.racine b {
+  font-weight: 700;
+}
+
+/* ——— l'en-tête ——— */
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.enteteTexte {
+  display: grid;
+  gap: 6px;
+}
+.fil {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.titre {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.trait {
+  display: block;
+  width: 200px;
+  height: 7px;
+  margin-top: -1px;
+  color: var(--noir);
+}
+.compte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 10px;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.compte a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.compte a:hover {
+  color: var(--violet);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ——— la grille : douze colonnes, les rangées se recomposent ——— */
+.rangee {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+.rangee > .c8 {
+  grid-column: span 8;
+}
+.rangee > .c4 {
+  grid-column: span 4;
+}
+.rangee[data-n="1"] > * {
+  grid-column: span 12;
+}
+.rangee[data-n="2"] > * {
+  grid-column: span 6;
+}
+
+/* ——— les cartes en papier ——— */
+.carte {
+  position: relative;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--pencil-2);
+  border-radius: 20px;
+  box-shadow: var(--shadow-1);
+}
+.grande,
+.moyenne,
+.petite {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.grande {
+  padding: 28px;
+}
+.moyenne {
+  padding: 24px;
+}
+.petite {
+  gap: 12px;
+  padding: 20px;
+  border-radius: 16px;
+}
+.tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.teteGauche {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.teteTexte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.titreCarte {
+  font-size: 24px;
+  line-height: 1.05;
+}
+/* le titre d'une petite ou d'une grande carte, son sceau devant ; le
+   sous-titre court dessous sur toute la largeur (maquette D) */
+.titreSceau {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.grande .titreSceau {
+  gap: 12px;
+}
+.teteBloc {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.grande .teteBloc {
+  gap: 6px;
+}
+.grande .teteBloc > .sous {
+  font-size: 14px;
+}
+.petite .titreCarte {
+  font-size: 21px;
+  line-height: 1.1;
+}
+.grande .titreCarte {
+  font-size: 28px;
+  line-height: 1;
+}
+.sous {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.mono {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.neg {
+  color: var(--zone-rouge);
+  font-weight: 700;
+}
+.surligne {
+  background: linear-gradient(180deg, transparent 50%, var(--surligne) 50%, var(--surligne) 94%, transparent 94%);
+  padding: 0 5px;
+  margin: 0 -5px;
+}
+.lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--violet);
+  text-decoration: none;
+}
+.lien:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ——— le sceau uni : un aplat noir, l'icône en réserve (jamais de liquide) ——— */
+.sceau {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--noir);
+  color: var(--sur-noir);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--violet) 50%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--violet) 12%, transparent);
+}
+.sceauGrand {
+  width: 40px;
+  height: 40px;
+}
+
+/* ——— le bouton d'encre : le vrai liquide de la palette (EncreVive), un par carte au plus ——— */
+.encre {
+  position: relative;
+  color: #fff;
+  background: var(--pal-1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  color: #fff;
+  box-shadow: var(--shadow-btn);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.bouton:hover {
+  color: #fff;
+}
+.bouton:active {
+  transform: scale(0.98);
+}
+.bouton:focus-visible {
+  outline-offset: 3px;
+}
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .bouton.encre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-4) 35%, transparent),
+    var(--shadow-btn);
+}
+
+/* ——— le pavé J-n, la barre de l'objectif, les pastilles de la quête ——— */
+.jour {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  flex: none;
+  min-width: 92px;
+  height: 54px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--noir);
+  color: var(--sur-noir);
+  text-align: center;
+}
+.jour > b {
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 400;
+}
+.jour > span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sur-noir-2);
+}
+.piste {
+  position: relative;
+  display: block;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--piste);
+}
+.piste > i {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--noir);
+}
+.pisteViolet > i {
+  background: var(--violet);
+}
+.pisteFine {
+  height: 8px;
+  border-radius: 4px;
+}
+.pisteFine > i {
+  border-radius: 4px;
+}
+.pastilles {
+  display: flex;
+  gap: 3px;
+}
+.pip {
+  display: block;
+  flex: 1 1 0;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--piste);
+}
+.pipOn {
+  background: var(--noir);
+}
+
+/* ——— la carte « Ton objectif » ——— */
+.objCorps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px 196px;
+  gap: 18px;
+}
+.objCorps[data-colonnes="2"] {
+  grid-template-columns: minmax(0, 1fr) 270px;
+}
+.objCorps[data-colonnes="sans"] {
+  grid-template-columns: minmax(0, 1fr) 196px;
+}
+.objCorps[data-colonnes="1"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.objGauche {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.objChiffre {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.objChiffre > b {
+  font-size: 40px;
+  line-height: 0.95;
+  font-weight: 400;
+}
+.objChiffre > span {
+  font-size: 18px;
+  color: var(--ink-2);
+}
+.objBarre {
+  display: grid;
+  gap: 5px;
+}
+.objLegendeBarre {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.objLegendeBarre b {
+  color: var(--ink);
+}
+.objPhrase {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.quete {
+  display: grid;
+  gap: 7px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.queteTete {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2px 10px;
+  font-size: 13px;
+}
+.queteTete > span {
+  font-weight: 600;
+}
+.objAction {
+  align-self: flex-start;
+  margin-top: auto;
+}
+.objColonne {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-left: 18px;
+  border-left: 1px solid var(--line);
+}
+.objJauge {
+  align-items: flex-start;
+}
+.trajGrand {
+  display: none;
+}
+.trajSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.legende > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.trace {
+  display: block;
+  flex: none;
+  width: 18px;
+  height: 0;
+  border-top: 3px solid var(--noir);
+}
+.traceObjectif {
+  border-top: 2.5px dashed var(--violet);
+}
+.traceRythme {
+  border-top: 3px dotted var(--noir);
+}
+.jaugeRang {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.jaugeBoite {
+  position: relative;
+  width: 176px;
+  height: 104px;
+}
+.jaugeBoite > svg {
+  display: block;
+}
+.jaugeValeur {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  text-align: center;
+}
+.jaugeValeur > b {
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 400;
+}
+.jaugeTexte {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.jaugeNote {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.jaugeNote b {
+  color: var(--ink);
+}
+.jaugeManque {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.pied {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.pied b {
+  color: var(--violet);
+}
+.sansObjectif {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  padding: 6px 0 2px;
+}
+.sansTitre {
+  font-size: 24px;
+  line-height: 1.1;
+}
+.sansObjectif > p:not(.sansTitre) {
+  max-width: 52ch;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ——— la carte du joueur ——— */
+.joueur {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  gap: 0;
+}
+.peint {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  height: 108px;
+  padding: 0 20px 16px;
+  overflow: hidden;
+  background: var(--pal-1);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.peintFond {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.peint::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(18, 16, 22, 0.3) 0%, rgba(18, 16, 22, 0.68) 55%, rgba(18, 16, 22, 0.92) 100%);
+}
+.puce {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-shadow: none;
+}
+.visage {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 6px rgba(255, 255, 255, 0.18);
+}
+.peintTexte {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.peintTexte .eyebrow {
+  color: var(--pal-4);
+}
+.peintTexte h2 {
+  font-size: 26px;
+  line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.joueurCorps {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 18px;
+}
+.rangTete {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.rangTexte {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.rangTexte > p:first-child {
+  font-size: 22px;
+  line-height: 1;
+}
+.rangTexte > p:last-child {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.rangBarre {
+  display: grid;
+  gap: 5px;
+}
+.rangLegende {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.rangLegende b {
+  color: var(--ink);
+}
+.rangTexteSeul {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.stats {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+.stat {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+.stats > li:last-child > .stat {
+  border-bottom: 0;
+}
+a.stat:hover {
+  background: var(--choisi);
+}
+.statTexte {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.statTexte > b {
+  font-size: 13.5px;
+}
+.statTexte > span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.statValeur {
+  font-size: 16px;
+  font-weight: 600;
+}
+.etiquette {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--violet) 14%, transparent);
+  color: var(--violet);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.joueurLien {
+  margin-top: auto;
+}
+
+/* ——— la salle des trophées (une bande) ——— */
+.salle {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr) 330px;
+  align-items: center;
+  gap: 22px;
+  padding: 18px 22px;
+  border-radius: 16px;
+}
+.salleTete {
+  display: grid;
+  gap: 6px;
+}
+.salleTete h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 21px;
+  line-height: 1.1;
+}
+.salleCompte {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.metaux {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.metauxLarges {
+  grid-column: span 2;
+}
+.salleVide {
+  grid-column: span 2;
+}
+.salleNote {
+  grid-column: 1 / -1;
+  margin-top: -6px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.metal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--m1) 40%, var(--surface));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--m1) 14%, var(--surface)) 0%, color-mix(in srgb, var(--m1) 3%, var(--surface)) 100%);
+}
+.metalVide {
+  opacity: 0.55;
+}
+.med {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--m0) 0%, var(--m1) 100%);
+  color: var(--m2);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--m2) 30%, transparent),
+    0 3px 8px -3px color-mix(in srgb, var(--m2) 55%, transparent);
+}
+.metalTexte {
+  display: grid;
+  gap: 2px;
+}
+.metalTexte > b {
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 400;
+}
+.mnom {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.dernier {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.dernier .med {
+  width: 36px;
+  height: 36px;
+}
+.dernierTexte {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.dernierTexte > b {
+  font-size: 14px;
+}
+.dernierTexte > span:last-child {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.salleVide {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.parSource {
+  grid-column: 1 / -1;
+  margin-top: -6px;
+}
+
+/* ——— mise en page selon la largeur du bloc ——— */
+@container (max-width: 1080px) {
+  .rangee > *,
+  .rangee[data-n] > * {
+    grid-column: span 12;
+  }
+  .salle {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .salleTete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+}
+@container (max-width: 760px) {
+  .racine {
+    gap: 12px;
+  }
+  .titre {
+    font-size: 30px;
+  }
+  .trait {
+    width: 160px;
+  }
+  .entete {
+    display: grid;
+    gap: 6px;
+  }
+  .compte {
+    margin-top: -4px;
+  }
+  .carte {
+    border-radius: 16px;
+  }
+  .grande {
+    gap: 14px;
+    padding: 18px 14px;
+  }
+  .moyenne {
+    gap: 12px;
+    padding: 16px 14px;
+  }
+  .petite {
+    gap: 10px;
+    padding: 14px;
+  }
+  .titreCarte {
+    font-size: 21px;
+  }
+  .grande .titreCarte {
+    font-size: 22px;
+    line-height: 1.1;
+  }
+  .petite .titreCarte {
+    font-size: 19px;
+  }
+  .sceauGrand {
+    width: 38px;
+    height: 38px;
+  }
+  .tete {
+    gap: 12px;
+  }
+  .teteGauche {
+    gap: 10px;
+  }
+  .jour > b {
+    font-size: 20px;
+  }
+  .objCorps,
+  .objCorps[data-colonnes] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .objChiffre > b {
+    font-size: 36px;
+  }
+  .objChiffre > span {
+    font-size: 17px;
+  }
+  .objAction {
+    align-self: stretch;
+    width: auto;
+    min-height: 48px;
+    margin-top: 0;
+  }
+  .objColonne {
+    padding-left: 0;
+    padding-top: 12px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .trajPetit {
+    display: none;
+  }
+  .trajGrand {
+    display: block;
+  }
+  .objJauge {
+    gap: 6px;
+  }
+  .jaugeRang {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+  }
+  .jaugeBoite {
+    width: 150px;
+    height: 89px;
+  }
+  .jaugeBoite > svg {
+    width: 150px;
+    height: 89px;
+  }
+  .jaugeValeur {
+    bottom: 2px;
+  }
+  .jaugeValeur > b {
+    font-size: 26px;
+  }
+  .peint {
+    gap: 12px;
+    height: 100px;
+    padding: 0 14px 14px;
+  }
+  .puce {
+    right: 12px;
+    top: 12px;
+  }
+  .visage {
+    width: 48px;
+    height: 48px;
+  }
+  .peintTexte h2 {
+    font-size: 24px;
+  }
+  .joueurCorps {
+    gap: 10px;
+    padding: 12px 14px 6px;
+  }
+  .rangTexte > p:first-child {
+    font-size: 20px;
+  }
+  .joueurLien {
+    border-top: 1px solid var(--line);
+  }
+  .salle {
+    gap: 10px;
+    padding: 14px;
+  }
+  .metaux {
+    gap: 6px;
+  }
+  .metal {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 8px 9px;
+    border-radius: 12px;
+  }
+  .med {
+    width: 36px;
+    height: 36px;
+  }
+  .metalTexte > b {
+    font-size: 20px;
+  }
+  .dernier {
+    gap: 10px;
+    padding: 4px 4px 4px 12px;
+    border-radius: 12px;
+  }
+  .dernier .med {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ——— mode discret (réviser en public) : le liquide est coupé, les boutons deviennent pleins ——— */
+:global(html[data-discreet="1"]) .encre {
+  background: var(--ink);
+  color: var(--paper);
+  text-shadow: none;
+}
+:global(html[data-discreet="1"]) .bouton:hover {
+  color: var(--paper);
+}
+:global(html[data-discreet="1"]) .lien,
+:global(html[data-discreet="1"]) .compte a:hover {
+  color: var(--ink);
+}
+
+/* ——— mouvement réduit ——— */
+@media (prefers-reduced-motion: reduce) {
+  .bouton {
+    transition: none;
+  }
+  .bouton:active {
+    transform: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   « Tes matières » (grande carte, lot 3) : sélecteurs, radar, barres, panneau
+   (vue d'ensemble ou fiche), « Ce que ça veut dire ». Règles ajoutées à la fin
+   du fichier ; les cartes des autres lots ont leur propre module.
+   Trois conteneurs : la racine (nommée « racine » pour que les requêtes de ce
+   bloc la retrouvent à travers les conteneurs imbriqués), le cadre du radar
+   (« radar », sa largeur dicte le dessin) et le panneau (« fiche », une ou deux
+   colonnes). ═══════════════════════════════════════════════════════════════ */
+.racine {
+  container-name: racine;
+}
+.ancre {
+  scroll-margin-top: 96px;
+}
+.pos {
+  color: var(--ink);
+  font-weight: 700;
+}
+.nul {
+  color: var(--ink-2);
+  font-weight: 700;
+}
+
+/* ——— en-tête et ligne de commande ——— */
+.teteMat {
+  align-items: flex-start;
+}
+.teteMat .sous {
+  max-width: 72ch;
+  font-size: 14px;
+}
+.teteMat .sous b {
+  color: var(--ink);
+}
+.commande {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+.comparer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.comparerToi {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ——— les sélecteurs : un groupe de boutons, l'option active seule porte l'encre vive ——— */
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 1px solid var(--line-2);
+}
+.opt {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.opt:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+.opt:focus-visible,
+.rlab:focus-visible,
+.bl:focus-visible,
+.ev:focus-visible,
+.ferme:focus-visible,
+.contour:focus-visible,
+.fnListe:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+.opt.encre {
+  color: #fff;
+  background: var(--pal-1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 6px 12px -8px rgba(18, 16, 22, 0.7);
+}
+/* les puces : une rangée qui défile (la superposition de « Ta progression », et sur téléphone les segments étroits) */
+.segPuces {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  max-width: 100%;
+  padding: 2px 0;
+  overflow-x: auto;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  scrollbar-width: none;
+}
+.segPuces::-webkit-scrollbar {
+  display: none;
+}
+.segPuces .opt {
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--pencil-2);
+  border-radius: 99px;
+  background: var(--surface);
+  font-size: 12.5px;
+}
+.segPuces .opt:hover {
+  border-color: var(--ink);
+}
+.segPuces .opt.encre {
+  padding: 0 13.5px;
+  border-width: 0;
+}
+
+/* ——— boutons secondaires : à contour (jamais d'encre), et le bouton d'encre petit ——— */
+.contour {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.contour:hover {
+  background: var(--paper);
+}
+.contourPetit {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.boutonPetit {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+}
+
+/* ——— les repères de légende ——— */
+.sw {
+  display: block;
+  flex: none;
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+}
+.swR {
+  background: var(--zone-rouge);
+}
+.swA {
+  background: var(--pastille-ambre);
+}
+.swE {
+  background: var(--acquis);
+}
+.swN {
+  background: var(--surface);
+  border: 1.5px dashed var(--pencil);
+}
+.swEc {
+  background: color-mix(in srgb, var(--violet) 8%, var(--surface));
+  border: 1px solid var(--line-2);
+}
+.swZR {
+  background: var(--fond-rouge);
+}
+.swZA {
+  background: var(--fond-ambre);
+}
+.swRepere {
+  display: block;
+  flex: none;
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--violet);
+}
+.traceCmp {
+  border-top: 2px dashed var(--violet);
+}
+.traceSeuil {
+  border-top: 2px dashed var(--ink);
+  opacity: 0.6;
+}
+.traceCourte {
+  width: 14px;
+}
+.legendeP {
+  margin-top: 4px;
+}
+
+/* ——— le corps de la carte : le graphique et le panneau ——— */
+.matCorps {
+  display: grid;
+  grid-template-columns: 520px minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+/* des repères d'angle d'instrument autour du graphique */
+.hud {
+  position: relative;
+  --repere: linear-gradient(var(--noir), var(--noir));
+}
+.hud::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    var(--repere) left top / 16px 2px no-repeat,
+    var(--repere) left top / 2px 16px no-repeat,
+    var(--repere) right top / 16px 2px no-repeat,
+    var(--repere) right top / 2px 16px no-repeat,
+    var(--repere) left bottom / 16px 2px no-repeat,
+    var(--repere) left bottom / 2px 16px no-repeat,
+    var(--repere) right bottom / 16px 2px no-repeat,
+    var(--repere) right bottom / 2px 16px no-repeat;
+}
+.matGraphe {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  min-height: 452px;
+}
+
+/* ——— le radar : deux dessins (grand, petit) et dix étiquettes qui sont de vrais boutons ——— */
+.radarCadre {
+  container: radar / inline-size;
+  width: 100%;
+}
+.radarBoite {
+  position: relative;
+  width: 520px;
+  max-width: 100%;
+  margin-inline: auto;
+  aspect-ratio: 520 / 452;
+}
+.radarGrand,
+.radarPetit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.radarPetit {
+  display: none;
+}
+.rz100 {
+  fill: var(--paper-2);
+  stroke: var(--pencil-2);
+  stroke-width: 1;
+}
+.rz70 {
+  fill: color-mix(in srgb, var(--zone-ambre) 16%, var(--surface));
+  stroke: none;
+}
+.rz50 {
+  fill: color-mix(in srgb, var(--zone-rouge) 13%, var(--surface));
+  stroke: var(--fond-rouge);
+  stroke-width: 1;
+}
+.rz25 {
+  fill: none;
+  stroke: color-mix(in srgb, var(--zone-rouge) 22%, var(--surface));
+  stroke-width: 1;
+}
+.raxes {
+  fill: none;
+  stroke: var(--pencil-2);
+  stroke-width: 1;
+}
+.rseuil {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.6;
+}
+.rhalo {
+  stroke: var(--violet);
+  stroke-opacity: 0.28;
+}
+.rcmp {
+  fill: none;
+  stroke: var(--violet);
+}
+.rcmpPts {
+  fill: var(--surface);
+  stroke: var(--violet);
+  stroke-width: 1.6;
+}
+.rtoi {
+  fill: color-mix(in srgb, var(--noir) 14%, transparent);
+  stroke: var(--noir);
+}
+.rE {
+  fill: var(--acquis);
+  stroke: var(--surface);
+}
+.rA {
+  fill: var(--zone-ambre);
+  stroke: var(--surface);
+}
+.rR {
+  fill: var(--zone-rouge);
+  stroke: var(--surface);
+}
+/* un point creux : la matière n'est pas encore mesurée (posée à 0) */
+.rV {
+  fill: var(--surface);
+  stroke: var(--ink-2);
+}
+.rsel {
+  fill: none;
+  stroke: var(--violet);
+}
+.rtxt {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--ink-2);
+  stroke: var(--surface);
+  stroke-width: 3px;
+  paint-order: stroke;
+}
+.rtxtSeuil {
+  fill: var(--ink);
+}
+.rlab {
+  position: absolute;
+  left: var(--xg);
+  top: var(--yg);
+  display: grid;
+  gap: 1px;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--ink);
+  font-family: inherit;
+  line-height: 1.2;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.rlab > b {
+  font-size: 13px;
+  font-weight: 700;
+}
+.rlabLigne {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.rlabLigne .mono {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.rlabSous .rlabLigne .mono {
+  color: var(--zone-rouge);
+}
+.coteD {
+  transform: translate(0, -50%);
+}
+.coteG {
+  transform: translate(-100%, -50%);
+  text-align: right;
+}
+.coteH {
+  transform: translate(-50%, -100%);
+  text-align: center;
+}
+.coteB {
+  transform: translate(-50%, 0);
+  text-align: center;
+}
+.rlab:hover {
+  background: color-mix(in srgb, var(--violet) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px var(--violet);
+}
+.rlabOn,
+.rlabOn:hover {
+  background: var(--noir);
+  color: var(--sur-noir);
+  box-shadow: none;
+}
+.rlabOn .rlabLigne,
+.rlabOn .rlabLigne .mono,
+.rlabOn .pos,
+.rlabOn .neg,
+.rlabOn .nul {
+  color: var(--sur-noir);
+}
+.nomMini {
+  display: none;
+}
+@container radar (max-width: 519px) {
+  .radarBoite {
+    width: min(100%, 460px);
+    aspect-ratio: 328 / 288;
+  }
+  .radarGrand {
+    display: none;
+  }
+  .radarPetit {
+    display: block;
+  }
+  .rlab {
+    left: var(--xp);
+    top: var(--yp);
+    padding: 3px 5px;
+    border-radius: 7px;
+  }
+  .rlab > b {
+    font-size: 11.5px;
+  }
+  .rlabLigne,
+  .rlabLigne .mono {
+    font-size: 11px;
+  }
+}
+@container radar (max-width: 419px) {
+  .nomCourt {
+    display: none;
+  }
+  .nomMini {
+    display: inline;
+  }
+}
+
+/* ——— les barres ——— */
+.barresBoite {
+  --bl-cols: 118px minmax(0, 1fr) 56px 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px 14px;
+}
+.barresTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 8px;
+}
+.barresAide {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.barresTete .opt {
+  min-height: 30px;
+  font-size: 12.5px;
+}
+.barres {
+  display: grid;
+  gap: 2px;
+}
+.bl {
+  display: grid;
+  grid-template-columns: var(--bl-cols);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.bl:hover {
+  background: var(--paper);
+}
+.blOn,
+.blOn:hover {
+  background: var(--choisi);
+  box-shadow: inset 0 0 0 1px var(--violet);
+}
+.blOff {
+  opacity: 0.55;
+}
+.bnom {
+  display: grid;
+  min-width: 0;
+  line-height: 1.15;
+}
+.bnom b {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bnom span {
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.bval {
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.becart {
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+}
+.axeLigne {
+  display: grid;
+  grid-template-columns: var(--bl-cols);
+  gap: 10px;
+  padding: 0 8px;
+}
+.axe {
+  position: relative;
+  display: block;
+  height: 16px;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-2);
+}
+.axe > span {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.axeSeuil {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ——— la piste de zones (rouge sous 50, ambre de 50 à 69, neutre au-delà) ——— */
+.zp {
+  position: relative;
+  display: block;
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(to right, var(--fond-rouge) 0 50%, var(--fond-ambre) 50% 70%, var(--paper-2) 70% 100%);
+}
+.zp > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  height: 100%;
+  border-radius: 7px;
+}
+.zpR {
+  background: var(--zone-rouge);
+}
+.zpA {
+  background: var(--zone-ambre);
+}
+.zpE {
+  background: var(--acquis);
+}
+.zpFin {
+  height: 8px;
+  border-radius: 4px;
+}
+.zpFin > i {
+  border-radius: 4px;
+}
+/* pas de mesure (matière non mesurée, notion jamais vue ou en cours) : une piste vide à contour */
+.zpVide {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--pencil-2);
+}
+.seuil {
+  position: absolute;
+  left: 70%;
+  top: -5px;
+  bottom: -5px;
+  width: 0;
+  border-left: 2px dashed var(--ink);
+  opacity: 0.6;
+}
+.zpFin .seuil {
+  top: -4px;
+  bottom: -4px;
+}
+.zpVide .seuil {
+  display: none;
+}
+.rep {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 4px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--violet);
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+
+/* ——— le panneau : vue d'ensemble ou fiche de la matière ——— */
+.fiche {
+  container: fiche / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 452px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.ensGrille {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 22px;
+}
+.ensGrille[data-colonnes="1"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ensGauche,
+.ensDroite {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.ensDroite {
+  gap: 8px;
+}
+.ensGlobale {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ensGlobale > b {
+  font-size: 46px;
+  line-height: 0.95;
+  font-weight: 400;
+}
+.ensGlobale > span {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.ensAvant {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-size: 13.5px;
+}
+.kvl {
+  display: grid;
+  gap: 2px;
+}
+.kvl li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.kvl b {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ensForts {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.ensAction {
+  align-self: flex-start;
+  margin-top: auto;
+}
+.evog {
+  display: grid;
+  gap: 2px;
+}
+.ev {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 62px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.ev:hover {
+  background: var(--surface);
+}
+.evNom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.et {
+  position: relative;
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--piste);
+}
+.et > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--noir);
+}
+.evNeg .et > i {
+  background: var(--zone-rouge);
+}
+.evVal {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.astuce {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.ensDroite .astuce {
+  margin-top: auto;
+}
+
+/* la fiche d'une matière */
+.ficheTete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ficheNom {
+  font-size: 20px;
+  line-height: 1.1;
+}
+.ficheValeur {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.ficheValeur > b {
+  font-size: 44px;
+  line-height: 0.95;
+  font-weight: 400;
+}
+.ficheValeur > span {
+  font-size: 13px;
+}
+.ferme {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.ferme:hover {
+  border-color: var(--ink);
+}
+.kv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.kv li {
+  display: grid;
+  gap: 1px;
+  padding: 6px 9px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.kv span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.kv b {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ficheEvol {
+  display: grid;
+  gap: 6px;
+}
+.pas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.pas li {
+  display: grid;
+  gap: 1px;
+  padding: 6px 4px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+.pas li > span {
+  font-size: 11px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.pas li > b {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 14px;
+  font-weight: 600;
+}
+.pasOn {
+  border-color: var(--violet);
+  box-shadow: inset 0 0 0 1px var(--violet);
+}
+.pasAuj {
+  background: var(--noir);
+  border-color: var(--noir);
+  color: var(--sur-noir);
+}
+.pasAuj > span {
+  color: var(--sur-noir-2);
+}
+.ficheActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin-top: auto;
+}
+.fnListe {
+  display: grid;
+  max-height: 296px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.fn {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px 70px;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.fn > span:first-child {
+  padding: 4px 0;
+  line-height: 1.25;
+}
+.fn .mono {
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.fnJamais {
+  color: var(--ink-2);
+}
+.fnJamais .mono {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ——— « Ce que ça veut dire » ——— */
+.lire {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--lire-fond);
+  border: 1px solid var(--lire-bord);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.lire svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--violet);
+}
+.lire b {
+  color: var(--violet);
+}
+
+/* ——— mise en page selon la largeur : tablette, puis téléphone ——— */
+@container fiche (max-width: 620px) {
+  .ensGrille {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container racine (max-width: 1080px) {
+  .matCorps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .matGraphe {
+    min-height: 0;
+  }
+  .fiche {
+    min-height: 0;
+  }
+}
+@container racine (max-width: 760px) {
+  .teteMat {
+    display: grid;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .segVue {
+    display: flex;
+    width: 100%;
+  }
+  .segVue .opt {
+    flex: 1 1 0;
+  }
+  .opt,
+  .barresTete .opt {
+    min-height: 44px;
+  }
+  /* les segments étroits (la comparaison) deviennent des puces qui défilent */
+  .segEtroit {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    max-width: 100%;
+    padding: 2px 0;
+    overflow-x: auto;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    scrollbar-width: none;
+  }
+  .segEtroit::-webkit-scrollbar {
+    display: none;
+  }
+  .segEtroit .opt,
+  .segPuces .opt {
+    flex: none;
+    min-height: 44px;
+    padding: 0 15px;
+    border: 1.5px solid var(--pencil-2);
+    border-radius: 99px;
+    background: var(--surface);
+    font-size: 13.5px;
+  }
+  .segEtroit .opt:hover {
+    border-color: var(--ink);
+  }
+  .segEtroit .opt.encre,
+  .segPuces .opt.encre {
+    padding: 0 16.5px;
+    border-width: 0;
+  }
+  .comparer {
+    gap: 6px 10px;
+  }
+  .comparer > .segEtroit {
+    flex: 0 0 100%;
+  }
+  .commande {
+    gap: 8px;
+  }
+  .barresBoite {
+    --bl-cols: 84px minmax(0, 1fr) 48px 46px;
+    padding: 10px 4px 8px;
+  }
+  .barresTete {
+    padding: 0;
+  }
+  .barresAide {
+    display: none;
+  }
+  .bl,
+  .axeLigne {
+    gap: 6px;
+  }
+  .bl {
+    min-height: 44px;
+    padding: 2px 4px;
+  }
+  .axeLigne {
+    padding: 0 4px;
+  }
+  .bnom b {
+    font-size: 12.5px;
+  }
+  .bval {
+    font-size: 12.5px;
+  }
+  .rlab {
+    align-content: center;
+    min-height: 44px;
+  }
+  .fiche {
+    padding: 14px;
+  }
+  .ensGrille {
+    gap: 10px;
+  }
+  .ensGlobale > b {
+    font-size: 42px;
+  }
+  .ficheValeur > b {
+    font-size: 40px;
+  }
+  .ficheNom {
+    font-size: 19px;
+    line-height: 1.15;
+  }
+  .ferme {
+    width: 44px;
+    height: 44px;
+  }
+  .contour,
+  .contourPetit,
+  .boutonPetit {
+    min-height: 44px;
+  }
+  .ensAction {
+    margin-top: 0;
+  }
+  /* l'évolution des matières : deux colonnes de cartes, la barre sous le nom */
+  .evog {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, auto);
+    grid-auto-flow: column;
+    gap: 6px;
+  }
+  .ev {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "nom val"
+      "barre barre";
+    align-content: center;
+    gap: 5px 8px;
+    min-height: 44px;
+    padding: 5px 9px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    font-size: 12.5px;
+  }
+  .ev:hover {
+    border-color: var(--ink);
+  }
+  .evNom {
+    grid-area: nom;
+    font-weight: 600;
+  }
+  .evVal {
+    grid-area: val;
+  }
+  .ev .et {
+    grid-area: barre;
+    height: 6px;
+    border-radius: 3px;
+  }
+  .ev .et > i {
+    border-radius: 3px;
+  }
+  .fnListe {
+    max-height: none;
+  }
+  .fn {
+    grid-template-columns: minmax(0, 1fr) 56px 66px;
+    gap: 8px;
+  }
+  .lire {
+    padding: 12px;
+    font-size: 13.5px;
+  }
+}
+
+/* ——— mode discret : les zones prennent l'encre du site (comme S'entraîner) ——— */
+:global(html[data-discreet="1"]) .racine {
+  --zone-rouge: var(--ink);
+  --zone-ambre: var(--ink-2);
+  --pastille-ambre: var(--ink-2);
+  --fond-rouge: var(--line-2);
+  --fond-ambre: var(--line);
+}

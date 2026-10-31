@@ -381,8 +381,9 @@ async function main() {
     const repris = await lireAcquis(compte, "u4", { ...base, trophees: Promise.resolve(dejaLus) });
     check("lireAcquis : des trophées déjà lus sont repris tels quels, aucune RPC de trophées", repris.trophees === dejaLus && rpcs === 0, `${rpcs}`);
     const moi = readFileSync("app/moi/page.tsx", "utf8");
-    check("Moi : les trophées lus seulement sur Stats et Mes pièces, une fois, passés à l'étagère",
-      moi.includes(`tab === "stats" || tab === "pieces" ? lireTrophees(supabase, user.id)`) && moi.includes("lireEtagere(supabase, admin, user.id, tropheesLus)") && (moi.match(/lireTrophees\(/g) ?? []).length === 1);
+    // la synthèse (onglet Stats) lit sa salle des trophées elle-même (components/moi/synthese/donnees.ts)
+    check("Moi : les trophées lus seulement sur Mes pièces, une fois, passés à l'étagère",
+      moi.includes(`tab === "pieces" ? lireTrophees(supabase, user.id)`) && moi.includes("lireEtagere(supabase, admin, user.id, tropheesLus)") && (moi.match(/lireTrophees\(/g) ?? []).length === 1);
   }
 
   console.log("\n# Le style porté (lib/profil/styles.ts)");

@@ -1,5 +1,8 @@
 # Textures d'encre vivante par palette : public/encres/<palette>.webp (256 x 256).
-# Usage : python -I scripts/encres/generer.py
+# Usage : python -I scripts/encres/generer.py [palette ...]
+# Sans argument, toutes les palettes sont régénérées ; avec un ou plusieurs noms
+# (python -I scripts/encres/generer.py jade), seules celles-là le sont : les
+# autres .webp ne sont pas touchés.
 #
 # Source : public/ranks/v2/liquide-1.webp (l'argent des insignes, en niveaux de
 # gris), rendue sans couture (raccord en mosaïque : la texture dérive en boucle
@@ -81,6 +84,13 @@ def ecart_raccord(img):
 def main():
     with open(os.path.join(RACINE, "lib", "palettes.json"), encoding="utf-8") as f:
         palettes = json.load(f)["palettes"]
+    voulues = sys.argv[1:]
+    if voulues:
+        inconnues = [k for k in voulues if k not in [p["key"] for p in palettes]]
+        if inconnues:
+            print("palette inconnue :", ", ".join(inconnues))
+            return 1
+        palettes = [p for p in palettes if p["key"] in voulues]
     src = np.asarray(Image.open(SOURCE).convert("L").resize((COTE, COTE), Image.LANCZOS)).astype(float)
     t = niveaux(sans_couture(src))
     os.makedirs(SORTIE, exist_ok=True)

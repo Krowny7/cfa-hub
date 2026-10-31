@@ -7,9 +7,9 @@
 // l'historique (du plus récent au plus ancien, par jour de Paris, les
 // rétroactives à part, plafond et « et N plus anciennes ») ; les titres en
 // clair (quête, acte, contrats) ; la lecture (une requête légère, repli
-// silencieux sans la table, en dernier) ; la tuile (cible de Léonard, lien vers le Codex,
-// « à récupérer », pas de bouton « Récupérer ») et le bloc (résumé,
-// historique replié, absent sans historique) ; leur place dans Moi.
+// silencieux sans la table, en dernier) ; la ligne Codex de la carte du
+// joueur de Moi « La synthèse » (cible de Léonard, lien vers le Codex, « à
+// récupérer », pas de bouton « Récupérer ») et sa place dans Moi.
 import "./sans-css";
 import fs from "node:fs";
 import path from "node:path";
@@ -17,7 +17,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CODEX_MOI_VIDE, HISTORIQUE_MAX, codexMoiDe, lireCodexMoi, titreLigne, type LigneCodexMoi } from "@/lib/profil/codex-moi";
-import { BlocCodex, TuileCodex, resumeCodex } from "@/components/moi/CodexMoi";
+import { LigneCodex } from "@/components/moi/CodexMoi";
+import { codexSynthese } from "@/components/moi/synthese/modele";
 import { catalogueCodex } from "@/lib/codex/catalogue";
 
 // tsx compile le JSX à l'ancienne (React.createElement) : React global pour les composants rendus
@@ -100,40 +101,31 @@ console.log("# Les titres en clair");
   check("inconnue : « Une quête du Codex »", titreLigne("zzz:inconnue") === "Une quête du Codex");
 }
 
-console.log("# La tuile et le bloc");
+console.log("# La ligne Codex de la carte du joueur (Moi « La synthèse »)");
 {
-  const plein = { disponible: true, faites: 37, xp: 2140, aRecuperer: 2, historique: [{ jour: "2026-10-17", quetes: [{ cle: "a|", titre: "Corriger 5 ratures", xp: 20 }] }, { jour: null, quetes: [{ cle: "b|", titre: "Répondre à 10 questions", xp: 0 }] }], plusAnciennes: 3 };
-  check("le résumé : « 37 quêtes faites · 2 140 XP gagnés dans le Codex »", nbsp(resumeCodex(plein)) === "37 quêtes faites · 2 140 XP gagnés dans le Codex", resumeCodex(plein));
-  const tuile = nbsp(renderToStaticMarkup(<TuileCodex c={plein} />));
-  check("la tuile : cible de Léonard, titre « Codex », lien vers le Codex", tuile.includes('data-leonard="moi-codex"') && tuile.includes(">Codex<") && tuile.includes('href="/codex"') && tuile.includes("Ouvrir le Codex"));
-  check("la tuile dit où en est le joueur : à récupérer, quêtes faites, XP", tuile.includes("2 quêtes à récupérer") && tuile.includes("37 quêtes faites · 2 140 XP gagnés dans le Codex") && tuile.includes('href="#codex-historique"'));
-  check("le chiffre nu de la tuile (« 37 ») est caché aux lecteurs d'écran : la ligne le dit déjà", /<span class="t-micro font-mono font-semibold" aria-hidden="true">37<\/span>/.test(tuile));
-  check("la tuile n'a pas de bouton « Récupérer » (il vit dans le Codex et le panneau)", !tuile.includes("<button") && !tuile.includes("Tout récupérer"));
-  const neuve = renderToStaticMarkup(<TuileCodex c={CODEX_MOI_VIDE} />);
-  check("sans rien de fait (ou sans la table) : la phrase d'accueil et le lien, ni compte ni historique", neuve.includes("Des quêtes pour guider tes révisions") && neuve.includes('href="/codex"') && !neuve.includes("#codex") && !neuve.includes("à récupérer"));
-  const bloc = nbsp(renderToStaticMarkup(<BlocCodex c={plein} now={Date.parse("2026-10-17T12:00:00Z")} />));
-  // le résumé et le lien « Ouvrir le Codex » sont sur la tuile, en haut de Moi : le bloc ne les répète pas
-  check("le bloc : son ancre et un titre pour les lecteurs d'écran, sans répéter le résumé ni le lien de la tuile", bloc.includes('id="codex"') && bloc.includes('class="sr-only"') && !bloc.includes("37 quêtes faites · 2 140 XP gagnés dans le Codex") && !bloc.includes('href="/codex"'));
-  check("l'historique est replié", bloc.includes("<details") && !/<details[^>]*\sopen/.test(bloc) && bloc.includes("Historique"));
-  check("le repli porte l'ancre du lien « Historique » de la tuile, et s'ouvre à l'arrivée (OuvrirSurAncre)", bloc.includes('<details id="codex-historique"') && fs.readFileSync(path.join(RACINE, "components/moi/CodexMoi.tsx"), "utf8").includes("<OuvrirSurAncre id={ANCRE_HISTORIQUE} />"));
-  check("le résumé est une phrase en police courante, pas en t-num (réservé à un seul grand chiffre)", !/class="[^"]*t-num[^"]*">37 quêtes faites/.test(bloc));
-  check("les jours : « Aujourd'hui », puis les quêtes comptées à l'arrivée ; l'XP de chaque quête", bloc.includes("Aujourd&#x27;hui") && bloc.includes("Comptées à ton arrivée") && bloc.includes("+20 XP") && bloc.includes("Corriger 5 ratures"));
-  check("au-delà du plafond : « et 3 plus anciennes »", bloc.includes("et 3 plus anciennes"));
-  const hier = renderToStaticMarkup(<BlocCodex c={{ ...plein, historique: [{ jour: "2026-10-16", quetes: plein.historique[0].quetes }, { jour: "2026-10-14", quetes: plein.historique[1].quetes }] }} now={Date.parse("2026-10-17T12:00:00Z")} />);
-  check("« Hier », puis la date courte", hier.includes("Hier") && hier.includes("Mer. 14 oct."), hier.match(/t-eyebrow m-0">[^<]*/g)?.join(" ; ") ?? "");
-  check("pas d'historique : pas de bloc", renderToStaticMarkup(<BlocCodex c={{ ...plein, historique: [] }} />) === "" && renderToStaticMarkup(<BlocCodex c={CODEX_MOI_VIDE} />) === "");
+  const plein = { faites: 37, xp: 2140, aRecuperer: 2 };
+  const ligneHtml = nbsp(renderToStaticMarkup(<LigneCodex c={plein} />));
+  check("la ligne : cible de Léonard, titre « Codex », lien vers le Codex", ligneHtml.includes('data-leonard="moi-codex"') && ligneHtml.includes(">Codex<") && ligneHtml.includes('href="/codex"'));
+  check("elle dit où en est le joueur : quêtes faites, XP gagnée, à récupérer", /quêtes faites · 2.140.XP/.test(ligneHtml) && ligneHtml.includes("2 à récupérer"));
+  check("le chiffre nu (« 37 ») est caché aux lecteurs d'écran : la ligne dit déjà « quêtes faites »", /aria-hidden="true">37</.test(ligneHtml));
+  check("pas de bouton « Récupérer » (il vit dans le Codex et le panneau), pas d'historique", !ligneHtml.includes("<button") && !ligneHtml.includes("Tout récupérer") && !ligneHtml.includes("codex-historique"));
+  const neuve = nbsp(renderToStaticMarkup(<LigneCodex c={{ faites: 0, xp: 0, aRecuperer: 0 }} />));
+  check("rien de fait : la phrase d'accueil et le lien, ni XP ni « à récupérer »", neuve.includes("aucune quête faite pour l") && neuve.includes('href="/codex"') && !neuve.includes("à récupérer") && !neuve.includes(" XP"));
+  check(
+    "codexSynthese : les comptes de lireCodexMoi ; Codex fermé ou illisible : null (la ligne et la cible disparaissent)",
+    JSON.stringify(codexSynthese({ ...CODEX_MOI_VIDE, disponible: true, ...plein })) === JSON.stringify(plein) && codexSynthese(CODEX_MOI_VIDE) === null && codexSynthese(null) === null,
+  );
 }
 
-console.log("# Leur place dans Moi");
+console.log("# Sa place dans Moi");
 {
-  const cabinet = fs.readFileSync(path.join(RACINE, "components/moi/Cabinet.tsx"), "utf8");
+  const carte = fs.readFileSync(path.join(RACINE, "components/moi/synthese/CarteJoueur.tsx"), "utf8");
+  const donnees = fs.readFileSync(path.join(RACINE, "components/moi/synthese/donnees.ts"), "utf8");
   const page = fs.readFileSync(path.join(RACINE, "app/moi/page.tsx"), "utf8");
-  check("la tuile Codex vient en tête des tuiles de Moi", cabinet.includes("<TuileCodex") && cabinet.indexOf("<TuileCodex") < cabinet.indexOf("CAB.tuileObjectif") && cabinet.indexOf("<TuileCodex") < cabinet.indexOf("CAB.tuileMarquees"));
-  check("sur téléphone, la carte du cabinet passe après les tuiles (la tuile Codex reste haut) ; à sa place sur ordinateur", /<CarteCabinet[^>]*className="order-last lg:order-none /.test(cabinet));
-  check("sur téléphone, la tuile Codex passe avant le héros (tuiles en display: contents, la tuile en order-first)", cabinet.includes('className={"contents md:grid ') && /<TuileCodex[^>]*className="order-first md:order-none /.test(cabinet));
-  check("la tuile n'est posée que si le Codex est lisible (pas de lien vers un Codex fermé)", cabinet.includes("{d.codex?.disponible && <TuileCodex"));
-  check("le bloc Codex suit la Salle des trophées", cabinet.indexOf("<BlocCodex") > cabinet.indexOf("<SalleDesTrophees"));
-  check("Moi lit le Codex sur Stats seulement, sans le moteur", page.includes('tab === "stats" ? lireCodexMoi(') && !page.includes("lireCodex(") && !page.includes("lib/codex/serveur"));
+  check("la carte du joueur pose la ligne seulement si le Codex est lisible, et le lien « Récupérer mes N quêtes » s'il y en a", carte.includes("{j.codex && (") && carte.includes("<LigneCodex c={j.codex} />") && carte.includes("j.codex.aRecuperer > 0"));
+  check("la synthèse lit le Codex sans l'historique ni le moteur", donnees.includes("lireCodexMoi(supabase, id, { sobre: lireSobre(user), historique: false })") && !donnees.includes("lireCodex(") && !donnees.includes("lib/codex/serveur"));
+  check("les autres onglets de Moi ne lisent plus le Codex", !page.includes("lireCodexMoi(") && !page.includes("lireCodex("));
+  check("plus de tuile ni de bloc Codex dans Moi (l'historique vit dans le Codex)", !fs.readFileSync(path.join(RACINE, "components/moi/CodexMoi.tsx"), "utf8").includes("export function TuileCodex") && !fs.existsSync(path.join(RACINE, "components/moi/Cabinet.tsx")));
 }
 
 /** La lecture (asynchrone) : en dernier. */

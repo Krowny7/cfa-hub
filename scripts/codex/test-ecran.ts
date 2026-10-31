@@ -62,7 +62,7 @@ check("les trois onglets masquables sont bien dans la table de la navigation", O
 console.log("\n# la navigation");
 check("quatre espaces, sans le Codex (il s'ouvre depuis Moi)", SPACES.length === 4 && SPACES.every((x) => (x.key as string) !== "codex" && x.href !== "/codex"), SPACES.map((x) => x.key).join());
 check("/codex et ses liens profonds allument « Moi »", activeSpace("/codex") === "moi" && activeSpace("/codex/x") === "moi");
-check("la palette du Codex reste « carnet » (par la route), celle de Moi « ébène »", paletteDeChemin("/codex")?.key === "carnet" && paletteDeChemin("/moi")?.key === "ebene");
+check("la palette du Codex reste « carnet » (par la route), celle de Moi « jade »", paletteDeChemin("/codex")?.key === "carnet" && paletteDeChemin("/moi")?.key === "jade");
 check("l'accueil : / et /dashboard, rien d'autre", estAccueil("/") && estAccueil("/dashboard") && !estAccueil("/dashboard/x") && !estAccueil("/codex"));
 const visibles = (d: string[] | "tout") => SPACES.filter((s) => s.key === "moi" || !DEVOILE_DE_L_ESPACE[s.key] || devoileLite(d, DEVOILE_DE_L_ESPACE[s.key]!)).map((s) => s.key).join();
 check("compte neuf : Moi seulement (l'accueil a le logo, et son onglet sur téléphone)", visibles([]) === "moi", visibles([]));

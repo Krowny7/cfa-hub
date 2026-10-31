@@ -1,0 +1,537 @@
+/* La « Carte du programme » de la page Moi « La synthèse » (maquette D) : une
+   rangée par matière (colonne de 172 px, puis une grille de cases), une case
+   par notion. Les jetons viennent de .racine (Synthese.module.css) : --noir,
+   --violet, --acquis, --zone-rouge, --pastille-ambre, --fond-rouge,
+   --fond-ambre, --piste, --choisi, --lire-fond, --lire-bord.
+   Règles de DA : aucune encre vive dans cette carte, tout en aplats ; les cases
+   « acquise » sont vertes (--acquis, texte blanc, 7:1) ; rouge et ambre sont
+   des couleurs de DONNÉES. Les colonnes suivent la largeur du bloc (requêtes de
+   conteneur, comme le reste de la page) : 10 colonnes de cases au-dessus de
+   1080 px, 8 jusqu'à 900 px, 6 jusqu'à 760 px, puis 6 colonnes au chiffre seul
+   (le nom reste dans aria-label et title) avec un panneau sous la grille. */
+
+.carteProg {
+  --cp-encours: #eeecf2;
+  --cp-encours-bord: #d9d5e2;
+  --cp-encours-texte: #3a3744;
+  --cp-jamais-bord: #bdbdb5;
+}
+:global(html[data-theme="nuit"]) .carteProg {
+  --cp-encours: color-mix(in srgb, var(--violet) 22%, var(--surface));
+  --cp-encours-bord: color-mix(in srgb, var(--violet) 42%, var(--surface));
+  --cp-encours-texte: var(--ink);
+  --cp-jamais-bord: #4a4a52;
+}
+.ancre {
+  scroll-margin-top: 96px;
+}
+
+/* ——— l'en-tête ——— */
+.entete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.compteur {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: none;
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.carteProg .compteur b {
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--ink);
+}
+.texteTel {
+  display: none;
+}
+
+/* ——— la légende et le retour à la vue d'ensemble ——— */
+.barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.legende > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.carteProg .legende b {
+  font-weight: 700;
+  color: var(--ink);
+}
+.sw {
+  display: block;
+  flex: none;
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+}
+.swR {
+  background: var(--zone-rouge);
+}
+.swA {
+  background: var(--pastille-ambre);
+}
+.swE {
+  background: var(--acquis);
+}
+.swC {
+  background: var(--cp-encours);
+  box-shadow: inset 0 0 0 1px var(--cp-encours-bord);
+}
+.swN {
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1.5px dashed var(--cp-jamais-bord);
+}
+.raz {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--violet);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.raz:hover {
+  background: var(--choisi);
+}
+.raz:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+
+/* ——— la grille : une rangée par matière ——— */
+.grille {
+  display: grid;
+  gap: 6px;
+}
+.rang {
+  display: grid;
+  grid-template-columns: 172px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+.lm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  min-height: 54px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--well);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.lm:hover {
+  background: color-mix(in srgb, var(--ink) 9%, var(--well));
+}
+.lm:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+/* la matière isolée : sélection violette dans la page, pas d'encre */
+.lm.on {
+  background: var(--choisi);
+  box-shadow: inset 0 0 0 1.5px var(--violet);
+}
+.lm.off {
+  opacity: 0.55;
+}
+.lmNom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.carteProg .lmNom b {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lmVal {
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.pt {
+  display: block;
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.ptR {
+  background: var(--zone-rouge);
+}
+.ptA {
+  background: var(--pastille-ambre);
+}
+.ptE {
+  background: var(--acquis);
+}
+.ptN {
+  box-sizing: border-box;
+  border: 1.5px solid var(--ink-3);
+}
+
+.cases {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-auto-rows: 54px;
+  gap: 6px;
+}
+
+/* ——— une case : un lien vers la fiche (sinon le cours) de la notion ——— */
+.cel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2px;
+  min-width: 0;
+  padding: 4.5px 6.5px 5.5px;
+  border: 1.5px solid transparent;
+  border-radius: 9px;
+  overflow: hidden;
+  color: var(--ink);
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+.carteProg .cel b {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+.cel > span {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.rou {
+  background: var(--zone-rouge);
+  color: #fff;
+}
+.amb {
+  background: var(--pastille-ambre);
+  color: #1a120b;
+}
+/* acquise : l'aplat vert, texte blanc */
+.acq {
+  background: var(--acquis);
+  color: #fff;
+}
+/* en cours (1 à 7 réponses) : case pâle, « 3/8 » */
+.enc {
+  background: var(--cp-encours);
+  border-color: var(--cp-encours-bord);
+  color: var(--cp-encours-texte);
+}
+/* jamais vue : case blanche au bord pointillé */
+.jam {
+  background: var(--surface);
+  border-style: dashed;
+  border-color: var(--cp-jamais-bord);
+  color: var(--ink-2);
+}
+.cel:hover {
+  box-shadow: 0 0 0 2px var(--violet);
+}
+.cel:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+.cel.off {
+  opacity: 0.22;
+}
+.cel.off:hover,
+.cel.off:focus-visible {
+  opacity: 1;
+}
+
+/* ——— le panneau du téléphone (caché au-dessus de 760 px) ——— */
+.panneau {
+  display: none;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--violet) 30%, transparent);
+  border-radius: 12px;
+  background: var(--choisi);
+}
+.panneauTete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.panneauTexte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.carteProg .panneauTexte h3 {
+  font-size: 18px;
+  line-height: 1.15;
+}
+.astuce {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.ferme {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: -6px -6px 0 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.ferme:hover {
+  background: var(--choisi);
+  color: var(--ink);
+}
+.ferme:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+.liste {
+  display: grid;
+  gap: 2px;
+}
+.ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.ligne:hover {
+  background: color-mix(in srgb, var(--violet) 10%, transparent);
+}
+.ligne:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: -2px;
+}
+.ligneNom {
+  min-width: 0;
+  line-height: 1.25;
+}
+.ligneVal {
+  min-width: 34px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--ink-2);
+}
+/* la barre fine : zones rouge et ambre en fond, seuil de 70 % en pointillé */
+.fin {
+  position: relative;
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--fond-rouge) 0 50%, var(--fond-ambre) 50% 70%, var(--piste) 70% 100%);
+}
+.fin > i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+.finR {
+  background: var(--zone-rouge);
+}
+.finA {
+  background: var(--zone-ambre);
+}
+.finE {
+  background: var(--acquis);
+}
+.seuil {
+  position: absolute;
+  left: 70%;
+  top: -2px;
+  bottom: -2px;
+  border-left: 1.5px dashed var(--noir);
+}
+.astuceTel {
+  display: none;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* ——— « Ce que ça veut dire » ——— */
+.lire {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--lire-bord);
+  border-radius: 12px;
+  background: var(--lire-fond);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.lire svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--violet);
+}
+.carteProg .lire b {
+  color: var(--violet);
+}
+
+/* ——— de moins en moins de place ——— */
+@container (max-width: 1080px) {
+  .cases {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+@container (max-width: 900px) {
+  .cases {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+@container (max-width: 760px) {
+  .entete {
+    display: grid;
+    gap: 8px;
+  }
+  .carteProg .compteur b {
+    font-size: 26px;
+  }
+  .texteGrand {
+    display: none;
+  }
+  .texteTel {
+    display: block;
+  }
+  .legende {
+    gap: 4px 12px;
+    font-size: 12px;
+  }
+  .rang {
+    grid-template-columns: 100px minmax(0, 1fr);
+    gap: 6px;
+  }
+  .grille {
+    gap: 4px;
+  }
+  .cases {
+    grid-auto-rows: 48px;
+    gap: 4px;
+  }
+  .lm {
+    display: grid;
+    align-content: center;
+    gap: 2px;
+    min-height: 48px;
+    padding: 0 8px;
+  }
+  .lmNom {
+    gap: 6px;
+  }
+  .carteProg .lmNom b {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  .lmVal {
+    padding-left: 15px;
+    font-size: 11.5px;
+  }
+  .pt {
+    width: 7px;
+    height: 7px;
+  }
+  /* le chiffre seul : le nom reste dans aria-label et title */
+  .cel {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 7px;
+  }
+  .cel > span {
+    display: none;
+  }
+  .carteProg .cel b {
+    font-size: 12px;
+  }
+  .panneau {
+    display: grid;
+  }
+  .astuceTel {
+    display: block;
+  }
+  .lire {
+    padding: 12px;
+    font-size: 13.5px;
+  }
+}
+
+/* ——— mode discret : le violet cède à l'encre du site ——— */
+:global(html[data-discreet="1"]) .raz,
+:global(html[data-discreet="1"]) .lire svg,
+:global(html[data-discreet="1"]) .carteProg .lire b {
+  color: var(--ink);
+}
+
+/* ——— mouvement réduit ——— */
+@media (prefers-reduced-motion: reduce) {
+  .lm,
+  .cel {
+    transition: none;
+  }
+}

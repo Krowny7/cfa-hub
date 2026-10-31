@@ -71,6 +71,11 @@ export type SessionItem = {
   href: string | null;
 };
 
+// Depuis « La synthèse » (onglet stats, components/moi/synthese), la page ne lit
+// plus ici que ce que montrent les autres onglets (le registre, Mes pièces, les
+// réglages) : les champs du cabinet d'avant (série, XP, matières, sessions,
+// réponses, points faibles, trophées, Codex, temps) sont facultatifs, laissés
+// pour les aperçus.
 export type MoiData = {
   userId: string;
   name: string;
@@ -78,9 +83,9 @@ export type MoiData = {
   /** date d'examen (AAAA-MM-JJ), null si pas fixée */
   examDate: string | null;
   /** jours d'encre (aujourd'hui compris s'il est fait, sinon jusqu'à hier) : la série d'encre (10 questions, joker), l'ancien calcul sans la migration */
-  streak: number;
+  streak?: number;
   /** le bâton du jour : fait (10 questions), en attente, ou sec le soir (etatDuJour) */
-  dayState: EtatJour;
+  dayState?: EtatJour;
   /** questions qui manquent pour que le jour compte ; absent ou null : ancien calcul, une réponse suffit */
   serieReste?: number | null;
   /** questions par jour qui comptent (10) ; absent ou null : ancien calcul */
@@ -92,20 +97,20 @@ export type MoiData = {
   /** progression dans le niveau, 0–100 */
   levelPct: number;
   xpToNextLevel: number;
-  xpWeek: number;
+  xpWeek?: number;
   /** XP et jours actifs sur les 30 derniers jours */
-  xp30: number;
-  activeDays30: number;
-  xpDays: { day: string; xp: number }[];
+  xp30?: number;
+  activeDays30?: number;
+  xpDays?: { day: string; xp: number }[];
   me: MyRank;
-  topics: TopicStat[];
+  topics?: TopicStat[];
   errors: FicheErrors;
   /** le carnet de ratures, toutes sources (available : false tant que la migration manque : l'onglet garde `errors`) */
   ratures: Ratures;
   /** dernières sessions, les plus récentes d'abord (vide : repli sur le navigateur) */
-  sessions: SessionItem[];
+  sessions?: SessionItem[];
   /** questions répondues, toutes sources, matière → thème → passage (lib/answer-stats) */
-  answers: AnswerStats;
+  answers?: AnswerStats;
   /** l'objectif de questions d'ici l'examen (courbe, ou proposition d'en fixer un) */
   objectif: EtatObjectif;
   /** les questions marquées (Moi › Marquées) */

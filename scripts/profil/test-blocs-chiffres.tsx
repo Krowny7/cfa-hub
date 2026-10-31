@@ -148,18 +148,18 @@ for (const [nom, k, Bloc] of BLOCS) {
   for (const f of FORMATS_PERMIS.reponses) {
     const a = rend(<ReponsesBloc d={AUTRE} f={f} edition={false} />);
     check(`réponses · ${f} : le même rendu chez un autre, en aperçu et pour un visiteur non connecté`, a === rend(<ReponsesBloc d={APERCU} f={f} edition={false} />) && a === rend(<ReponsesBloc d={RICHE} f={f} edition={false} />));
-    check(`réponses · ${f} : chez un autre, pas de lien vers le détail par matière`, !a.includes("/moi?onglet=stats"));
+    check(`réponses · ${f} : chez un autre, pas de lien vers le détail par matière`, !a.includes("/moi#matieres"));
   }
   // l'extra de celui dont c'est la page : le lien vers le détail par matière
   for (const f of ["tuile", "colonne", "heros", "bande"] as Format[]) {
     const autre = rend(<ReponsesBloc d={AUTRE} f={f} edition={false} />);
     const moi = rend(<ReponsesBloc d={MOI} f={f} edition={false} />);
     const sans = moi.replace(/<div class="mt-auto[^"]*"><a [^>]*>Le détail par matière.*?<\/a><\/div>/, "");
-    check(`réponses · ${f} · chez soi : « Le détail par matière » (vers Moi › Statistiques), le reste identique`, moi.includes("/moi?onglet=stats") && moi.includes("Le détail par matière") && sans === autre);
+    check(`réponses · ${f} · chez soi : « Le détail par matière » (vers Moi › Statistiques), le reste identique`, moi.includes("/moi#matieres") && moi.includes("Le détail par matière") && sans === autre);
   }
   const moiD = rend(<ReponsesBloc d={MOI} f="demi" edition={false} />);
-  check("réponses · chez soi, demi : le lien « Le détail » à droite", moiD.includes("/moi?onglet=stats") && moiD.includes("Le détail"));
-  check("réponses · demi chez un autre : pas de lien", !rend(<ReponsesBloc d={AUTRE} f="demi" edition={false} />).includes("/moi?onglet=stats"));
+  check("réponses · chez soi, demi : le lien « Le détail » à droite", moiD.includes("/moi#matieres") && moiD.includes("Le détail"));
+  check("réponses · demi chez un autre : pas de lien", !rend(<ReponsesBloc d={AUTRE} f="demi" edition={false} />).includes("/moi#matieres"));
 
   // sans résumé (pas de client admin) : le total seul, sans anneau ni sources
   for (const f of FORMATS_PERMIS.reponses) {

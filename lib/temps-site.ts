@@ -1,6 +1,6 @@
-// Le temps passé sur le site (migration_temps_site.sql) : la tuile « Temps
-// sur le site » de Moi (components/moi/TuileTemps) et celle du profil
-// (components/profil/blocs/Temps). Deux parts, gardées à part en base :
+// Le temps passé sur le site (migration_temps_site.sql) : la ligne « Temps
+// sur le site » de la carte du joueur de Moi (components/moi/synthese) et la
+// tuile du profil (components/profil/blocs/Temps). Deux parts, gardées à part en base :
 // - estimée : le passé, d'après les traces horodatées (réponses, séances,
 //   examens blancs, défis…), calculé une fois par
 //   scripts/temps/estimer-historique.mjs ; c'est un minimum ;

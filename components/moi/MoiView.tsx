@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { FilMoi } from "@/components/moi/Briques";
-import { Cabinet } from "@/components/moi/Cabinet";
 import { OngletParAncre } from "@/components/moi/Clients";
 import { Registre } from "@/components/moi/Registre";
 import type { MoiTab } from "@/components/moi/data";
@@ -8,8 +7,9 @@ import type { MoiData } from "@/components/moi/types";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
 import { CAB, REG } from "@/lib/voice-moi";
 
-// Espace « Moi » (refonte, variante B « Le Cabinet ») : la page d'accueil de
-// l'espace est ton cabinet (?onglet=stats, par défaut) ; le carnet de ratures
+// Espace « Moi » : la page d'accueil de l'espace (?onglet=stats, par défaut)
+// est « La synthèse » (components/moi/synthese), rendue par la page elle-même
+// avec ses propres lectures ; ici, les autres onglets. Le carnet de ratures
 // (?onglet=erreurs) et les marquées (?onglet=marquees) ont chacun une page de
 // liste (« Le registre ») ; l'étagère des pièces (?onglet=pieces) et les
 // réglages (?onglet=reglages) la leur. Les anciens liens restent valables.
@@ -20,14 +20,15 @@ export function MoiView({
   d,
   settings,
   pieces = null,
-  tab = "stats",
+  tab,
   vueMarquees,
   now,
 }: {
   d: MoiData;
   settings: React.ReactNode;
   pieces?: React.ReactNode;
-  tab?: MoiTab;
+  /** « stats » : rien ici (la page rend la synthèse) */
+  tab: MoiTab;
   /** Moi › Marquées : les questions ou les flashcards (absent : les questions, ou les flashcards s'il n'y a qu'elles) */
   vueMarquees?: "questions" | "flashcards";
   now?: number;
@@ -35,9 +36,7 @@ export function MoiView({
   return (
     <>
       <OngletParAncre />
-      {tab === "stats" ? (
-        <Cabinet d={d} now={now} />
-      ) : tab === "erreurs" ? (
+      {tab === "stats" ? null : tab === "erreurs" ? (
         <Registre d={d} liste="ratures" now={now} />
       ) : tab === "marquees" ? (
         <Registre d={d} liste="marquees" vue={vueMarquees} now={now} />
