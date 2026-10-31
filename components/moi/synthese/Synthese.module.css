@@ -476,7 +476,8 @@
 .objJauge {
   align-items: flex-start;
 }
-.trajGrand {
+/* la petite trajectoire (dans sa colonne) ou la grande (pleine largeur, carte étroite) : .trajSvg pose display: block, d'où la double classe */
+.trajSvg.trajGrand {
   display: none;
 }
 .trajSvg {
@@ -879,8 +880,9 @@ a.stat:hover {
 
 /* ——— mise en page selon la largeur du bloc ——— */
 @container (max-width: 1080px) {
-  .rangee > *,
-  .rangee[data-n] > * {
+  /* double classe : l'emporte sur les largeurs .c4, .c8… posées plus bas */
+  .rangee.rangee > *,
+  .rangee.rangee[data-n] > * {
     grid-column: span 12;
   }
   .salle {
@@ -972,10 +974,10 @@ a.stat:hover {
     border-left: 0;
     border-top: 1px solid var(--line);
   }
-  .trajPetit {
+  .trajSvg.trajPetit {
     display: none;
   }
-  .trajGrand {
+  .trajSvg.trajGrand {
     display: block;
   }
   .objJauge {

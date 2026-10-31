@@ -400,7 +400,11 @@ button.boutonPetit {
   .rangee {
     gap: 12px;
   }
-  .rangee[data-n] > * {
+  /* aussi fort que les règles de la tablette au-dessus (data-n="3" et la classe de largeur), qui s'appliquent encore ici */
+  .rangee[data-n] > *,
+  .rangee[data-n] > .c3,
+  .rangee[data-n] > .c4,
+  .rangee[data-n] > .c5 {
     grid-column: span 12;
   }
   .genres {
