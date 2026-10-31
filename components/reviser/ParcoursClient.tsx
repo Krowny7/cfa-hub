@@ -19,7 +19,7 @@ import s from "./Parcours.module.css";
 // La carte du cours est une carte sombre unie (noyer ; pas d'encre : demande
 // de l'utilisateur). Son bouton est rempli du vrai fluide de l'onglet
 // « Réviser » (EncreVive, palette studiolo ; texture de repli et voile :
-// .rl-encre de globals.css) ; sa pastille d'étape, de la texture qui dérive.
+// .rl-encre de globals.css), comme sa pastille d'étape.
 // Les variables --pal-* viennent de la racine de la page (ReviserView). La
 // carte garde .card-ink : en mode discret, la carte sombre neutre du site.
 
@@ -48,6 +48,7 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
     <li className={"card-ink " + s.carte + " " + s.c1} data-leonard="cours">
       <div className={s.haut}>
         <span className={"rl-encre " + s.etape + " " + s.encre + " t-num"} data-palette={PAL.key} aria-hidden>
+          <EncreVive tons={PAL.liquide} echelle={48} />
           1
         </span>
         <span className={s.eyebrow}>{RV.coursEtape}</span>

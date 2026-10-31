@@ -9,7 +9,7 @@
 import fs from "node:fs";
 import React from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { PODIUM_PLACES, RECOUVREMENT_VOLET, VOLET_LARGEUR_MIN, idsDuPodium, joueursDuPodium, placerVolet } from "@/components/classement/podium";
+import { PODIUM_PLACES, RECOUVREMENT_VOLET, TEXTE_VOLET, VOLET_LARGEUR_MIN, debordCalques, decalerVolet, idsDuPodium, joueursDuPodium, placerVolet } from "@/components/classement/podium";
 import { SCENE, SCENE_L } from "@/lib/profil/banniere";
 import type { BoardRow } from "@/components/classement/types";
 import { compositionExemple } from "../profil/composition-exemple";
@@ -83,6 +83,45 @@ async function main() {
     check("une page étroite, la place près du bord droit : par-dessus, décalé vers la gauche pour garder 6 px de marge", d.cote === "dessus" && Math.round(170 + 50 - L / 2 + d.dx + L) === 300 - 6, JSON.stringify(d));
     check("une page plus étroite que le volet : pas d'exception, un décalage fini", Number.isFinite(placerVolet({ hote: { left: 0, width: 80 }, bannieres: B, largeur: L, zone: { left: 0, right: 200 } }).dx));
     check("le volet est assez large pour se lire : 224 px au moins", VOLET_LARGEUR_MIN === 224 && fs.readFileSync("components/classement/Podium.module.css", "utf8").includes(`${VOLET_LARGEUR_MIN}px`) && sous > 0);
+  }
+
+  console.log("\n# Le volet ne se cache pas derrière ce qui déborde de la bannière, ni sous le bord de la carte");
+  {
+    const B = { gauche: -SCENE.x0 / SCENE_L, droite: (100 - SCENE.x0) / SCENE_L };
+    const L = 224;
+    const sous = L * RECOUVREMENT_VOLET;
+    // la composition d'exemple : pièces de 140 % (20 % de chaque côté), personnage de 110 % (5 %)
+    const c = compositionExemple({ pieces: "hexa", perso: "fier" });
+    const deb = debordCalques([c.perso, c.haut, c.bas]);
+    check("ce qui déborde : les pièces par défaut dépassent de 20 % de chaque côté", Math.abs(deb.gauche - 0.2) < 1e-6 && Math.abs(deb.droite - 0.2) < 1e-6, JSON.stringify(deb));
+    check("un calque sans image ne compte pas", egal(debordCalques([{ image: null, x: -25, l: 150 }]), { gauche: 0, droite: 0 }));
+    check("un calque dans la bannière : rien ne déborde", egal(debordCalques([{ image: "x", x: 10, l: 80 }]), { gauche: 0, droite: 0 }));
+    // la 2e place à 1440 px (mesurée) : place de 200 px, à 95 px du bord, la carte de 100 à 1340 : le volet s'ouvre à droite
+    const hote = { left: 95, width: 200 };
+    const largeB = hote.width * (B.droite - B.gauche);
+    const d = placerVolet({ hote, bannieres: B, largeur: L, zone: { left: 100, right: 1340 }, debord: deb });
+    const debutTexte = hote.left + hote.width * B.droite - sous + d.pousse + TEXTE_VOLET * L;
+    const finPieces = hote.left + hote.width * B.droite + deb.droite * largeB;
+    check("ouvert à droite : écarté pour que le texte commence après le bout des pièces (le pseudo n'est plus mangé)", d.cote === "droite" && d.pousse > 0 && debutTexte >= finPieces + 3, `${JSON.stringify(d)} texte ${debutTexte.toFixed(1)} pièces ${finPieces.toFixed(1)}`);
+    check("écarté, il passe encore derrière la bannière (6 px au moins)", sous - d.pousse >= 6 - 1e-9);
+    const sans = placerVolet({ hote, bannieres: B, largeur: L, zone: { left: 100, right: 1340 } });
+    check("sans débordement : pas d'écart, le même côté", sans.pousse === 0 && sans.cote === d.cote);
+    const g = placerVolet({ hote: { left: 600, width: 200 }, bannieres: B, largeur: L, zone: { left: 0, right: 1400 }, debord: deb });
+    check("ouvert à gauche : écarté de même", g.cote === "gauche" && g.pousse === d.pousse);
+    // juste la place à gauche : l'écart ne fait jamais sortir le volet de la zone, ni changer de côté
+    const bG = 400 + 200 * B.gauche;
+    const juste = placerVolet({ hote: { left: 400, width: 200 }, bannieres: B, largeur: L, zone: { left: bG + sous - L - 6 - 5, right: 1400 }, debord: deb });
+    check("peu de place : l'écart s'arrête au bord de la zone, le côté ne change pas", juste.cote === "gauche" && juste.pousse === 5, JSON.stringify(juste));
+    check("par-dessus la bannière : pas d'écart", placerVolet({ hote: { left: 127, width: 123 }, bannieres: B, largeur: L, zone: { left: 0, right: 375 }, debord: deb }).pousse === 0);
+    // en hauteur : la carte coupe (1024 px, mesuré : le volet dépassait de 11 px en bas)
+    check("rien ne coupe en hauteur : pas de décalage", decalerVolet({ haut: 450, hauteur: 405, zone: { top: -Infinity, bottom: Infinity } }) === 0);
+    check("dans la carte : pas de décalage", decalerVolet({ haut: 450, hauteur: 405, zone: { top: 184, bottom: 900 } }) === 0);
+    check("il dépasse du bas de la carte : remonté, 6 px au-dessus du bord", decalerVolet({ haut: 450, hauteur: 405, zone: { top: 184, bottom: 844 } }) === 844 - 6 - 405 - 450);
+    check("il dépasse du haut : descendu, 6 px sous le bord", decalerVolet({ haut: 100, hauteur: 405, zone: { top: 130, bottom: 900 } }) === 36);
+    check("plus haut que la carte : collé en haut", decalerVolet({ haut: 100, hauteur: 405, zone: { top: 130, bottom: 400 } }) === 36);
+    const css = fs.readFileSync("components/classement/Podium.module.css", "utf8");
+    check("le CSS applique l'écart et le décalage (--pousse des deux côtés, --dy)", (css.match(/var\(--pousse, 0px\)/g) ?? []).length === 2 && css.includes("var(--dy, 0px)"));
+    check("la marge du texte du panneau est bien de 84 unités sur 470 (TEXTE_VOLET)", Math.abs(TEXTE_VOLET - 84 / 470) < 1e-12 && /\[data-cote="droite"\] \.contenu \{\s*padding-left: calc\(var\(--u\) \* 84\)/.test(fs.readFileSync("components/profil/PanneauJoueur.module.css", "utf8")));
   }
 
   console.log("\n# Les panneaux du podium : lecture qui dégrade proprement");

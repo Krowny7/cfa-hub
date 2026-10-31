@@ -452,22 +452,28 @@ img.leoStage {
   border-radius: 138px;
   border: 2.5px dashed rgba(201, 162, 74, 0.5);
 }
-/* le tapis : vert, à la texture d'encre du site (public/encres/atelier.webp) */
+/* le tapis : le vrai liquide vert (EncreVive, encres.ts : TAPIS) ; ce fond n'est que le repli immobile ; la lumière et le
+   vignettage passent au-dessus du liquide (.feutreLumiere) */
 .feutre {
   position: absolute;
   inset: 32px;
   border-radius: 118px;
   background:
-    radial-gradient(ellipse 46% 52% at 50% 46%, rgba(225, 255, 238, 0.2), rgba(225, 255, 238, 0) 100%),
     linear-gradient(rgba(6, 24, 15, 0.2), rgba(6, 24, 15, 0.2)),
     linear-gradient(rgba(34, 86, 62, 0.66), rgba(34, 86, 62, 0.66)),
     linear-gradient(#256044, #256044),
     url("/encres/atelier.webp") 30% 40% / 1000px auto,
     #1b4b35;
-  background-blend-mode: normal, normal, normal, color, normal, normal;
-  box-shadow:
-    inset 0 0 150px 28px rgba(0, 0, 0, 0.55),
-    0 0 0 3px #0a0705;
+  background-blend-mode: normal, normal, color, normal, normal;
+  box-shadow: 0 0 0 3px #0a0705;
+}
+.feutreLumiere {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(ellipse 46% 52% at 50% 46%, rgba(225, 255, 238, 0.2), rgba(225, 255, 238, 0) 100%);
+  box-shadow: inset 0 0 150px 28px rgba(0, 0, 0, 0.55);
 }
 .nappe svg {
   position: absolute;
@@ -525,6 +531,13 @@ img.leoStage {
   height: 26px;
   border-radius: 9px;
   background: #080604;
+}
+/* sur le liquide du tapis : un halo sombre garde les étiquettes lisibles sur les traînées claires */
+.etiquette,
+.etiquettePile {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.9),
+    0 0 10px rgba(0, 0, 0, 0.65);
 }
 .etiquette {
   position: absolute;
@@ -1320,7 +1333,9 @@ img.leoStage {
   white-space: nowrap;
   cursor: pointer;
 }
+/* le bouton vert : le vrai liquide du tapis (EncreVive) ; ce fond n'est que le repli immobile */
 .encreV {
+  position: relative;
   border: 0;
   color: #ffffff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);

@@ -2418,13 +2418,15 @@ html.rl-booting::before {
   background: var(--paper);
 }
 
-/* Onglet actif des barres de navigation : il se remplit de l'encre vivante de
-   la palette de la page (lib/palettes.ts ; textures dans public/encres). La
-   texture se répète sans couture et dérive d'exactement une tuile en boucle
-   (transform seul : rien à repeindre), sous un voile sombre qui garde le texte
-   blanc lisible. L'élément porte data-palette et les variables --pal-* (voir
-   styleDePalette). Coupé en mode discret ; figé avec prefers-reduced-motion et
-   data-rl-motion="off". Décor : pointer-events none. */
+/* Onglet actif des barres de navigation (et tout élément .rl-encre) : il se
+   remplit de l'encre vivante de la palette de la page, le liquide des insignes
+   (components/nav/EncreVive, à poser dans l'élément), sous un voile sombre qui
+   garde le texte blanc lisible. L'élément porte data-palette et les variables
+   --pal-* (voir styleDePalette). La texture (public/encres) n'est qu'un repli
+   IMMOBILE : sans WebGL, en mouvement réduit, avec data-rl-motion="off" et le
+   temps de la première image. Elle ne glisse jamais : pas de fausse animation,
+   l'encre ne bouge que quand c'est le vrai liquide. Coupé en mode discret.
+   Décor : pointer-events none. */
 html:not([data-discreet="1"]) .rl-encre[data-palette] {
   --encre-pas: 160px;
   overflow: hidden;
@@ -2433,12 +2435,10 @@ html:not([data-discreet="1"]) .rl-encre[data-palette] {
 html:not([data-discreet="1"]) .rl-encre[data-palette]::before {
   content: "";
   position: absolute;
-  inset: calc(var(--encre-pas) * -1 - 2px);
+  inset: 0;
   z-index: -2;
   pointer-events: none;
-  background: var(--pal-encre) 0 0 / var(--encre-pas) var(--encre-pas) repeat;
-  will-change: transform;
-  animation: rl-encre-derive 18s linear infinite;
+  background: var(--pal-encre) 30% 40% / var(--encre-pas) var(--encre-pas) repeat;
 }
 /* Le liquide des insignes (components/nav/EncreVive : canvas WebGL, même
    shader que les insignes de rang) recouvre la texture dès sa première image
@@ -2473,19 +2473,6 @@ html:not([data-discreet="1"]) .rl-encre-on {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
   /* le texte ne blanchit qu'à l'arrivée de la pastille, pas pendant qu'elle glisse */
   transition: color 0.18s ease 0.16s, transform var(--dur-1) var(--ease-spring);
-}
-@keyframes rl-encre-derive {
-  to {
-    transform: translate3d(var(--encre-pas), calc(var(--encre-pas) * -1), 0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rl-encre[data-palette]::before {
-    animation: none !important;
-  }
-}
-html[data-rl-motion="off"] .rl-encre[data-palette]::before {
-  animation: none !important;
 }
 
 /* La goutte d'encre du résultat (components/adn/GoutteVerdict) : pendant

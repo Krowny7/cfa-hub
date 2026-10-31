@@ -126,7 +126,7 @@ check("table : le dos de la carte (RL)", compte(t0, /class="dosRL">RL</g) === 3 
 
 const t1 = table({ ouverte: { id: id(2), face: "recto" } });
 check("recto : la carte 2 est soulevée, les autres couchées", phases(t1) === "010" && /data-libre/.test(t1) === false);
-check("recto : Léonard moqueur, « Retourner » (Espace), pas de jugement", /pose-moqueur\.webp"[^>]*class="leo leoOn/.test(t1) && t1.includes("Cherche la réponse") && t1.includes('Retourner<span class="kbd">Espace</span>') && !t1.includes('class="encreV"'));
+check("recto : Léonard moqueur, « Retourner » (Espace), pas de jugement", /pose-moqueur\.webp"[^>]*class="leo leoOn/.test(t1) && t1.includes("Cherche la réponse") && t1.includes('Retourner<span class="kbd">Espace</span>') && !/class="[^"]*\bencreV\b/.test(t1));
 check("recto : les autres cartes ne sont plus cliquables", compte(t1, /aria-disabled="true"/g) === 2);
 
 const t2 = table({ ouverte: { id: id(2), face: "verso" } });
@@ -174,7 +174,7 @@ const bilan = (verdicts: Record<string, boolean>, partie = EX) =>
 const bon = bilan(VERDICTS_BON);
 check("bilan bon (7 / 9) : Léonard fier, sa phrase, le chiffre, la pile de 7 jetons", /pose-fier\.webp"[^>]*class="leo leoOn/.test(bon) && bon.includes("la banque te doit 7 jetons") && bon.includes("<b>7</b>") && bon.includes("/ 9") && bon.includes('class="col" style="--n:7"') && bon.includes("7 jetons gagnés sur 9"));
 check("bilan bon : le récapitulatif, un pourcentage, une ligne par matière", bon.includes("3 mains") && bon.includes("9 cartes") && bon.includes("9 jetons en jeu") && bon.includes("soit 78 % de la partie") && compte(bon, /class="ligne"/g) === 3);
-check("bilan bon : une pastille par carte (7 pleines, 2 à revoir)", compte(bon, /class="pip"/g) === 9 && compte(bon, /class="pip" data-ok=""/g) === 7 && compte(bon, /data-ko=""/g) === 2);
+check("bilan bon : une pastille par carte (7 pleines, 2 à revoir)", compte(bon, /class="(?:rl-encre )?pip"/g) === 9 && compte(bon, /class="rl-encre pip" data-ok=""/g) === 7 && compte(bon, /data-ko=""/g) === 2);
 check("bilan bon : « À revoir (2) », leurs titres, « Rejouer les non maîtrisées (2) » et « Nouvelle partie »", bon.includes("À revoir (2)") && bon.includes("Rejouer les non maîtrisées (2)") && bon.includes("Nouvelle partie") && bon.includes("Quelle règle de production maximise le profit") && bon.includes("Breakeven, short-run shutdown, long-run exit"));
 check("bilan bon : « Sans faute » pour la matière FSA et « 2 maîtrisées » pour Fixed Income", bon.includes("Sans faute") && bon.includes("1 maîtrisée") && !bon.includes("À reprendre"));
 const VERDICTS_BAS = Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => [id(k), k <= 2]));

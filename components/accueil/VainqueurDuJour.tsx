@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { useHorsEcran } from "@/components/ui/useHorsEcran";
+import { EncreVive } from "@/components/nav/EncreVive";
+import { INSIGNES } from "@/lib/rank-badge";
 import { dayHref, dayLabel } from "@/lib/daily";
 import { TIERS, teinteDeRang } from "@/lib/ranks";
 import { pctScore } from "@/lib/voice";
@@ -21,14 +22,15 @@ import s from "./VainqueurDuJour.module.css";
 const FOND_PAR_DEFAUT = "/illustrations/defi-pupitre.webp";
 
 export function VainqueurDuJour({ v }: { v: Donnees }) {
-  const racine = useRef<HTMLAnchorElement | null>(null);
-  useHorsEcran(racine);
   const jour = dayLabel(v.day, "day");
   const nom = v.isMe ? VAINQUEUR.toi : v.name;
   const style = { "--liq": `url(/ranks/v2/liquide-${v.tier}.webp)`, "--teinte": teinteDeRang(v.tier) } as CSSProperties;
   return (
-    <Link ref={racine} href={dayHref(v.day)} className={s.bande} style={style}>
-      <span aria-hidden className={s.lisere} />
+    <Link href={dayHref(v.day)} className={s.bande} style={style}>
+      {/* le liseré : le vrai liquide du rang (EncreVive ; la texture du rang, immobile, en repli) */}
+      <span aria-hidden className={"rl-encre " + s.lisere} data-palette="rang">
+        <EncreVive tons={INSIGNES[v.tier].liquide} echelle={48} />
+      </span>
       <span aria-hidden className={s.peint}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={v.bannerUrl || FOND_PAR_DEFAUT} alt="" loading="lazy" decoding="async" draggable={false} />

@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { Avatar } from "@/components/classement/Avatar";
+import { Bouton } from "@/components/classement/Encre";
 import { CompteEnLigne, PresenceLigne } from "@/components/classement/AmisPresence";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
 import { fmtInt, ordinal } from "@/components/classement/format";
@@ -77,9 +78,9 @@ export function Amis({ rows }: { rows: AmiRow[] | null | undefined }) {
       <div className={s.amisVide}>
         <h3 className="font-brand">{AMIS.videTitre}</h3>
         <p className={s.sous}>{AMIS.videTexte}</p>
-        <Link href="/people" className={`${s.bouton} ${s.encre} rl-encre`} data-palette="san-romano">
+        <Bouton href="/people">
           <Search size={17} aria-hidden /> {AMIS.chercher}
-        </Link>
+        </Bouton>
       </div>
     );
   }

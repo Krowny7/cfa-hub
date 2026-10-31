@@ -2,10 +2,10 @@
    d'hier, sur fond de la bannière de son profil, un liseré d'encre vivante à la
    couleur de son rang. Carte sombre comme la bande du rang : toujours lisible,
    en clair comme en nuit.
-   Léger : une image, un liseré dont la texture dérive par transform ; en pause
-   hors écran (data-hors, posé par useHorsEcran) ; figé avec
-   prefers-reduced-motion et data-rl-motion="off" ; liseré coupé en mode
-   discret. Le décor ne capte jamais un clic. */
+   Léger : une image, un liseré du vrai liquide (EncreVive : il ne peint qu'à
+   l'écran ; texture immobile en repli, avec prefers-reduced-motion et
+   data-rl-motion="off") ; liseré coupé en mode discret. Le décor ne capte
+   jamais un clic. */
 
 .bande {
   --pas: 160px;
@@ -113,7 +113,7 @@
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* le liseré : le liquide du rang, tout en haut de la bannière */
+/* le liseré : le vrai liquide du rang, tout en haut de la bannière (.rl-encre de globals.css et EncreVive ; sa texture, immobile, en repli ; pas de voile) */
 .lisere {
   position: absolute;
   inset: 0 0 auto 0;
@@ -121,19 +121,10 @@
   height: 4px;
   overflow: hidden;
   pointer-events: none;
-}
-.lisere::before {
-  content: "";
-  position: absolute;
-  inset: calc(var(--pas) * -1 - 2px);
-  background: var(--liq) 0 0 / var(--pas) var(--pas) repeat;
-  will-change: transform;
-  animation: derive 14s linear infinite;
-}
-@keyframes derive {
-  to {
-    transform: translate3d(var(--pas), calc(var(--pas) * -1), 0);
-  }
+  --pal-encre: var(--liq);
+  --encre-pas: var(--pas);
+  --pal-voile-haut: 0;
+  --pal-voile-bas: 0;
 }
 
 @media (min-width: 768px) {
@@ -161,19 +152,10 @@
   }
 }
 
-.bande[data-hors="1"] .lisere::before {
-  animation-play-state: paused;
-}
-:global(html[data-rl-motion="off"]) .lisere::before {
-  animation: none;
-}
 :global(html[data-rl-motion="off"]) .peint img {
   transition: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .lisere::before {
-    animation: none;
-  }
   .peint img {
     transition: none;
   }

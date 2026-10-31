@@ -23,6 +23,9 @@ type Encre = {
   fondu: { de: number[][]; vers: number[][]; debut: number } | null;
   cle: string;
   peint: boolean;
+  /** affichée pour de vrai (ni visibility: hidden ni display: none chez elle ou ses parents : un volet fermé) ; relu toutes les 250 ms */
+  affichee: boolean;
+  relue: number;
 };
 
 type Entree = {
@@ -189,6 +192,13 @@ function peindreEncre(e: Entree, t: number) {
   const en = e.encre!;
   // mode discret : l'onglet n'a ni texture ni liquide (le CSS masque le canvas)
   if (!moteur || !e.canvas || !en.ref || document.documentElement.dataset.discreet === "1") return;
+  // à l'écran pour l'IntersectionObserver mais caché (le volet fermé du podium : visibility: hidden) : une seule image
+  // (le liquide est prêt à l'ouverture), puis rien
+  if (t > en.relue) {
+    en.relue = t + 250;
+    en.affichee = e.racine?.checkVisibility?.({ visibilityProperty: true, checkVisibilityCSS: true }) ?? true;
+  }
+  if (!en.affichee && en.peint) return;
   moteur.peindre(e.canvas, couleursEncre(en, t), ENCRE_GRAINE, ENCRE_T0 + ((t - e.depart) / 1000) * ENCRE_V, en.ref);
   if (!en.peint) {
     // dès la première image : le CSS retire la texture de repli
@@ -206,7 +216,7 @@ function peindreEncre(e: Entree, t: number) {
  */
 export function animerEncre(racine: HTMLElement, canvas: HTMLCanvasElement, tons: readonly string[], echelle = ENCRE_ECHELLE) {
   if (typeof window === "undefined") return { regler: (_: readonly string[]) => {}, arreter: () => {} };
-  const en: Encre = { ref: 0, courant: tons.map(rgb), fondu: null, cle: tons.join(), peint: false };
+  const en: Encre = { ref: 0, courant: tons.map(rgb), fondu: null, cle: tons.join(), peint: false, affichee: true, relue: 0 };
   const e: Entree = { palier: -1, encre: en, racine, canvas, bruit: null, eclairs: null, arcs: false, visible: false, depart: performance.now(), v: ENCRE_V, prochain: 0, fin: 0, derniere: 0 };
   entrees.add(e);
   parElement.set(racine, e);

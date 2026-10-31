@@ -68,10 +68,11 @@ export function BoutonEnvoi({
   );
 }
 
-/** Le sceau d'une carte en papier : une pastille d'encre, l'icône au centre. */
+/** Le sceau d'une carte en papier : une pastille du vrai liquide (EncreVive, motif resserré : echelle 64), l'icône au centre. */
 export function Sceau({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <span className={["rl-encre", s.encre, s.sceau, className ?? ""].filter(Boolean).join(" ")} data-palette={PAL.key} aria-hidden>
+      <EncreVive tons={PAL.liquide} echelle={64} />
       {children}
     </span>
   );

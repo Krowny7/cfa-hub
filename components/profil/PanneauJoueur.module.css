@@ -1,4 +1,4 @@
-/* Le panneau de gauche de la bannière : une plaque sombre à texture d'encre,
+/* Le panneau de gauche de la bannière : une plaque sombre au vrai liquide d'ébène (EncreVive, .rl-encre de globals.css),
    un filet de métal (la teinte du rang), un liseré vermillon ; le coin du haut
    gauche est coupé. Les mesures sont en unités de la carte (--u : un pixel
    d'une carte de 860 de large, lu sur le conteneur de la carte), chaque texte
@@ -46,12 +46,10 @@
   background: linear-gradient(180deg, color-mix(in srgb, var(--metal) 78%, #fff) 0%, var(--metal) 40%, color-mix(in srgb, var(--metal) 62%, #000) 100%);
   clip-path: polygon(calc(var(--u) * 45) 0, 100% 0, 100% 100%, 0 100%, 0 calc(var(--u) * 45));
 }
+/* le fond : le liquide (son voile : --pal-voile-*, posé par le composant) ; brun sombre uni en mode discret */
 .fondPlaque {
   inset: calc(var(--u) * 5);
-  background:
-    linear-gradient(180deg, rgba(12, 7, 4, 0.74), rgba(12, 7, 4, 0.9)),
-    url("/encres/ebene.webp") 30% 40% / calc(var(--u) * 520) auto,
-    #241b13;
+  background: #241b13;
   clip-path: polygon(calc(var(--u) * 43) 0, 100% 0, 100% 100%, 0 100%, 0 calc(var(--u) * 43));
 }
 

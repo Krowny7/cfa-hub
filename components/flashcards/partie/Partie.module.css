@@ -20,9 +20,11 @@
   flex-direction: column;
 }
 
+/* --leoTop : la place de son nom au-dessus de lui (« Léonard · croupier »), le portrait commence dessous */
 .leoBox {
+  --leoTop: 38px;
   position: relative;
-  height: 272px;
+  height: calc(272px + var(--leoTop));
   flex: none;
 }
 /* derrière Léonard, comme à la table : un disque de papier cerné d'un trait fin */
@@ -30,7 +32,7 @@
   content: "";
   position: absolute;
   left: 50%;
-  top: 22px;
+  top: calc(22px + var(--leoTop));
   width: 236px;
   height: 236px;
   margin-left: -118px;
@@ -39,12 +41,14 @@
   border: 1px solid var(--line-2);
   pointer-events: none;
 }
+/* le même portrait sert à la table et au bilan (PortraitLeonard), sans --leoTop : 0 par défaut, sinon
+   top et height tombent à auto et l'image dépasse de sa boîte (à la table, son bas sortait sous le tapis) */
 .leo {
   position: absolute;
   left: 0;
-  top: 0;
+  top: var(--leoTop, 0px);
   width: 100%;
-  height: 100%;
+  height: calc(100% - var(--leoTop, 0px));
   object-fit: cover;
   object-position: 50% 0;
   opacity: 0;
@@ -113,12 +117,8 @@
   margin-top: -84px;
   border-radius: 24px;
   transform: rotateX(56deg);
-  background:
-    linear-gradient(rgba(5, 20, 12, 0.4), rgba(5, 20, 12, 0.4)),
-    linear-gradient(#256044, #256044),
-    url("/encres/atelier.webp") 30% 40% / 640px auto,
-    #14301f;
-  background-blend-mode: normal, color, normal, normal;
+  /* vert uni : pas d'encre sur cette page */
+  background: linear-gradient(rgba(5, 20, 12, 0.4), rgba(5, 20, 12, 0.4)), #256044;
   box-shadow:
     0 0 0 6px #0d0906,
     0 0 0 7px rgba(201, 162, 74, 0.5);
@@ -208,16 +208,21 @@
 /* sur téléphone, Léonard prend moins de place : il garde la tête et la bulle, la table se replie */
 @media (max-width: 899px) {
   .leoBox {
-    height: 210px;
+    --leoTop: 34px;
+    height: calc(210px + var(--leoTop));
   }
   .leoBox::before {
-    top: 14px;
+    top: calc(28px + var(--leoTop));
     width: 180px;
     height: 180px;
     margin-left: -90px;
   }
-  .leo {
-    object-position: 50% 8%;
+  /* le haut de l'image est le haut du chapeau : rien n'est rogné au-dessus (sinon le chapeau est coupé
+     net sous le nom). Sur tablette, le portrait garde sa largeur de téléphone : à 100 % d'un panneau
+     large, on ne verrait que son chapeau. */
+  .leoBox .leo {
+    left: max(0px, 50% - 180px);
+    width: min(100%, 360px);
   }
   .vignette {
     display: none;
@@ -428,14 +433,11 @@
 .seg button + button {
   border-left: 1px solid var(--ink);
 }
+/* le choix actif et « Distribuer » : noir uni (l'encre du thème), sans texture */
 .seg button[aria-pressed="true"],
 .encre {
-  color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-  background:
-    linear-gradient(180deg, rgba(24, 14, 8, 0.31), rgba(24, 14, 8, 0.58)),
-    url("/encres/atelier.webp") 30% 40% / 260px auto,
-    #2a1d13;
+  color: var(--surface);
+  background: var(--ink);
 }
 .pas {
   display: inline-flex;
@@ -552,12 +554,10 @@
   font-size: 15px;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.25),
-    0 10px 20px -10px rgba(40, 25, 10, 0.6);
+  box-shadow: var(--shadow-1);
 }
 .encre:hover:not(:disabled) {
-  filter: brightness(1.12);
+  background: color-mix(in srgb, var(--ink) 84%, var(--surface));
 }
 .encre:disabled {
   cursor: default;
@@ -565,7 +565,6 @@
 .encre[data-off] {
   background: var(--pencil-2);
   color: var(--ink-2);
-  text-shadow: none;
   box-shadow: none;
 }
 .retour {
@@ -601,7 +600,8 @@
   }
 }
 
-/* ——— L'entrée : la carte « La partie de cartes » des pages Flashcards ——— */
+/* ——— L'entrée : la carte « La partie de cartes » des pages Flashcards ———
+   le tapis et le bouton : le vrai liquide (EncreVive, encres.ts) ; leur fond ci-dessous n'est que le repli immobile */
 .appel {
   --or: #c9a24a;
   position: relative;
@@ -689,6 +689,7 @@
   color: rgba(244, 244, 241, 0.86);
 }
 .appelAction {
+  position: relative;
   flex: none;
   display: inline-flex;
   align-items: center;

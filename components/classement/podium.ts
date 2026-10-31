@@ -41,6 +41,31 @@ export type CoteVolet = "gauche" | "droite" | "dessus";
 export const RECOUVREMENT_VOLET = 60 / 470;
 /** Le panneau a au moins cette largeur en pixels (en dessous, ses textes ne se liraient plus). */
 export const VOLET_LARGEUR_MIN = 224;
+/** La marge intérieure du panneau du côté de la bannière, où son texte commence (PanneauJoueur.module.css : 84 unités sur 470). */
+export const TEXTE_VOLET = 84 / 470;
+/** Ce que le volet garde au moins sous la bannière quand on l'écarte (pixels) : il sort toujours de derrière elle. */
+const SOUS_MIN = 6;
+/** L'écart entre le bout des calques qui débordent et le texte du volet (pixels). */
+const GARDE_TEXTE = 4;
+
+/**
+ * Ce qui déborde de la bannière à gauche et à droite (son personnage, ses
+ * pièces), en part de sa largeur : ces calques passent devant le volet. Sans
+ * en tenir compte, la pièce du haut (140 % de large par défaut : 20 % de
+ * chaque côté) cachait le début du pseudo du volet ouvert à droite.
+ * `calques` : x et l en % de la largeur de la bannière (lib/profil/banniere.ts) ;
+ * un calque sans image ne compte pas.
+ */
+export function debordCalques(calques: ReadonlyArray<{ image: string | null; x: number; l: number }>): { gauche: number; droite: number } {
+  let gauche = 0;
+  let droite = 0;
+  for (const k of calques) {
+    if (!k.image || !Number.isFinite(k.x) || !Number.isFinite(k.l)) continue;
+    gauche = Math.max(gauche, -k.x / 100);
+    droite = Math.max(droite, (k.x + k.l - 100) / 100);
+  }
+  return { gauche, droite };
+}
 
 /**
  * Le côté où poser le volet. `hote` : la boîte de la place sur la page (sa
@@ -48,20 +73,52 @@ export const VOLET_LARGEUR_MIN = 224;
  * comprises) ; `bannieres` : où la bannière commence et finit dans cette
  * boîte, en part de sa largeur (SCENE de lib/profil/banniere.ts) ; `largeur` :
  * celle du volet ; `zone` : ce que la page ne coupe pas (de gauche à droite,
- * en pixels de la fenêtre). `dx` : le décalage à ajouter pour rester dans la
- * zone, seulement pour « dessus ».
+ * en pixels de la fenêtre) ; `debord` : ce qui dépasse de la bannière de
+ * chaque côté (debordCalques). `dx` : le décalage à ajouter pour rester dans
+ * la zone, seulement pour « dessus ». `pousse` : de combien écarter le volet
+ * de la bannière (pixels, vers l'extérieur) pour que les calques qui
+ * débordent ne cachent pas son texte, dans la place qu'il reste ; il garde
+ * toujours un bord sous la bannière.
  */
-export function placerVolet(a: { hote: { left: number; width: number }; bannieres: { gauche: number; droite: number }; largeur: number; zone: { left: number; right: number }; marge?: number }): { cote: CoteVolet; dx: number } {
+export function placerVolet(a: {
+  hote: { left: number; width: number };
+  bannieres: { gauche: number; droite: number };
+  largeur: number;
+  zone: { left: number; right: number };
+  debord?: { gauche: number; droite: number };
+  marge?: number;
+}): { cote: CoteVolet; dx: number; pousse: number } {
   const marge = a.marge ?? 6;
   const bGauche = a.hote.left + a.hote.width * a.bannieres.gauche;
   const bDroite = a.hote.left + a.hote.width * a.bannieres.droite;
+  const largeBanniere = a.hote.width * (a.bannieres.droite - a.bannieres.gauche);
   const sous = a.largeur * RECOUVREMENT_VOLET;
-  const xGauche = bGauche + sous - a.largeur;
-  if (xGauche >= a.zone.left + marge) return { cote: "gauche", dx: 0 };
-  const xDroite = bDroite - sous;
-  if (xDroite + a.largeur <= a.zone.right - marge) return { cote: "droite", dx: 0 };
+  // l'écart voulu d'un côté : le bout des calques et la garde, moins ce que la marge du texte dépasse déjà de la bannière
+  const veut = (d: number) => Math.max(0, Math.min(sous - SOUS_MIN, Math.max(0, d) * largeBanniere + GARDE_TEXTE - (TEXTE_VOLET - RECOUVREMENT_VOLET) * a.largeur));
+  const placeGauche = bGauche + sous - a.largeur - (a.zone.left + marge);
+  if (placeGauche >= 0) return { cote: "gauche", dx: 0, pousse: Math.round(Math.min(veut(a.debord?.gauche ?? 0), placeGauche)) };
+  const placeDroite = a.zone.right - marge - (bDroite - sous + a.largeur);
+  if (placeDroite >= 0) return { cote: "droite", dx: 0, pousse: Math.round(Math.min(veut(a.debord?.droite ?? 0), placeDroite)) };
   // ni à gauche ni à droite : centré sur la place, ramené dans la zone
   const centre = a.hote.left + a.hote.width / 2 - a.largeur / 2;
   const x = Math.max(a.zone.left + marge, Math.min(a.zone.right - marge - a.largeur, centre));
-  return { cote: "dessus", dx: Math.round(x - centre) };
+  return { cote: "dessus", dx: Math.round(x - centre), pousse: 0 };
+}
+
+/**
+ * Le décalage vertical du volet (pixels, vers le bas si positif) pour qu'il
+ * tienne dans la bande que la page ne coupe pas : plus haut que la bannière et
+ * centré sur elle, il dépassait du bas de la carte « Classement général »
+ * (overflow: hidden) quand le podium en touche le bas. `haut` : son bord haut
+ * sans décalage ; `hauteur` : la sienne ; `zone` : de haut en bas, en pixels de
+ * la fenêtre (±Infinity : rien ne coupe). Plus haut que la zone : collé en haut.
+ */
+export function decalerVolet(a: { haut: number; hauteur: number; zone: { top: number; bottom: number }; marge?: number }): number {
+  const marge = a.marge ?? 6;
+  const min = a.zone.top + marge;
+  const max = a.zone.bottom - marge;
+  if (!Number.isFinite(a.haut) || !Number.isFinite(a.hauteur)) return 0;
+  if (a.hauteur > max - min || a.haut < min) return Number.isFinite(min) ? Math.round(min - a.haut) : 0;
+  if (a.haut + a.hauteur > max) return Math.round(max - a.hauteur - a.haut);
+  return 0;
 }

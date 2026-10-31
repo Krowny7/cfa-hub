@@ -32,8 +32,8 @@ import s from "./Parcours.module.css";
 // Couleurs : celles de l'onglet « Réviser » (palette studiolo, lib/palettes.ts :
 // styleDePalette sur la racine pose --pal-1 noyer … --pal-4 ivoire). L'encre
 // de l'onglet (.rl-encre, globals.css) revient sur la page : le vrai fluide
-// (EncreVive) dans les trois boutons, la texture qui dérive dans les pastilles
-// d'étape et les sceaux des lieux. La carte du cours reste une carte sombre unie.
+// (EncreVive) dans les trois boutons, les pastilles d'étape et les sceaux des
+// lieux. La carte du cours reste une carte sombre unie.
 
 /** Les trois one-pagers de l'éventail (vraies vignettes, public/one-pagers). */
 const EVENTAIL = ["ethics", "equity", "fixed-income"].filter((slug) => SUBJECTS.some((x) => x.onePager === slug));
@@ -47,7 +47,7 @@ export type ApercuReviser = { ecoute?: EcouteCours | null; sansCalcul?: boolean 
 
 const levable = (...cls: string[]) => [s.carte, s.papier, s.levable, ...cls].join(" ");
 
-/** La palette de la page (celle de l'onglet « Réviser ») et l'encre de l'onglet : le vrai fluide (EncreVive) dans les boutons, la texture qui dérive dans les pastilles et les sceaux. */
+/** La palette de la page (celle de l'onglet « Réviser ») et l'encre de l'onglet : le vrai fluide (EncreVive) dans les boutons, les pastilles et les sceaux. */
 const PAL = PALETTES.studiolo;
 const encre = (...cls: string[]) => ["rl-encre", s.encre, ...cls].join(" ");
 
@@ -60,6 +60,7 @@ function Bibliotheque({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser
         <Illustration nom="reviser-bibliotheque" position="50% 30%" decorative eager className={s.fond} />
         <div className={s.legende}>
           <span className={encre(s.sceau)} data-palette={PAL.key} aria-hidden>
+            <EncreVive tons={PAL.liquide} echelle={64} />
             <Icone nom="reviser" size={22} />
           </span>
           <span>
@@ -84,6 +85,7 @@ function Bibliotheque({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser
             <span className={s.texteC2}>
               <span className={s.haut}>
                 <span className={encre(s.etape, "t-num")} data-palette={PAL.key} aria-hidden>
+                  <EncreVive tons={PAL.liquide} echelle={48} />
                   2
                 </span>
                 <span className={s.eyebrow}>{RV.fichesEtape}</span>
@@ -118,6 +120,7 @@ function Bibliotheque({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser
         <li className={s.c3} data-leonard="fin">
           <h3 className={s.finTete}>
             <span className={encre(s.etape, "t-num")} data-palette={PAL.key} aria-hidden>
+              <EncreVive tons={PAL.liquide} echelle={48} />
               3
             </span>
             <span className={s.plume}>{RV.fin}</span>
@@ -187,6 +190,7 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
         <div className={s.lieuCorps}>
           <h2 id="reviser-atelier" className={"font-brand " + s.lieuTitre}>
             <span className={encre(s.sceau)} data-palette={PAL.key} aria-hidden>
+              <EncreVive tons={PAL.liquide} echelle={64} />
               <Icone nom="erreurs" size={20} />
             </span>
             {RV.atelier}

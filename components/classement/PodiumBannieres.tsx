@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { ArcElectrique } from "@/components/ui/ArcElectrique";
+import { EncreVive } from "@/components/nav/EncreVive";
 import { useHorsEcran } from "@/components/ui/useHorsEcran";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
 import { TitrePorte } from "@/components/profil/TitrePorte";
@@ -11,9 +12,11 @@ import { BanniereComposee } from "@/components/profil/BanniereComposee";
 import { PanneauJoueur } from "@/components/profil/PanneauJoueur";
 import { signed } from "@/components/classement/format";
 import type { BoardRow } from "@/components/classement/types";
-import { placerVolet, type CoteVolet } from "@/components/classement/podium";
-import { SCENE, SCENE_L, type Composition } from "@/lib/profil/banniere";
+import { debordCalques, decalerVolet, placerVolet, type CoteVolet } from "@/components/classement/podium";
+import { SCENE, SCENE_H, SCENE_L, SCENE_PX, type Composition } from "@/lib/profil/banniere";
 import type { PanneauVue } from "@/lib/profil/panneau-vue";
+import { PALETTES } from "@/lib/palettes";
+import { INSIGNES } from "@/lib/rank-badge";
 import { PLACEMENT_GAMES, TIERS, rankFor, teinteDeRang } from "@/lib/ranks";
 import { nombre, pct } from "@/lib/voice";
 import { PODIUM } from "@/lib/voice-z2a";
@@ -171,6 +174,49 @@ function panneauMinimal(r: BoardRow): PanneauVue {
 const BANNIERES = { gauche: -SCENE.x0 / SCENE_L, droite: (100 - SCENE.x0) / SCENE_L };
 
 /**
+ * La bande horizontale où le volet se voit en entier : l'écran, la page (main)
+ * et chaque parent qui coupe ce qui dépasse (overflow autre que visible : la
+ * carte « Classement général » a overflow: hidden). Sans ça, le volet s'ouvrait
+ * à gauche de la 2e place et la carte le coupait. En hauteur, seuls les parents
+ * qui coupent comptent (la page défile) : la même carte coupait le bas du volet
+ * quand le podium en touche le bas.
+ */
+function zoneVisible(el: HTMLElement): { left: number; right: number; top: number; bottom: number } {
+  let left = 0;
+  let right = document.documentElement.clientWidth;
+  let top = -Infinity;
+  let bottom = Infinity;
+  for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+    const cs = getComputedStyle(p);
+    const coupe = cs.overflowX !== "visible";
+    const coupeY = cs.overflowY !== "visible";
+    if (!coupe && !coupeY && p.tagName !== "MAIN") continue;
+    const r = p.getBoundingClientRect();
+    if (coupe || p.tagName === "MAIN") {
+      left = Math.max(left, r.left + (coupe ? p.clientLeft : 0));
+      right = Math.min(right, coupe ? r.left + p.clientLeft + p.clientWidth : r.right);
+    }
+    if (coupeY) {
+      top = Math.max(top, r.top + p.clientTop);
+      bottom = Math.min(bottom, r.top + p.clientTop + p.clientHeight);
+    }
+  }
+  return { left, right, top, bottom };
+}
+
+/**
+ * Le pseudo sur la bannière composée, en bas du cadre (5 % de sa hauteur au-dessus du bord bas), par-dessus le personnage.
+ * En unités de la place (cqw : sa largeur, la scène de 540 de large) : le cadre va de 16,7 à 83,3 % en largeur, et son
+ * bord bas est à (100 − y0) / hauteur de scène × 1105 / 540 de la largeur.
+ */
+const HAUT_SCENE = (SCENE_PX.h / SCENE_PX.l) * 100;
+const BAS_CADRE = ((100 - SCENE.y0) / SCENE_H) * HAUT_SCENE;
+const HAUT_CADRE = (100 / SCENE_H) * HAUT_SCENE;
+const LARGE_CADRE = (100 / SCENE_L) * 100;
+/** la taille du pseudo : 8 cqw au plus, moins pour un long pseudo, pour tenir sur une ligne dans la largeur du cadre (Dela Gothic : ~0,78 em par lettre) */
+const taillePseudo = (nom: string) => Math.min(8, (LARGE_CADRE * 1.05) / (Math.max(1, [...nom].length) * 0.78));
+
+/**
  * La place d'un joueur qui a composé sa bannière : la bannière entière (marge
  * de débordement comprise), un petit pied (la place et l'insigne), et, caché
  * derrière elle, le volet de son panneau, qui sort au survol (voir l'en-tête).
@@ -192,24 +238,33 @@ function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 
   const doigt = useRef(false);
   const idVolet = useId();
 
+  // ce qui déborde de la bannière de chaque côté (personnage, pièces) : passe devant le volet, qui s'en écarte d'autant
+  const debord = debordCalques([composition.perso, composition.haut, composition.bas]);
+  const debordG = debord.gauche;
+  const debordD = debord.droite;
+
   const ouvrir = useCallback(() => {
     const h = hote.current;
     const v = volet.current;
     if (h && v) {
-      const zone = h.closest("main")?.getBoundingClientRect();
-      const ecran = document.documentElement.clientWidth;
       const rect = h.getBoundingClientRect();
+      const zone = zoneVisible(h);
       const p = placerVolet({
         hote: { left: rect.left, width: rect.width },
         bannieres: BANNIERES,
         largeur: v.offsetWidth,
-        zone: { left: Math.max(0, zone?.left ?? 0), right: Math.min(ecran, zone?.right ?? ecran) },
+        zone,
+        debord: { gauche: debordG, droite: debordD },
       });
       v.style.setProperty("--dx", `${p.dx}px`);
+      v.style.setProperty("--pousse", `${p.pousse}px`);
+      // en hauteur : sa position sans décalage (offsetTop : dans la place, sans les transformations), ramenée dans la zone
+      v.style.setProperty("--dy", "0px");
+      v.style.setProperty("--dy", `${decalerVolet({ haut: rect.top + v.offsetTop, hauteur: v.offsetHeight, zone })}px`);
       setCote(p.cote);
     }
     setOuvert(true);
-  }, []);
+  }, [debordG, debordD]);
   const fermer = useCallback(() => setOuvert(false), []);
 
   // ouvert : un toucher ailleurs, Échap ou un redimensionnement le referment
@@ -280,6 +335,14 @@ function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 
         aria-controls={idVolet}
       >
         <BanniereComposee composition={composition} fond={<FondPodium r={r} />} metal={TIERS[tier].metal[1]} />
+        {/* le pseudo, sur la bannière, en bas du cadre, par-dessus le personnage */}
+        <span
+          aria-hidden
+          className={s.pseudoC + " font-brand"}
+          style={{ "--bas": `${(BAS_CADRE - HAUT_CADRE * 0.05).toFixed(2)}cqw`, "--fs": `${taillePseudo(r.name).toFixed(2)}cqw`, "--lg": `${(LARGE_CADRE * 1.16).toFixed(2)}cqw` } as CSSProperties}
+        >
+          {r.name}
+        </span>
         <span className={s.plaqueId}>
           <span aria-hidden className={s.placeC + " font-brand"}>
             {place}
@@ -332,7 +395,10 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
       data-ornement={r.ornement || "filet"}
       aria-label={`${PODIUM.place(place)} : ${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
     >
-      <span aria-hidden className={s.cadre} />
+      {/* le cadre : le vrai liquide du rang (EncreVive ; la texture du palier, immobile, en repli) */}
+      <span aria-hidden className={"rl-encre " + s.cadre} data-palette="rang">
+        <EncreVive tons={INSIGNES[tier].liquide} echelle={160} />
+      </span>
       <span aria-hidden className={s.forme}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className={s.fond} src={r.bannerUrl || fondParDefaut(r.userId)} alt="" loading="lazy" decoding="async" draggable={false} />
@@ -378,7 +444,9 @@ function BanniereLibre({ place }: { place: 1 | 2 | 3 }) {
   const style = { "--liq": "url(/encres/san-romano.webp)", "--teinte": "var(--muted, #8a8a84)", "--n": 0 } as CSSProperties;
   return (
     <Link href="/duel" className={s.banniere + (place === 1 ? " " + s.premier : "")} style={style} data-holo="" aria-label={PODIUM.libreAria(place)}>
-      <span aria-hidden className={s.cadre} />
+      <span aria-hidden className={"rl-encre " + s.cadre} data-palette="san-romano">
+        <EncreVive tons={PALETTES["san-romano"].liquide} echelle={160} />
+      </span>
       <span aria-hidden className={s.forme}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className={s.fond} src="/illustrations/classement-lice.webp" alt="" loading="lazy" decoding="async" draggable={false} style={{ filter: "brightness(0.72)" }} />

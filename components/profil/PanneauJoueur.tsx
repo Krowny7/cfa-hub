@@ -1,11 +1,14 @@
 import type { CSSProperties } from "react";
+import { EncreVive } from "@/components/nav/EncreVive";
+import { PALETTES, styleDePalette } from "@/lib/palettes";
 import type { BadgeVue, PanneauVue } from "@/lib/profil/panneau-vue";
 import c from "./PanneauJoueur.module.css";
 
 // Le panneau de gauche de la bannière : la « carte » du joueur, dessinée par
 // le site (comme dans Apex) ; le joueur choisit seulement ce qu'il y met
 // (lib/profil/panneau-vue.ts : trois badges, trois statistiques). Une plaque
-// sombre à texture d'encre, cadre fin de métal, liseré vermillon ; dessus, de
+// sombre au vrai liquide d'ébène (EncreVive) sous un voile épais, cadre fin de
+// métal, liseré vermillon ; dessus, de
 // haut en bas : le pseudo (et son titre), le rang (le vrai insigne du site),
 // les trois badges sur leur rail, les trois chiffres en Dela Gothic One.
 // Il remplit la boîte que lui donne la carte (CarteBanniere) ; tout se mesure
@@ -14,6 +17,9 @@ import c from "./PanneauJoueur.module.css";
 // droite (le texte reste dans la partie gauche). Sans état : serveur comme client.
 
 const ACCENT = "#d9482b";
+/** le fond de la plaque : le liquide d'ébène, sous un voile épais (le texte blanc reste lisible) */
+const EBENE = PALETTES.ebene;
+const STYLE_PLAQUE = { ...styleDePalette(EBENE), "--pal-voile-haut": 0.74, "--pal-voile-bas": 0.9, "--encre-pas": "calc(var(--u) * 520)" } as CSSProperties;
 const CREME = "#f3ecda";
 const ENCRE = "#1a1410";
 
@@ -70,7 +76,9 @@ export function PanneauJoueur({
       {/* la plaque : un contour d'encre, un filet de métal, le fond d'encre ; le coin du haut gauche est coupé */}
       <span aria-hidden className={c.plaque}>
         <span className={c.metal}>
-          <span className={c.fondPlaque} />
+          <span className={"rl-encre " + c.fondPlaque} data-palette={EBENE.key} style={STYLE_PLAQUE}>
+            <EncreVive tons={EBENE.liquide} echelle={260} />
+          </span>
         </span>
       </span>
       <div className={c.contenu}>

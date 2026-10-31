@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EncreVive } from "@/components/nav/EncreVive";
 import { PALETTES } from "@/lib/palettes";
 import s from "./Affronter.module.css";
 
@@ -82,6 +83,7 @@ export function ClassementTabs({ tabs, initial, label }: { tabs: TabDef[]; initi
               className={s.onglet + (on ? " rl-encre " + s.encre : "")}
               data-palette={on ? PAL.key : undefined}
             >
+              {on && <EncreVive tons={PAL.liquide} />}
               {t.label}
             </button>
           );

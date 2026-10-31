@@ -19,7 +19,9 @@
   }
 }
 
-/* ——— Léonard ——— */
+/* ——— Léonard ———
+   le panneau, les cartes maîtrisées et « Rejouer » : le vrai liquide (EncreVive, encres.ts) ; leurs fonds ci-dessous ne sont
+   que le repli immobile */
 .gauche {
   --or: #c9a24a;
   position: relative;
@@ -39,10 +41,12 @@
     0 1px 0 rgba(0, 0, 0, 0.03),
     0 14px 30px -18px rgba(0, 0, 0, 0.4);
 }
+/* --leoTop : la place de son nom au-dessus de lui (« Léonard · croupier ») ; le portrait (.leo de Partie.module.css) commence dessous */
 .leoBox {
+  --leoTop: 38px;
   position: relative;
   flex: none;
-  height: 440px;
+  height: calc(440px + var(--leoTop));
 }
 /* de la lumière sur Léonard : un halo chaud derrière lui */
 .leoBox::before {
@@ -98,7 +102,8 @@ img.leoImg {
 }
 @media (max-width: 899px) {
   .leoBox {
-    height: 340px;
+    --leoTop: 34px;
+    height: calc(340px + var(--leoTop));
   }
   .recap {
     margin-top: 18px;
@@ -293,6 +298,7 @@ img.leoImg {
   background: transparent;
 }
 .pip[data-ok] {
+  position: relative;
   border: 1.5px solid var(--ink);
   background:
     linear-gradient(180deg, rgba(24, 14, 8, 0.31), rgba(24, 14, 8, 0.58)),
@@ -382,6 +388,7 @@ img.leoImg {
   cursor: pointer;
 }
 .encre {
+  position: relative;
   border: 0;
   color: #ffffff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);

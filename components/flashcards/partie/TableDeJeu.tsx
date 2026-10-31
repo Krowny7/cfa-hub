@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import { RichText } from "@/components/RichText";
+import { EncreVive } from "@/components/nav/EncreVive";
 import { VersoCompact } from "@/components/flashcards/Verso";
 import { poseLeonard, serieDePas, serieEnCours, SERIE_MIN, type CarteJeu, type SituationTable, type Verdicts } from "@/lib/flashcards/partie";
 import { PARTIE_TABLE as T, bulleTable } from "@/lib/voice-partie";
 import { AjusteCarte } from "./AjusteCarte";
+import { TAPIS, voileTapis } from "./encres";
 import { PortraitLeonard } from "./PanneauCroupier";
 import type { PropsTable } from "./types";
 import { useEchelle } from "./useEchelle";
@@ -41,6 +43,10 @@ type Etat = {
   /** change à chaque donne (main suivante, « Recommencer ») : rejoue la distribution */
   donne: number;
 };
+
+/** le voile du tapis (léger : le vert reste franc) et celui des boutons verts (plus sombre : le texte blanc) */
+const VOILE_FEUTRE = voileTapis(0.3, 0.42);
+const VOILE_BOUTON = voileTapis(0.55, 0.7);
 
 /** Les trois colonnes du rack de Léonard : de quoi remplir 0 à 27 jetons (au-delà, elles restent pleines), le plus lourd à gauche. */
 export function hauteursRack(restants: number): [number, number, number] {
@@ -296,7 +302,10 @@ export function TableDeJeu(props: PropsTable) {
                 <div className={t.nappe} aria-hidden>
                   <div className={t.rail} />
                   <div className={t.piqure} />
-                  <div className={t.feutre} />
+                  <div className={"rl-encre " + t.feutre} data-palette="tapis" style={VOILE_FEUTRE}>
+                    <EncreVive tons={TAPIS} echelle={400} />
+                    <span className={t.feutreLumiere} />
+                  </div>
                   <div className={t.bois}>
                     {[-1, 0, 1].map((m) => (
                       <i key={m} className={t.puits} style={{ "--cm": m } as CSSProperties} />
@@ -462,7 +471,8 @@ export function TableDeJeu(props: PropsTable) {
           )}
           {!toutJuge && e.ouverte?.face === "verso" && (
             <>
-              <button type="button" className={t.encreV} onClick={() => verdict(true)}>
+              <button type="button" className={"rl-encre " + t.encreV} data-palette="tapis" style={VOILE_BOUTON} onClick={() => verdict(true)}>
+                <EncreVive tons={TAPIS} />
                 {T.maitrisee}
                 <span className={t.kbd}>1</span>
               </button>
@@ -473,7 +483,8 @@ export function TableDeJeu(props: PropsTable) {
             </>
           )}
           {toutJuge && (
-            <button type="button" className={t.encreV} onClick={suivante}>
+            <button type="button" className={"rl-encre " + t.encreV} data-palette="tapis" style={VOILE_BOUTON} onClick={suivante}>
+              <EncreVive tons={TAPIS} />
               {derniere ? T.voirBilan : T.mainSuivante}
               <span className={t.kbd}>{T.toucheEspace}</span>
             </button>

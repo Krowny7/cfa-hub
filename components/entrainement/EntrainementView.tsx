@@ -271,6 +271,7 @@ function Eclair({ d }: { d: EntrainementData }) {
       <div className={s.eclairCorps}>
         <h2 id="ent-eclair" className={"font-brand " + s.titreMoyen}>
           <span className={encre(s.sceau, s.sceauMoyen)} data-palette={PAL.key} aria-hidden>
+            <EncreVive tons={PAL.liquide} echelle={64} />
             <Zap size={16} />
           </span>
           {ECLAIR.nom}

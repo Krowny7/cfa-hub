@@ -4,8 +4,9 @@
 // duel, copie des 30 du jour, fin de session, examen blanc noté), une goutte
 // tombe sur l'écran de résultat, l'encre de la palette de l'espace s'étale en
 // tache et le score apparaît dedans, puis l'encre s'efface sur le résultat.
-// Environ 2,4 s, « Toucher / une touche » pour passer. Texture et voile : les
-// classes .rl-encre de globals.css (lib/palettes.ts).
+// Environ 2,4 s, « Toucher / une touche » pour passer. La tache est le vrai
+// liquide de la palette (EncreVive, motif large : echelle 240) ; repli immobile
+// et voile : les classes .rl-encre de globals.css (lib/palettes.ts).
 //
 //   <div className="relative">   // le parent porte le résultat et son arrondi
 //     <GoutteVerdict cle="duel:abc" mot="Victoire" score="22 – 19" detail="+14 ELO" onFin={…} />
@@ -41,6 +42,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { EncreVive } from "@/components/nav/EncreVive";
 import { PALETTES, paletteDeChemin, styleDePalette, type PaletteCle } from "@/lib/palettes";
 import { finirGoutte, marquerGoutte } from "@/lib/ceremonie-en-cours";
 import s from "./GoutteVerdict.module.css";
@@ -229,7 +231,9 @@ export function GoutteVerdict({
         </filter>
       </svg>
       <span className={s.chute} />
-      <span className={`rl-encre ${s.tache}`} data-palette={pal.key} />
+      <span className={`rl-encre ${s.tache}`} data-palette={pal.key}>
+        <EncreVive tons={pal.liquide} echelle={240} />
+      </span>
       <div className={s.resultat}>
         {mot ? <span className={s.mot}>{mot.endsWith(".") ? mot.slice(0, -1) : mot}</span> : null}
         <span className={s.score}>{score}</span>
