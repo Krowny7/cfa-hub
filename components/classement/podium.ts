@@ -37,12 +37,19 @@ export function idsDuPodium(classement: readonly LignePodium[]): string[] {
 /** Où se pose le volet par rapport à la bannière. */
 export type CoteVolet = "gauche" | "droite" | "dessus";
 
-/** La part du panneau qui passe derrière la bannière, comme sur la carte complète (60 unités sur 470). */
-export const RECOUVREMENT_VOLET = 60 / 470;
-/** Le panneau a au moins cette largeur en pixels (en dessous, ses textes ne se liraient plus). */
-export const VOLET_LARGEUR_MIN = 224;
-/** La marge intérieure du panneau du côté de la bannière, où son texte commence (PanneauJoueur.module.css : 84 unités sur 470). */
-export const TEXTE_VOLET = 84 / 470;
+/** La part du panneau qui passe derrière la bannière (60 unités sur 360 : le volet seul a les proportions de la bannière, 360 × 850). */
+export const RECOUVREMENT_VOLET = 60 / 360;
+/** Le panneau a au moins cette largeur en pixels (Podium.module.css, --pw) : ses textes font alors 10 px au moins (28 unités sur 360) ; en dessous, ils ne se liraient plus. */
+export const VOLET_LARGEUR_MIN = 129;
+/**
+ * La marge intérieure du panneau du côté de la bannière, où son texte commence
+ * (PanneauJoueur.module.css : 104 unités sur 360). Assez pour que le texte
+ * passe le bout des pièces qui débordent de 20 % : le volet, aussi haut que la
+ * bannière, a son pseudo à hauteur de la pièce du haut, et l'écart (pousse)
+ * ne dépasse pas ce qu'il garde sous elle (le pire cas, 202 px de place :
+ * 129 px de volet, 37,3 px de marge pour 36,9 px de pièce et de garde).
+ */
+export const TEXTE_VOLET = 104 / 360;
 /** Ce que le volet garde au moins sous la bannière quand on l'écarte (pixels) : il sort toujours de derrière elle. */
 const SOUS_MIN = 6;
 /** L'écart entre le bout des calques qui débordent et le texte du volet (pixels). */

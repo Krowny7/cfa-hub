@@ -314,16 +314,23 @@
 /* ——— la bannière composée du joueur (BanniereComposee) ———
    Elle remplace le fanion : la place garde la largeur d'une carte (30 %, le n° 1 à 36 %), la bannière composée la remplit de sa
    largeur (sa zone de débordement comprise : le personnage et les pièces dépassent dans la marge transparente), et un petit pied
-   (la place, l'insigne) vient dessous. Pas de cadre liquide ni de reflet : le cadre est celui de la bannière (le métal du rang).
+   (la place, l'insigne) vient dessous. Pas de cadre liquide du fanion ni de reflet : le cadre est celui de la bannière (le métal
+   du rang, ou le liquide de la couleur que le joueur a choisie, comme l'encre de son volet : BanniereComposee, PanneauJoueur).
    L'inclinaison au pointeur reste, sur la bannière seule.
    Seule la bannière est visible. Son panneau de gauche (PanneauJoueur) est le VOLET : posé derrière elle, il en sort en glissant au
-   survol, au focus clavier et au premier toucher (data-ouvert), par-dessus le reste, avec une ombre. Il fait 1,3 fois la largeur de
-   la bannière, comme sur la carte complète (470 sur 360), 224 px au moins ; 60 unités sur 470 de sa largeur restent sous la
-   bannière. Son côté (data-cote) est choisi par placerVolet (components/classement/podium.ts) : à gauche, à droite si la place
-   manque, ou par-dessus la bannière sur un écran étroit. Centré sur la hauteur de la bannière. */
+   survol, au focus clavier et au premier toucher (data-ouvert), par-dessus le reste, avec une ombre. Il a la taille de la
+   bannière, un peu plus petit : ses proportions (360 × 850), 96 % de sa largeur (64cqw : la bannière en fait 66,67) et donc 96 %
+   de sa hauteur. Il garde 129 px de large au moins (ses plus petits textes, 28 unités sur 360, font alors 10 px) : sous 202 px
+   de place (le téléphone, la tablette étroite), il garde ces 129 px mais sa hauteur reste plafonnée à 96 % de la bannière (le
+   panneau retire alors des lignes : PanneauJoueur.module.css) ; dès 194 px de place, il n'est pas plus large qu'elle. 60 unités
+   sur 360 de sa largeur restent sous la bannière. Son côté (data-cote) est choisi par placerVolet
+   (components/classement/podium.ts) : à gauche, à droite si la place manque, ou par-dessus la bannière sur un écran étroit.
+   Centré sur la hauteur de la bannière. */
 .hote {
-  /* la largeur du volet : lue par le volet (un enfant), pas par l'hôte, qui est son propre conteneur */
-  --pw: max(86.7cqw, 224px);
+  /* la largeur et la hauteur du volet : lues par le volet (un enfant, où 100cqw est la largeur de la place), pas par l'hôte, qui
+     est son propre conteneur. La bannière fait 360 / 540 de la largeur de la place en largeur, 850 / 540 en hauteur. */
+  --pw: max(64cqw, 129px);
+  --ph: min(var(--pw) * 850 / 360, 100cqw * 850 / 540 * 0.96);
   container-type: inline-size;
   position: relative;
   order: 1;
@@ -447,18 +454,20 @@
   --noyau: #fff;
 }
 
-/* le volet : le panneau de gauche, derrière la bannière, centré sur sa hauteur (la scène fait 1105 / 540 de la largeur de l'hôte, le centre de la bannière est à 70 / 130 de sa hauteur ; le panneau mesure 850 / 470 de sa largeur).
+/* le volet : le panneau de gauche, derrière la bannière, centré sur sa hauteur (la scène fait 1105 / 540 de la largeur de l'hôte, le centre de la bannière est à 70 / 130 de sa hauteur ; le volet mesure --ph de haut).
+   Un conteneur de taille (largeur et hauteur fixées) : le panneau lit ses proportions pour retirer des lignes quand sa hauteur est
+   plafonnée (sous 202 px de place : plus large que 360 × 850 ne le voudrait).
    Posés à l'ouverture (PodiumBannieres.tsx, placerVolet et decalerVolet : components/classement/podium.ts) : --dy le remonte ou le
    descend pour que la carte « Classement général » (overflow: hidden) ne le coupe pas ; --pousse l'écarte de la bannière pour que
    son personnage et ses pièces, qui débordent devant lui, ne cachent pas son texte ; --dx le ramène dans la page (« dessus »). */
 .volet {
   --sortie: 38%;
-  container-type: inline-size;
+  container-type: size;
   position: absolute;
   z-index: 0;
-  top: calc(100cqw * 1105 / 540 * 0.53846 - var(--pw) * 850 / 940 + var(--dy, 0px));
+  top: calc(100cqw * 1105 / 540 * 0.53846 - var(--ph) / 2 + var(--dy, 0px));
   width: var(--pw);
-  aspect-ratio: 470 / 850;
+  height: var(--ph);
   /* fermé : caché derrière la bannière, ne capte rien */
   opacity: 0;
   visibility: hidden;
@@ -472,11 +481,11 @@
   filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.45)) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.3));
 }
 .hote[data-cote="gauche"] .volet {
-  right: calc(83.3333% - var(--pw) * 60 / 470 + var(--pousse, 0px));
+  right: calc(83.3333% - var(--pw) * 60 / 360 + var(--pousse, 0px));
 }
 .hote[data-cote="droite"] .volet {
   --sortie: -38%;
-  left: calc(83.3333% - var(--pw) * 60 / 470 + var(--pousse, 0px));
+  left: calc(83.3333% - var(--pw) * 60 / 360 + var(--pousse, 0px));
 }
 /* ni à gauche ni à droite : par-dessus la bannière, centré sur la place (--dx : le décalage qui le ramène dans la page) */
 .hote[data-cote="dessus"] .volet {

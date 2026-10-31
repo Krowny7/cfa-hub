@@ -10,7 +10,7 @@ import { lireAcquis } from "@/lib/profil/acquis";
 import { banniereDisponible, ecrireStyle, validerStyle } from "@/lib/profil/styles";
 import { BUCKET_MEDIAS, BUCKET_VIDEOS, fichiersGardes, validerDisposition } from "@/lib/profil/disposition";
 import { fichierPerso, fichiersGardesStyle, persoValide } from "@/lib/profil/perso";
-import { fichiersComposition, memeComposition, validerComposition } from "@/lib/profil/banniere";
+import { encreDe, fichiersComposition, memeComposition, validerComposition } from "@/lib/profil/banniere";
 import { TYPES_PIECE, pieceNue, type TypePiece } from "@/lib/profil/pieces";
 import { stylePorte } from "@/lib/profil/etagere";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -132,10 +132,11 @@ export async function enregistrerProfil(input: {
   let style = valide.style;
 
   // la bannière composée (migration_bannieres_composees.sql) : tant que la base manque, ce qu'il porte ne change pas
-  // (ni la composition, ni l'ancien personnage, que l'éditeur retire en l'enregistrant)
-  if (!memeComposition(style.banniere, porte.banniere) && !(await banniereDisponible(admin))) {
+  // (ni la composition, ni l'ancien personnage, que l'éditeur retire en l'enregistrant, ni la couleur du fanion, qui vit
+  // dans la même colonne)
+  if ((!memeComposition(style.banniere, porte.banniere) || encreDe(style) !== encreDe(porte)) && !(await banniereDisponible(admin))) {
     refus.push("la bannière composée (la base n'est pas encore prête)");
-    style = { ...style, banniere: porte.banniere ?? null, perso: porte.perso, persoTaille: porte.persoTaille, persoPos: porte.persoPos };
+    style = { ...style, banniere: porte.banniere ?? null, encre: encreDe(porte), perso: porte.perso, persoTaille: porte.persoTaille, persoPos: porte.persoPos };
   }
 
   const now = new Date().toISOString();

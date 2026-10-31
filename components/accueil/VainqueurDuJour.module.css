@@ -113,7 +113,9 @@
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* le liseré : le vrai liquide du rang, tout en haut de la bannière (.rl-encre de globals.css et EncreVive ; sa texture, immobile, en repli ; pas de voile) */
+/* le liseré : le vrai liquide du rang (ou de la couleur que le vainqueur a choisie pour le contour de sa bannière : --liq est
+   alors la texture de la palette), tout en haut de la bannière (.rl-encre de globals.css et EncreVive ; sa texture, immobile, en
+   repli ; pas de voile) */
 .lisere {
   position: absolute;
   inset: 0 0 auto 0;

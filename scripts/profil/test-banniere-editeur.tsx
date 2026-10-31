@@ -47,9 +47,12 @@ import {
   avecCadrage,
   avecCalque,
   avecChamp,
+  avecEncre,
   avecImage,
   avecVerrou,
+  choisirEncre,
   commencerGeste,
+  compositionDepart,
   dansLaScene,
   deplacer,
   devantLeCadre,
@@ -61,6 +64,7 @@ import {
   pousser,
   redimensionner,
   reinitialiser,
+  revenirAuFanion,
   selectionDepart,
   type Poignee,
 } from "@/lib/profil/banniere-edition";
@@ -69,6 +73,7 @@ import { panneauVue } from "@/lib/profil/panneau-vue";
 import { ScenePosable } from "@/components/profil/ScenePosable";
 import { EditeurBanniere } from "@/components/profil/EditeurBanniere";
 import { ChoixPanneau, deplacerDans } from "@/components/profil/ChoixPanneau";
+import { CHOIX_ENCRE, pastilleVisee } from "@/components/profil/ChoixEncre";
 import { EditeurApercu } from "./EditeurApercu";
 import { FOND_EXEMPLE, LEONARD, RATIO_LEONARD, STATS_EXEMPLE, compositionExemple, panneauExemple } from "./composition-exemple";
 
@@ -290,8 +295,22 @@ async function main() {
     c = avecImage(c, "bas", url("bas", "webp"), 3);
     c = avecCalque(c, "bas", avecVerrou(c.bas, false));
     c = { ...c, ordre: pousser(c.ordre, "perso", -1), panneau: { badges: [], stats: ["place", "serie", "heures"] } };
+    c = avecEncre(c, "studiolo");
     const v = validerComposition(serialiserComposition(c), { prefixe: PREFIXE, gagnes: null });
-    check("une composition faite à l'éditeur (fond, personnage, préréglage, pièce envoyée, verrou, ordre, chiffres) passe la validation du serveur telle quelle", v.refus.length === 0 && v.composition !== null && memeComposition(v.composition, c), v.refus.join(" ; "));
+    check("une composition faite à l'éditeur (fond, personnage, préréglage, pièce envoyée, verrou, ordre, chiffres, couleur) passe la validation du serveur telle quelle", v.refus.length === 0 && v.composition !== null && memeComposition(v.composition, c) && v.composition.encre === "studiolo", v.refus.join(" ; "));
+    // la couleur du contour et de l'encre
+    check("avecEncre : la couleur choisie ; null : celle du rang ; une clé inconnue : celle du rang ; le reste ne bouge pas", avecEncre(vide, "atelier").encre === "atelier" && avecEncre(avecEncre(vide, "atelier"), null).encre === null && avecEncre(vide, "rose" as never).encre === null && JSON.stringify({ ...avecEncre(bouge, "carnet"), encre: null }) === JSON.stringify(bouge) && vide.encre === null);
+    // le choix de la couleur dans le brouillon de Personnaliser (choisirEncre) : le même choix ne change rien, le fanion reste le fanion
+    const fanion: StyleProfil = { ...STYLE_DEFAUT, banniere: null, encre: null, perso: url("perso") };
+    const fc = choisirEncre(fanion, "carnet");
+    check("choisirEncre, joueur au fanion : seule sa couleur change ; aucune composition n'est créée, son ancien personnage reste", fc.banniere === null && fc.encre === "carnet" && fc.perso === url("perso") && fanion.encre === null);
+    check("choisirEncre : le même choix (la pastille déjà cochée) rend le même objet : rien ne change, rien n'est créé", choisirEncre(fc, "carnet") === fc && choisirEncre(fanion, null) === fanion && choisirEncre(fanion, "rose" as never) === fanion);
+    const compose: StyleProfil = { ...STYLE_DEFAUT, banniere: c, encre: "studiolo", perso: url("perso") };
+    const cc = choisirEncre(compose, "florence");
+    check("choisirEncre, bannière composée : sa couleur change, le reste de la composition non (l'ancien personnage s'en va, comme à tout changement de la composition)", cc.banniere?.encre === "florence" && cc.perso === null && memeComposition(avecEncre(cc.banniere!, "studiolo"), c) && choisirEncre(compose, "studiolo") === compose);
+    const retour = revenirAuFanion(cc);
+    check("« Revenir à la bannière simple » : plus de composition, mais la couleur reste (celle de la composition passe au fanion)", retour.banniere === null && retour.encre === "florence" && revenirAuFanion(fc).encre === "carnet" && revenirAuFanion({ ...compose, banniere: avecEncre(c, null) }).encre === null);
+    check("la composition que crée le premier changement d'un joueur au fanion garde sa couleur (et l'ancien personnage s'il y en a un)", compositionDepart(null, "carnet").encre === "carnet" && compositionDepart(null, null).encre === null && memeComposition(avecEncre(compositionDepart(null, "carnet"), null), compositionDefaut()) && compositionDepart(c, "atelier").perso.image === c.perso.image && compositionDepart(c, "atelier").encre === "atelier");
     // les gestes aussi
     let g = commencerGeste(1, "se", "perso", c.perso, { x: 100, y: 100 });
     g = avancerGeste(g, { x: 140, y: 130 });
@@ -317,6 +336,11 @@ async function main() {
     check("un calque sans image n'a ni cadre ni zone à toucher", !sansImage.includes("data-selection") && !sansImage.includes("data-choisir"));
     check("les zones à toucher suivent l'ordre d'empilement (le plus en avant en dernier)", scene("fond", { ...c, ordre: ["haut", "cadre", "bas", "perso"] }).match(/data-choisir="([a-z]+)"/g)!.join(" ") === 'data-choisir="haut" data-choisir="bas" data-choisir="perso"');
     check("l'aperçu garde le même ordre d'empilement que le profil (les images sont rendues dans l'ordre choisi)", [...scene("perso", { ...c, ordre: ["perso", "cadre", "bas", "haut"] }).matchAll(/<(?:img|svg)\b[^>]*data-calque="([a-z]+)"/g)].map((m) => m[1]).join(" ") === "perso cadre bas haut");
+    // le contour : le métal du rang (comme l'aperçu de la carte), ou le liquide de la couleur choisie
+    const auMetal = rendre(<ScenePosable composition={c} selection="perso" fond={fondProfil} metal="#8a5cff" onSelect={faux} onVivre={faux} onValider={faux} />);
+    check("la scène dessine le cadre au métal du rang qu'on lui donne (le même que l'aperçu de la carte)", /<svg\b[^>]*class="cadre"[^>]*style="--metal:#8a5cff"/.test(auMetal) && !auMetal.includes("rl-encre"));
+    const coloree = scene("perso", avecEncre(c, "florence"));
+    check("une couleur choisie : la scène montre le contour au vrai liquide de la palette, les poignées et zones à toucher restent", coloree.includes('class="rl-encre bande" data-palette="florence"') && coloree.includes("<canvas") && compte(coloree, /data-poignee="/g) === 4 && coloree.includes('data-choisir="haut"'));
   }
 
   console.log("\n# L'éditeur");
@@ -364,6 +388,23 @@ async function main() {
     const nonPris = [...trois.matchAll(/<button[^>]*aria-pressed="false"[^>]*data-badge="[^"]+"[^>]*>/g)].map((m) => m[0]);
     check("trois badges pris : tous les autres sont désactivés", nonPris.length > 0 && nonPris.every((b) => b.includes("disabled")) && compte(trois, /data-vide="false"/g) === 3 && !trois.includes("Emplacement libre"));
     check("« Revenir à la bannière simple » quand la bannière est composée", html.includes("Revenir à la bannière simple"));
+    // la couleur du contour et de l'encre : une rangée de pastilles (boutons radio), dans « Ta carte », au-dessus des badges
+    const groupe = (h: string) => (h.match(/<div role="radiogroup" aria-label="Contour et encre"[^>]*>[\s\S]*?<\/div>/) ?? [""])[0];
+    const g = groupe(html);
+    check("« Contour et encre » : un groupe de sept boutons radio (la couleur du rang, puis les six palettes), nommés, au doigt (44 px)", g.length > 0 && compte(g, /<button type="button" role="radio"/g) === 7 && ["rang", "ebene", "san-romano", "atelier", "studiolo", "carnet", "florence"].every((k) => g.includes(`data-encre-choix="${k}"`)) && g.includes('<span class="sr-only">Couleur du rang</span>') && g.includes("<span class=\"sr-only\">L'Atelier</span>") && compte(g, /title="[^"]+"/g) === 7 && compte(g, /class="pastille"/g) === 7);
+    check("par défaut, « Couleur du rang » est cochée, seule, et seule dans l'ordre de tabulation (les flèches font le reste)", compte(g, /aria-checked="true"/g) === 1 && /aria-checked="true" tabindex="0"[^>]*data-encre-choix="rang"/.test(g) && compte(g, /tabindex="-1"/g) === 6 && html.includes("Choisie : Couleur du rang"));
+    check("la pastille du rang montre le métal du rang (celui du panneau) ; les autres, les tons du liquide de leur palette en dégradé fixe (pas de canvas)", g.includes(`--metal:${donnees.metal}`) && g.includes("linear-gradient(135deg, #3b2314 0%, #2f4272 35%, #d58a1f 65%, #ffc95e 100%)") && !g.includes("<canvas") && !g.includes("rl-encre"));
+    check("la couleur est au-dessus des badges, dans le bloc de la carte (l'aperçu montre le contour et l'encre)", html.indexOf("data-panneau-editeur") < html.indexOf("data-choix-encre") && html.indexOf("data-choix-encre") < html.indexOf("data-emplacement=") && html.includes("Une seule couleur pour le contour de ta bannière et l'encre de ta carte"));
+    check("sans couleur : l'aperçu garde le métal et l'ébène (aucune bande de liquide)", !html.includes("rl-encre bande") && html.includes('data-palette="ebene"'));
+    const atelier = edit({ ...STYLE_DEFAUT, banniere: { ...compo, encre: "atelier" } });
+    const ga = groupe(atelier);
+    check("une couleur choisie (L'Atelier) : sa pastille est cochée, la ligne la nomme", compte(ga, /aria-checked="true"/g) === 1 && /aria-checked="true" tabindex="0"[^>]*data-encre-choix="atelier"/.test(ga) && atelier.includes("Choisie : L'Atelier · l'atelier à la bougie"));
+    check("…et l'aperçu la montre en direct : le contour dans la scène et sur la carte, l'encre du panneau (trois liquides de la palette)", compte(atelier, /class="rl-encre bande" data-palette="atelier"/g) === 2 && compte(atelier, /class="rl-encre fondPlaque" data-palette="atelier"/g) === 1 && !atelier.includes('data-palette="ebene"'));
+    check("les pastilles sont des boutons : les curseurs, cases et onglets ne changent pas de nombre", compte(atelier, /type="range"/g) === 4 && compte(atelier, /type="number"/g) === 4 && compte(atelier, /aria-selected="true"/g) === 1 && compte(atelier, /type="checkbox"/g) === compte(html, /type="checkbox"/g) && compte(atelier, /<input\b/g) === compte(html, /<input\b/g));
+    // un joueur au fanion (aucune composition) qui a choisi une couleur : sa pastille est cochée, l'aperçu la montre, rien n'est composé
+    const fanionColore = edit({ ...STYLE_DEFAUT, banniere: null, encre: "carnet" });
+    const gf = groupe(fanionColore);
+    check("un joueur au fanion avec une couleur : sa pastille est cochée, l'aperçu montre le contour et l'encre de la carte ; rien de composé (pas de « Revenir à… ») ; l'aide le dit", /aria-checked="true" tabindex="0"[^>]*data-encre-choix="carnet"/.test(gf) && compte(fanionColore, /class="rl-encre bande" data-palette="carnet"/g) === 2 && compte(fanionColore, /class="rl-encre fondPlaque" data-palette="carnet"/g) === 1 && !fanionColore.includes("Revenir à la bannière simple") && fanionColore.includes("Le fanion simple la prend aussi"));
     // les autres états
     const sans = edit({ ...STYLE_DEFAUT, banniere: null });
     check("pas encore de bannière composée : l'éditeur s'ouvre sur une bannière vide (rien d'envoyé), sans « Revenir à… », sans note de reprise", sans.includes('role="tablist"') && !sans.includes("Revenir à la bannière simple") && !sans.includes("ancien personnage") && sans.includes("Envoyer une image"));
@@ -419,8 +460,13 @@ async function main() {
     const scene = lire("components/profil/ScenePosable.tsx");
     const editeur = lire("components/profil/EditeurBanniere.tsx");
     const choix = lire("components/profil/ChoixPanneau.tsx");
+    const encre = lire("components/profil/ChoixEncre.tsx");
     const css = lire("components/profil/EditeurBanniere.module.css");
-    check("aucun écouteur sur la fenêtre ni le document (le pointeur est capturé par l'élément : rien à retirer)", ![scene, editeur, choix].some((s) => /(?:window|document)\.(?:add|remove)EventListener/.test(s)) && scene.includes("setPointerCapture") && scene.includes("releasePointerCapture"));
+    check("aucun écouteur sur la fenêtre ni le document (le pointeur est capturé par l'élément : rien à retirer)", ![scene, editeur, choix, encre].some((s) => /(?:window|document)\.(?:add|remove)EventListener/.test(s)) && scene.includes("setPointerCapture") && scene.includes("releasePointerCapture"));
+    check("les pastilles de couleur : au clavier (flèches, Début, Fin : la pastille suivante est cochée et prend le focus), sans rien qui s'anime", ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"].every((k) => encre.includes(`"${k}"`)) && encre.includes(".focus()") && encre.includes("e.preventDefault()") && /\.pastille\[aria-checked="true"\]\s*\{/.test(css) && /\.pastille:focus-visible\s*\{/.test(css) && /\.pastille\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/.test(css) && !/animation|@keyframes/.test(css.slice(css.indexOf(".pastilles"), css.indexOf("la pile d'ordre"))));
+    check("l'éditeur passe la couleur par choisirEncre (le même choix ne change rien ; le fanion reste le fanion) et « Revenir à la bannière simple » la garde (revenirAuFanion)", editeur.includes("setStyle((s) => choisirEncre(s, e))") && editeur.includes("setStyle((s) => revenirAuFanion(s))") && !editeur.includes("avecEncre(comp, e)") && editeur.includes("compositionDepart(compositionDe(s), s.encre)"));
+    check("ChoixEncre n'appelle onChange que si le choix change (au clic comme au clavier)", /const choisir = \(k: PaletteCle \| null\) => \{\s*if \(k !== actuelle\) onChange\(k\);/.test(encre) && encre.includes("onClick={() => choisir(k)}") && encre.includes("choisir(CHOIX_ENCRE[j])") && (encre.match(/onChange\(/g) ?? []).length === 1);
+    check("les touches du groupe : flèches en boucle, Début, Fin ; les autres ne font rien", CHOIX_ENCRE.length === 7 && CHOIX_ENCRE[0] === null && pastilleVisee(0, "ArrowLeft") === 6 && pastilleVisee(6, "ArrowRight") === 0 && pastilleVisee(2, "ArrowDown") === 3 && pastilleVisee(2, "ArrowUp") === 1 && pastilleVisee(4, "Home") === 0 && pastilleVisee(1, "End") === 6 && pastilleVisee(1, "a") === -1 && pastilleVisee(1, "Enter") === -1);
     check("un geste interrompu rend le calque à sa place (pointercancel), un geste perdu est validé (lostpointercapture)", scene.includes("onPointerCancel") && scene.includes("onLostPointerCapture") && scene.includes("finDeGeste"));
     check("le calque choisi ne laisse pas le doigt faire défiler la page (touch-action: none) ; les zones à toucher, si", /\.selection\s*{[^}]*touch-action:\s*none/.test(css) && !/\.zoneCalque\s*{[^}]*touch-action:\s*none/.test(css));
     check("les poignées ont une zone de toucher de plus de 40 px", /\.poignee::after\s*{[^}]*inset:\s*-14px/.test(css));
@@ -432,6 +478,7 @@ async function main() {
       "components/profil/EditeurBanniere.tsx",
       "components/profil/EditeurBanniere.module.css",
       "components/profil/ChoixPanneau.tsx",
+      "components/profil/ChoixEncre.tsx",
       "components/profil/Personnaliser.tsx",
       "components/profil/ModePersonnaliser.tsx",
       "scripts/profil/composition-exemple.ts",

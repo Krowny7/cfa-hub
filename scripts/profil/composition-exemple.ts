@@ -24,6 +24,8 @@ export type VarianteExemple = {
   /** l'ordre d'empilement, du fond vers l'avant */
   ordre?: Composition["ordre"];
   panneau?: Partial<Panneau>;
+  /** la couleur du contour et de l'encre (une palette de ENCRES) ; absente : celle du rang */
+  encre?: Composition["encre"];
 };
 
 /** Une composition d'exemple, dans les bornes de la scène (poserCalque borne les calques). */
@@ -39,6 +41,7 @@ export function compositionExemple(v: VarianteExemple = {}): Composition {
     bas: piece ? poserCalque("bas", imagePrereglage(piece), 942 / 377) : base.bas,
     ordre: v.ordre ? [...v.ordre] : base.ordre,
     panneau: { badges: v.panneau?.badges ?? [], stats: v.panneau?.stats ?? base.panneau.stats },
+    encre: v.encre ?? null,
   };
 }
 

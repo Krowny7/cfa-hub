@@ -4,7 +4,10 @@
 // Vérifie : qui monte sur le podium (les trois meilleurs parmi ceux qui ont fait au moins un
 // duel, dans l'ordre du classement : un joueur qui n'a jamais joué n'y monte pas, le 6e du
 // classement qui a joué peut être 2e du podium), que la page et le tableau font le même choix,
-// où se pose le volet (à gauche, à droite si la place manque, par-dessus sur un écran étroit) et
+// où se pose le volet (à gauche, à droite si la place manque, par-dessus sur un écran étroit), qu'il a
+// la taille de la bannière (96 % en largeur et en hauteur, ses proportions 360 × 850 ; sous 194 px de
+// place, le plancher de 129 px des textes de 10 px l'emporte en largeur, jamais en hauteur), que ce qu'il
+// garde y tient (les lignes retirées sous 202 px de place, recalculées depuis la feuille de style), et
 // que la lecture des panneaux dégrade proprement (aucune exception, aucune entrée inventée).
 import fs from "node:fs";
 import React from "react";
@@ -54,41 +57,61 @@ async function main() {
     check("la page calcule le panneau des joueurs du podium (panneauxDuPodium) et le joint à leur ligne", page.includes("panneauxDuPodium(") && page.includes("joueursDuPodium(lignes)") && page.includes("panneau: panneaux.get(r.userId)"));
   }
 
+  // les mesures du volet, lues dans la feuille de style du podium : largeur max(A cqw, B px) ; hauteur min(proportions, C × la bannière)
+  const pod = fs.readFileSync("components/classement/Podium.module.css", "utf8");
+  const pan = fs.readFileSync("components/profil/PanneauJoueur.module.css", "utf8");
+  const mw = pod.match(/--pw: max\(([\d.]+)cqw, (\d+)px\);/);
+  const mh = pod.match(/--ph: min\(var\(--pw\) \* 850 \/ 360, 100cqw \* 850 \/ 540 \* ([\d.]+)\);/);
+  /** la part de la place que fait le volet en largeur (64 cqw : 0,64) */
+  const A = Number(mw?.[1] ?? NaN) / 100;
+  /** la part de la hauteur de la bannière où le volet plafonne (0,96) */
+  const C = Number(mh?.[1] ?? NaN);
+  /** pour une place de W px : le volet (pw × ph), la bannière (bw × bh : 360 et 850 sur les 540 de la scène), la hauteur du volet en unités (sur 360 de large) */
+  const mesures = (W: number) => {
+    const pw = Math.max(A * W, VOLET_LARGEUR_MIN);
+    const ph = Math.min((pw * 850) / 360, ((W * 850) / 540) * C);
+    return { pw, ph, bw: (W * 360) / 540, bh: (W * 850) / 540, hu: (ph * 360) / pw };
+  };
+
   console.log("\n# Où se pose le volet");
   {
     const B = { gauche: -SCENE.x0 / SCENE_L, droite: (100 - SCENE.x0) / SCENE_L };
-    const L = VOLET_LARGEUR_MIN + 8; // 232
+    const L = VOLET_LARGEUR_MIN + 11; // 140 (pair : les centrages tombent juste)
     const sous = L * RECOUVREMENT_VOLET;
-    check("la bannière est à 1/6 du bord gauche de sa boîte et à 5/6 du bord droit ; 60 / 470 du volet passent derrière elle", Math.abs(B.gauche - 1 / 6) < 1e-9 && Math.abs(B.droite - 5 / 6) < 1e-9 && Math.abs(RECOUVREMENT_VOLET - 60 / 470) < 1e-12);
+    check("la bannière est à 1/6 du bord gauche de sa boîte et à 5/6 du bord droit ; 60 / 360 du volet passent derrière elle", Math.abs(B.gauche - 1 / 6) < 1e-9 && Math.abs(B.droite - 5 / 6) < 1e-9 && Math.abs(RECOUVREMENT_VOLET - 60 / 360) < 1e-12 && (pod.match(/var\(--pw\) \* 60 \/ 360/g) ?? []).length === 2);
     const large = placerVolet({ hote: { left: 600, width: 210 }, bannieres: B, largeur: L, zone: { left: 0, right: 1400 } });
     check("de la place : à gauche de la bannière, sans décalage", large.cote === "gauche" && large.dx === 0);
     const gauche = placerVolet({ hote: { left: 28, width: 190 }, bannieres: B, largeur: L, zone: { left: 0, right: 1400 } });
     check("la bannière la plus à gauche, où la place manque : à droite", gauche.cote === "droite" && gauche.dx === 0, JSON.stringify(gauche));
     // la page ne coupe pas le volet au-delà de son contenu (main, derrière la barre latérale) : la zone, pas la fenêtre, décide
-    const barre = placerVolet({ hote: { left: 400, width: 200 }, bannieres: B, largeur: L, zone: { left: 280, right: 1400 } });
+    const barre = placerVolet({ hote: { left: 400, width: 200 }, bannieres: B, largeur: L, zone: { left: 330, right: 1400 } });
     check("la zone de la page (derrière la barre latérale) compte, pas le bord de la fenêtre : pas assez de place à gauche → à droite", barre.cote === "droite", JSON.stringify(barre));
     const juste = placerVolet({ hote: { left: 400, width: 200 }, bannieres: B, largeur: L, zone: { left: 100, right: 1400 } });
     check("la même place avec assez de place à gauche dans la zone → à gauche", juste.cote === "gauche");
-    // téléphone : trois places de ~100 px dans 375 (la place de gauche, le n° 1 au milieu, la place de droite)
-    const tel = { left: 0, right: 375 };
-    const p2 = placerVolet({ hote: { left: 16, width: 103 }, bannieres: B, largeur: L, zone: tel });
-    const p1 = placerVolet({ hote: { left: 127, width: 123 }, bannieres: B, largeur: L, zone: tel });
-    const p3 = placerVolet({ hote: { left: 258, width: 103 }, bannieres: B, largeur: L, zone: tel });
+    // téléphone de 375 px : la carte « Classement général » de 16 à 359, trois places (102, 122, 102 px, 8 px d'écart)
+    const tel = { left: 16, right: 359 };
+    const p2 = placerVolet({ hote: { left: 16, width: 102 }, bannieres: B, largeur: L, zone: tel });
+    const p1 = placerVolet({ hote: { left: 126, width: 122 }, bannieres: B, largeur: L, zone: tel });
+    const p3 = placerVolet({ hote: { left: 256, width: 102 }, bannieres: B, largeur: L, zone: tel });
     check("téléphone : la place de gauche ouvre à droite, celle de droite à gauche", p2.cote === "droite" && p3.cote === "gauche", `${p2.cote} ${p3.cote}`);
-    check("téléphone : le n° 1 au milieu n'a de place ni à gauche ni à droite : par-dessus la bannière, centré sur la place", p1.cote === "dessus" && p1.dx === 0, JSON.stringify(p1));
+    check("téléphone : le volet, plus étroit qu'avant, tient à gauche du n° 1 (par-dessus la 2e place)", p1.cote === "gauche" && p1.dx === 0, JSON.stringify(p1));
+    // un téléphone de 320 px (carte de 16 à 304 : places de 85, 102, 85 px) : le n° 1 n'a de place ni à gauche ni à droite
+    const etroit = placerVolet({ hote: { left: 109, width: 102 }, bannieres: B, largeur: L, zone: { left: 16, right: 304 } });
+    check("téléphone étroit : le n° 1 au milieu, sans place d'aucun côté : par-dessus la bannière, centré sur la place", etroit.cote === "dessus" && etroit.dx === 0, JSON.stringify(etroit));
     // une page encore plus étroite : par-dessus, ramené dans la page (6 px de marge)
-    const g = placerVolet({ hote: { left: 20, width: 100 }, bannieres: B, largeur: L, zone: { left: 0, right: 260 } });
-    const d = placerVolet({ hote: { left: 170, width: 100 }, bannieres: B, largeur: L, zone: { left: 0, right: 300 } });
+    const g = placerVolet({ hote: { left: 20, width: 100 }, bannieres: B, largeur: L, zone: { left: 0, right: 200 } });
+    const d = placerVolet({ hote: { left: 100, width: 100 }, bannieres: B, largeur: L, zone: { left: 0, right: 210 } });
     check("une page étroite, la place près du bord gauche : par-dessus, décalé vers la droite pour garder 6 px de marge", g.cote === "dessus" && Math.round(20 + 50 - L / 2 + g.dx) === 6, JSON.stringify(g));
-    check("une page étroite, la place près du bord droit : par-dessus, décalé vers la gauche pour garder 6 px de marge", d.cote === "dessus" && Math.round(170 + 50 - L / 2 + d.dx + L) === 300 - 6, JSON.stringify(d));
-    check("une page plus étroite que le volet : pas d'exception, un décalage fini", Number.isFinite(placerVolet({ hote: { left: 0, width: 80 }, bannieres: B, largeur: L, zone: { left: 0, right: 200 } }).dx));
-    check("le volet est assez large pour se lire : 224 px au moins", VOLET_LARGEUR_MIN === 224 && fs.readFileSync("components/classement/Podium.module.css", "utf8").includes(`${VOLET_LARGEUR_MIN}px`) && sous > 0);
+    check("une page étroite, la place près du bord droit : par-dessus, décalé vers la gauche pour garder 6 px de marge", d.cote === "dessus" && d.dx < 0 && Math.round(100 + 50 - L / 2 + d.dx + L) === 210 - 6, JSON.stringify(d));
+    check("une page plus étroite que le volet : pas d'exception, un décalage fini", Number.isFinite(placerVolet({ hote: { left: 0, width: 80 }, bannieres: B, largeur: L, zone: { left: 0, right: 120 } }).dx));
+    check("le volet est assez large pour se lire : 129 px au moins (ses plus petits textes, 28 unités sur 360, font alors 10 px), le plancher du CSS", VOLET_LARGEUR_MIN === 129 && (28 * VOLET_LARGEUR_MIN) / 360 >= 10 && (28 * (VOLET_LARGEUR_MIN - 1)) / 360 < 10 && Number(mw?.[2]) === VOLET_LARGEUR_MIN && sous > 0);
   }
 
   console.log("\n# Le volet ne se cache pas derrière ce qui déborde de la bannière, ni sous le bord de la carte");
   {
     const B = { gauche: -SCENE.x0 / SCENE_L, droite: (100 - SCENE.x0) / SCENE_L };
-    const L = 224;
+    // le pire cas : le volet le plus étroit (la part qui reste sous la bannière, donc l'écart permis, est la plus petite)
+    const L = VOLET_LARGEUR_MIN;
     const sous = L * RECOUVREMENT_VOLET;
     // la composition d'exemple : pièces de 140 % (20 % de chaque côté), personnage de 110 % (5 %)
     const c = compositionExemple({ pieces: "hexa", perso: "fier" });
@@ -112,16 +135,107 @@ async function main() {
     const bG = 400 + 200 * B.gauche;
     const juste = placerVolet({ hote: { left: 400, width: 200 }, bannieres: B, largeur: L, zone: { left: bG + sous - L - 6 - 5, right: 1400 }, debord: deb });
     check("peu de place : l'écart s'arrête au bord de la zone, le côté ne change pas", juste.cote === "gauche" && juste.pousse === 5, JSON.stringify(juste));
-    check("par-dessus la bannière : pas d'écart", placerVolet({ hote: { left: 127, width: 123 }, bannieres: B, largeur: L, zone: { left: 0, right: 375 }, debord: deb }).pousse === 0);
+    check("par-dessus la bannière : pas d'écart", placerVolet({ hote: { left: 109, width: 102 }, bannieres: B, largeur: L, zone: { left: 16, right: 304 }, debord: deb }).pousse === 0);
     // en hauteur : la carte coupe (1024 px, mesuré : le volet dépassait de 11 px en bas)
     check("rien ne coupe en hauteur : pas de décalage", decalerVolet({ haut: 450, hauteur: 405, zone: { top: -Infinity, bottom: Infinity } }) === 0);
     check("dans la carte : pas de décalage", decalerVolet({ haut: 450, hauteur: 405, zone: { top: 184, bottom: 900 } }) === 0);
     check("il dépasse du bas de la carte : remonté, 6 px au-dessus du bord", decalerVolet({ haut: 450, hauteur: 405, zone: { top: 184, bottom: 844 } }) === 844 - 6 - 405 - 450);
     check("il dépasse du haut : descendu, 6 px sous le bord", decalerVolet({ haut: 100, hauteur: 405, zone: { top: 130, bottom: 900 } }) === 36);
     check("plus haut que la carte : collé en haut", decalerVolet({ haut: 100, hauteur: 405, zone: { top: 130, bottom: 400 } }) === 36);
-    const css = fs.readFileSync("components/classement/Podium.module.css", "utf8");
-    check("le CSS applique l'écart et le décalage (--pousse des deux côtés, --dy)", (css.match(/var\(--pousse, 0px\)/g) ?? []).length === 2 && css.includes("var(--dy, 0px)"));
-    check("la marge du texte du panneau est bien de 84 unités sur 470 (TEXTE_VOLET)", Math.abs(TEXTE_VOLET - 84 / 470) < 1e-12 && /\[data-cote="droite"\] \.contenu \{\s*padding-left: calc\(var\(--u\) \* 84\)/.test(fs.readFileSync("components/profil/PanneauJoueur.module.css", "utf8")));
+    check("le CSS applique l'écart et le décalage (--pousse des deux côtés, --dy)", (pod.match(/var\(--pousse, 0px\)/g) ?? []).length === 2 && pod.includes("var(--dy, 0px)"));
+    check("la marge du texte du panneau est bien de 104 unités sur 360 (TEXTE_VOLET), des deux côtés de la bannière", Math.abs(TEXTE_VOLET - 104 / 360) < 1e-12 && /\[data-cote="droite"\] \.contenu \{\s*padding-left: calc\(var\(--u\) \* 104\)/.test(pan) && /\[data-cote="gauche"\] \.contenu \{\s*padding-right: calc\(var\(--u\) \* 104\)/.test(pan));
+    // à toutes les largeurs de place (le volet suit la bannière dès 202 px, garde 129 px en dessous), les pièces ne mangent pas le texte
+    const largeurs = [100, 120, 130, 150, 180, 193, 194, 200, 201, 202, 204, 210, 230, 240, 250];
+    const touche = largeurs.filter((W) => {
+      const h = { left: 400, width: W };
+      const Lw = mesures(W).pw;
+      const p = placerVolet({ hote: h, bannieres: B, largeur: Lw, zone: { left: 0, right: 1600 }, debord: deb });
+      const finP = h.left + W * B.gauche - deb.gauche * W * (B.droite - B.gauche);
+      const finTexte = h.left + W * B.gauche + Lw * RECOUVREMENT_VOLET - p.pousse - TEXTE_VOLET * Lw;
+      return p.cote !== "gauche" || finTexte > finP - 3;
+    });
+    check("à toutes les largeurs de place (100 à 250 px), le texte du volet ouvert à gauche finit avant le bout des pièces", touche.length === 0, touche.join(" "));
+  }
+
+  console.log("\n# Le volet a la taille de la bannière (un peu moins), et ce qu'il garde y tient");
+  {
+    check("la largeur (--pw) et la hauteur (--ph) du volet sont dans le CSS ; il les applique (width, height) et se fait conteneur de taille", !!mw && !!mh && Number(mw[2]) === VOLET_LARGEUR_MIN && /\.volet \{[^}]*container-type: size;[^}]*width: var\(--pw\);\s*height: var\(--ph\);/.test(pod) && /top: calc\([^;]*- var\(--ph\) \/ 2 \+ var\(--dy, 0px\)\)/.test(pod) && !/\.volet \{[^}]*aspect-ratio/.test(pod), `${mw?.[0]} ${mh?.[0]}`);
+    check("le volet seul a les proportions de la bannière (360 × 850, --u sur 360) : 96 % de sa largeur (64 cqw de la place, la bannière en fait 66,67), donc 96 % de sa hauteur", Math.abs(A / (360 / 540) - 0.96) < 1e-9 && Math.abs(C - 0.96) < 1e-9 && pan.includes(".panneau[data-isole] {\n  --u: calc(100cqw / 360);"), `A ${A} C ${C}`);
+    const places = Array.from({ length: 151 }, (_, i) => 100 + i);
+    const tropHaut = places.filter((W) => mesures(W).ph > mesures(W).bh * 0.96 + 1e-9);
+    check("à toutes les largeurs de place (100 à 250 px, chaque pixel), le volet ne dépasse pas 96 % de la hauteur de la bannière", tropHaut.length === 0, tropHaut.join(" "));
+    // en largeur : la bannière fait 2/3 de la place ; 129 px de volet (le plancher) la dépassent sous 194 px de place
+    const egale = VOLET_LARGEUR_MIN / (360 / 540);
+    const plein = Math.ceil(VOLET_LARGEUR_MIN / A);
+    const tropLarge = places.filter((W) => W >= egale && mesures(W).pw > mesures(W).bw + 1e-9);
+    const r = mesures(204);
+    check("dès 194 px de place (l'ordinateur ; l'écran de l'utilisateur : 204 px), le volet n'est pas plus large que la bannière ; dès 202 px, il en fait 96 % en largeur et en hauteur, à ses proportions", Math.ceil(egale) === 194 && plein === 202 && tropLarge.length === 0 && places.filter((W) => W >= plein).every((W) => Math.abs(mesures(W).pw / mesures(W).bw - 0.96) < 1e-9 && Math.abs(mesures(W).ph / mesures(W).bh - 0.96) < 1e-9 && Math.abs(mesures(W).hu - 850) < 1e-6), `204 px : volet ${r.pw.toFixed(1)} × ${r.ph.toFixed(1)}, bannière ${r.bw.toFixed(1)} × ${r.bh.toFixed(1)} ; ${tropLarge.join(" ")}`);
+    // sous 194 px (téléphone, tablette étroite) : à la taille de la bannière, ses textes passeraient sous 10 px ; le plancher l'emporte, en largeur seulement
+    const petit = mesures(100);
+    check("sous 194 px de place, le plancher de lisibilité (129 px : textes de 10 px) l'emporte en largeur seulement, la hauteur reste à 96 % de la bannière", places.filter((W) => W < egale).every((W) => mesures(W).pw === VOLET_LARGEUR_MIN && Math.abs(mesures(W).ph / mesures(W).bh - 0.96) < 1e-9), `100 px : volet ${petit.pw} × ${petit.ph.toFixed(0)}, bannière ${petit.bw.toFixed(0)} × ${petit.bh.toFixed(0)}`);
+
+    // ce qui reste dans le panneau seul (en unités sur 360), recalculé depuis sa feuille de style : la règle « .panneau[data-isole] … »
+    // si elle existe, sinon la règle de base
+    const echappe = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regle = (sel: string): string => (pan.match(new RegExp(`(?:^|\\n)${echappe(sel)} \\{([^}]*)\\}`)) ?? ["", ""])[1];
+    const lire = (sel: string, prop: string, forme: string): number => {
+      for (const s of [`.panneau[data-isole] ${sel}`, sel]) {
+        const m = regle(s).match(new RegExp(`(?:^|[;\\s])${prop}: ${forme}`));
+        if (m) return Number(m[1]);
+      }
+      return NaN;
+    };
+    const u = (sel: string, prop: string) => lire(sel, prop, "(?:max\\([\\d.]+px, )?calc\\(var\\(--u\\) \\* ([\\d.]+)\\)");
+    const nb = (sel: string, prop: string) => lire(sel, prop, "([\\d.]+)(?:em)?;");
+    const quatre = (sel: string) => [...(regle(sel).match(/(?:^|[;\s])padding: ([^;]+);/)?.[1] ?? "").matchAll(/calc\(var\(--u\) \* ([\d.]+)\)/g)].map((m) => Number(m[1]));
+    const [padH, , padB] = quatre(".contenu");
+    const [statH, , statB] = quatre(".stat");
+    const v = {
+      marges: padH + padB,
+      nom: u(".nom", "font-size") * nb(".nom", "line-height"),
+      ecart: u(".identite", "gap"),
+      filet: u(".filet", "height"),
+      insigne: u(".insigne", "height"),
+      rangLigne: u(".rangTexte b", "font-size") * nb(".rangTexte b", "line-height"),
+      provLigne: u(".provisoire", "font-size") * nb(".provisoire", "line-height"),
+      blocs: u(".contenu", "gap"),
+      losange: u(".losange", "height"),
+      entreBadges: u(".badges", "gap"),
+      stat: statH + statB + 2 * u(".stat", "border") + u(".stat dt", "font-size") * nb(".stat dt", "line-height") + u(".stat", "gap") + u(".stat dd", "font-size") * nb(".stat dd", "line-height"),
+      entreStats: u(".stats", "gap"),
+    };
+    check("les mesures du panneau seul se lisent toutes dans sa feuille de style", Object.values(v).every((x) => Number.isFinite(x) && x > 0), JSON.stringify(v));
+    // l'identité : le pseudo, le filet, le rang (l'insigne, ou le nom du palier sur trois lignes au plus, « Grand / Maître /
+    // III », ou « Placement 3/5 » sur deux)
+    const identite = v.nom + 2 * v.ecart + v.filet + Math.max(v.insigne, 3 * v.rangLigne, 2 * v.provLigne);
+    const besoin = (badges: number, stats: number) => v.marges + identite + (badges ? v.blocs + badges * v.losange + (badges - 1) * v.entreBadges : 0) + (stats ? v.blocs + stats * v.stat + (stats - 1) * v.entreStats : 0);
+    const seuils = [...pan.matchAll(/@container \(aspect-ratio > 360 \/ (\d+)\)/g)].map((m) => Number(m[1]));
+    check("six seuils de hauteur, du plus haut au plus bas, et plus aucun sur 470", seuils.length === 6 && seuils.every((s, i) => i === 0 || s < seuils[i - 1]) && !pan.includes("aspect-ratio > 470"), seuils.join(" "));
+    // les retraits, dans l'ordre des seuils : le 3e badge, le 3e chiffre, le 2e badge, le 2e chiffre, le dernier badge, le dernier chiffre
+    const garde = (hu: number) => {
+      const n = seuils.filter((s) => hu < s).length;
+      return { badges: [3, 2, 2, 1, 1, 0, 0][n], stats: [3, 3, 2, 2, 1, 1, 0][n] };
+    };
+    const deborde = places.filter((W) => {
+      const { hu } = mesures(W);
+      const k = garde(hu);
+      return besoin(k.badges, k.stats) > hu;
+    });
+    check("à toutes les largeurs de place, ce que le volet garde tient dans sa hauteur", deborde.length === 0, deborde.map((W) => `${W}:${mesures(W).hu.toFixed(0)}`).join(" "));
+    check("à pleine taille (204 px de place, l'écran de l'utilisateur), rien n'est retiré : trois badges, trois chiffres", egal(garde(mesures(204).hu), { badges: 3, stats: 3 }) && egal(garde(850), { badges: 3, stats: 3 }) && besoin(3, 3) <= 850, `${besoin(3, 3).toFixed(1)} unités sur 850`);
+    check("à chaque seuil : ce qui reste en dessous y tient, ce qu'il y avait au-dessus aussi, et rien ne part trop tôt (moins de 12 unités de marge)", seuils.every((s) => {
+      const k = garde(s - 0.01);
+      const avant = garde(s + 0.01);
+      const b = besoin(avant.badges, avant.stats);
+      return besoin(k.badges, k.stats) <= s - 0.01 && b <= s && b > s - 12;
+    }), seuils.map((s) => { const a = garde(s + 0.01); return `${s}:${besoin(a.badges, a.stats).toFixed(1)}`; }).join(" "));
+    check("les seuils et les retraits ne valent que pour le panneau seul (data-isole) : la carte complète n'en a aucun", [...pan.matchAll(/@container[^{]*\{\s*([^{]+)\{/g)].every((m) => m[1].trim().startsWith(".panneau[data-isole]")));
+    // la colonne de texte du rang (360 − 38 − 104, moins l'insigne et l'écart) : « PLACEMENT » en mono (0,6 em + l'espacement) et
+    // le plus long mot d'un palier (« Diamant », « Platine » : 7 lettres de Dela Gothic, ~0,78 em) y tiennent
+    const colonne = 360 - 38 - 104 - u(".insigne", "width") - u(".rang", "gap");
+    const placement = 9 * (0.6 + nb(".provisoire", "letter-spacing")) * u(".provisoire", "font-size");
+    const palier = 7 * 0.78 * u(".rangTexte b", "font-size");
+    check("la colonne du rang tient « PLACEMENT » et « Diamant » sans les couper", placement <= colonne && palier <= colonne, `colonne ${colonne}, placement ${placement.toFixed(0)}, palier ${palier.toFixed(0)}`);
   }
 
   console.log("\n# Les panneaux du podium : lecture qui dégrade proprement");

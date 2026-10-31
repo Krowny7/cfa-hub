@@ -13,7 +13,7 @@ import { PanneauJoueur } from "@/components/profil/PanneauJoueur";
 import { signed } from "@/components/classement/format";
 import type { BoardRow } from "@/components/classement/types";
 import { debordCalques, decalerVolet, placerVolet, type CoteVolet } from "@/components/classement/podium";
-import { SCENE, SCENE_H, SCENE_L, SCENE_PX, type Composition } from "@/lib/profil/banniere";
+import { SCENE, SCENE_H, SCENE_L, SCENE_PX, estEncre, type Composition } from "@/lib/profil/banniere";
 import type { PanneauVue } from "@/lib/profil/panneau-vue";
 import { PALETTES } from "@/lib/palettes";
 import { INSIGNES } from "@/lib/rank-badge";
@@ -26,7 +26,8 @@ import s from "./Podium.module.css";
 // - le fond est l'image de bannière que le joueur a choisie dans son profil
 //   (sinon une des peintures du Classement, toujours la même pour lui) ;
 // - le cadre est son rang : le liquide marbré du palier (public/ranks/v2),
-//   qui dérive ; l'insigne est celui du palier ;
+//   qui dérive, ou le liquide de la couleur de contour qu'il a choisie sans
+//   composer de bannière (r.encre, une palette) ; l'insigne est celui du palier ;
 // - la carte s'incline sous la souris ou le doigt, avec un reflet
 //   holographique ; au repos, elle se balance doucement, chacune à son
 //   rythme ; le n° 1 a un arc électrique autour de son insigne ;
@@ -41,12 +42,15 @@ import s from "./Podium.module.css";
 //   se chevauche. Sans personnage, la carte est celle d'avant.
 // - la bannière COMPOSÉE du joueur (profile_style.banniere : son fond, son
 //   cadre, son personnage et ses deux pièces, qui débordent dans la marge
-//   transparente) remplace le fanion : BanniereComposee, à la largeur de la
+//   transparente ; son cadre au métal du rang, ou au liquide de la couleur
+//   qu'il a choisie, la même que l'encre de son panneau) remplace le
+//   fanion : BanniereComposee, à la largeur de la
 //   place, sa zone de débordement comprise ; dessous, un petit pied dit la
 //   place et l'insigne (l'arc électrique du n° 1 le suit). Seule la bannière
-//   est visible : son PANNEAU DE GAUCHE (pseudo, titre, rang, trois badges,
-//   trois chiffres : PanneauJoueur, calculé par la page : app/classement/
-//   page.tsx) glisse de derrière elle au survol, au focus clavier et, sur
+//   est visible : son PANNEAU DE GAUCHE (pseudo, rang, trois badges, trois
+//   chiffres : PanneauJoueur resserré, de la taille de la bannière, calculé
+//   par la page : app/classement/page.tsx) glisse de derrière elle au survol,
+//   au focus clavier et, sur
 //   téléphone, au premier toucher (un second toucher ouvre la carte du joueur ;
 //   toucher ailleurs ou Échap referme). Il se pose de son côté gauche, à droite
 //   si la place manque, par-dessus la bannière sur un écran étroit
@@ -361,7 +365,7 @@ function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 
       </LienJoueur>
       {/* le volet : le panneau de gauche, caché derrière la bannière tant que la place n'est pas survolée */}
       <div ref={volet} id={idVolet} className={s.volet} data-volet="">
-        <PanneauJoueur v={panneau} isole cote={cote} />
+        <PanneauJoueur v={panneau} isole cote={cote} encre={composition.encre} />
       </div>
     </div>
   );
@@ -380,8 +384,10 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
   if (r.mastery !== null) stats.push([pct(r.mastery), PODIUM.maitrise]);
   if (r.lastDelta !== null && r.lastDelta !== 0) stats.push([signed(r.lastDelta), PODIUM.dernier]);
   const perso = r.perso || null;
+  // la couleur de contour que le joueur a choisie sans composer de bannière (une palette), sinon le liquide de son rang
+  const pal = estEncre(r.encre) ? PALETTES[r.encre] : null;
   const style = {
-    "--liq": `url(/ranks/v2/liquide-${tier}.webp)`,
+    "--liq": pal ? `url(${pal.encre})` : `url(/ranks/v2/liquide-${tier}.webp)`,
     "--teinte": teinteDeRang(tier),
     "--n": stats.length,
   } as CSSProperties;
@@ -395,9 +401,9 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
       data-ornement={r.ornement || "filet"}
       aria-label={`${PODIUM.place(place)} : ${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
     >
-      {/* le cadre : le vrai liquide du rang (EncreVive ; la texture du palier, immobile, en repli) */}
-      <span aria-hidden className={"rl-encre " + s.cadre} data-palette="rang">
-        <EncreVive tons={INSIGNES[tier].liquide} echelle={160} />
+      {/* le cadre : le vrai liquide du rang, ou de la couleur choisie (EncreVive ; la texture, immobile, en repli) */}
+      <span aria-hidden className={"rl-encre " + s.cadre} data-palette={pal ? pal.key : "rang"}>
+        <EncreVive tons={pal ? pal.liquide : INSIGNES[tier].liquide} echelle={160} />
       </span>
       <span aria-hidden className={s.forme}>
         {/* eslint-disable-next-line @next/next/no-img-element */}

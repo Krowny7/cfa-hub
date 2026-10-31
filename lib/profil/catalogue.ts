@@ -16,6 +16,7 @@ import { champsBaseVides, remplie, type Acquis, type ConditionProfil } from "@/l
 import { DISPOSITION_DEFAUT, type Disposition } from "@/lib/profil/disposition";
 import { PERSO_POS_DEFAUT, PERSO_TAILLE_DEFAUT } from "@/lib/profil/perso";
 import type { Composition } from "@/lib/profil/banniere";
+import type { PaletteCle } from "@/lib/palettes";
 
 /** Ce que le joueur a accompli (vitrine, cadres). */
 export type ProfilStats = {
@@ -265,6 +266,13 @@ export type StyleProfil = {
    * tant qu'elle manque.
    */
   banniere: Composition | null;
+  /**
+   * La couleur du contour de la bannière et de l'encre de la carte (une palette de ENCRES, lib/profil/banniere.ts) ;
+   * null ou absente : celle du rang. Avec une composition, c'est la sienne qui compte (banniere.encre) ; sans, celle du
+   * fanion, enregistrée seule dans la même colonne (profile_style.banniere : { v: 1, simple: true, encre }, sans SQL de
+   * plus). Lue et validée avec la composition ; pour la dire, encreDe(style).
+   */
+  encre?: PaletteCle | null;
   /** sa taille, en % de la taille de base : 50 à 160, 100 par défaut (profile_style.perso_taille) */
   persoTaille: number;
   /** sa position verticale : 0 remonté, 50 posé à sa place, 100 descendu (profile_style.perso_pos) */
@@ -277,8 +285,8 @@ export type StyleProfil = {
   ornement: string;
 };
 
-/** Ce que la bannière verticale lit du style, en plus de sa bannière : le personnage, son cadrage et l'ornement (podium, carte joueur, profil). */
-export type StyleBanniere = Pick<StyleProfil, "perso" | "persoTaille" | "persoPos" | "ornement" | "banniere">;
+/** Ce que la bannière verticale lit du style, en plus de sa bannière : le personnage, son cadrage, l'ornement et la couleur du contour (podium, carte joueur, profil). */
+export type StyleBanniere = Pick<StyleProfil, "perso" | "persoTaille" | "persoPos" | "ornement" | "banniere" | "encre">;
 
 /** L'ornement de départ, libre pour tous : le filet d'encre. */
 export const ORNEMENT_DEFAUT = "filet";
@@ -300,6 +308,7 @@ export const STYLE_DEFAUT: StyleProfil = {
   folio: null,
   perso: null,
   banniere: null,
+  encre: null,
   persoTaille: PERSO_TAILLE_DEFAUT,
   persoPos: PERSO_POS_DEFAUT,
   ornement: ORNEMENT_DEFAUT,

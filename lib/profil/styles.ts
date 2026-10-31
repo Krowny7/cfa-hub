@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { AMBIANCES, HAUTEURS, ORNEMENT_DEFAUT, STYLE_DEFAUT, estCouleur, nettoyerBio, vitrineDepuis, type Ambiance, type HauteurBanniere, type StyleBanniere, type StyleProfil } from "@/lib/profil/catalogue";
 import { bornerPersoPos, bornerPersoTaille, persoDepuis, persoValide } from "@/lib/profil/perso";
-import { compositionDepuis, serialiserComposition, validerComposition, type Composition } from "@/lib/profil/banniere";
+import { compositionDepuis, encreDepuis, estEncre, serialiserComposition, serialiserEncreSeule, validerComposition, type Composition } from "@/lib/profil/banniere";
+import type { PaletteCle } from "@/lib/palettes";
 import { badgesGagnes } from "@/lib/profil/banniere-badges";
 import { blocsDe, dispositionDepuis, validerDisposition, type Prefixes } from "@/lib/profil/disposition";
 import { pieceNue, piecesDuType, possede, programmeCourt, type Acquis, type Rarete, type TypePiece } from "@/lib/profil/pieces";
@@ -20,6 +21,8 @@ import { avanceePiece } from "@/lib/voice-profil";
 // La bannière composée (fond, personnage, pièces, ordre, panneau : une colonne
 // jsonb, profile_style.banniere) arrive avec migration_bannieres_composees.sql,
 // qui reprend aussi les colonnes ci-dessus : même repli, sans composition (null).
+// La même colonne garde la couleur du contour du joueur au fanion, sans
+// composition ({ v: 1, simple: true, encre } : lib/profil/banniere.ts).
 // Un cadre, une bannière, un titre, un folio ou un ornement se porte s'il est gagné
 // (lib/profil/pieces.ts) ou s'il est déjà porté : rien de gagné n'est repris.
 // Module serveur en pratique : il connaît toutes les pièces (le Codex
@@ -139,7 +142,8 @@ export async function ecrireStyle(admin: SupabaseClient, userId: string, style: 
   const ecrire = (l: Record<string, unknown>) => admin.from("profile_style").upsert(l, { onConflict: "user_id" });
   const v3 = { ...complet, titre: style.titre, folio: style.folio };
   const avecPerso = { ...v3, perso_url: style.perso, perso_taille: style.persoTaille, perso_pos: style.persoPos, ornement: style.ornement === ORNEMENT_DEFAUT ? null : style.ornement };
-  let s = await ecrire({ ...avecPerso, banniere: style.banniere ? serialiserComposition(style.banniere) : null });
+  // la composition (sa couleur dedans), sinon la couleur seule du fanion, sinon rien
+  let s = await ecrire({ ...avecPerso, banniere: style.banniere ? serialiserComposition(style.banniere) : serialiserEncreSeule(style.encre) });
   const banniere = !s.error;
   // la base dit que « banniere » manque (et seulement elle) : on réécrit avec le personnage, sans la bannière composée
   if (s.error && baseAbsente(s.error) && /banniere/i.test(s.error.message)) s = await ecrire(avecPerso);
@@ -196,7 +200,9 @@ export function ornementsPortables(a: Acquis, porte: string | null = null): Orne
  * choisit la composition enregistrée, sinon l'ancien personnage) ; colonnes
  * absentes (migration_bannieres_perso.sql, migration_bannieres_composees.sql
  * pas collées) ou valeurs étrangères : aucun personnage, taille 100, position
- * 50, le filet d'encre, pas de composition.
+ * 50, le filet d'encre, pas de composition. La couleur du contour (`encre`) :
+ * celle de la composition, ou celle que le joueur au fanion a choisie seule
+ * (la colonne marquée « simple », qui n'est pas une composition) ; sinon null.
  */
 export function banniereDepuis(row: Record<string, unknown> | null | undefined): StyleBanniere {
   return {
@@ -205,6 +211,7 @@ export function banniereDepuis(row: Record<string, unknown> | null | undefined):
     persoPos: bornerPersoPos(row?.perso_pos),
     ornement: nueConnue("ornement", row?.ornement) ?? STYLE_DEFAUT.ornement,
     banniere: compositionDepuis(row?.banniere),
+    encre: encreDepuis(row?.banniere),
   };
 }
 
@@ -230,7 +237,7 @@ export function styleDepuis(row: Record<string, unknown> | null | undefined): St
 }
 
 /** Ce qu'il porte : le cadre, la bannière, le titre et le folio ; l'ornement et le personnage s'y ajoutent quand on les connaît. */
-export type Porte = Pick<StyleProfil, "frame" | "banner" | "titre" | "folio"> & Partial<Pick<StyleProfil, "ornement" | "perso" | "persoTaille" | "persoPos" | "banniere">>;
+export type Porte = Pick<StyleProfil, "frame" | "banner" | "titre" | "folio"> & Partial<Pick<StyleProfil, "ornement" | "perso" | "persoTaille" | "persoPos" | "banniere" | "encre">>;
 
 /**
  * Ne garde que des valeurs connues et des pièces gagnées ou déjà portées (le
@@ -247,7 +254,10 @@ export type Porte = Pick<StyleProfil, "frame" | "banner" | "titre" | "folio"> & 
  * son enregistrement) ; null, aucune ; un objet, validée strictement
  * (validerComposition : images de son dossier sous le nom exact de chaque
  * élément ou préréglages du site, badges gagnés ou déjà portés, statistiques
- * connues, nombres ramenés dans la scène).
+ * connues, nombres ramenés dans la scène). La couleur du contour : avec une
+ * composition, la sienne (validée avec elle) ; sans, celle du fanion
+ * (`encre` : une palette de ENCRES, sinon refusée et ramenée à celle du rang ;
+ * absente de `input`, celle qu'il porte). Le style rendu dit la couleur qui se voit.
  */
 export function validerStyle(input: Partial<StyleProfil>, a: Acquis, prefixeImage: string | null, prefixesMedias: Prefixes | null = null, porte: Porte | null = null): { style: StyleProfil; refus: string[] } {
   const refus: string[] = [];
@@ -280,6 +290,13 @@ export function validerStyle(input: Partial<StyleProfil>, a: Acquis, prefixeImag
     banniere = v.composition;
     refus.push(...v.refus);
   }
+  // la couleur du fanion (sans composition) : une palette de la liste, sinon celle du rang ; avec une composition, la sienne
+  let encre: PaletteCle | null = banniere ? banniere.encre : null;
+  if (!banniere) {
+    const voulue: unknown = input.encre === undefined ? (porte?.encre ?? null) : input.encre;
+    if (estEncre(voulue)) encre = voulue;
+    else if (voulue !== null && voulue !== "") refus.push("la couleur du contour");
+  }
   const url = typeof input.bannerUrl === "string" ? input.bannerUrl.trim() : "";
   // après le dossier du joueur, un nom de fichier seul (« banniere-<ms>.<ext> ») : ni « .. » ni « %2e »
   const nomBanniere = url && prefixeImage && url.startsWith(prefixeImage) ? url.slice(prefixeImage.length) : "";
@@ -305,6 +322,7 @@ export function validerStyle(input: Partial<StyleProfil>, a: Acquis, prefixeImag
       folio,
       perso,
       banniere,
+      encre,
       persoTaille: bornerPersoTaille(input.persoTaille ?? porte?.persoTaille ?? STYLE_DEFAUT.persoTaille),
       persoPos: bornerPersoPos(input.persoPos ?? porte?.persoPos ?? STYLE_DEFAUT.persoPos),
       ornement,

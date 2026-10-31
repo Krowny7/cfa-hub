@@ -6,6 +6,7 @@ import type { DuelSummary, RatingEvent } from "@/lib/rating";
 import type { StyleBanniere, StyleProfil } from "@/lib/profil/catalogue";
 import type { Composition } from "@/lib/profil/banniere";
 import type { PanneauVue } from "@/lib/profil/panneau-vue";
+import type { PaletteCle } from "@/lib/palettes";
 
 export type BoardRow = {
   userId: string;
@@ -37,6 +38,12 @@ export type BoardRow = {
    * seulement) : le podium la dessine à la place du fanion (BanniereComposee) ; absente : le fanion d'avant
    */
   banniere?: Composition | null;
+  /**
+   * la couleur du contour du FANION du joueur (une palette de ENCRES : choisie sans composer de bannière ; les trois
+   * premiers seulement) : son cadre prend le liquide de la palette au lieu de celui du rang. Avec une composition, c'est
+   * la sienne qui compte (banniere.encre). Absente ou null : le liquide du rang.
+   */
+  encre?: PaletteCle | null;
   /**
    * le panneau de gauche de cette bannière composée (pseudo, titre, rang, trois badges, trois chiffres avec leurs vraies
    * valeurs : lib/profil/panneau-vue.ts), calculé par la page pour les joueurs du podium qui ont une composition ; il sort de

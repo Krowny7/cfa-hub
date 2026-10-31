@@ -20,7 +20,8 @@ export function CarteBanniere({ composition, panneau, fond, charge = "lazy", cla
   return (
     <div className={`${c.carte} ${className}`} role="group" aria-label={`Carte de ${panneau.nom}`} data-carte-banniere="">
       <div className={c.cartePlaque}>
-        <PanneauJoueur v={panneau} />
+        {/* la même couleur que le contour de la bannière (composition.encre) : l'encre de la plaque */}
+        <PanneauJoueur v={panneau} encre={composition.encre} />
       </div>
       <div className={c.carteBanniere}>
         <BanniereComposee composition={composition} fond={fond} metal={panneau.metal} charge={charge} />

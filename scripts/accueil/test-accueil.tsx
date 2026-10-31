@@ -167,6 +167,18 @@ console.log("\n# la suite, comme avant le Codex v3");
   check("traits, vainqueur du jour, reprendre, duel, rang, liens (point faible compris)", croissant(suite), suite.join(" < "));
 }
 
+console.log("\n# le liseré du vainqueur : la couleur de contour qu'il a choisie, sinon son rang");
+{
+  const base = exemple();
+  const lisere = (html: string) => (html.match(/<span aria-hidden="true" class="rl-encre lisere" data-palette="([^"]+)"/) ?? ["", ""])[1];
+  const rang = rendre(base);
+  check("sans couleur : le vrai liquide de son rang (la texture du palier en repli)", lisere(rang) === "rang" && rang.includes("url(/ranks/v2/liquide-3.webp)"));
+  const colore = rendre({ ...base, vainqueur: { ...base.vainqueur!, encre: "studiolo" } });
+  check("avec une couleur (le contour de sa bannière composée) : le liquide de la palette, sa texture en repli", lisere(colore) === "studiolo" && colore.includes("url(/encres/studiolo.webp)") && compte(colore, /class="rl-encre-vif"/g) >= 1);
+  check("une couleur inconnue : son rang", lisere(rendre({ ...base, vainqueur: { ...base.vainqueur!, encre: "rose" as never } })) === "rang");
+  check("le chargeur lit la couleur de sa bannière : celle de sa composition, ou celle de son fanion choisie sans composer (encreDe)", readFileSync("lib/vainqueur-du-jour.ts", "utf8").includes("encre: encreDe(style)"));
+}
+
 console.log(ko ? `\n${ko} KO` : "\nTout est bon.");
 process.exit(ko ? 1 : 0);
 }

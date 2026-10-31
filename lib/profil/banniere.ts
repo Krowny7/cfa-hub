@@ -14,9 +14,20 @@
 //     l'image : c'est le verrou de proportions). L'ORDRE d'empilement est une
 //     liste du fond vers l'avant des quatre éléments « perso, haut, bas,
 //     cadre » : devant ou derrière les autres, devant ou derrière le cadre.
-//   - Le CADRE de la bannière est dessiné par le site (le filet d'encre ou
-//     l'ornement gagné : profile_style.ornement) ; il n'est pas réglable ici,
-//     sauf sa place dans l'ordre.
+//   - Le CADRE de la bannière est dessiné par le site (un filet au métal du
+//     rang) ; le joueur n'y règle que sa place dans l'ordre et sa COULEUR.
+//   - La COULEUR (`encre`) : une palette du site (ENCRES), ou null, celle du
+//     rang. Une seule couleur pour deux choses liées : le contour de la
+//     bannière (le vrai liquide de la palette à la place du métal) et l'encre
+//     du fond du panneau (la même palette, sous son voile ; l'ébène par
+//     défaut). La bannière simple (le fanion, sans composition) garde son
+//     ornement (profile_style.ornement) ; son cadre prend la même couleur (le
+//     liquide de la palette à la place de celui du rang) sans devenir une
+//     bannière composée : la colonne ne garde alors que la couleur, marquée
+//     « simple » ({ v: 1, simple: true, encre } : BANNIERE_SIMPLE), que la
+//     lecture rend comme une absence de composition (compositionDepuis : null)
+//     et une couleur (encreDepuis) ; le style la porte à part (StyleProfil.encre ;
+//     encreDe dit la couleur d'un style, composé ou non).
 //   - Le PANNEAU de gauche (la « carte » du joueur) est dessiné par le site ;
 //     le joueur choisit seulement ce qu'il y met : 3 badges parmi ce qu'il a
 //     gagné (sceaux, trophées, titres) et 3 statistiques dans une liste.
@@ -30,6 +41,7 @@
 // Pour dessiner : compositionDe(style) (un style sans composition enregistrée
 // reprend l'ancien personnage : compositionDepuisAncien).
 
+import type { PaletteCle } from "@/lib/palettes";
 import type { ProfilStats } from "@/lib/profil/catalogue";
 import { BUCKET_MEDIAS } from "@/lib/profil/disposition";
 import { estPalierTrophee, estSourceTrophee } from "@/lib/trophees";
@@ -176,8 +188,33 @@ export const STATS_DEFAUT: readonly CleStat[] = ["elo", "duels", "sceaux"];
  */
 export type Panneau = { badges: string[]; stats: CleStat[] };
 
-/** La composition entière : le fond, les trois calques, l'ordre d'empilement et le panneau. */
-export type Composition = { fond: Fond; perso: Calque; haut: Calque; bas: Calque; ordre: CleOrdre[]; panneau: Panneau };
+// ── La couleur du contour et de l'encre ─────────────────────────────────
+/**
+ * Les palettes proposées pour le contour de la bannière et l'encre de la
+ * carte (lib/palettes.ts), dans l'ordre des pastilles de l'éditeur ; null :
+ * la couleur du rang. Elles ne se gagnent pas : toutes sont permises.
+ */
+export const ENCRES: readonly PaletteCle[] = ["ebene", "san-romano", "atelier", "studiolo", "carnet", "florence"];
+/** Une clé de la liste ? (liste blanche : lecture de la base et validation de l'enregistrement) */
+export const estEncre = (v: unknown): v is PaletteCle => typeof v === "string" && (ENCRES as readonly string[]).includes(v);
+/**
+ * La marque de la bannière simple dans la colonne : le joueur au fanion a choisi une couleur sans composer de bannière.
+ * La colonne garde { v: 1, simple: true, encre } (serialiserEncreSeule) ; la lecture n'y voit pas de composition.
+ */
+export const BANNIERE_SIMPLE = "simple";
+/** La forme enregistrée de la couleur seule du fanion (null : rien à enregistrer, la colonne reste vide). */
+export const serialiserEncreSeule = (encre: PaletteCle | null | undefined): Record<string, unknown> | null => (estEncre(encre) ? { v: 1, [BANNIERE_SIMPLE]: true, encre } : null);
+/** Ce que le style dit de la couleur : la composition (sa couleur), ou la couleur du fanion. */
+export type StyleAvecEncre = { banniere?: Composition | null; encre?: PaletteCle | null };
+/** La couleur du contour d'un style : celle de sa composition s'il en a une, sinon celle de son fanion ; null : celle du rang. */
+export const encreDe = (s: StyleAvecEncre | null | undefined): PaletteCle | null => {
+  if (!s) return null;
+  const e = s.banniere ? s.banniere.encre : s.encre;
+  return estEncre(e) ? e : null;
+};
+
+/** La composition entière : le fond, les trois calques, l'ordre d'empilement, le panneau et la couleur du contour et de l'encre (null : celle du rang). */
+export type Composition = { fond: Fond; perso: Calque; haut: Calque; bas: Calque; ordre: CleOrdre[]; panneau: Panneau; encre: PaletteCle | null };
 
 // ── Nombres ────────────────────────────────────────────────────────────
 const dixieme = (n: number) => Math.round(n * 10) / 10;
@@ -232,7 +269,7 @@ export function poserCalque(cle: CleCalque, image: string | null, r: number = RA
   return bornerCalque({ image, x: (100 - l) / 2, y: bas - h, l, h: null, r: ratio });
 }
 
-/** Une composition neuve : aucune image (le fond du profil, pas de pièces), le panneau de la maquette. */
+/** Une composition neuve : aucune image (le fond du profil, pas de pièces), le panneau de la maquette, la couleur du rang. */
 export const compositionDefaut = (): Composition => ({
   fond: { image: null, px: 50, py: 50 },
   perso: poserCalque("perso", null, 0.75),
@@ -240,6 +277,7 @@ export const compositionDefaut = (): Composition => ({
   bas: poserCalque("bas", null, 2.5),
   ordre: [...ORDRE_DEFAUT],
   panneau: { badges: [], stats: [...STATS_DEFAUT] },
+  encre: null,
 });
 
 /** Une composition a-t-elle au moins une image à dessiner (fond, personnage ou pièce) ? */
@@ -346,7 +384,8 @@ type Lecture = { composition: Composition; refus: string[] };
  */
 function lire(raw: unknown, ctx: ContexteComposition | null): Lecture | null {
   const o = objet(raw);
-  if (!o) return null;
+  // la couleur seule du fanion (BANNIERE_SIMPLE) n'est pas une composition : le joueur n'a rien composé
+  if (!o || o[BANNIERE_SIMPLE] === true) return null;
   const refus: string[] = [];
   const image = (cle: CleImage, v: unknown): string | null => {
     if (v === undefined || v === null || v === "") return null;
@@ -404,7 +443,14 @@ function lire(raw: unknown, ctx: ContexteComposition | null): Lecture | null {
     if (stats.length > STATS_MAX) refus.push(`les statistiques au-delà de ${STATS_MAX}`);
   }
   const panneau: Panneau = { badges: badges.slice(0, BADGES_MAX), stats: Array.isArray(p?.stats) ? stats.slice(0, STATS_MAX) : [...STATS_DEFAUT] };
-  return { composition: { fond, perso, haut, bas, ordre, panneau }, refus };
+  // la couleur du contour et de l'encre : une palette de la liste, sinon celle du rang (null) ; à la lecture de la base, une
+  // palette inconnue ou retirée revient au rang sans bruit
+  let encre: PaletteCle | null = null;
+  if (o.encre !== undefined && o.encre !== null && o.encre !== "") {
+    if (estEncre(o.encre)) encre = o.encre;
+    else refus.push("la couleur du contour");
+  }
+  return { composition: { fond, perso, haut, bas, ordre, panneau, encre }, refus };
 }
 
 /**
@@ -417,12 +463,21 @@ export function compositionDepuis(raw: unknown): Composition | null {
 }
 
 /**
+ * La couleur lue de profile_style.banniere, composée ou non : celle de la composition, ou celle du fanion (la couleur
+ * seule, BANNIERE_SIMPLE) ; absente, illisible, inconnue ou retirée de ENCRES : null (celle du rang), sans bruit.
+ */
+export function encreDepuis(raw: unknown): PaletteCle | null {
+  const o = objet(raw);
+  return o && estEncre(o.encre) ? o.encre : null;
+}
+
+/**
  * Valide la composition voulue à l'enregistrement (côté serveur : le
  * navigateur n'est jamais cru). Strict : une image qui n'est pas un fichier
  * du dossier du joueur sous le nom exact de son élément (ni un préréglage
  * connu), un badge que le joueur n'a pas gagné, une statistique inconnue, un
- * ordre qui n'est pas une permutation : refusés (listés dans `refus`) et
- * remis au défaut. Les nombres sont ramenés dans leurs bornes (rien ne sort
+ * ordre qui n'est pas une permutation, une couleur hors de ENCRES : refusés
+ * (listés dans `refus`) et remis au défaut. Les nombres sont ramenés dans leurs bornes (rien ne sort
  * de la scène). `raw` absent ou null : composition null (rien à enregistrer).
  */
 export function validerComposition(raw: unknown, ctx: ContexteComposition): { composition: Composition | null; refus: string[] } {
@@ -430,7 +485,10 @@ export function validerComposition(raw: unknown, ctx: ContexteComposition): { co
   return l ? l : { composition: null, refus: raw === undefined || raw === null ? [] : ["la bannière composée"] };
 }
 
-/** La forme que la base enregistre : les calques sans image sont omis, la hauteur proportionnelle aussi. */
+/**
+ * La forme que la base enregistre : les calques sans image sont omis, la hauteur proportionnelle aussi, la couleur du rang
+ * aussi (`encre` n'est écrite que si le joueur en a choisi une : une composition d'avant reste identique, octet pour octet).
+ */
 export function serialiserComposition(c: Composition): Record<string, unknown> {
   const calque = (k: CleCalque) => {
     const x = c[k];
@@ -444,6 +502,7 @@ export function serialiserComposition(c: Composition): Record<string, unknown> {
     ...calque("bas"),
     ordre: c.ordre,
     panneau: { badges: c.panneau.badges, stats: c.panneau.stats },
+    ...(c.encre ? { encre: c.encre } : {}),
   };
 }
 
@@ -471,8 +530,8 @@ export function compositionDepuisAncien(a: { perso: string | null | undefined; p
   return { ...base, perso: bornerCalque({ image: img, x: (100 - l) / 2, y: 100 - h + (decalage * h) / 100, l, h: null, r }) };
 }
 
-/** Ce qu'il faut du style pour dessiner : sa composition enregistrée, sinon son ancien personnage. */
-export type StyleAvecBanniere = { banniere?: Composition | null; perso?: string | null; persoTaille?: number; persoPos?: number };
+/** Ce qu'il faut du style pour dessiner : sa composition enregistrée, sinon son ancien personnage (et la couleur du fanion). */
+export type StyleAvecBanniere = { banniere?: Composition | null; perso?: string | null; persoTaille?: number; persoPos?: number; encre?: PaletteCle | null };
 
 /**
  * La composition à dessiner pour un style : celle qu'il a enregistrée, sinon

@@ -4,6 +4,7 @@ import { memo, useEffect, useId, useMemo, useRef, useState, type Dispatch, type 
 import { ArrowDown, ArrowUp, ImagePlus, RotateCcw, Trash2 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CarteBanniere } from "@/components/profil/CarteBanniere";
+import { ChoixEncre } from "@/components/profil/ChoixEncre";
 import { ChoixPanneau } from "@/components/profil/ChoixPanneau";
 import { ScenePosable } from "@/components/profil/ScenePosable";
 import { createClient } from "@/lib/supabase/browser";
@@ -18,7 +19,6 @@ import {
   PREREGLAGES,
   SCENE,
   adresseImage,
-  compositionDefaut,
   compositionDe,
   hauteurCalque,
   imagePrereglage,
@@ -36,10 +36,13 @@ import {
   avecChamp,
   avecImage,
   avecVerrou,
+  choisirEncre,
+  compositionDepart,
   devantLeCadre,
   peutPousser,
   pousser,
   reinitialiser,
+  revenirAuFanion,
   selectionDepart,
 } from "@/lib/profil/banniere-edition";
 import type { BadgeChoix } from "@/lib/profil/banniere-badges";
@@ -59,12 +62,17 @@ import c from "./EditeurBanniere.module.css";
 //     redimensionner : ScenePosable) ou aux curseurs précis (gauche, haut,
 //     largeur, hauteur, verrou des proportions), « Réinitialiser » par élément ;
 //   - l'ORDRE d'empilement (devant ou derrière les autres et le cadre).
-// Dessous, le choix du panneau de gauche (ChoixPanneau) avec l'aperçu de la
-// carte complète, à jour à chaque choix.
+// Dessous, la couleur du contour et de l'encre (ChoixEncre : une seule couleur
+// pour le cadre de la bannière et le fond du panneau) et le choix du panneau
+// de gauche (ChoixPanneau), avec l'aperçu de la carte complète, à jour à
+// chaque choix (la scène, en haut, montre aussi le contour).
 // Le brouillon est le style de Personnaliser (`b.style.banniere`) : le premier
 // changement crée la composition (avec l'ancien personnage repris comme
 // calque s'il y en avait un, que l'enregistrement retire : `perso: null`) ;
-// « Revenir à la bannière simple » la retire. Pendant un geste sur l'aperçu,
+// « Revenir à la bannière simple » la retire (la couleur reste : celle du
+// fanion). La couleur seule ne crée pas de composition : un joueur au fanion
+// la choisit ici sans rien composer (choisirEncre ; style.encre, enregistrée
+// seule dans la colonne). Pendant un geste sur l'aperçu,
 // seul cet éditeur se redessine (`live`) ; le brouillon change au relâcher.
 // Les images partent dans le dossier du joueur, une par élément : celle
 // qu'on remplace avant d'enregistrer est supprimée tout de suite, sauf si la
@@ -182,7 +190,8 @@ export function EditeurBanniere({
   selectionInitiale?: CleImage;
 }) {
   const { style, setStyle } = b;
-  const base = useMemo(() => style.banniere ?? compositionDe(style) ?? compositionDefaut(), [style]);
+  // sans composition : celle que le premier changement créera (l'ancien personnage, la couleur du fanion)
+  const base = useMemo(() => style.banniere ?? compositionDepart(compositionDe(style), style.encre), [style]);
   const commence = !!style.banniere;
   const reprise = !commence && !!base.perso.image;
   const [sel, setSel] = useState<CleImage>(() => selectionInitiale ?? selectionDepart(base));
@@ -196,8 +205,8 @@ export function EditeurBanniere({
   }, [base]);
   const vue = live ? avecCalque(base, live.cle, live.calque) : base;
 
-  /** Change la composition du brouillon (la crée au premier changement ; l'ancien personnage s'en va). */
-  const maj = (f: (comp: Composition) => Composition) => setStyle((s) => ({ ...s, banniere: f(s.banniere ?? compositionDe(s) ?? compositionDefaut()), perso: null }));
+  /** Change la composition du brouillon (la crée au premier changement, avec la couleur du fanion ; l'ancien personnage s'en va). */
+  const maj = (f: (comp: Composition) => Composition) => setStyle((s) => ({ ...s, banniere: f(s.banniere ?? compositionDepart(compositionDe(s), s.encre)), perso: null }));
   const gardees = [enregistree?.fond.image, enregistree?.perso.image, enregistree?.haut.image, enregistree?.bas.image];
   const oublier = (ancien: string | null) => {
     // une image envoyée puis remplacée avant d'enregistrer : supprimée tout de suite (au mieux)
@@ -274,7 +283,7 @@ export function EditeurBanniere({
           <p className="t-small m-0 mt-1 max-w-[680px]">{BANNIERE_ED.aide}</p>
         </div>
         {dispo && commence && (
-          <button type="button" className="btn btn-ghost btn-sm max-sm:min-h-[44px]" onClick={() => setStyle((s) => ({ ...s, banniere: null }))} title={BANNIERE_ED.retirerToutAide}>
+          <button type="button" className="btn btn-ghost btn-sm max-sm:min-h-[44px]" onClick={() => setStyle((s) => revenirAuFanion(s))} title={BANNIERE_ED.retirerToutAide}>
             <Trash2 size={14} aria-hidden /> {BANNIERE_ED.retirerTout}
           </button>
         )}
@@ -293,6 +302,7 @@ export function EditeurBanniere({
                   composition={vue}
                   selection={sel}
                   fond={fond}
+                  metal={donnees.metal}
                   onSelect={setSel}
                   onVivre={(cle, k) => setLive(k ? { cle, calque: k } : null)}
                   onValider={(cle, k) => {
@@ -462,7 +472,10 @@ export function EditeurBanniere({
               <div className="mx-auto w-full max-w-[400px] lg:sticky lg:top-24 lg:max-w-none" role="img" aria-label={BANNIERE_ED.panneauApercu}>
                 <ApercuCarte composition={base} panneau={panneau} fond={fond} />
               </div>
-              <div className="min-w-0 max-w-[520px]">
+              <div className="flex min-w-0 max-w-[520px] flex-col gap-5">
+                {/* la couleur du contour de la bannière et de l'encre de la carte : l'aperçu, à côté, montre les deux. Sans
+                    composition, seule la couleur du fanion change (aucune bannière composée créée) ; le même choix ne change rien */}
+                <ChoixEncre encre={base.encre} metal={donnees.metal} onChange={(e) => setStyle((s) => choisirEncre(s, e))} />
                 <ChoixPanneau panneau={base.panneau} badges={badges} donnees={donnees} onChange={changerPanneau} />
               </div>
             </div>

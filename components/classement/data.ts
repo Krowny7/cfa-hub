@@ -97,7 +97,8 @@ export async function lastDeltaByUser(admin: SupabaseClient | null, userIds: str
  * profile_style, lisible par tous les joueurs connectés) : l'image de
  * bannière, fond de sa carte, le nom du titre porté, sous le pseudo, et pour
  * la bannière verticale son personnage (adresse, taille, position) et son
- * ornement, plus sa bannière composée (StyleBanniere : perso, persoTaille, persoPos, ornement, banniere ; à dessiner avec compositionDe).
+ * ornement, plus sa bannière composée (StyleBanniere : perso, persoTaille, persoPos, ornement, banniere ; à dessiner avec compositionDe)
+ * et la couleur de son contour (encre : celle de sa composition, ou celle de son fanion choisie sans composer).
  * Joueur sans rien de tout cela, table absente : pas d'entrée (le podium
  * prend alors son image par défaut et le filet d'encre) ; titre absent tant
  * que migration_v3_profil.sql n'est pas collée, personnage et ornement tant
@@ -111,7 +112,7 @@ export async function podiumDe(sb: SupabaseClient, userIds: string[]): Promise<M
     const bannerUrl = typeof r.banner_url === "string" && r.banner_url ? r.banner_url : null;
     const titre = nomTitre(typeof r.titre === "string" ? r.titre : null);
     const banniere = banniereDepuis(r);
-    if (bannerUrl || titre || banniere.perso || banniere.banniere || banniere.ornement !== ORNEMENT_DEFAUT) out.set(id, { bannerUrl, titre, ...banniere });
+    if (bannerUrl || titre || banniere.perso || banniere.banniere || banniere.encre || banniere.ornement !== ORNEMENT_DEFAUT) out.set(id, { bannerUrl, titre, ...banniere });
   }
   return out;
 }

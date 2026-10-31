@@ -40,15 +40,18 @@ export function ScenePosable({
   composition,
   selection,
   fond,
+  metal,
   onSelect,
   onVivre,
   onValider,
 }: {
-  /** la composition à montrer, calque en cours de geste compris */
+  /** la composition à montrer, calque en cours de geste compris (sa couleur de contour aussi) */
   composition: Composition;
   selection: CleImage;
   /** le fond du profil, quand le joueur n'a pas envoyé le sien */
   fond?: ReactNode;
+  /** le métal du cadre sans couleur choisie (celui du rang : le même que l'aperçu de la carte) */
+  metal?: string;
   onSelect: (cle: CleImage) => void;
   /** le calque en cours de geste (null : le geste est abandonné) */
   onVivre: (cle: CleCalque, k: Calque | null) => void;
@@ -121,7 +124,7 @@ export function ScenePosable({
       <span aria-hidden className={c.debord}>
         <span className={c.legende}>{BANNIERE_ED.zoneDebord}</span>
       </span>
-      <BanniereComposee composition={composition} fond={fond} charge="eager" />
+      <BanniereComposee composition={composition} fond={fond} metal={metal} charge="eager" />
       {/* les repères : où se tient la bannière elle-même */}
       <span aria-hidden className={c.repere} data-actif={selection === "fond" ? "true" : "false"} />
       <div className={c.calques}>

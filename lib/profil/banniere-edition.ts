@@ -4,7 +4,7 @@
 // proportions sont verrouillées) et du clavier (flèches, + et −), l'ordre
 // d'empilement (un cran devant ou derrière), et les changements de
 // composition de l'éditeur (une image mise, retirée, une réinitialisation, le
-// verrou des proportions).
+// verrou des proportions, la couleur du contour et de l'encre).
 // Tout part d'un calque de départ et d'un déplacement du pointeur, en % de la
 // bannière (pointDeScene : l'écran → la scène), et rend un calque BORNÉ
 // (bornerCalque : largeur et hauteur dans leurs limites, tout le calque dans la
@@ -24,6 +24,9 @@ import {
   SCENE_L,
   bornerCalque,
   bornerRatio,
+  compositionDefaut,
+  encreDe,
+  estEncre,
   hauteurCalque,
   poserCalque,
   prereglageDe,
@@ -34,6 +37,7 @@ import {
   type CleOrdre,
   type Composition,
 } from "@/lib/profil/banniere";
+import type { PaletteCle } from "@/lib/palettes";
 
 /** 1 % de largeur de bannière vaut K % de sa hauteur (voir lib/profil/banniere.ts) */
 const K = BANNIERE_L / BANNIERE_H;
@@ -209,6 +213,35 @@ export const devantLeCadre = (ordre: readonly CleOrdre[], cle: CleCalque): boole
 // ── Les changements de composition de l'éditeur ─────────────────────────
 /** La composition avec ce calque remplacé. */
 export const avecCalque = (c: Composition, cle: CleCalque, k: Calque): Composition => ({ ...c, [cle]: k });
+
+/** La couleur du contour et de l'encre choisie (une palette de ENCRES) ; null ou une clé inconnue : celle du rang. */
+export const avecEncre = (c: Composition, encre: PaletteCle | null): Composition => ({ ...c, encre: estEncre(encre) ? encre : null });
+
+/** Ce que le choix de la couleur change dans le brouillon de Personnaliser : la composition, la couleur du fanion, l'ancien personnage. */
+export type StyleEncre = { banniere: Composition | null; encre?: PaletteCle | null; perso?: string | null };
+
+/**
+ * Le brouillon après le choix d'une couleur de contour (ChoixEncre, dans l'éditeur). Le même choix ne change rien : le
+ * même objet revient (React n'a rien à redessiner, et surtout aucune composition n'est créée). Avec une bannière composée,
+ * sa couleur change (et l'ancien personnage s'en va, comme à tout changement de la composition). Sans (le fanion), seule
+ * la couleur du fanion change : le joueur garde sa bannière simple, son ornement et son personnage, et n'a rien à composer.
+ */
+export function choisirEncre<S extends StyleEncre>(s: S, voulue: PaletteCle | null): S {
+  const e = estEncre(voulue) ? voulue : null;
+  if (e === encreDe(s)) return s;
+  return s.banniere ? { ...s, banniere: avecEncre(s.banniere, e), perso: null } : { ...s, encre: e };
+}
+
+/** « Revenir à la bannière simple » : plus de composition, mais la couleur reste (celle de la composition passe au fanion). */
+export function revenirAuFanion<S extends StyleEncre>(s: S): S {
+  return { ...s, banniere: null, encre: encreDe(s) };
+}
+
+/**
+ * La composition que l'éditeur montre et que son premier changement crée, pour un brouillon sans composition : l'ancien
+ * personnage repris comme calque (`ancienne` : compositionDe), sinon une composition neuve ; avec la couleur du fanion.
+ */
+export const compositionDepart = (ancienne: Composition | null, encre: PaletteCle | null | undefined): Composition => avecEncre(ancienne ?? compositionDefaut(), encre ?? null);
 
 /**
  * L'image d'un élément mise (adresse envoyée ou « piece:<id> ») ou retirée

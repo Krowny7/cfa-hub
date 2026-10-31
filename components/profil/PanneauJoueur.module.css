@@ -1,9 +1,11 @@
-/* Le panneau de gauche de la bannière : une plaque sombre au vrai liquide d'ébène (EncreVive, .rl-encre de globals.css),
-   un filet de métal (la teinte du rang), un liseré vermillon ; le coin du haut
+/* Le panneau de gauche de la bannière : une plaque sombre au vrai liquide d'ébène (EncreVive, .rl-encre de globals.css ; celui
+   de la couleur choisie par le joueur, posé par le composant), un filet de métal (la teinte du rang), un liseré vermillon ; le coin du haut
    gauche est coupé. Les mesures sont en unités de la carte (--u : un pixel
    d'une carte de 860 de large, lu sur le conteneur de la carte), chaque texte
    avec un minimum lisible. Le contenu reste à gauche : la bannière passe
    devant la droite de la plaque (84 unités de marge : la bannière commence à 410 sur 470).
+   Seul dans sa boîte (data-isole : le volet du podium), il prend les proportions de la bannière (360 × 850) et se resserre
+   (moins de lignes, 104 unités de marge côté bannière).
    La plaque mesure 470 × 850 unités (la bannière a perdu 15 % de hauteur : 360 × 850) ; tout y tient, avec un nom sur deux lignes,
    un titre et trois badges sur deux lignes. */
 
@@ -15,14 +17,118 @@
   height: 100%;
   color: #fff;
 }
-/* seul dans sa boîte (le volet du podium) : la plaque en fait toute la largeur, 470 unités */
+/* seul dans sa boîte (le volet du podium) : la plaque en fait toute la largeur, 360 unités (les proportions de la bannière) */
 .panneau[data-isole] {
-  --u: calc(100cqw / 470);
+  --u: calc(100cqw / 360);
 }
-/* le volet posé à droite de la bannière : elle en cache la gauche, le texte se décale ; par-dessus elle, rien n'est caché à droite */
+/* seul, il est resserré : la taille de la bannière (96 %), 129 px de large au moins (podium.ts, VOLET_LARGEUR_MIN). La colonne
+   de texte fait 218 unités (38 de marge dehors, 104 côté bannière) : on garde le pseudo (une ligne, points de suspension : il
+   est écrit en entier sur la bannière), l'insigne et le nom du rang (deux lignes au plus ; en placement, « Placement 3/5 » à
+   sa place), les badges (losange et nom, une ligne), les chiffres ; on retire le titre porté, l'étiquette « Rang », les
+   numéros et les sous-titres des badges. Tout en unités, sans minimum en pixels : à 129 px, le plus petit texte fait 10 px
+   (28 unités) ; les minimums de la carte complète feraient déborder la plaque. Sur 850 unités : marges 56, identité 126
+   (pseudo 41, filet et écarts 21, rang 64 sur deux lignes), badges 224 (3 × 68 + 2 × 10), chiffres 315 (3 × 100 + 2 × 8),
+   deux espaces de 20 : 761 au plus (scripts/classement/test-podium.ts le recalcule depuis cette feuille). */
+.panneau[data-isole] .titre,
+.panneau[data-isole] .rangTexte small:not(.provisoire),
+.panneau[data-isole] .badgeTexte small,
+.panneau[data-isole] .badgeTexte em {
+  display: none;
+}
+.panneau[data-isole] .contenu {
+  gap: calc(var(--u) * 20);
+}
+.panneau[data-isole] .nom {
+  font-size: calc(var(--u) * 38);
+  -webkit-line-clamp: 1;
+}
+.panneau[data-isole] .rang {
+  gap: calc(var(--u) * 10);
+}
+.panneau[data-isole] .insigne {
+  width: calc(var(--u) * 48);
+  height: calc(var(--u) * 48);
+}
+.panneau[data-isole] .rangTexte b {
+  font-size: calc(var(--u) * 28);
+}
+/* en placement : « Placement 3/5 » à la place du nom du palier (l'insigne garde la couleur du palier de son ELO) */
+.panneau[data-isole] .rangTexte[data-provisoire] b {
+  display: none;
+}
+.panneau[data-isole] .provisoire {
+  font-size: calc(var(--u) * 28);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+.panneau[data-isole] .badges {
+  gap: calc(var(--u) * 10);
+}
+.panneau[data-isole] .badges::before {
+  left: calc(var(--u) * 25);
+}
+.panneau[data-isole] .losange {
+  width: calc(var(--u) * 56);
+  height: calc(var(--u) * 68);
+}
+.panneau[data-isole] .badgeTexte b {
+  font-size: calc(var(--u) * 30);
+  -webkit-line-clamp: 1;
+}
+.panneau[data-isole] .stats {
+  max-width: none;
+}
+.panneau[data-isole] .stat dt {
+  font-size: calc(var(--u) * 28);
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+}
+.panneau[data-isole] .stat dd {
+  font-size: calc(var(--u) * 36);
+}
+/* plus court que ses proportions (le volet sous 202 px de place : 129 px de large, mais pas plus haut que 96 % de la
+   bannière) : des lignes partent, du bas vers le haut, un badge puis un chiffre. La boîte doit être un conteneur de taille (le
+   volet : Podium.module.css) ; « aspect-ratio > 360 / N » : moins de N unités de haut (chaque seuil : ce qu'il y a au-dessus,
+   plus 3 unités ; le nom du palier compte pour trois lignes : « Grand / Maître / III »). Ailleurs (la carte complète), rien
+   ne bouge. */
+@container (aspect-ratio > 360 / 780) {
+  .panneau[data-isole] .badge:nth-child(n + 3) {
+    display: none;
+  }
+}
+@container (aspect-ratio > 360 / 702) {
+  .panneau[data-isole] .stat:nth-child(n + 3) {
+    display: none;
+  }
+}
+@container (aspect-ratio > 360 / 599) {
+  .panneau[data-isole] .badge:nth-child(n + 2) {
+    display: none;
+  }
+}
+@container (aspect-ratio > 360 / 521) {
+  .panneau[data-isole] .stat:nth-child(n + 2) {
+    display: none;
+  }
+}
+@container (aspect-ratio > 360 / 417) {
+  .panneau[data-isole] .badges {
+    display: none;
+  }
+}
+@container (aspect-ratio > 360 / 329) {
+  .panneau[data-isole] .stats {
+    display: none;
+  }
+}
+/* le volet posé à côté de la bannière : elle en cache le bord (60 unités) et ses pièces débordent devant, le texte s'en écarte
+   (104 unités : TEXTE_VOLET de podium.ts) ; par-dessus elle, rien n'est caché à droite */
 .panneau[data-cote="droite"] .contenu {
-  padding-left: calc(var(--u) * 84);
+  padding-left: calc(var(--u) * 104);
   padding-right: calc(var(--u) * 38);
+}
+.panneau[data-cote="gauche"] .contenu {
+  padding-right: calc(var(--u) * 104);
 }
 .panneau[data-cote="dessus"] .contenu {
   padding-right: calc(var(--u) * 38);
@@ -46,11 +152,16 @@
   background: linear-gradient(180deg, color-mix(in srgb, var(--metal) 78%, #fff) 0%, var(--metal) 40%, color-mix(in srgb, var(--metal) 62%, #000) 100%);
   clip-path: polygon(calc(var(--u) * 45) 0, 100% 0, 100% 100%, 0 100%, 0 calc(var(--u) * 45));
 }
-/* le fond : le liquide (son voile : --pal-voile-*, posé par le composant) ; brun sombre uni en mode discret */
+/* le fond : le liquide (son voile : --pal-voile-*, posé par le composant) ; brun sombre uni sans palette */
 .fondPlaque {
   inset: calc(var(--u) * 5);
   background: #241b13;
   clip-path: polygon(calc(var(--u) * 43) 0, 100% 0, 100% 100%, 0 100%, 0 calc(var(--u) * 43));
+}
+/* mode discret : ni liquide ni texture (.rl-encre est coupé) ; un aplat sombre tiré de la palette (--pal-2, posé par le
+   composant avec les autres variables), lié comme la bande du contour de la bannière, qui garde la texture de la même palette */
+:global(html[data-discreet="1"]) .fondPlaque {
+  background: color-mix(in srgb, var(--pal-2, #241b13) 35%, #120d09);
 }
 
 .contenu {

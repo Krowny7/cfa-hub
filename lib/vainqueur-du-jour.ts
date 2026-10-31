@@ -2,13 +2,16 @@
 // l'accueil (components/accueil/VainqueurDuJour.tsx). Lecture seule, côté
 // serveur : le classement d'un jour passé (RPC du défi, figé une fois le jour
 // passé), puis ce qu'il faut pour son insigne (ELO, maîtrise, place) et sa
-// bannière de profil. Tout dégrade proprement : pas de défi hier, pas de
+// bannière de profil (son image, et la couleur de contour qu'il a choisie pour
+// sa bannière, composée ou simple). Tout dégrade proprement : pas de défi hier, pas de
 // copie rendue, RPC absente → null (la bannière n'apparaît pas), jamais d'exception.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getDailyBoard, shiftDay } from "@/lib/daily";
 import { getLeaderboardRank } from "@/lib/rating";
 import { DEFAULT_ELO, PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
+import type { PaletteCle } from "@/lib/palettes";
 import { lireStyle } from "@/lib/profil/donnees";
+import { encreDe } from "@/lib/profil/banniere";
 import { masteryByUser } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 
@@ -29,6 +32,8 @@ export type VainqueurDuJour = {
   placement: boolean;
   /** l'image de bannière de son profil, sinon null (la bannière prend sa peinture par défaut) */
   bannerUrl: string | null;
+  /** la couleur du contour de sa bannière (composée : composition.encre ; simple : celle du fanion) ; absente ou null : le liquide de son rang */
+  encre?: PaletteCle | null;
 };
 
 /**
@@ -62,6 +67,8 @@ export async function lireVainqueurDuJour(sb: SupabaseClient, admin: SupabaseCli
       tier: rk.tierIndex,
       placement: (r?.games_played ?? 0) < PLACEMENT_GAMES,
       bannerUrl: style.bannerUrl,
+      // la couleur de sa composition, ou celle de son fanion (choisie sans composer)
+      encre: encreDe(style),
     };
   } catch {
     return null;

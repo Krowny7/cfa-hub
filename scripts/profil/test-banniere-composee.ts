@@ -6,12 +6,14 @@
 // calque proportionnel et le calque libre, l'ordre d'empilement (permutation),
 // la lecture tolérante de la base, la validation stricte (images du dossier
 // du joueur sous le nom exact de l'élément, préréglages, badges gagnés,
-// statistiques connues), la sérialisation et sa taille, la conversion de
-// l'ancien personnage, les valeurs du panneau, le style (styleDepuis,
-// validerStyle, ecrireStyle et ses replis), la migration, les préréglages
-// copiés dans public/, aucun chemin local.
+// statistiques connues, couleur du contour dans sa liste blanche), la
+// sérialisation et sa taille, la conversion de l'ancien personnage, les
+// valeurs du panneau, le style (styleDepuis, validerStyle, ecrireStyle et ses
+// replis), la migration, les préréglages et les textures des couleurs
+// présents dans public/, aucun chemin local.
 import fs from "node:fs";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PALETTES } from "@/lib/palettes";
 import {
   BADGES_MAX,
   BANNIERE_H,
@@ -22,6 +24,7 @@ import {
   CALQUE_L_MIN,
   COMPOSITION_MAX_CAR,
   DEBORD,
+  ENCRES,
   ORDRE_DEFAUT,
   PREREGLAGES,
   SCENE,
@@ -35,6 +38,9 @@ import {
   compositionDefaut,
   compositionDepuis,
   compositionDepuisAncien,
+  encreDe,
+  encreDepuis,
+  estEncre,
   fichierImage,
   fichiersComposition,
   formaterStat,
@@ -48,6 +54,7 @@ import {
   poserCalque,
   prereglageDe,
   serialiserComposition,
+  serialiserEncreSeule,
   validerComposition,
   valeursPanneau,
   type Calque,
@@ -123,6 +130,16 @@ check("tous les calques posés tiennent dans la scène (7 ratios × 3 calques)",
   check("composition neuve : l'ordre par défaut et le panneau de la maquette", egal(d.ordre, ORDRE_DEFAUT) && egal(d.panneau, { badges: [], stats: ["elo", "duels", "sceaux"] }));
   check("l'ordre par défaut : le cadre derrière le personnage, la pièce du haut devant tout", egal(ORDRE_DEFAUT, ["cadre", "perso", "bas", "haut"]));
   check("deux compositions neuves sont indépendantes", compositionDefaut().ordre !== d.ordre && memeComposition(d, compositionDefaut()));
+  check("composition neuve : la couleur du rang (encre null)", d.encre === null);
+}
+
+// ── 4 bis. les couleurs du contour et de l'encre ───────────────────────
+{
+  check("les couleurs proposées : six palettes du site, sans doublon", ENCRES.length === 6 && new Set(ENCRES).size === 6 && ENCRES.every((k) => k in PALETTES), ENCRES.join(" "));
+  const manquantes = ENCRES.filter((k) => !fs.existsSync(`public/encres/${k}.webp`) || PALETTES[k].encre !== `/encres/${k}.webp`);
+  check("chaque couleur a sa texture de repli dans public/encres/", manquantes.length === 0, manquantes.join(", "));
+  check("chaque couleur a les quatre tons de son liquide (#rrggbb)", ENCRES.every((k) => PALETTES[k].liquide.length === 4 && PALETTES[k].liquide.every((t) => /^#[0-9a-f]{6}$/i.test(t))));
+  check("estEncre : la liste blanche, rien d'autre", ENCRES.every(estEncre) && [null, undefined, "", "rose", "EBENE", " ebene", 12, {}, ["atelier"]].every((v) => !estEncre(v)));
 }
 
 // ── 5. lecture tolérante de la base ────────────────────────────────────
@@ -151,6 +168,15 @@ check("un objet vide : la composition neuve", memeComposition(compositionDepuis(
   check("des images étrangères, un mauvais élément, un préréglage inconnu : retirés", !!mauvais && !mauvais.fond.image && !mauvais.perso.image && !mauvais.haut.image);
   check("un ordre qui n'est pas une permutation revient à l'ordre par défaut", egal(mauvais!.ordre, ORDRE_DEFAUT));
   check("badges mal formés et statistiques inconnues : écartés", egal(mauvais!.panneau.badges, []) && egal(mauvais!.panneau.stats, ["elo"]));
+  check("une composition sans couleur (d'avant) : la couleur du rang", c!.encre === null);
+  check("la couleur choisie est lue", compositionDepuis({ ...brut, encre: "atelier" })!.encre === "atelier" && compositionDepuis(JSON.stringify({ encre: "florence" }))!.encre === "florence");
+  // le joueur au fanion qui a choisi une couleur sans composer : la colonne ne garde que la couleur, marquée « simple »
+  const seule = serialiserEncreSeule("carnet");
+  check("la couleur seule du fanion : { v: 1, simple: true, encre }, rien d'autre (ni fond, ni ordre, ni panneau : la contrainte de la base la laisse passer)", egal(seule, { v: 1, simple: true, encre: "carnet" }) && serialiserEncreSeule(null) === null && serialiserEncreSeule("rose" as never) === null && serialiserEncreSeule(undefined) === null);
+  check("relue, la couleur seule n'est PAS une composition (le fanion reste le fanion) ; sa couleur se lit", compositionDepuis(seule) === null && compositionDepuis(JSON.stringify(seule)) === null && encreDepuis(seule) === "carnet" && encreDepuis(JSON.stringify(seule)) === "carnet");
+  check("encreDepuis : la couleur d'une composition aussi ; rien, illisible ou inconnue : null", encreDepuis(serialiserComposition({ ...c!, encre: "atelier" })) === "atelier" && encreDepuis(brut) === null && [null, undefined, "", "{", 12, { encre: "rose" }, { simple: true, encre: "rose" }].every((x) => encreDepuis(x) === null));
+  check("encreDe : la couleur de la composition si le style en a une, sinon celle du fanion", encreDe({ banniere: { ...c!, encre: "studiolo" }, encre: "carnet" }) === "studiolo" && encreDe({ banniere: { ...c!, encre: null }, encre: "carnet" }) === null && encreDe({ banniere: null, encre: "carnet" }) === "carnet" && encreDe({ banniere: null }) === null && encreDe({ banniere: null, encre: "rose" as never }) === null && encreDe(null) === null);
+  check("une couleur absente, nulle, vide, un nombre ou une palette inconnue (retirée) : la couleur du rang, sans casser la lecture", [undefined, null, "", 12, "rose", "Atelier", ["atelier"]].every((e) => { const x = compositionDepuis({ ...brut, encre: e }); return !!x && x.encre === null && x.haut.image === "piece:royal"; }));
 }
 
 // ── 5 bis. les compositions enregistrées avant la bannière de 850 de haut ──
@@ -211,6 +237,13 @@ const ctx = { prefixe: PREFIXE, gagnes };
   check("un ordre qui n'est pas une permutation est refusé", v({ ordre: ["perso", "haut", "bas"] }).refus.length === 1 && v({ ordre: ["perso", "haut", "bas", "fond"] }).refus.length === 1);
   check("les nombres hors bornes sont ramenés, pas refusés", (() => { const r = v({ haut: { image: "piece:meca", x: 9999, y: -9999, l: 9999, h: 9999 } }); return r.refus.length === 0 && dedans(r.composition!.haut); })());
   check("les nombres sous forme de chaîne de l'éditeur sont lus", v({ haut: { image: "piece:meca", x: "-12.5", y: "-8", l: "130" } }).composition!.haut.x === -12.5);
+  // la couleur du contour et de l'encre : une liste blanche (rien ne se gagne)
+  const rose = v({ encre: "rose" });
+  check("une couleur hors de la liste est refusée (un seul refus, dit) et revient à celle du rang", rose.refus.length === 1 && rose.refus[0] === "la couleur du contour" && rose.composition!.encre === null, rose.refus.join(" | "));
+  check("une couleur de la liste passe sans refus, même sans rien de gagné", ENCRES.every((k) => { const r = validerComposition({ encre: k }, { prefixe: null, gagnes: null }); return r.refus.length === 0 && r.composition!.encre === k; }));
+  check("une couleur nulle, vide ou absente : celle du rang, sans refus", [null, "", undefined].every((e) => { const r = v({ encre: e }); return r.refus.length === 0 && r.composition!.encre === null; }));
+  check("une couleur qui n'est pas une chaîne est refusée", v({ encre: 3 }).refus.length === 1 && v({ encre: { cle: "atelier" } }).refus.length === 1);
+  check("la couleur s'ajoute à une composition valide sans rien lui retirer", (() => { const r = validerComposition({ ...(serialiserComposition(bon.composition!) as Record<string, unknown>), encre: "studiolo" }, ctx); return r.refus.length === 0 && r.composition!.encre === "studiolo" && egal(r.composition!.panneau, bon.composition!.panneau) && r.composition!.perso.image === bon.composition!.perso.image; })());
 }
 
 // ── 7. sérialisation ───────────────────────────────────────────────────
@@ -220,6 +253,13 @@ const ctx = { prefixe: PREFIXE, gagnes };
   check("les calques sans image sont omis de la forme enregistrée", !("bas" in j) && "perso" in j && "haut" in j);
   check("la hauteur proportionnelle est omise, la hauteur libre écrite", !("h" in (j.perso as object)) && (j.haut as { h: number }).h === 24);
   check("aller-retour : relire ce qu'on écrit redonne la même composition", memeComposition(compositionDepuis(j), c) && memeComposition(compositionDepuis(JSON.stringify(j)), c));
+  // la couleur : écrite seulement si le joueur en a choisi une (une composition d'avant reste identique, octet pour octet)
+  check("la couleur du rang n'est pas écrite (la forme enregistrée d'avant ne change pas)", c.encre === null && !("encre" in j) && JSON.stringify(j) === JSON.stringify(serialiserComposition({ ...c, encre: null })));
+  const coloree = { ...c, encre: "san-romano" as const };
+  const jc = serialiserComposition(coloree);
+  check("une couleur choisie est écrite, après le panneau", jc.encre === "san-romano" && Object.keys(jc).slice(-2).join(" ") === "panneau encre");
+  check("aller-retour de la couleur : relue, elle est la même", compositionDepuis(jc)!.encre === "san-romano" && compositionDepuis(JSON.stringify(jc))!.encre === "san-romano" && memeComposition(compositionDepuis(jc), coloree));
+  check("memeComposition voit un changement de couleur seul (l'enregistrement ne le perd pas)", !memeComposition(c, coloree) && !memeComposition(coloree, { ...coloree, encre: "atelier" }) && memeComposition(coloree, { ...coloree }));
   const pire: Composition = {
     fond: { image: `https://${"a".repeat(60)}.supabase.co/storage/v1/object/public/profil-medias/${UID}/fond-1760000000000.webp`, px: 12.3, py: 45.6 },
     perso: { image: url("perso"), x: -12.3, y: 12.3, l: 100, h: 55.5, r: 0.123 },
@@ -227,6 +267,8 @@ const ctx = { prefixe: PREFIXE, gagnes };
     bas: { image: url("bas"), x: -12.3, y: 80.1, l: 140, h: 25.5, r: 1.234 },
     ordre: ["perso", "haut", "bas", "cadre"],
     panneau: { badges: ["sceau:matiere:fixed-income-long", "trophee:atelier:4", `titre:${"x".repeat(50)}`], stats: ["meilleure-serie", "heures", "place"] },
+    // la plus longue des clés de couleur
+    encre: "san-romano",
   };
   const taille = JSON.stringify(serialiserComposition(pire)).length;
   check(`le pire cas réaliste tient dans ${COMPOSITION_MAX_CAR} caractères`, taille < COMPOSITION_MAX_CAR, `${taille} caractères`);
@@ -326,6 +368,22 @@ async function testsStyle() {
   const retire = validerStyle({ ...STYLE_DEFAUT, banniere: null }, a, null, prefixesMedias, { ...porte, banniere: compositionDepuis(voulue) });
   check("validerStyle : null retire la composition", retire.style.banniere === null && retire.refus.length === 0);
   check("validerStyle : une composition illisible est refusée", validerStyle({ ...STYLE_DEFAUT, banniere: enComposition(12) }, a, null, prefixesMedias, porte).refus.includes("la bannière composée"));
+  // la couleur du contour et de l'encre, de l'envoi à la relecture
+  const couleur = validerStyle({ ...STYLE_DEFAUT, banniere: enComposition({ ...voulue, encre: "atelier" }) }, a, null, prefixesMedias, porte);
+  check("validerStyle : la couleur choisie est gardée sans refus", couleur.style.banniere?.encre === "atelier" && couleur.refus.length === 0, couleur.refus.join(" | "));
+  check("styleDepuis et banniereDepuis relisent la couleur enregistrée", styleDepuis({ banniere: serialiserComposition(couleur.style.banniere!) }).banniere?.encre === "atelier" && banniereDepuis({ banniere: { ...voulue, encre: "carnet" } }).banniere?.encre === "carnet" && banniereDepuis({ banniere: { ...voulue, encre: "rose" } }).banniere?.encre === null);
+  const inconnue = validerStyle({ ...STYLE_DEFAUT, banniere: enComposition({ ...voulue, encre: "rose" }) }, a, null, prefixesMedias, porte);
+  check("validerStyle : une couleur inconnue est refusée (dite), le reste de la composition est gardé", inconnue.refus.includes("la couleur du contour") && inconnue.style.banniere?.encre === null && inconnue.style.banniere?.haut.image === "piece:royal");
+  // la couleur du fanion (sans composition) : validée à part, gardée sans créer de composition
+  check("STYLE_DEFAUT et un style sans rien : la couleur du rang (encre null)", STYLE_DEFAUT.encre === null && styleDepuis({}).encre === null && styleDepuis(null).encre === null);
+  const fanion = validerStyle({ ...STYLE_DEFAUT, banniere: null, encre: "carnet" }, a, null, prefixesMedias, porte);
+  check("validerStyle : un joueur au fanion qui choisit une couleur la garde, sans refus et SANS composition", fanion.style.banniere === null && fanion.style.encre === "carnet" && fanion.refus.length === 0, fanion.refus.join(" | "));
+  const fanionRose = validerStyle({ ...STYLE_DEFAUT, banniere: null, encre: "rose" as never }, a, null, prefixesMedias, porte);
+  check("validerStyle : une couleur de fanion inconnue est refusée (dite) et revient au rang", fanionRose.style.encre === null && fanionRose.style.banniere === null && egal(fanionRose.refus, ["la couleur du contour"]));
+  check("validerStyle : couleur absente de l'envoi, celle qu'il porte ; null ou vide, celle du rang sans refus", validerStyle({ ...STYLE_DEFAUT, banniere: null, encre: undefined }, a, null, prefixesMedias, { ...porte, encre: "florence" }).style.encre === "florence" && [null, ""].every((e) => { const r = validerStyle({ ...STYLE_DEFAUT, banniere: null, encre: e as never }, a, null, prefixesMedias, { ...porte, encre: "florence" }); return r.style.encre === null && r.refus.length === 0; }));
+  check("validerStyle : avec une composition, c'est sa couleur qui compte (le style dit la couleur qui se voit)", couleur.style.encre === "atelier" && validerStyle({ ...STYLE_DEFAUT, banniere: enComposition({ ...voulue, encre: "atelier" }), encre: "carnet" }, a, null, prefixesMedias, porte).style.encre === "atelier" && v.style.encre === null);
+  check("« Revenir à la bannière simple » en gardant la couleur : plus de composition, la couleur passe au fanion", (() => { const r = validerStyle({ ...STYLE_DEFAUT, banniere: null, encre: "atelier" }, a, null, prefixesMedias, { ...porte, banniere: couleur.style.banniere, encre: "atelier" }); return r.style.banniere === null && r.style.encre === "atelier" && r.refus.length === 0; })());
+  check("styleDepuis et banniereDepuis : la colonne « simple » rend le fanion (pas de composition) avec sa couleur ; une composition, sa couleur", (() => { const st = styleDepuis({ banniere: serialiserEncreSeule("carnet") }); const b = banniereDepuis({ banniere: serialiserEncreSeule("carnet") }); return st.banniere === null && st.encre === "carnet" && b.banniere === null && b.encre === "carnet" && styleDepuis({ banniere: serialiserComposition(couleur.style.banniere!) }).encre === "atelier"; })());
 
   // ménage : les fichiers de la composition sont gardés, l'ancien personnage aussi
   const gardes = fichiersGardesStyle({ ...v.style });
@@ -350,9 +408,19 @@ async function testsStyle() {
   const e1 = await ecrireStyle(admin([]), UID, compo, "2026-10-30T00:00:00Z");
   check("ecrireStyle : une écriture, la composition en jsonb avec le reste", !e1.error && e1.banniere && e1.perso && e1.titreFolio && e1.disposition && ecrits.length === 1 && (ecrits[0].banniere as { v: number }).v === 1 && "perso_url" in ecrits[0]);
   check("ecrireStyle : ce qui est écrit se relit identique", memeComposition(compositionDepuis(ecrits[0].banniere), compo.banniere));
+  check("ecrireStyle : sans couleur choisie, la colonne n'a pas de clé « encre »", !("encre" in (ecrits[0].banniere as object)));
+  ecrits.length = 0;
+  await ecrireStyle(admin([]), UID, couleur.style, "2026-10-30T00:00:00Z");
+  check("ecrireStyle : la couleur choisie est écrite dans la colonne et se relit", (ecrits[0].banniere as { encre?: string }).encre === "atelier" && compositionDepuis(ecrits[0].banniere)?.encre === "atelier" && JSON.stringify(ecrits[0].banniere).length <= COMPOSITION_MAX_CAR);
   ecrits.length = 0;
   await ecrireStyle(admin([]), UID, { ...compo, banniere: null }, "2026-10-30T00:00:00Z");
   check("ecrireStyle : sans composition, la colonne est écrite à null (elle se vide)", "banniere" in ecrits[0] && ecrits[0].banniere === null);
+  ecrits.length = 0;
+  await ecrireStyle(admin([]), UID, fanion.style, "2026-10-30T00:00:00Z");
+  check("ecrireStyle : le fanion avec sa couleur : la colonne garde la couleur seule (marquée « simple »), qui se relit en fanion coloré", egal(ecrits[0].banniere, { v: 1, simple: true, encre: "carnet" }) && compositionDepuis(ecrits[0].banniere) === null && styleDepuis({ banniere: ecrits[0].banniere }).encre === "carnet");
+  ecrits.length = 0;
+  await ecrireStyle(admin([]), UID, { ...couleur.style, encre: "carnet" }, "2026-10-30T00:00:00Z");
+  check("ecrireStyle : avec une composition, c'est elle qui est écrite (sa couleur dedans), jamais la couleur seule", (ecrits[0].banniere as { encre?: string; simple?: boolean }).encre === "atelier" && !("simple" in (ecrits[0].banniere as object)));
   ecrits.length = 0;
   const e2 = await ecrireStyle(admin(["banniere"]), UID, compo, "2026-10-30T00:00:00Z");
   check("ecrireStyle sans la migration des bannières composées : réécrit avec le personnage, sans la composition", !e2.error && !e2.banniere && e2.perso && e2.titreFolio && ecrits.length === 2 && !("banniere" in ecrits[1]) && "perso_url" in ecrits[1]);
@@ -390,11 +458,17 @@ async function testsStyle() {
   const sql = fs.readFileSync("migration_bannieres_composees.sql", "utf8");
   check("migration : la colonne jsonb, idempotente", /ADD COLUMN IF NOT EXISTS banniere jsonb\b/.test(sql));
   check("migration : contrainte de forme et de taille (objet, 4 000 caractères, ordre à 4 éléments)", /DROP CONSTRAINT IF EXISTS profile_style_banniere_check/.test(sql) && sql.includes("jsonb_typeof(banniere) = 'object'") && sql.includes(`<= ${COMPOSITION_MAX_CAR}`) && sql.includes("= 4"));
+  // la couleur seule du fanion ({ v: 1, simple: true, encre }) passe la contrainte telle qu'elle est : pas de SQL de plus
+  check("migration : sans « ordre » ni « panneau », un objet passe la contrainte (la couleur seule du fanion n'a pas besoin de SQL)", sql.includes("ELSE (banniere -> 'ordre') IS NULL END") && sql.includes("(banniere -> 'panneau') IS NULL OR") && JSON.stringify(serialiserEncreSeule("san-romano")).length < COMPOSITION_MAX_CAR);
   check("migration : autonome, elle reprend le personnage et l'ornement", ["perso_url", "perso_taille", "perso_pos", "ornement"].every((c) => new RegExp(`ADD COLUMN IF NOT EXISTS ${c}\\b`).test(sql)) && sql.includes("profile_style_perso_url_check") && sql.includes("profile_style_ornement_check"));
   check("migration : le quota de fichiers passe à 20 (4 images + 4 remplaçantes, avec la page)", sql.includes("< 20") && !sql.includes("< 14") && sql.includes("rl_profil_medias_count"));
   check("migration : le quota est sauté avec un avertissement si migration_profil_medias.sql manque", /RAISE WARNING/.test(sql) && sql.includes("to_regprocedure"));
   check("migration : aucune instruction destructive (pas de DROP TABLE / COLUMN, de DELETE, de TRUNCATE)", !/DROP\s+(TABLE|COLUMN)|DELETE\s+FROM|TRUNCATE/i.test(sql));
   check("migration : en français, rejouable", /Idempotente/.test(sql));
+  // la couleur du contour (clé « encre », ajoutée après) : la contrainte ne vérifie que l'objet, sa taille, l'ordre et le panneau,
+  // elle ne fixe pas la liste des clés : aucune migration à coller pour elle
+  const contrainte = sql.slice(sql.indexOf("ADD CONSTRAINT profile_style_banniere_check"), sql.indexOf(");", sql.indexOf("ADD CONSTRAINT profile_style_banniere_check")));
+  check("migration : la contrainte laisse passer une clé de plus (la couleur du contour : pas de SQL à coller)", contrainte.length > 0 && !/jsonb_object_keys|\?&|\?\||encre/.test(contrainte) && contrainte.includes("'ordre'") && contrainte.includes("'panneau'"));
   const fichiers = ["lib/profil/banniere.ts", "lib/profil/banniere-badges.ts", "lib/profil/styles.ts", "migration_bannieres_composees.sql", "scripts/profil/test-banniere-composee.ts"];
   const interdit = new RegExp(["Temp", "claude"].join("[\\\\/]") + "|" + ["AppData", "Local"].join("[\\\\/]"), "i");
   check("aucun chemin du scratchpad dans les fichiers du dépôt", fichiers.every((f) => !interdit.test(fs.readFileSync(f, "utf8").replace(/const interdit[^\n]*/, ""))));

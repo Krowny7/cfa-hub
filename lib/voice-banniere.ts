@@ -59,11 +59,17 @@ export const BANNIERE_ED = {
   clavier: "Flèches pour déplacer · Maj pour aller plus vite · + et − pour la taille",
   /** revenir à la bannière simple */
   retirerTout: "Revenir à la bannière simple",
-  retirerToutAide: "Sans bannière composée, ton profil montre le fanion simple avec son ornement.",
+  retirerToutAide: "Sans bannière composée, ton profil montre le fanion simple avec son ornement ; sa couleur de contour reste celle choisie ici (sinon le liquide de ton rang).",
   /** le panneau */
   panneau: "Ta carte",
   panneauAide: "Le panneau de gauche est dessiné par le site : ton pseudo, ton rang et ce que tu choisis ici.",
   panneauApercu: "Aperçu de ta carte complète, avec le panneau de gauche",
+  /** la couleur du contour de la bannière et de l'encre de la carte (ChoixEncre.tsx) */
+  encre: "Contour et encre",
+  encreAide: "Une seule couleur pour le contour de ta bannière et l'encre de ta carte, partout où elles s'affichent. Le fanion simple la prend aussi : pas besoin de composer ta bannière.",
+  encreRang: "Couleur du rang",
+  encreRangDetail: "le métal de ton rang autour de la bannière, l'ébène dans la carte",
+  encreChoisie: (nom: string, detail: string) => `Choisie : ${nom} · ${detail}`,
   badges: "Badges",
   badgesAide: "Trois au plus, parmi ce que tu as gagné. Glisse ou utilise les flèches pour les ranger.",
   badgesRepli: "Aucun choix : le site pose tes trois sceaux les plus rares.",

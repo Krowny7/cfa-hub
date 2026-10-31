@@ -1,6 +1,7 @@
 /* La bannière composée par le joueur : la scène (la bannière 360 × 850 et sa
    zone de débordement transparente : 540 × 1105), le fond coupé aux coins du
-   cadre, le cadre fin dessiné par le site, les trois calques en % de la scène.
+   cadre, le cadre fin dessiné par le site (métal du rang, ou liquide de la
+   couleur choisie), les trois calques en % de la scène.
    Tout se met à l'échelle de la largeur de la scène (cqw) : de la vignette du
    podium au grand aperçu de l'éditeur. Le décor ne capte jamais un clic. */
 
@@ -61,6 +62,26 @@
   display: block;
   overflow: visible;
   filter: drop-shadow(0 calc(var(--s) * 5) calc(var(--s) * 7) rgba(0, 0, 0, 0.35));
+}
+/* le cadre à la couleur choisie (composition.encre) : les deux traits d'encre (le SVG), et entre eux la bande de liquide, taillée
+   à la forme du filet de métal par son clip-path (posé en ligne avec les variables de la palette et le pas de sa texture) */
+.trait {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.bande {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+/* mode discret : ni liquide ni texture globale (.rl-encre est coupé) ; la texture de la palette, immobile, sur son ton moyen */
+:global(html[data-discreet="1"]) .bande {
+  background: var(--pal-encre) 30% 40% / var(--encre-pas) var(--encre-pas) repeat, var(--pal-3);
 }
 
 /* un calque : sa boîte (gauche, haut, largeur, hauteur) est posée en ligne ; l'image la remplit (hauteur proportionnelle : la boîte a déjà la proportion de l'image) */

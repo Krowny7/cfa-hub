@@ -3,7 +3,8 @@
 // composée), sans base ni réseau ni navigateur (react-dom/server) :
 //   npx tsx --tsconfig tsconfig.json scripts/profil/test-carte-banniere.tsx
 // Vérifie : la place des calques dans la scène (% de la bannière → % de la scène),
-// l'ordre d'empilement, le fond (image cadrée ou fond du profil), le cadre, le
+// l'ordre d'empilement, le fond (image cadrée ou fond du profil), le cadre (métal
+// du rang, ou vrai liquide de la couleur choisie, liée à l'encre du panneau), le
 // repli sur la bannière d'avant, le décor caché des lecteurs d'écran ; le panneau
 // (badges choisis ou les plus rares, statistiques avec leurs vraies valeurs, rang) ;
 // la carte (la plaque derrière la bannière : celle de l'aperçu de l'éditeur) ; le podium
@@ -95,6 +96,29 @@ async function main() {
     check("sans composition : la bannière d'avant (le fanion, son ornement, son personnage, son pseudo)", avant.includes('data-ornement="laurier"') && avant.includes("data-perso") && avant.includes("Sforzinda") && !avant.includes("data-composee") && avant.includes("translateY(-10%) scale(1.2)"));
   }
 
+  console.log("\n# Le cadre à la couleur choisie (composition.encre)");
+  {
+    const sans = rendre(<BanniereComposee composition={compositionExemple({ pieces: "meca", perso: "fier" })} fond={fondProfil} charge="eager" />);
+    check("sans couleur choisie : le cadre au métal (un SVG), pas de liquide (ni .rl-encre, ni canvas)", !sans.includes("rl-encre") && !sans.includes("<canvas") && !sans.includes("data-encre") && /<svg\b[^>]*class="cadre"[^>]*data-calque="cadre"/.test(sans));
+    const c = compositionExemple({ pieces: "meca", perso: "fier", encre: "atelier" });
+    const html = rendre(<BanniereComposee composition={c} fond={fondProfil} charge="eager" />);
+    check("une couleur : le cadre prend le vrai liquide de la palette (EncreVive, enfant direct de .rl-encre[data-palette], présent dès le rendu serveur)", compte(html, /class="rl-encre bande" data-palette="atelier"/g) === 1 && /<span class="rl-encre bande" data-palette="atelier" style="[^"]*"><canvas aria-hidden="true" class="rl-encre-vif"><\/canvas><\/span>/.test(html) && html.includes('data-encre="atelier"') && compte(html, /<canvas\b/g) === 1);
+    const style = (html.match(/class="rl-encre bande" data-palette="atelier" style="([^"]*)"/) ?? ["", ""])[1];
+    check("sa texture de repli (immobile) est celle de la palette, sans voile, au pas de la bannière (posé en ligne : plus fort que la règle globale)", style.includes("--pal-encre:url(/encres/atelier.webp)") && style.includes("--pal-voile-haut:0;") && style.includes("--pal-voile-bas:0;") && style.includes("--encre-pas:calc(var(--s) * 300)") && !/animation|transition/.test(style), style.slice(0, 160));
+    const poly = (style.match(/clip-path:polygon\(evenodd, ([^)]*)\)/) ?? ["", ""])[1];
+    const points = poly.split(", ").map((p) => p.split(" ").map((x) => parseFloat(x)));
+    check("la bande est un anneau taillé à la forme du filet (deux contours de 7 points, coins coupés, règle evenodd), dans la bannière", points.length === 14 && points.every(([x, y]) => x >= 0 && x <= 100 && y >= 0 && y <= 100) && points[0][1] < points[7][1] && points[0][0] < points[7][0], poly.slice(0, 120));
+    check("le cadre reste un seul calque, à sa place dans l'ordre (le SVG des traits d'encre porte data-calque) ; trois images, aucune pour la texture", calques(html).join(" ") === "cadre perso bas haut" && compte(html, /data-calque="cadre"/g) === 1 && compte(html, /<img\b/g) === 3 && html.includes('viewBox="0 0 360 850"') && altsVides(html));
+    check("les deux traits d'encre restent (contour et trait intérieur), le filet de métal part", /<svg\b[^>]*class="trait"/.test(html) && compte(html.slice(html.indexOf('class="trait"'), html.indexOf("</svg>", html.indexOf('class="trait"'))), /<path\b/g) === 2 && !html.includes("var(--metal)"));
+    const derriere = rendre(<BanniereComposee composition={{ ...c, ordre: ["perso", "cadre", "bas", "haut"] }} fond={fondProfil} />);
+    check("avec une couleur, l'ordre d'empilement est le même (perso derrière le cadre)", calques(derriere).join(" ") === "perso cadre bas haut" && derriere.indexOf('data-calque="perso"') < derriere.indexOf("rl-encre bande"));
+    check("le rendu est le même d'une fois à l'autre (rien d'aléatoire : l'hydratation est sûre)", rendre(<BanniereComposee composition={c} fond={fondProfil} charge="eager" />) === html);
+    const inconnue = rendre(<BanniereComposee composition={{ ...c, encre: "rose" as never }} fond={fondProfil} />);
+    check("une couleur qu'on ne connaît pas (retirée) : le cadre au métal, rien de cassé", !inconnue.includes("rl-encre") && inconnue.includes("var(--metal)") && calques(inconnue).join(" ") === "cadre perso bas haut");
+    check("chaque palette proposée se dessine (son liquide, sa texture)", (["ebene", "san-romano", "atelier", "studiolo", "carnet", "florence"] as const).every((k) => { const h = rendre(<BanniereComposee composition={{ ...c, encre: k }} />); return h.includes(`data-palette="${k}"`) && h.includes(`url(/encres/${k}.webp)`); }));
+    check("la bannière d'avant (sans composition) n'a pas de couleur : le liquide du rang reste au podium, l'ornement au fanion", !rendre(<BanniereComposee composition={null} fond={fondProfil} ornement="laurier" />).includes("rl-encre bande"));
+  }
+
   console.log("\n# Ce que le panneau affiche");
   {
     const etats = SCEAUX.map((d) => etatSceau(d, { ...STATS_EXEMPLE, meilleureSerie: 45, questions: 6000, duelsGagnes: 120 }));
@@ -137,6 +161,14 @@ async function main() {
     const carte = rendre(<CarteBanniere composition={compositionExemple({})} panneau={v} fond={fondProfil} />);
     check("la carte : un groupe nommé ; la plaque d'abord, la bannière ensuite (elle passe devant)", carte.includes('role="group"') && carte.includes('aria-label="Carte de Sforzinda"') && carte.indexOf("cartePlaque") < carte.indexOf("carteBanniere") && carte.indexOf('data-panneau') < carte.indexOf("data-composee"));
     check("la carte contient les trois calques et le panneau, toutes images décoratives", calques(carte).join(" ") === "cadre perso bas haut" && altsVides(carte));
+    // l'encre du panneau : l'ébène par défaut, sinon la couleur choisie (la même que le contour de la bannière)
+    check("le fond du panneau : le vrai liquide d'ébène par défaut, sous son voile épais", /<span class="rl-encre fondPlaque" data-palette="ebene" style="[^"]*"><canvas aria-hidden="true" class="rl-encre-vif"><\/canvas><\/span>/.test(html) && html.includes("--pal-voile-haut:0.74") && html.includes("--pal-voile-bas:0.9") && html.includes("--encre-pas:calc(var(--u) * 520)"));
+    const colore = rendre(<PanneauJoueur v={v} encre="studiolo" />);
+    check("avec une couleur : le fond du panneau prend sa palette (son liquide, sa texture), sous le même voile et au même pas", /<span class="rl-encre fondPlaque" data-palette="studiolo" style="[^"]*"><canvas aria-hidden="true" class="rl-encre-vif"><\/canvas><\/span>/.test(colore) && !colore.includes('data-palette="ebene"') && colore.includes("url(/encres/studiolo.webp)") && colore.includes("--pal-voile-haut:0.74") && colore.includes("--pal-voile-bas:0.9") && colore.includes("--encre-pas:calc(var(--u) * 520)"));
+    check("une couleur inconnue ou nulle : l'ébène", rendre(<PanneauJoueur v={v} encre={"rose" as never} />).includes('data-palette="ebene"') && rendre(<PanneauJoueur v={v} encre={null} />).includes('data-palette="ebene"'));
+    const carteColoree = rendre(<CarteBanniere composition={compositionExemple({ encre: "san-romano" })} panneau={v} fond={fondProfil} />);
+    check("la carte : une seule couleur pour le contour de la bannière et l'encre du panneau (deux liquides de la même palette)", compte(carteColoree, /data-palette="san-romano"/g) === 2 && compte(carteColoree, /<canvas\b/g) === 2 && !carteColoree.includes('data-palette="ebene"') && carteColoree.indexOf("fondPlaque") < carteColoree.indexOf("rl-encre bande"));
+    check("la carte sans couleur : le panneau d'ébène, le cadre au métal du rang (celui du panneau)", carte.includes('data-palette="ebene"') && !carte.includes("rl-encre bande") && new RegExp(`<svg\\b[^>]*class="cadre"[^>]*style="--metal:${v.metal}"`).test(carte));
   }
 
   console.log("\n# Le podium");
@@ -144,11 +176,12 @@ async function main() {
     const etats = SCEAUX.map((d) => etatSceau(d, { ...STATS_EXEMPLE, meilleureSerie: 45, questions: 6000, duelsGagnes: 120 }));
     const rang = (i: number, name: string, extra: Partial<BoardRow> = {}): BoardRow => ({ userId: "u" + i, name, avatarUrl: null, elo: 1800 - i * 100, gamesPlayed: 30 - i, rank: i + 1, mastery: 70 - i * 3, lastDelta: 12 - i * 9, isMe: false, bannerUrl: null, titre: null, ...extra });
     const PERSO = "https://exemple.supabase.co/storage/v1/object/public/profil-medias/1b2c3d4e-0000-4000-8000-000000000001/perso-1760000000000.png";
-    // Camille a son panneau (lu comme le fait la page : panneauVue) ; Hugo, composé aussi, n'en a pas (aucune donnée lue) ; Léa garde son fanion
+    // Camille a son panneau (lu comme le fait la page : panneauVue) et une couleur (Florence) ; Hugo, composé aussi, n'en a pas
+    // (aucune donnée lue, la couleur du rang) ; Léa garde son fanion
     const panneauCamille = panneauVue({ panneau: { badges: ["trophee:ciblee:3", "titre:copiste"], stats: ["elo", "duels", "sceaux"] }, nom: "Camille", titre: "Copiste", elo: 1800, mastery: 70, place: 1, gamesPlayed: 30, stats: STATS_EXEMPLE, etats });
     const html = rendre(
       <PodiumBannieres
-        rows={[rang(0, "Camille", { banniere: compositionExemple({ pieces: "meca" }), titre: "Copiste", panneau: panneauCamille }), rang(1, "Hugo", { banniere: compositionExemple({ pieces: "royal", fond: FOND_EXEMPLE }) }), rang(2, "Léa", { perso: PERSO, persoTaille: 140, persoPos: 30, ornement: "cartouche" })]}
+        rows={[rang(0, "Camille", { banniere: compositionExemple({ pieces: "meca", encre: "florence" }), titre: "Copiste", panneau: panneauCamille }), rang(1, "Hugo", { banniere: compositionExemple({ pieces: "royal", fond: FOND_EXEMPLE }) }), rang(2, "Léa", { perso: PERSO, persoTaille: 140, persoPos: 30, ornement: "cartouche" })]}
         label="Podium"
       />,
     );
@@ -172,6 +205,17 @@ async function main() {
     check("le panneau de Camille : pseudo, titre, rang, les badges qu'elle a choisis et ses chiffres avec leurs vraies valeurs (1 800 ELO)", camille.includes('<p class="nom font-brand">Camille</p>') && camille.includes('<p class="titre">Copiste</p>') && camille.includes(`<b class="font-brand">${panneauCamille.rang.nom}</b>`) && camille.includes('data-badge="trophee:ciblee:3"') && camille.includes('data-badge="titre:copiste"') && camille.includes('<dd class="font-brand">1 800</dd>') && compte(camille, /<div class="stat"/g) === 3);
     const hugo = volet("Hugo");
     check("sans données lues : le panneau se réduit au pseudo et au rang, sans badge ni chiffre inventé", hugo.includes('<p class="nom font-brand">Hugo</p>') && hugo.includes('class="rangTexte"') && !hugo.includes('class="badges"') && !hugo.includes('class="stats"') && !hugo.includes('class="stat"'));
+    // la couleur du contour et de l'encre : la bannière et le volet du même joueur la partagent
+    const lienDe = (nom: string) => liens.find((a) => a.includes(`${nom},`)) ?? "";
+    check("la couleur de Camille (Florence) : le contour de sa bannière au vrai liquide de la palette, et l'encre de son volet", compte(lienDe("Camille"), /class="rl-encre bande" data-palette="florence"/g) === 1 && compte(camille, /class="rl-encre fondPlaque" data-palette="florence"/g) === 1 && !camille.includes('data-palette="ebene"'));
+    check("Hugo, sans couleur : le cadre au métal de son rang, l'ébène dans son volet", lienDe("Hugo").length > 0 && !lienDe("Hugo").includes("rl-encre") && lienDe("Hugo").includes("var(--metal)") && hugo.includes('data-palette="ebene"'));
+    check("le fanion de Léa, sans couleur choisie, garde le liquide de son rang", compte(html, /data-palette="rang"/g) === 1);
+    // un joueur au fanion qui a choisi une couleur sans composer (style.encre) : son fanion la prend, il reste un fanion
+    const fanionColore = rendre(<PodiumBannieres rows={[rang(0, "Léa", { encre: "carnet", ornement: "cartouche" }), rang(1, "Hugo"), null]} label="Podium" />);
+    const lea = (fanionColore.match(/<a [^>]*aria-label="[^"]*Léa[^"]*"[\s\S]*?<\/a>/) ?? [""])[0];
+    check("le fanion d'un joueur qui a choisi une couleur (sans composer) : son cadre prend le vrai liquide de la palette (EncreVive, enfant direct du .rl-encre[data-palette]) et sa texture en repli", /<span aria-hidden="true" class="rl-encre cadre" data-palette="carnet"><canvas aria-hidden="true" class="rl-encre-vif"><\/canvas><\/span>/.test(lea) && lea.includes("--liq:url(/encres/carnet.webp)") && !lea.includes("liquide-"));
+    check("…et il reste le fanion : ni scène composée, ni volet, son ornement et son reflet ; Hugo, sans couleur, garde son rang", !lea.includes("data-composee") && !fanionColore.includes('class="volet"') && lea.includes('data-ornement="cartouche"') && lea.includes('class="reflet"') && compte(fanionColore, /data-palette="rang"/g) === 1);
+    check("une couleur inconnue sur un fanion : le liquide du rang", rendre(<PodiumBannieres rows={[rang(0, "Léa", { encre: "rose" as never }), null, null]} label="Podium" />).includes('data-palette="rang"'));
     const src = fs.readFileSync("components/classement/PodiumBannieres.tsx", "utf8").replace(/\r\n/g, "\n");
     check("au survol de la souris (pas du doigt), au focus clavier (:focus-visible), au premier toucher : le volet s'ouvre ; Échap, un toucher ailleurs, la sortie le ferment", src.includes('e.pointerType !== "touch"') && src.includes("onPointerEnter") && src.includes("onPointerLeave") && src.includes(":focus-visible") && src.includes('ev.key === "Escape"') && src.includes('document.addEventListener("pointerdown"') && src.includes("hote.current.contains"));
     check("au doigt, le premier toucher n'ouvre pas la carte du joueur (preventDefault + stopPropagation en capture) ; le second suit le lien", src.includes("onClickCapture") && src.includes("doigt.current && !ouvert") && src.includes("e.preventDefault()") && src.includes("e.stopPropagation()") && src.includes('onPointerDownCapture={(e) => {\n        doigt.current = e.pointerType === "touch"'));
@@ -193,6 +237,10 @@ async function main() {
     check("seul : marqué isolé, du côté gauche par défaut ; posé à droite, il le dit (le texte se décale, la bannière en cache la gauche)", seul.includes('data-isole=""') && seul.includes('data-cote="gauche"') && droite.includes('data-cote="droite"'));
     const sansChiffres = rendre(<PanneauJoueur v={{ ...v, stats: [], badges: [] }} isole />);
     check("sans chiffre : pas de liste vide", !sansChiffres.includes("<dl") && sansChiffres.includes('<p class="nom font-brand">Sforzinda</p>'));
+    // en placement : le volet dit « Placement 3/5 » à la place du nom du palier (data-provisoire) ; classé, rien de tel
+    const enPlacement = panneauVue({ panneau: null, nom: "Léa", elo: 1000, mastery: null, place: null, gamesPlayed: 3, stats: STATS_EXEMPLE, etats });
+    const voletPlacement = rendre(<PanneauJoueur v={enPlacement} isole />);
+    check("un joueur en placement : son rang porte data-provisoire et dit « Placement 3/5 » (la feuille de style le montre à la place du palier)", /<p class="rangTexte" data-provisoire="">/.test(voletPlacement) && voletPlacement.includes('<small class="provisoire">Placement 3/5</small>') && !seul.includes("data-provisoire"));
   }
 
   console.log("\n# L'en-tête du profil (sans carte)");
@@ -223,11 +271,19 @@ async function main() {
     const pod = fs.readFileSync("components/classement/Podium.module.css", "utf8");
     check("la scène est un conteneur de la proportion 540 × 1105 ; la bannière y a ses 16,67 % et 15,38 %", /container-type:\s*inline-size/.test(compo) && compo.includes("aspect-ratio: 540 / 1105") && compo.includes("left: 16.6667%") && compo.includes("top: 15.3846%"));
     check("le décor ne capte aucun clic et le fond est coupé aux coins du cadre (26 / 850 : à 45°)", /\.scene\s*\{[^}]*pointer-events:\s*none/.test(compo) && compo.includes("clip-path: polygon(7.5% 0") && compo.includes("100% 3.0588%"));
+    check("le cadre à la couleur choisie : la bande (absolue, sans clic) et, en mode discret, la texture immobile de la palette ; rien ne s'anime en CSS (le liquide est EncreVive)", /\.bande\s*\{[^}]*position:\s*absolute[^}]*pointer-events:\s*none/.test(compo) && /data-discreet="1"\]\) \.bande\s*\{[^}]*background:\s*var\(--pal-encre\)[^;]*var\(--encre-pas\)[^;]*var\(--pal-3\)/.test(compo) && /\.trait\s*\{[^}]*position:\s*absolute/.test(compo) && !/animation|@keyframes|transition/.test(compo));
     check("la carte : 860 × 1105, la plaque à 54,65 % de large et la bannière à 37,21 %", carte.includes("aspect-ratio: 860 / 1105") && carte.includes("width: 54.6512%") && carte.includes("left: 37.2093%"));
-    check("le panneau se mesure en unités de la carte (cqw) avec des minimums lisibles (max(…px, …)) ; seul dans sa boîte (le volet), 470 unités de large", pan.includes("--u: calc(100cqw / 860)") && /font-size:\s*max\(\d+(?:\.\d+)?px/.test(pan) && pan.includes("clip-path") && pan.includes("--u: calc(100cqw / 470)") && pan.includes('.panneau[data-cote="droite"] .contenu'));
+    check("le panneau se mesure en unités de la carte (cqw) avec des minimums lisibles (max(…px, …)) ; seul dans sa boîte (le volet), 360 unités de large (les proportions de la bannière)", pan.includes("--u: calc(100cqw / 860)") && /font-size:\s*max\(\d+(?:\.\d+)?px/.test(pan) && pan.includes("clip-path") && pan.includes("--u: calc(100cqw / 360)") && !pan.includes("100cqw / 470") && pan.includes('.panneau[data-cote="droite"] .contenu'));
     check("le podium : la bannière garde son inclinaison, le pied est sous elle, le mouvement réduit la fige", pod.includes(".composee") && pod.includes(".plaqueId") && /prefers-reduced-motion[\s\S]*\.composee/.test(pod) && pod.includes('data-discreet="1"') && pod.includes('data-rl-motion="off"'));
     check("le volet : caché derrière la bannière, glisse et apparaît (data-ouvert), côté gauche, droit ou par-dessus (data-cote), au-dessus du reste, avec une ombre", /\.volet\s*\{[^}]*visibility:\s*hidden/.test(pod) && /\.volet\s*\{[^}]*pointer-events:\s*none/.test(pod) && pod.includes('.hote[data-ouvert="1"] .volet') && pod.includes('.hote[data-cote="droite"] .volet') && pod.includes('.hote[data-cote="dessus"] .volet') && /\.hote\[data-ouvert="1"\]\s*\{[^}]*z-index:\s*30/.test(pod) && /\.volet\s*\{[^}]*filter:\s*drop-shadow/.test(pod) && /\.composee\s*\{[^}]*z-index:\s*1/.test(pod));
-    check("le volet : 1,3 fois la largeur de la bannière, 224 px au moins, 60 / 470 sous la bannière, aux proportions du panneau (470 / 850)", pod.includes("--pw: max(86.7cqw, 224px)") && pod.includes("var(--pw) * 60 / 470") && pod.includes("aspect-ratio: 470 / 850"));
+    check("le volet : la taille de la bannière, un peu moins (64 cqw : 96 % de sa largeur, ses proportions 360 × 850), 129 px au moins, 60 / 360 sous la bannière, jamais plus de 96 % de sa hauteur", pod.includes("--pw: max(64cqw, 129px)") && pod.includes("var(--pw) * 60 / 360") && !pod.includes("/ 470") && pod.includes("--ph: min(var(--pw) * 850 / 360, 100cqw * 850 / 540 * 0.96)") && pod.includes("height: var(--ph)"));
+    // le volet resserré (data-isole) : sans le titre porté, les étiquettes ni les sous-titres des badges ; la carte complète n'y perd rien
+    const isole = pan.match(/\.panneau\[data-isole\] \.titre,\s*\.panneau\[data-isole\] \.rangTexte small:not\(\.provisoire\),\s*\.panneau\[data-isole\] \.badgeTexte small,\s*\.panneau\[data-isole\] \.badgeTexte em \{\s*display: none;/);
+    check("le panneau seul (le volet) masque le titre, l'étiquette « Rang » (pas le placement), les numéros et les sous-titres des badges ; pseudo et noms sur une ligne", !!isole && /\.panneau\[data-isole\] \.nom \{[^}]*-webkit-line-clamp: 1;/.test(pan) && /\.panneau\[data-isole\] \.badgeTexte b \{[^}]*-webkit-line-clamp: 1;/.test(pan));
+    check("en placement, le volet montre « Placement x/5 » à la place du nom du palier (et seulement alors)", /\.panneau\[data-isole\] \.rangTexte\[data-provisoire\] b \{\s*display: none;/.test(pan) && /\.panneau\[data-isole\] \.provisoire \{[^}]*font-size: calc\(var\(--u\) \* \d+\)/.test(pan) && !/\.provisoire[^{]*\{\s*display: none/.test(pan.replace(/:not\(\.provisoire\)/g, "")));
+    check("aucun texte du volet resserré sous 10 px à 129 px de large (28 unités sur 360 au moins, sans minimum en pixels)", [...pan.matchAll(/\.panneau\[data-isole\][^{]*\{[^}]*font-size: calc\(var\(--u\) \* (\d+)\)/g)].every((m) => (Number(m[1]) * 129) / 360 >= 10) && (pan.match(/\.panneau\[data-isole\][^{]*\{[^}]*font-size/g) ?? []).length === 6);
+    check("mode discret : le fond du panneau prend un aplat tiré de sa palette (--pal-2), lié à la bande du contour, pas un brun fixe", /data-discreet="1"\]\) \.fondPlaque \{\s*background: color-mix\(in srgb, var\(--pal-2[^)]*\) 35%, #120d09\);/.test(pan));
+    check("la carte complète garde son titre, ses étiquettes et ses minimums lisibles (règles de base inchangées)", /\.titre \{[^}]*font-size: max\(8\.5px/.test(pan) && /\.nom \{[^}]*-webkit-line-clamp: 2;/.test(pan) && /\.badgeTexte em \{[^}]*font-family/.test(pan));
     check("le volet : animation courte, coupée par le mouvement réduit, ?mouvement=off et le mode discret", /\.volet\s*\{[^}]*transition:[^;]*0\.24s/.test(pod) && /prefers-reduced-motion[\s\S]*\.volet/.test(pod) && /data-rl-motion="off"\]\) \.volet/.test(pod) && /data-discreet="1"\]\) \.volet/.test(pod));
     check("le fanion d'avant fait 15 % de moins en hauteur (9 : 12,75) et la place des têtes suit (10,2 %, 71 px)", /\.banniere\s*\{[^}]*aspect-ratio:\s*9 \/ 12\.75/.test(pod) && /padding-top:\s*min\(10\.2%,\s*71px\)/.test(pod));
     check("pas de noms de classe en double entre la carte et le panneau (CSS modules : deux plaques, deux bannières)", !/^\.plaque\s*[{,]/m.test(carte) && !/^\.banniere\s*[{,]/m.test(carte));

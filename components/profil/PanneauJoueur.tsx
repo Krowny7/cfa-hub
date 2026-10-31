@@ -1,25 +1,34 @@
 import type { CSSProperties } from "react";
 import { EncreVive } from "@/components/nav/EncreVive";
-import { PALETTES, styleDePalette } from "@/lib/palettes";
+import { PALETTES, styleDePalette, type PaletteCle } from "@/lib/palettes";
 import type { BadgeVue, PanneauVue } from "@/lib/profil/panneau-vue";
 import c from "./PanneauJoueur.module.css";
 
 // Le panneau de gauche de la bannière : la « carte » du joueur, dessinée par
 // le site (comme dans Apex) ; le joueur choisit seulement ce qu'il y met
 // (lib/profil/panneau-vue.ts : trois badges, trois statistiques). Une plaque
-// sombre au vrai liquide d'ébène (EncreVive) sous un voile épais, cadre fin de
-// métal, liseré vermillon ; dessus, de
+// sombre au vrai liquide d'ébène (EncreVive ; celui de la couleur choisie par
+// le joueur, `encre`, la même que le contour de sa bannière) sous un voile
+// épais, cadre fin de métal, liseré vermillon ; dessus, de
 // haut en bas : le pseudo (et son titre), le rang (le vrai insigne du site),
 // les trois badges sur leur rail, les trois chiffres en Dela Gothic One.
 // Il remplit la boîte que lui donne la carte (CarteBanniere) ; tout se mesure
 // en unités de la carte (--u : un pixel d'une carte de 860 de large), avec
 // des minimums lisibles sur petit écran. La bannière passe devant sa partie
-// droite (le texte reste dans la partie gauche). Sans état : serveur comme client.
+// droite (le texte reste dans la partie gauche). Seul dans sa boîte (isole :
+// le volet du podium, de la taille de la bannière), il est resserré par la
+// feuille de style seule : sans le titre, les étiquettes ni les sous-titres
+// des badges, et des lignes en moins si sa boîte est plafonnée. Sans état :
+// serveur comme client.
 
 const ACCENT = "#d9482b";
-/** le fond de la plaque : le liquide d'ébène, sous un voile épais (le texte blanc reste lisible) */
-const EBENE = PALETTES.ebene;
-const STYLE_PLAQUE = { ...styleDePalette(EBENE), "--pal-voile-haut": 0.74, "--pal-voile-bas": 0.9, "--encre-pas": "calc(var(--u) * 520)" } as CSSProperties;
+/**
+ * le fond de la plaque : le liquide d'une palette (l'ébène par défaut, sinon la couleur choisie par le joueur), toujours
+ * sous le même voile épais (le texte blanc reste lisible) ; un style par palette, calculé une fois (l'hydratation est sûre)
+ */
+const STYLES_PLAQUE = Object.fromEntries(
+  Object.values(PALETTES).map((p) => [p.key, { ...styleDePalette(p), "--pal-voile-haut": 0.74, "--pal-voile-bas": 0.9, "--encre-pas": "calc(var(--u) * 520)" } as CSSProperties]),
+) as Record<PaletteCle, CSSProperties>;
 const CREME = "#f3ecda";
 const ENCRE = "#1a1410";
 
@@ -63,21 +72,25 @@ export function PanneauJoueur({
   className = "",
   isole = false,
   cote = "gauche",
+  encre = null,
 }: {
   v: PanneauVue;
   className?: string;
-  /** hors de la carte complète (le volet du podium) : le panneau remplit seul sa boîte, qui mesure 470 unités de large et non 860 */
+  /** la couleur choisie par le joueur pour le contour de sa bannière et l'encre de sa carte (composition.encre) ; null : l'ébène */
+  encre?: PaletteCle | null;
+  /** hors de la carte complète (le volet du podium) : le panneau remplit seul sa boîte, qui a les proportions de la bannière (360 unités de large et non 860) ; resserré (PanneauJoueur.module.css : sans titre ni étiquettes, le placement à la place du palier, et moins de lignes dans une boîte plus courte que 360 × 850) */
   isole?: boolean;
   /** de quel côté de la bannière il se pose (le volet) : à gauche, comme sur la carte, la bannière en cache la droite ; à droite, elle en cache la gauche ; « dessus », elle ne le cache pas */
   cote?: "gauche" | "droite" | "dessus";
 }) {
+  const pal = (encre && PALETTES[encre]) || PALETTES.ebene;
   return (
     <aside className={`${c.panneau} ${className}`} style={{ ["--metal" as string]: v.metal, ["--acc" as string]: ACCENT } as CSSProperties} aria-label={`Carte de ${v.nom}`} data-panneau="" data-isole={isole ? "" : undefined} data-cote={isole ? cote : undefined}>
       {/* la plaque : un contour d'encre, un filet de métal, le fond d'encre ; le coin du haut gauche est coupé */}
       <span aria-hidden className={c.plaque}>
         <span className={c.metal}>
-          <span className={"rl-encre " + c.fondPlaque} data-palette={EBENE.key} style={STYLE_PLAQUE}>
-            <EncreVive tons={EBENE.liquide} echelle={260} />
+          <span className={"rl-encre " + c.fondPlaque} data-palette={pal.key} style={STYLES_PLAQUE[pal.key]}>
+            <EncreVive tons={pal.liquide} echelle={260} />
           </span>
         </span>
       </span>
@@ -90,7 +103,8 @@ export function PanneauJoueur({
             {/* le vrai insigne du palier (l'image pré-rendue du site) */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className={c.insigne} src={`/ranks/v2/petit-${v.rang.tier}-128.png`} width={128} height={128} alt="" draggable={false} loading="lazy" decoding="async" />
-            <p className={c.rangTexte}>
+            {/* en placement (data-provisoire), le volet resserré dit « Placement 3/5 » à la place du nom du palier */}
+            <p className={c.rangTexte} data-provisoire={v.rang.provisoire ? "" : undefined}>
               <small>Rang</small>
               <b className="font-brand">{v.rang.nom}</b>
               {v.rang.provisoire && <small className={c.provisoire}>{v.rang.provisoire}</small>}
