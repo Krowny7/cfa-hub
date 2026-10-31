@@ -111,7 +111,7 @@ async function main() {
     check("le mouvement réduit coupe la respiration (prefers-reduced-motion, ?mouvement=off, mode discret)", css.includes("prefers-reduced-motion: reduce") && css.includes('data-rl-motion="off"') && css.includes('data-discreet="1"'));
     check("le personnage ne capte aucun clic", /\.persoBoite\s*\{[^}]*pointer-events:\s*none/.test(css) && /\.bandeau\s*\{[^}]*pointer-events:\s*none/.test(css) && /\.orn\s*\{[^}]*pointer-events:\s*none/.test(css));
     const pod = fs.readFileSync("components/classement/Podium.module.css", "utf8");
-    check("le podium garde la place des têtes au-dessus (data-perso=1), l'insigne se pousse dans le coin", /\.podium\[data-perso="1"\]\s*\{\s*padding-top:\s*min\(12%,\s*84px\)/.test(pod) && pod.includes(".avecPerso .insigne"));
+    check("le podium garde la place des têtes au-dessus (data-perso=1 : 20 % d'un fanion 15 % moins haut, soit 10,2 % et 71 px), l'insigne se pousse dans le coin", /\.podium\[data-perso="1"\]\s*\{\s*padding-top:\s*min\(10\.2%,\s*71px\)/.test(pod) && pod.includes(".avecPerso .insigne"));
   }
 
   console.log("\n# Le podium");

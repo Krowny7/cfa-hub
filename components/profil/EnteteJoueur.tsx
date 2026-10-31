@@ -39,12 +39,6 @@ import { ENTETE } from "@/lib/voice-profil";
 // posé en bas, entre le sceau et la carte du rang (PersoSurBandeau) : il reste
 // dans le bandeau ; son débordement par le haut est celui de la bannière
 // verticale (podium, Personnaliser), pas celui-ci.
-// Le joueur qui a composé sa bannière (lib/profil/banniere.ts) a sa CARTE
-// (`carte` : CarteBanniere, le panneau de gauche et sa bannière, construite
-// par la page) : elle prend la colonne de droite, au-dessus de la carte du
-// rang qui reste dessous (sur ordinateur) ; sur téléphone, elle vient après le
-// texte de l'en-tête, avant les onglets. Son personnage est dans sa bannière :
-// le bandeau ne le porte plus. Sans `carte`, l'en-tête est celui d'avant.
 
 export type EnteteData = {
   id: string;
@@ -104,7 +98,6 @@ export function EnteteJoueur({
   tampons = null,
   sousRang = null,
   crayons = null,
-  carte = null,
 }: {
   d: EnteteData;
   actions?: React.ReactNode;
@@ -128,8 +121,6 @@ export function EnteteJoueur({
   sousRang?: React.ReactNode;
   /** Personnaliser : les crayons posés sur la bannière et sur le sceau */
   crayons?: { banniere: React.ReactNode; sceau: React.ReactNode } | null;
-  /** la carte du joueur qui a composé sa bannière (CarteBanniere) : colonne de droite, au-dessus du rang ; hors aperçu */
-  carte?: React.ReactNode;
 }) {
   const meta = [d.amis ? `${nombre(d.amis)} ${d.amis > 1 ? "amis" : "ami"}` : null, `${nombre(d.xpTotal)} XP`].filter(Boolean).join(" · ");
   // sur téléphone : le rang dans la ligne du nom, la ligne niveau · ELO · place, le pic
@@ -144,14 +135,6 @@ export function EnteteJoueur({
   const cadreAnime = cadreBouge(d.style.frame);
   const banniereAnimee = banniereBouge(d.style.banner, d.style.bannerUrl);
   const sceau = <CadreSceau frame={d.style.frame} name={d.name} avatarUrl={d.avatarUrl} size={apercu ? 88 : 128} />;
-  // la carte composée remplace le personnage du bandeau (hors aperçu : l'éditeur montre sa bannière à part)
-  const avecCarte = !!carte && !apercu;
-  const rangCarte = (
-    <>
-      <RangProfil elo={d.elo} mastery={d.mastery} temps={d.temps} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} saison={saison} pied={piedRang} />
-      {sousRang}
-    </>
-  );
 
   return (
     <header className="flex flex-col" style={styleAccent(d.style.accent)} aria-label={`Profil de ${d.name}`}>
@@ -171,7 +154,6 @@ export function EnteteJoueur({
         />
         {/* son personnage, debout sur le bandeau : entre le sceau (à gauche) et la carte du rang (à droite, sur ordinateur) */}
         {d.style.perso &&
-          !avecCarte &&
           (apercu ? (
             <PersoSurBandeau perso={d.style.perso} taille={d.style.persoTaille} pos={d.style.persoPos} className="z-[1] [--x:74%]" />
           ) : (
@@ -198,7 +180,7 @@ export function EnteteJoueur({
         )}
       </div>
 
-      <div className={"grid items-end gap-x-10 gap-y-7 " + (apercu ? "" : "lg:grid-cols-12") + (avecCarte ? " lg:items-start" : "")}>
+      <div className={"grid items-end gap-x-10 gap-y-7 " + (apercu ? "" : "lg:grid-cols-12")}>
         <div className={"flex min-w-0 flex-col " + (apercu ? "gap-5" : "gap-3.5 lg:col-span-7 lg:gap-5")}>
           <div className={apercu ? "flex flex-wrap items-end gap-x-6 gap-y-3" : "flex items-start gap-x-4 gap-y-3 lg:flex-wrap lg:items-end lg:gap-x-6"}>
             {/* le sceau : 88 px sur téléphone (128 réduit), 128 sur ordinateur */}
@@ -271,14 +253,11 @@ export function EnteteJoueur({
           {poses && !apercu && <div className={"pt-1 lg:pt-2" + (cadreAnime || banniereAnimee ? " rl-calme-tel" : "")}>{poses}</div>}
         </div>
 
-        {avecCarte ? (
-          /* la carte du joueur (panneau + bannière composée), puis, sur ordinateur, la carte du rang dessous */
-          <div className="z-[2] flex flex-col gap-4 lg:col-span-5 lg:-mt-[84px] lg:self-start">
-            <div className="mx-auto w-full max-w-[400px] lg:max-w-[500px]">{carte}</div>
-            <div className="hidden lg:flex lg:flex-col lg:gap-4">{rangCarte}</div>
+        {!apercu && (
+          <div className="z-[2] hidden lg:col-span-5 lg:-mt-[84px] lg:flex lg:flex-col lg:gap-4 lg:self-start">
+            <RangProfil elo={d.elo} mastery={d.mastery} temps={d.temps} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} saison={saison} pied={piedRang} />
+            {sousRang}
           </div>
-        ) : (
-          !apercu && <div className="z-[2] hidden lg:col-span-5 lg:-mt-[84px] lg:flex lg:flex-col lg:gap-4 lg:self-start">{rangCarte}</div>
         )}
       </div>
     </header>

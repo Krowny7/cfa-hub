@@ -15,9 +15,25 @@ export function AjusteCarte({ base, min, className, children, cle }: { base: num
   useLayoutEffect(() => {
     const el = boite.current;
     if (!el) return;
+    // Les formules trop larges (KaTeX) sont réduites pour tenir dans la largeur de la carte, sans barre de
+    // défilement : la carte capte les clics (la retourner), la barre ne servait à rien. KaTeX suit le
+    // font-size (em) : un facteur posé à la taille de départ reste juste quand la boîte rapetisse ensuite.
+    const ajusterFormules = () => {
+      const largeur = el.clientWidth;
+      el.querySelectorAll<HTMLElement>(".katex-display, .katex").forEach((k) => {
+        const bloc = k.classList.contains("katex-display");
+        if (!bloc && k.closest(".katex-display")) return; // déjà réglée par son bloc
+        k.style.fontSize = "";
+        if (bloc) k.style.overflow = "hidden";
+        const dispo = bloc ? k.clientWidth : largeur;
+        const w = k.scrollWidth;
+        if (dispo > 0 && w > dispo + 1) k.style.fontSize = `${Math.max(0.45, Math.floor((dispo / w) * 100) / 100)}em`;
+      });
+    };
     const regler = () => {
       let f = base;
       el.style.fontSize = `${f}px`;
+      ajusterFormules();
       let garde = 0;
       while (el.scrollHeight > el.clientHeight + 1 && f > min && garde++ < 60) {
         f = Math.max(min, f - 0.5);

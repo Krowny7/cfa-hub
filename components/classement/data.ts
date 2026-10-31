@@ -10,8 +10,13 @@ import { TOPICS } from "@/lib/practiceTopics";
 import type { LeaderboardRow } from "@/lib/rating";
 import { displayName } from "@/components/classement/format";
 import { banniereDepuis, lireStyles, nomTitre } from "@/lib/profil/styles";
-import { ORNEMENT_DEFAUT, type StyleBanniere } from "@/lib/profil/catalogue";
-import { amisDe } from "@/lib/profil/donnees";
+import { ORNEMENT_DEFAUT, STATS_VIDES, type StyleBanniere } from "@/lib/profil/catalogue";
+import { amisDe, statsProfil, styleLuDe } from "@/lib/profil/donnees";
+import { panneauVue, type PanneauVue } from "@/lib/profil/panneau-vue";
+import { vusParUnAutre } from "@/lib/profil/sceaux";
+import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
+import { totalTempsSite } from "@/lib/temps-site";
+import { lireTrophees } from "@/lib/trophees";
 import { DEFAULT_ELO } from "@/lib/ranks";
 import type { AmiRow, BoardRow, NextExam, PastExam } from "@/components/classement/types";
 
@@ -109,6 +114,78 @@ export async function podiumDe(sb: SupabaseClient, userIds: string[]): Promise<M
     if (bannerUrl || titre || banniere.perso || banniere.banniere || banniere.ornement !== ORNEMENT_DEFAUT) out.set(id, { bannerUrl, titre, ...banniere });
   }
   return out;
+}
+
+/** Combien de temps la page attend le panneau d'un joueur du podium (ses lectures sont celles de son profil) avant de s'en passer. */
+const DELAI_PANNEAU_MS = 3000;
+
+/**
+ * Le panneau de gauche de la bannière composée de chaque joueur du podium qui
+ * en a une (components/profil/PanneauJoueur.tsx, qui sort de derrière la
+ * bannière au survol) : pseudo, titre, rang, les trois badges et les trois
+ * chiffres qu'il a choisis, avec leurs vraies valeurs. Mêmes lectures que
+ * l'en-tête de son profil (app/people/[id]/page.tsx) : ses exploits (statsProfil),
+ * ses sceaux (sceauxDuJoueur, sans leur avancée : ce qu'un autre voit), les sceaux
+ * qu'il a posés (profile_style.pins), son temps sur le site (client admin) et ses
+ * trophées, seulement si son panneau les montre. Les trois joueurs sont lus en
+ * parallèle. Dégrade proprement : une lecture qui échoue ou qui tarde plus de
+ * DELAI_PANNEAU_MS ne donne pas d'entrée, et le podium n'affiche alors du
+ * panneau que le pseudo, le titre et le rang. `joueurs` : les lignes du podium,
+ * déjà enrichies de leur bannière (podiumDe) ; sans composition, pas de panneau.
+ */
+export async function panneauxDuPodium(sb: SupabaseClient, admin: SupabaseClient | null, joueurs: BoardRow[]): Promise<Map<string, PanneauVue>> {
+  const out = new Map<string, PanneauVue>();
+  const avec = joueurs.filter((r) => !!r.banniere);
+  if (avec.length === 0) return out;
+  // les sceaux posés de chacun (une seule lecture) ; table illisible : les sceaux les plus rares
+  const lignes = await lireStyles(sb, avec.map((r) => r.userId), "*").catch(() => null);
+  await Promise.all(
+    avec.map(async (r) => {
+      let minuteur: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const attente = new Promise<null>((fin) => {
+          minuteur = setTimeout(() => fin(null), DELAI_PANNEAU_MS);
+        });
+        const v = await Promise.race([panneauDe(sb, admin, r, lignes), attente]);
+        if (v) out.set(r.userId, v);
+      } catch {
+        // pas de panneau complet : le podium montre le pseudo, le titre et le rang
+      } finally {
+        if (minuteur) clearTimeout(minuteur);
+      }
+    }),
+  );
+  return out;
+}
+
+async function panneauDe(sb: SupabaseClient, admin: SupabaseClient | null, r: BoardRow, lignes: Awaited<ReturnType<typeof lireStyles>>): Promise<PanneauVue | null> {
+  const composition = r.banniere;
+  if (!composition) return null;
+  const { pins } = styleLuDe(lignes, r.userId);
+  const stats = await statsProfil(r.userId, sb);
+  // statsProfil rend STATS_VIDES quand ses lectures échouent : des zéros qui n'en sont pas, le panneau n'en montre rien
+  if (stats === STATS_VIDES) return null;
+  const sceaux = await sceauxDuJoueur(r.userId, stats, { avancee: false });
+  // les temps et les trophées ne se lisent que si le joueur les a mis dans son panneau
+  const voulu = composition.panneau.stats;
+  const [secondes, trophees] = await Promise.all([
+    admin && voulu.includes("heures") ? totalTempsSite(admin, r.userId).catch(() => null) : Promise.resolve(null),
+    voulu.includes("trophees") ? lireTrophees(sb, r.userId).catch(() => null) : Promise.resolve(null),
+  ]);
+  return panneauVue({
+    panneau: composition.panneau,
+    nom: r.name,
+    titre: r.titre ?? null,
+    elo: r.elo,
+    mastery: r.mastery,
+    place: r.rank,
+    gamesPlayed: r.gamesPlayed,
+    stats,
+    extras: { secondes, trophees: trophees?.total },
+    // un autre joueur ne reçoit ni les mesures ni l'avancée des sceaux, seulement leurs paliers
+    etats: r.isMe ? sceaux.etats : vusParUnAutre(sceaux.etats),
+    pins: sceaux.base ? pins : null,
+  });
 }
 
 /** Nombre de joueurs classés (lignes de `ratings`). */

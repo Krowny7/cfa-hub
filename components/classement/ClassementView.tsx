@@ -98,8 +98,8 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 // Salle » (l'examen classé, la pièce maîtresse, peinte, à gauche) | la carte du
 // duel (en haut ton ELO et ton insigne, une ligne de rang ; en bas la peinture des
 // duels, le titre « Duels » et sa phrase, le bouton « Lancer un duel », ou « Relever le défi » quand un défi
-// attend ; l'arc électrique court autour quand il y a de l'enjeu) ; la bande noire
-// « Trouver un adversaire » (RechercheJoueurs : des suggestions dès 2 lettres) ; la
+// attend ; l'arc électrique court autour quand il y a de l'enjeu) ; (« Trouver un
+// adversaire », RechercheJoueurs, est dans l'en-tête, à droite du titre) ; la
 // carte « Les Salles » (components/salles/CarteSalles : créer une salle, rejoindre avec
 // un code, les salles publiques ; sans la migration, une ligne dit qu'elles arrivent) ; la
 // rangée « Ton plus grand rival |
@@ -130,12 +130,16 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
   return (
     <div className="rl-wide rl-page">
       <div className="flex flex-col gap-7 md:gap-10">
-        <header className="flex min-w-0 flex-col gap-3">
-          <p className="t-small flex items-center gap-2 font-semibold">
-            <Icone nom="classement" size={18} />
-            <span>{CL.kicker(dom)}</span>
-          </p>
-          <h1 className="t-hero rl-in m-0">{CL.titre}</h1>
+        <header className={s.entete} style={styleDePalette(PAL)}>
+          <div className="flex min-w-0 flex-col gap-3">
+            <p className="t-small flex items-center gap-2 font-semibold">
+              <Icone nom="classement" size={18} />
+              <span>{CL.kicker(dom)}</span>
+            </p>
+            <h1 className="t-hero rl-in m-0">{CL.titre}</h1>
+          </div>
+          {/* « Trouver un adversaire », compacte, à droite du titre : un pseudo, des suggestions, son profil */}
+          <RechercheJoueurs demo={data.joueursExemple} compacte />
         </header>
 
         <div className={s.racine} style={styleDePalette(PAL)}>
@@ -177,9 +181,6 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
             </article>
             {enjeu && <ArcElectrique palier={rank.tierIndex} rayon={20} />}
           </section>
-
-          {/* ——— la bande « Trouver un adversaire », à l'encre noire : un pseudo, des suggestions, son profil ——— */}
-          <RechercheJoueurs demo={data.joueursExemple} />
 
           {/* ——— « Les Salles » : créer une salle, rejoindre avec un code, les salles publiques ouvertes (fond sombre, DA des Salles) ——— */}
           <CarteSalles salles={data.salles} demo={data.joueursExemple !== undefined} />

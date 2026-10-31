@@ -35,9 +35,9 @@
   --scy: 226; /* hauteur du centre des cartes couchées sur le plateau */
   --lev: 1.22; /* échelle d'une carte soulevée */
   --ldy: 30;
-  /* où la carte soulevée se lit (à droite du milieu : elle laisse le visage de Léonard libre), et de combien Léonard se décale à gauche */
-  --readx: 150;
-  --leox: -112; /* de combien elle avance vers le joueur */
+  /* où la carte soulevée se lit (à droite du milieu : elle laisse le visage de Léonard libre), et où se tient Léonard (0 : au centre, derrière la table) */
+  --readx: 230;
+  --leox: 0;
   /* les piles « À revoir » (gauche) et « Maîtrisées » (droite) */
   --pileW: 90;
   --pileH: 128;
@@ -299,30 +299,31 @@
 /* Léonard : sur un halo, grand, bien éclairé */
 .halo {
   position: absolute;
-  left: calc(var(--W) * 0.5px - 380px + var(--leox) * 1px);
-  top: -120px;
-  width: 760px;
-  height: 760px;
+  left: calc(var(--W) * 0.5px - 320px + var(--leox) * 1px);
+  top: -60px;
+  width: 640px;
+  height: 640px;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 46%, var(--surface) 0%, color-mix(in srgb, var(--surface) 70%, var(--paper)) 38%, transparent 68%);
   pointer-events: none;
 }
 .anneau {
   position: absolute;
-  left: calc(var(--W) * 0.5px - 240px + var(--leox) * 1px);
-  top: 6px;
-  width: 480px;
-  height: 480px;
+  left: calc(var(--W) * 0.5px - 200px + var(--leox) * 1px);
+  top: 50px;
+  width: 400px;
+  height: 400px;
   border-radius: 50%;
   border: 1px solid var(--line-2);
   pointer-events: none;
 }
+/* un peu dézoomé (demande de l'utilisateur) : 82 % de la taille d'avant, le bas posé au même endroit, derrière le bord de la table */
 .leoBox {
   position: absolute;
-  left: calc(var(--W) * 0.5px - 290px + var(--leox) * 1px);
-  top: 0;
-  width: 580px;
-  height: 440px;
+  left: calc(var(--W) * 0.5px - 238px + var(--leox) * 1px);
+  top: 80px;
+  width: 476px;
+  height: 360px;
   z-index: 1;
 }
 /* l'éclairage : plus clair, plus chaud, une ombre douce plutôt que noire (les poses sont posées sur du papier, pas sur du vert) */
@@ -333,8 +334,8 @@ img.leoStage {
   position: absolute;
   z-index: 6;
   box-sizing: border-box;
-  left: calc(var(--W) * 0.5px + 236px + var(--leox) * 1px);
-  top: 12px;
+  left: calc(var(--W) * 0.5px + 196px + var(--leox) * 1px);
+  top: 60px;
   width: 270px;
   padding: 12px 15px;
   border-radius: 14px;
@@ -365,19 +366,19 @@ img.leoStage {
 }
 @media (max-width: 767px) {
   .leoBox {
-    left: calc(var(--W) * 0.5px - 190px);
-    width: 380px;
-    height: 340px;
-    top: 46px;
+    left: calc(var(--W) * 0.5px - 156px);
+    width: 312px;
+    height: 280px;
+    top: 106px;
   }
   .halo {
     top: -60px;
   }
   .anneau {
-    top: 40px;
-    width: 340px;
-    height: 340px;
-    left: calc(var(--W) * 0.5px - 170px);
+    top: 90px;
+    width: 280px;
+    height: 280px;
+    left: calc(var(--W) * 0.5px - 140px);
   }
   .bulle {
     left: 10px;

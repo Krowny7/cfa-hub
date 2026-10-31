@@ -22,9 +22,9 @@
   width: 100%;
   perspective: 1000px;
 }
-/* un personnage dépasse du haut d'une carte : la place de sa tête (20 % de la hauteur d'une carte de 36 % de large : 12 % du podium, 84 px au plus) */
+/* un personnage dépasse du haut d'une carte : la place de sa tête (20 % de la hauteur d'une carte de 36 % de large : 10,2 % du podium, 71 px au plus) */
 .podium[data-perso="1"] {
-  padding-top: min(12%, 84px);
+  padding-top: min(10.2%, 71px);
 }
 
 .banniere {
@@ -44,7 +44,7 @@
   flex: 0 1 30%;
   min-width: 0;
   max-width: 210px;
-  aspect-ratio: 9 / 15;
+  aspect-ratio: 9 / 12.75;
   color: #f4f2ea;
   text-decoration: none;
   transform: rotateX(var(--rx)) rotateY(var(--ry));
@@ -146,7 +146,8 @@
 .insigne {
   position: absolute;
   left: 50%;
-  top: 40%;
+  /* un peu plus haut qu'avant (40 %) : la carte a perdu 15 % de hauteur, le pseudo remonte vers l'insigne */
+  top: 36%;
   width: var(--ins);
   height: var(--ins);
   transform: translate(-50%, -50%);
@@ -162,7 +163,7 @@
 .arcWrap {
   position: absolute;
   left: 50%;
-  top: 40%;
+  top: 36%;
   width: calc(var(--ins) * 1.5);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
@@ -325,37 +326,59 @@
 }
 
 /* ——— la bannière composée du joueur (BanniereComposee) ———
-   Elle remplace le fanion : la boîte garde la place d'une carte (30 %, le n° 1 à 36 %), la bannière composée la remplit de sa
-   largeur (sa zone de débordement comprise : le personnage et les pièces dépassent dans la marge transparente), et la plaque de
-   l'identité vient dessous, à la largeur de la bannière. Pas de cadre liquide ni de reflet : le cadre est celui de la bannière
-   (le métal du rang). L'inclinaison au pointeur reste. */
+   Elle remplace le fanion : la place garde la largeur d'une carte (30 %, le n° 1 à 36 %), la bannière composée la remplit de sa
+   largeur (sa zone de débordement comprise : le personnage et les pièces dépassent dans la marge transparente), et un petit pied
+   (la place, l'insigne) vient dessous. Pas de cadre liquide ni de reflet : le cadre est celui de la bannière (le métal du rang).
+   L'inclinaison au pointeur reste, sur la bannière seule.
+   Seule la bannière est visible. Son panneau de gauche (PanneauJoueur) est le VOLET : posé derrière elle, il en sort en glissant au
+   survol, au focus clavier et au premier toucher (data-ouvert), par-dessus le reste, avec une ombre. Il fait 1,3 fois la largeur de
+   la bannière, comme sur la carte complète (470 sur 360), 224 px au moins ; 60 unités sur 470 de sa largeur restent sous la
+   bannière. Son côté (data-cote) est choisi par placerVolet (components/classement/podium.ts) : à gauche, à droite si la place
+   manque, ou par-dessus la bannière sur un écran étroit. Centré sur la hauteur de la bannière. */
+.hote {
+  /* la largeur du volet : lue par le volet (un enfant), pas par l'hôte, qui est son propre conteneur */
+  --pw: max(86.7cqw, 224px);
+  container-type: inline-size;
+  position: relative;
+  order: 1;
+  flex: 0 1 30%;
+  min-width: 0;
+  max-width: 210px;
+  /* une fois refermé, l'hôte garde sa hauteur de pile le temps que le volet s'efface */
+  transition: z-index 0s linear 0.26s;
+}
+.hote.premier {
+  order: 2;
+  flex-basis: 36%;
+  max-width: 250px;
+}
+.hote:nth-child(3) {
+  order: 3;
+}
+.hote[data-ouvert="1"] {
+  z-index: 30;
+  transition: none;
+}
+
 .composee {
   --rx: 0deg;
   --ry: 0deg;
   --mx: 50%;
   --my: 40%;
   container-type: inline-size;
+  /* la bannière passe devant son volet */
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  order: 1;
-  flex: 0 1 30%;
-  min-width: 0;
-  max-width: 210px;
+  width: 100%;
   color: #f4f2ea;
   text-decoration: none;
-  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  /* l'hôte est entre le podium et elle : la perspective est dans la transformation */
+  transform: perspective(1000px) rotateX(var(--rx)) rotateY(var(--ry));
   transition: transform 0.12s;
   touch-action: pan-y;
   -webkit-tap-highlight-color: transparent;
-}
-.composee.premier {
-  order: 2;
-  flex-basis: 36%;
-  max-width: 250px;
-}
-.composee:nth-child(3) {
-  order: 3;
 }
 .composee:focus-visible {
   outline: 2px solid var(--ink);
@@ -363,28 +386,21 @@
   border-radius: 6px;
 }
 
-/* la plaque de l'identité : sous la bannière, à sa largeur (100 sur 150 de la scène), centrée */
+/* le pied : la place et l'insigne, sur une petite pastille sombre, sous la bannière, centrés */
 .plaqueId {
   position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 1.4cqw;
-  align-self: center;
-  width: 66.6667%;
-  margin-top: 1cqw;
-  padding: 2.6cqw 2.4cqw 3cqw;
-  background: rgba(14, 10, 7, 0.9);
-  border: 1px solid color-mix(in srgb, var(--teinte) 60%, #1a1410);
-  border-radius: 6px;
-  text-align: center;
-  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.3));
-  pointer-events: none;
-}
-.plaqueTete {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 3cqw;
+  align-self: center;
+  margin-top: 1cqw;
+  padding: 1.6cqw 5cqw;
+  background: rgba(14, 10, 7, 0.9);
+  border: 1px solid color-mix(in srgb, var(--teinte) 60%, #1a1410);
+  border-radius: 999px;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.3));
+  pointer-events: none;
 }
 .placeC {
   font-size: max(20px, 15cqw);
@@ -420,24 +436,60 @@
   --trait: var(--arc-c);
   --noyau: #fff;
 }
-.plaqueId .pseudo {
-  max-width: 100%;
-  -webkit-line-clamp: 1;
+
+/* le volet : le panneau de gauche, derrière la bannière, centré sur sa hauteur (la scène fait 1105 / 540 de la largeur de l'hôte, le centre de la bannière est à 70 / 130 de sa hauteur ; le panneau mesure 850 / 470 de sa largeur) */
+.volet {
+  --sortie: 38%;
+  container-type: inline-size;
+  position: absolute;
+  z-index: 0;
+  top: calc(100cqw * 1105 / 540 * 0.53846 - var(--pw) * 850 / 940);
+  width: var(--pw);
+  aspect-ratio: 470 / 850;
+  /* fermé : caché derrière la bannière, ne capte rien */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(var(--sortie));
+  transition:
+    transform 0.24s cubic-bezier(0.2, 0.75, 0.2, 1),
+    opacity 0.18s ease,
+    visibility 0s linear 0.24s;
+  /* l'ombre suit le contour du panneau (son coin coupé) ; le clip-path de la plaque la couperait sur la plaque elle-même */
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.45)) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.3));
+}
+.hote[data-cote="gauche"] .volet {
+  right: calc(83.3333% - var(--pw) * 60 / 470);
+}
+.hote[data-cote="droite"] .volet {
+  --sortie: -38%;
+  left: calc(83.3333% - var(--pw) * 60 / 470);
+}
+/* ni à gauche ni à droite : par-dessus la bannière, centré sur la place (--dx : le décalage qui le ramène dans la page) */
+.hote[data-cote="dessus"] .volet {
+  --sortie: 0%;
+  z-index: 2;
+  left: 50%;
+  margin-left: calc(var(--pw) / -2 + var(--dx, 0px));
+  transform: translateY(12px) scale(0.96);
+}
+.hote[data-ouvert="1"] .volet {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition-delay: 0s;
 }
 
-@media (max-width: 640px) {
-  .plaqueId {
-    width: 76%;
-  }
-}
-:global(html[data-rl-motion="off"]) .composee {
+:global(html[data-rl-motion="off"]) .composee,
+:global(html[data-rl-motion="off"]) .volet,
+:global(html[data-discreet="1"]) .composee,
+:global(html[data-discreet="1"]) .volet {
   transition: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .composee {
+  .composee,
+  .volet {
     transition: none;
   }
-}
-:global(html[data-discreet="1"]) .composee {
-  transition: none;
 }

@@ -73,10 +73,10 @@ const url = (cle: string, ext = "png", t = 1760000000000) => `${PREFIXE}${nomFic
 const dedans = (c: Calque) => c.x >= SCENE.x0 && c.y >= SCENE.y0 && c.x + c.l <= SCENE.x1 + 0.0001 && c.y + hauteurCalque(c) <= SCENE.y1 + 0.0001;
 
 // ── 1. la scène ────────────────────────────────────────────────────────
-check("la bannière de référence fait 360 × 1000", BANNIERE_L === 360 && BANNIERE_H === 1000);
+check("la bannière de référence fait 360 × 850 (15 % de moins en hauteur que 360 × 1000)", BANNIERE_L === 360 && BANNIERE_H === 850 && BANNIERE_H === 1000 * 0.85);
 check("la zone de débordement : 25 % de chaque côté, 20 % en haut, 10 % en bas", DEBORD.gauche === 25 && DEBORD.droite === 25 && DEBORD.haut === 20 && DEBORD.bas === 10);
 check("la scène va de −25 à 125 en x et de −20 à 110 en y", egal([SCENE.x0, SCENE.x1, SCENE.y0, SCENE.y1], [-25, 125, -20, 110]));
-check("la scène fait 540 × 1300 px de référence", SCENE_PX.l === 540 && SCENE_PX.h === 1300);
+check("la scène fait 540 × 1105 px de référence", SCENE_PX.l === 540 && SCENE_PX.h === 1105);
 
 // ── 2. bornes d'un calque ──────────────────────────────────────────────
 const libre = (o: Partial<Calque>): Calque => ({ image: "piece:meca", x: 0, y: 0, l: 100, h: null, r: 1, ...o });
@@ -92,7 +92,7 @@ const libre = (o: Partial<Calque>): Calque => ({ image: "piece:meca", x: 0, y: 0
   const g = bornerCalque(libre({ x: NaN, y: "abc" as unknown as number, l: NaN, h: NaN }));
   check("des valeurs absurdes ne font pas de NaN", [g.x, g.y, g.l].every(Number.isFinite) && (g.h === null || Number.isFinite(g.h)), JSON.stringify(g));
   const p = bornerCalque(libre({ l: 140, h: null, r: 2.5, x: -20, y: 0 }));
-  check("proportionnel : la hauteur suit l × 0,36 / ratio", p.h === null && hauteurCalque(p) === 20.2, String(hauteurCalque(p)));
+  check("proportionnel : la hauteur suit l × (360 / 850) / ratio, soit 23,7 % pour 140 % de large et un rapport de 2,5", p.h === null && hauteurCalque(p) === 23.7, String(hauteurCalque(p)));
   const tall = bornerCalque(libre({ l: 150, h: null, r: 0.05 }));
   check("proportionnel et très haut : la largeur cède, rien ne sort", dedans(tall) && hauteurCalque(tall) <= CALQUE_H_MAX && tall.l < 150, JSON.stringify(tall));
   const large = bornerCalque(libre({ l: 150, h: null, r: 12, x: -25, y: 0 }));
@@ -151,6 +151,27 @@ check("un objet vide : la composition neuve", memeComposition(compositionDepuis(
   check("des images étrangères, un mauvais élément, un préréglage inconnu : retirés", !!mauvais && !mauvais.fond.image && !mauvais.perso.image && !mauvais.haut.image);
   check("un ordre qui n'est pas une permutation revient à l'ordre par défaut", egal(mauvais!.ordre, ORDRE_DEFAUT));
   check("badges mal formés et statistiques inconnues : écartés", egal(mauvais!.panneau.badges, []) && egal(mauvais!.panneau.stats, ["elo"]));
+}
+
+// ── 5 bis. les compositions enregistrées avant la bannière de 850 de haut ──
+// Tout est en % de la bannière : positions et largeurs ne changent pas, la hauteur libre non plus ; seule la hauteur d'une image
+// aux proportions verrouillées suit son rapport (elle grandit, en % d'une bannière plus basse), et un calque que ça ferait sortir
+// de la scène y est ramené (par le bas, rien d'autre ne bouge).
+{
+  const ancienne = {
+    v: 1,
+    perso: { image: url("perso"), x: -5, y: 57.2, l: 110, r: 0.75 },
+    haut: { image: "piece:royal", x: -20, y: -12, l: 140, h: 22 },
+    bas: { image: "piece:hexa", x: -20, y: 91.2, l: 140 },
+    ordre: ["cadre", "perso", "bas", "haut"],
+    panneau: { badges: [], stats: ["elo", "duels", "sceaux"] },
+  };
+  const c = compositionDepuis(ancienne);
+  check("une composition enregistrée sous 360 × 1000 se relit, tout dans la scène", !!c && dedans(c.perso) && dedans(c.haut) && dedans(c.bas));
+  check("les positions et les largeurs en % sont inchangées ; la hauteur libre (22 %) aussi", c!.haut.x === -20 && c!.haut.y === -12 && c!.haut.l === 140 && c!.haut.h === 22 && c!.perso.x === -5 && c!.perso.l === 110 && c!.bas.x === -20 && c!.bas.l === 140);
+  const plein = hauteurCalque(c!.perso);
+  check("le personnage aux proportions verrouillées, posé au bas de la scène, y reste : sa hauteur grandit (62,1 % au lieu de 52,8 %), il remonte de ce qu'il faut", plein === 62.1 && Math.abs(c!.perso.y + plein - SCENE.y1) < 1e-9 && c!.perso.y < 57.2, `${plein} ${c!.perso.y}`);
+  check("la pièce du bas, elle aussi verrouillée et au bas de la scène, remonte jusqu'à y tenir (son bord bas sur celui de la scène)", c!.bas.y < 91.2 && Math.abs(c!.bas.y + hauteurCalque(c!.bas) - SCENE.y1) < 0.06, `${c!.bas.y} ${hauteurCalque(c!.bas)}`);
 }
 
 // ── 6. validation stricte ──────────────────────────────────────────────

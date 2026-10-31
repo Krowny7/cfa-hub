@@ -29,7 +29,7 @@ export const BANNIERE_ED = {
   envoi: "Envoi de l'image…",
   erreurEnvoi: "L'image n'a pas pu être envoyée. Réessaie, ou choisis-en une autre.",
   formats: "PNG ou WebP détouré de préférence (fond transparent), JPG accepté · 4 Mo au plus. Ton image reste dans ton dossier, visible de tous sur ta bannière.",
-  formatsFond: "Le fond remplit la bannière, sans autre réglage que le cadrage. Une image haute (360 × 1000) ou large, peu importe : elle est recadrée.",
+  formatsFond: "Le fond remplit la bannière, sans autre réglage que le cadrage. Une image haute (360 × 850) ou large, peu importe : elle est recadrée.",
   /** les préréglages */
   prereglages: "Pièces du site",
   prereglagesAide: "Des pièces toutes prêtes, à prendre à la place de la tienne.",

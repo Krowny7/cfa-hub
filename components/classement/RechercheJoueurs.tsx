@@ -14,7 +14,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { CL } from "@/lib/voice-classement";
 import s from "./Affronter.module.css";
 
-// La bande « Trouver un adversaire » (sous la Grande Salle, à l'encre noire) :
+// « Trouver un adversaire » (sur papier, comme le reste de la page ; `compacte` : dans l'en-tête, à droite du titre) :
 // dès 2 lettres tapées, les joueurs dont le pseudo correspond (duel_search_players,
 // comme dans la Lice) s'ouvrent sous le champ : sceau, pseudo, insigne, ELO ; un
 // clic (ou ↓ ↑ puis Entrée) mène à son profil. Sans choix, le bouton « Chercher »
@@ -27,7 +27,7 @@ const LISTE = "cl-trouver-liste";
 const optionId = (i: number) => `${LISTE}-${i}`;
 const nomDe = (p: DuelPlayerCard) => p.username?.trim() || "Un joueur";
 
-export function RechercheJoueurs({ demo }: { demo?: DuelPlayerCard[] }) {
+export function RechercheJoueurs({ demo, compacte = false }: { demo?: DuelPlayerCard[]; /** dans l'en-tête de la page : une seule ligne, le titre gardé pour les lecteurs d'écran */ compacte?: boolean }) {
   const [q, setQ] = useState("");
   const [res, setRes] = useState<DuelPlayerCard[]>([]);
   const [cherche, setCherche] = useState(false);
@@ -93,7 +93,7 @@ export function RechercheJoueurs({ demo }: { demo?: DuelPlayerCard[] }) {
   }
 
   return (
-    <form ref={zone} action="/people" method="get" role="search" className={[s.carte, s.bandeTrouver].join(" ")} aria-label={CL.trouver}>
+    <form ref={zone} action="/people" method="get" role="search" className={[s.carte, s.bandeTrouver, compacte ? s.bandeCompacte : ""].filter(Boolean).join(" ")} aria-label={CL.trouver}>
       <Sceau>
         <Search size={18} />
       </Sceau>
@@ -147,7 +147,7 @@ export function RechercheJoueurs({ demo }: { demo?: DuelPlayerCard[] }) {
           </ul>
         )}
       </div>
-      <BoutonEnvoi surPeinture>
+      <BoutonEnvoi>
         <Search size={16} aria-hidden /> {CL.trouverEnvoi}
       </BoutonEnvoi>
     </form>

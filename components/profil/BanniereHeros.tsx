@@ -96,7 +96,8 @@ function Branche() {
 }
 
 /**
- * Le cadre d'ornement du fanion : un SVG qui couvre la boîte qui le porte (position: absolute, inset 0 ; viewBox 90 × 150).
+ * Le cadre d'ornement du fanion : un SVG qui couvre la boîte qui le porte (position: absolute, inset 0 ; viewBox 90 × 150, étiré à la boîte :
+ * le fanion du podium est 15 % moins haut que 9 : 15, son ornement s'écrase d'autant).
  * Les clés sont celles de profile_style.ornement (« filet », « cartouche », « laurier », « fronton ») ; absente ou
  * inconnue : le filet d'encre. Décor pur (aria-hidden), aucun clic.
  */
@@ -104,7 +105,7 @@ export function OrnementBanniere({ cle = ORNEMENT_DEFAUT, className = "" }: { cl
   const id = useId().replace(/:/g, "");
   const o: OrnementDessine = estDessine(cle) ? cle : "filet";
   return (
-    <svg viewBox="0 0 90 150" className={cx(c.orn, className)} aria-hidden focusable="false" data-ornement={o}>
+    <svg viewBox="0 0 90 150" preserveAspectRatio="none" className={cx(c.orn, className)} aria-hidden focusable="false" data-ornement={o}>
       {o === "filet" && (
         <>
           {/* un filet d'encre tiré à la règle, doublé d'un filet de papier : rien de plus */}

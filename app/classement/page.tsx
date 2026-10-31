@@ -5,10 +5,11 @@ import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { CLASSEMENT_TABS, ClassementView } from "@/components/classement/ClassementView";
 import { avecPlaces, lireMaitres } from "@/components/classement/maitres";
 import { lireRival } from "@/components/classement/rival";
-import { amisClassement, countPlayers, getNextRankedExam, getPastRankedExams, lastDeltaByUser, masteryByUser, podiumDe, toBoardRows, tryAdmin } from "@/components/classement/data";
+import { idsDuPodium, joueursDuPodium } from "@/components/classement/podium";
+import { amisClassement, countPlayers, getNextRankedExam, getPastRankedExams, lastDeltaByUser, masteryByUser, panneauxDuPodium, podiumDe, toBoardRows, tryAdmin } from "@/components/classement/data";
 import type { TabKey } from "@/components/classement/ClassementTabs";
 import { displayName } from "@/components/classement/format";
-import type { ClassementData } from "@/components/classement/types";
+import type { BoardRow, ClassementData } from "@/components/classement/types";
 import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
 import { lireEntreeSalles } from "@/lib/salles/entree";
 
@@ -56,15 +57,22 @@ export default async function ClassementPage({ searchParams }: { searchParams?: 
   const [masteries, deltas, podium] = await Promise.all([
     masteryByUser(admin, ids),
     lastDeltaByUser(admin, ids),
-    // les bannières des trois premiers : le fond de leur carte du podium
-    podiumDe(supabase, leaderboard.slice(0, 3).map((r) => r.userId)),
+    // les bannières des trois du podium (les trois meilleurs parmi ceux qui ont fait un duel : pas forcément les trois premiers du classement)
+    podiumDe(supabase, idsDuPodium(leaderboard)),
   ]);
   // Ma maîtrise et mon dernier match viennent de mes propres lectures
   // (toujours disponibles, même sans clé admin).
   masteries.set(user.id, mastery);
   if (history.length) deltas.set(user.id, history[history.length - 1].delta);
 
-  const board = toBoardRows(leaderboard, user.id, masteries, deltas).map((r) => (podium.has(r.userId) ? { ...r, ...podium.get(r.userId) } : r));
+  const lignes = toBoardRows(leaderboard, user.id, masteries, deltas).map((r) => (podium.has(r.userId) ? { ...r, ...podium.get(r.userId) } : r));
+  // le panneau de gauche des bannières composées du podium (il sort de derrière la bannière au survol) : lu pour ces trois joueurs seulement
+  const panneaux = await panneauxDuPodium(
+    supabase,
+    admin,
+    joueursDuPodium(lignes).filter((r): r is BoardRow => r !== null),
+  );
+  const board = lignes.map((r) => (panneaux.has(r.userId) ? { ...r, panneau: panneaux.get(r.userId) } : r));
   const inBoard = board.some((r) => r.isMe);
   const profile = profileRes.data as { username: string | null; avatar_url: string | null } | null;
   // l'onglet « Amis » : mes amis et moi (ma ligne vient de mes propres lectures)

@@ -5,6 +5,7 @@ import { Icone } from "@/components/adn/icons";
 import { Avatar } from "@/components/classement/Avatar";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
 import { PodiumBannieres } from "@/components/classement/PodiumBannieres";
+import { joueursDuPodium } from "@/components/classement/podium";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
 import { CURRENT_DOMAIN } from "@/lib/domains";
 import { CLASSEMENT, RIVALITE, joueursDomaine } from "@/lib/voice-z2a";
@@ -116,8 +117,8 @@ function Rivalite({ board, meRow }: { board: BoardRow[]; meRow: BoardRow | null 
 export function Leaderboard({ board, meRow, totalPlayers, sobre = false }: { board: BoardRow[]; meRow: BoardRow | null; totalPlayers: number | null; /** sans l'en-tête (nombre de joueurs, lien « Chercher ») ni la rivalité : le héros de la page les dit déjà */ sobre?: boolean }) {
   // le podium : les trois meilleurs (ordre du classement) parmi ceux qui ont fait au moins un duel, placement
   // en cours compris ; un joueur qui n'a jamais joué n'y monte pas ; s'il en manque, la place reste « à prendre »
-  const joueurs = board.filter((r) => r.gamesPlayed > 0);
-  const podiumRows = [0, 1, 2].map((i) => joueurs[i] ?? null) as [BoardRow | null, BoardRow | null, BoardRow | null];
+  // (le même choix que la page, qui charge leurs bannières : components/classement/podium.ts)
+  const podiumRows = joueursDuPodium(board);
   const surPodium = podiumRows.filter((r): r is BoardRow => r !== null);
   const podium = surPodium.length > 0;
   const list = podium ? board.filter((r) => !surPodium.includes(r)) : board;

@@ -5,11 +5,11 @@
    tailles propres à l'éditeur ne passent pas par des classes Tailwind
    arbitraires. */
 
-/* ── la scène : 540 × 1300 de référence, comme BanniereComposee ───────── */
+/* ── la scène : 540 × 1105 de référence, comme BanniereComposee ───────── */
 .scene {
   position: relative;
   width: 100%;
-  aspect-ratio: 540 / 1300;
+  aspect-ratio: 540 / 1105;
   border-radius: 12px;
   user-select: none;
   -webkit-user-select: none;
@@ -151,9 +151,9 @@
   cursor: ew-resize;
 }
 
-/* la scène tient dans l'écran : sa largeur suit la hauteur disponible (540 × 1300) */
+/* la scène tient dans l'écran : sa largeur suit la hauteur disponible (540 × 1105) */
 .stage {
-  width: min(100%, calc(76svh * 540 / 1300));
+  width: min(100%, calc(76svh * 540 / 1105));
   margin-inline: auto;
 }
 

@@ -376,7 +376,17 @@
   gap: 20px;
 }
 
-/* ——— la bande « Trouver un adversaire », à l'encre noire (de jour comme de nuit) : le sceau, le titre, le champ et ses suggestions, le bouton ——— */
+/* ——— l'en-tête de la page : le titre à gauche, « Trouver un adversaire » à droite ——— */
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px 32px;
+  min-width: 0;
+}
+
+/* ——— « Trouver un adversaire », sur papier comme le reste : le sceau, le titre, le champ et ses suggestions, le bouton ——— */
 .bandeTrouver {
   z-index: 3;
   display: flex;
@@ -384,10 +394,29 @@
   align-items: center;
   gap: 12px 16px;
   padding: 14px 18px;
-  border: 1px solid #000;
-  background: #15100c;
+  border: 1px solid var(--pencil-2);
+  background: var(--surface);
   box-shadow: var(--shadow-1);
-  color: #f6efe4;
+  color: var(--ink);
+}
+/* compacte (dans l'en-tête) : une seule ligne, le titre seulement pour les lecteurs d'écran */
+.bandeCompacte {
+  flex: 0 1 480px;
+  flex-wrap: nowrap;
+  gap: 10px;
+  padding: 8px 8px 8px 10px;
+  border-radius: 16px;
+}
+.bandeCompacte .bandeTexte {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.bandeCompacte .champZone {
+  flex: 1 1 auto;
 }
 .bandeTexte {
   display: grid;
@@ -400,7 +429,7 @@
 }
 .bandeTexte span {
   font-size: 13.5px;
-  color: rgba(246, 239, 228, 0.72);
+  color: var(--ink-2);
 }
 .champZone {
   position: relative;
@@ -411,25 +440,22 @@
   width: 100%;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid var(--pencil-2);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: var(--paper);
+  color: var(--ink);
   font: inherit;
   font-size: 15px;
 }
 .champ::placeholder {
-  color: rgba(246, 239, 228, 0.6);
+  color: var(--ink-2);
 }
 .champ::-webkit-search-cancel-button {
   -webkit-appearance: none;
 }
 .champ:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
-}
-.bandeTrouver .bouton:focus-visible {
-  outline: 2px solid #fff;
 }
 /* les suggestions : une liste en papier sous le champ */
 .suggestions {
@@ -486,6 +512,8 @@ button.bouton {
   border: 0;
   cursor: pointer;
   font-family: inherit;
+  /* un <button> ne prend pas la couleur de son parent : le texte blanc de l'encre, posé ici */
+  color: #fff;
 }
 button.bouton:disabled {
   opacity: 0.5;
@@ -1135,6 +1163,10 @@ button.bouton:disabled {
   }
   .bandeTrouver {
     padding: 14px;
+  }
+  .bandeCompacte {
+    flex: 1 1 100%;
+    padding: 8px;
   }
   .bandeTrouver .bouton {
     width: 100%;

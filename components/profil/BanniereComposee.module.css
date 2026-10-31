@@ -1,5 +1,5 @@
-/* La bannière composée par le joueur : la scène (la bannière 360 × 1000 et sa
-   zone de débordement transparente : 540 × 1300), le fond coupé aux coins du
+/* La bannière composée par le joueur : la scène (la bannière 360 × 850 et sa
+   zone de débordement transparente : 540 × 1105), le fond coupé aux coins du
    cadre, le cadre fin dessiné par le site, les trois calques en % de la scène.
    Tout se met à l'échelle de la largeur de la scène (cqw) : de la vignette du
    podium au grand aperçu de l'éditeur. Le décor ne capte jamais un clic. */
@@ -11,7 +11,7 @@
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 540 / 1300;
+  aspect-ratio: 540 / 1105;
   pointer-events: none;
   user-select: none;
 }
@@ -29,14 +29,14 @@
   display: block;
 }
 
-/* le fond : coupé aux coins du haut (26 / 360 de large, 26 / 1000 de haut : à 45°) */
+/* le fond : coupé aux coins du haut (26 / 360 de large, 26 / 850 de haut : à 45°) */
 .fond {
   position: absolute;
   inset: 0;
   display: block;
   overflow: hidden;
   background: #0d0d0f;
-  clip-path: polygon(7.5% 0, 92.5% 0, 100% 2.7%, 100% 100%, 0 100%, 0 2.7%);
+  clip-path: polygon(7.5% 0, 92.5% 0, 100% 3.0588%, 100% 100%, 0 100%, 0 3.0588%);
 }
 .fond > * {
   position: absolute;

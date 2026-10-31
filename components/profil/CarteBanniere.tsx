@@ -9,8 +9,8 @@ import c from "./CarteBanniere.module.css";
 // rang, trois badges, trois chiffres : PanneauJoueur, dessiné par le site) et,
 // devant lui, la bannière que le joueur a composée (BanniereComposee : son
 // fond, son cadre, son personnage et ses deux pièces, qui peuvent déborder
-// sur la plaque). Les proportions sont fixes (860 × 1300 : la scène de la
-// bannière, 540 × 1300, et la plaque qui passe derrière) ; tout se met à
+// sur la plaque). Les proportions sont fixes (860 × 1105 : la scène de la
+// bannière, 540 × 1105, et la plaque qui passe derrière) ; tout se met à
 // l'échelle de la largeur que donne la page, qui choisit aussi où la poser
 // (en tête du profil : components/profil/EnteteJoueur.tsx). Sans état :
 // serveur comme client. `fond` : le fond du profil du joueur (sa bannière),

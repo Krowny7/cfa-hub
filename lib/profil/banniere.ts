@@ -1,6 +1,6 @@
 // La bannière composée du joueur : ce que le joueur règle lui-même, comme il
 // veut, dans une taille de bannière qu'il ne change pas.
-//   - La BANNIÈRE a une taille fixe (référence 360 × 1000 px, mise à l'échelle
+//   - La BANNIÈRE a une taille fixe (référence 360 × 850 px, mise à l'échelle
 //     selon l'endroit où elle se dessine) ; le FOND la remplit, sans autre
 //     réglage qu'un point de cadrage. Autour, une ZONE DE DÉBORDEMENT fixe (la
 //     marge transparente : 25 % de la largeur de chaque côté, 20 % de la
@@ -35,9 +35,14 @@ import { BUCKET_MEDIAS } from "@/lib/profil/disposition";
 import { estPalierTrophee, estSourceTrophee } from "@/lib/trophees";
 
 // ── La taille de la bannière et sa zone de débordement ───────────────────
-/** la bannière, en pixels de référence (le fond la remplit ; tout se met à l'échelle) */
+/**
+ * la bannière, en pixels de référence (le fond la remplit ; tout se met à l'échelle).
+ * Elle faisait 360 × 1000 : 15 % de moins en hauteur (850). Tout ce qui est écrit en %
+ * de la bannière (positions, largeurs, hauteurs libres) reste valide tel quel ; la hauteur
+ * d'une image aux proportions verrouillées suit son rapport (K ci-dessous).
+ */
 export const BANNIERE_L = 360;
-export const BANNIERE_H = 1000;
+export const BANNIERE_H = 850;
 /** la marge transparente autour de la bannière : % de sa largeur (gauche, droite) et de sa hauteur (haut, bas) */
 export const DEBORD = { gauche: 25, droite: 25, haut: 20, bas: 10 } as const;
 /**
@@ -48,7 +53,7 @@ export const DEBORD = { gauche: 25, droite: 25, haut: 20, bas: 10 } as const;
 export const SCENE = { x0: -DEBORD.gauche, x1: 100 + DEBORD.droite, y0: -DEBORD.haut, y1: 100 + DEBORD.bas } as const;
 export const SCENE_L = SCENE.x1 - SCENE.x0;
 export const SCENE_H = SCENE.y1 - SCENE.y0;
-/** la scène en pixels de référence (540 × 1300) */
+/** la scène en pixels de référence (540 × 1105) */
 export const SCENE_PX = { l: Math.round((BANNIERE_L * SCENE_L) / 100), h: Math.round((BANNIERE_H * SCENE_H) / 100) } as const;
 /** 1 % de largeur de bannière vaut K % de sa hauteur, à ratio 1 : la hauteur d'une image proportionnelle est l × K / ratio */
 const K = BANNIERE_L / BANNIERE_H;
@@ -78,7 +83,7 @@ export const NOMS_ELEMENTS: Record<CleImage | "cadre", string> = { fond: "Fond",
 /** poids d'une image envoyée (après réduction éventuelle dans le navigateur), et avant */
 export const IMAGE_MAX_OCTETS = 4 * 1024 * 1024;
 export const IMAGE_BRUT_MAX_OCTETS = 20 * 1024 * 1024;
-/** côté le plus long, après réduction : le fond tient dans 360 × 1000 (dense : ×3), les pièces débordent un peu */
+/** côté le plus long, après réduction : le fond tient dans 360 × 850 (dense : ×3), les pièces débordent un peu */
 export const IMAGE_MAX_PX = 1800;
 /** PNG ou WebP (la transparence), JPG accepté (fond plein) */
 export const IMAGE_TYPES = ["image/png", "image/webp", "image/jpeg"];

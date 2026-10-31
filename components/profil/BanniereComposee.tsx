@@ -5,7 +5,7 @@ import c from "./BanniereComposee.module.css";
 
 // La bannière composée par le joueur (lib/profil/banniere.ts), dessinée : une
 // BOÎTE (la « scène ») qui prend la largeur donnée par la page, sa hauteur
-// suit (540 × 1300 de référence) ; dedans, la bannière elle-même (360 × 1000,
+// suit (540 × 1105 de référence) ; dedans, la bannière elle-même (360 × 850,
 // à 16,7 % du bord gauche et 15,4 % du haut), entourée de la zone de
 // débordement transparente où le personnage et les pièces peuvent dépasser.
 //   - le FOND (l'image du joueur cadrée par son point de cadrage, sinon le
@@ -38,7 +38,7 @@ export function styleCalque(k: Calque): CSSProperties {
   };
 }
 
-/** Les coins du haut de la bannière, retaillés (en unités de la bannière : 360 × 1000). */
+/** Les coins du haut de la bannière, retaillés (en unités de la bannière : 360 × 850). */
 const CHANFREIN = 26;
 const ENCRE = "#1a1410";
 export const METAL_DEFAUT = "#c9a24a";

@@ -52,9 +52,21 @@ function Losange({ b }: { b: BadgeVue }) {
   );
 }
 
-export function PanneauJoueur({ v, className = "" }: { v: PanneauVue; className?: string }) {
+export function PanneauJoueur({
+  v,
+  className = "",
+  isole = false,
+  cote = "gauche",
+}: {
+  v: PanneauVue;
+  className?: string;
+  /** hors de la carte complète (le volet du podium) : le panneau remplit seul sa boîte, qui mesure 470 unités de large et non 860 */
+  isole?: boolean;
+  /** de quel côté de la bannière il se pose (le volet) : à gauche, comme sur la carte, la bannière en cache la droite ; à droite, elle en cache la gauche ; « dessus », elle ne le cache pas */
+  cote?: "gauche" | "droite" | "dessus";
+}) {
   return (
-    <aside className={`${c.panneau} ${className}`} style={{ ["--metal" as string]: v.metal, ["--acc" as string]: ACCENT } as CSSProperties} aria-label={`Carte de ${v.nom}`} data-panneau="">
+    <aside className={`${c.panneau} ${className}`} style={{ ["--metal" as string]: v.metal, ["--acc" as string]: ACCENT } as CSSProperties} aria-label={`Carte de ${v.nom}`} data-panneau="" data-isole={isole ? "" : undefined} data-cote={isole ? cote : undefined}>
       {/* la plaque : un contour d'encre, un filet de métal, le fond d'encre ; le coin du haut gauche est coupé */}
       <span aria-hidden className={c.plaque}>
         <span className={c.metal}>
@@ -93,14 +105,16 @@ export function PanneauJoueur({ v, className = "" }: { v: PanneauVue; className?
           </ul>
         )}
 
-        <dl className={c.stats}>
-          {v.stats.map((s) => (
-            <div key={s.cle} className={c.stat} data-stat={s.cle}>
-              <dt>{s.etiquette}</dt>
-              <dd className="font-brand">{s.valeur}</dd>
-            </div>
-          ))}
-        </dl>
+        {v.stats.length > 0 && (
+          <dl className={c.stats}>
+            {v.stats.map((s) => (
+              <div key={s.cle} className={c.stat} data-stat={s.cle}>
+                <dt>{s.etiquette}</dt>
+                <dd className="font-brand">{s.valeur}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </div>
     </aside>
   );

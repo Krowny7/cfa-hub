@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, type CSSProperties, type RefObject } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { useHorsEcran } from "@/components/ui/useHorsEcran";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
 import { TitrePorte } from "@/components/profil/TitrePorte";
 import { OrnementBanniere, PersoBanniere } from "@/components/profil/BanniereHeros";
 import { BanniereComposee } from "@/components/profil/BanniereComposee";
+import { PanneauJoueur } from "@/components/profil/PanneauJoueur";
 import { signed } from "@/components/classement/format";
 import type { BoardRow } from "@/components/classement/types";
-import type { Composition } from "@/lib/profil/banniere";
+import { placerVolet, type CoteVolet } from "@/components/classement/podium";
+import { SCENE, SCENE_L, type Composition } from "@/lib/profil/banniere";
+import type { PanneauVue } from "@/lib/profil/panneau-vue";
 import { PLACEMENT_GAMES, TIERS, rankFor, teinteDeRang } from "@/lib/ranks";
 import { nombre, pct } from "@/lib/voice";
 import { PODIUM } from "@/lib/voice-z2a";
@@ -36,9 +39,16 @@ import s from "./Podium.module.css";
 // - la bannière COMPOSÉE du joueur (profile_style.banniere : son fond, son
 //   cadre, son personnage et ses deux pièces, qui débordent dans la marge
 //   transparente) remplace le fanion : BanniereComposee, à la largeur de la
-//   place, sa zone de débordement comprise ; dessous, une petite plaque dit la
-//   place, l'insigne (l'arc électrique du n° 1 le suit), le pseudo, le titre
-//   et le rang. Pas de panneau ici : la carte complète est sur le profil.
+//   place, sa zone de débordement comprise ; dessous, un petit pied dit la
+//   place et l'insigne (l'arc électrique du n° 1 le suit). Seule la bannière
+//   est visible : son PANNEAU DE GAUCHE (pseudo, titre, rang, trois badges,
+//   trois chiffres : PanneauJoueur, calculé par la page : app/classement/
+//   page.tsx) glisse de derrière elle au survol, au focus clavier et, sur
+//   téléphone, au premier toucher (un second toucher ouvre la carte du joueur ;
+//   toucher ailleurs ou Échap referme). Il se pose de son côté gauche, à droite
+//   si la place manque, par-dessus la bannière sur un écran étroit
+//   (placerVolet : components/classement/podium.ts), au-dessus du reste, avec
+//   une ombre. La carte complète n'est plus sur le profil.
 // Léger : une seule boucle pour les trois cartes, qui ne tourne que lorsque le
 // podium est à l'écran ; rien ne bouge en mouvement réduit, avec
 // ?mouvement=off et en mode discret.
@@ -144,7 +154,27 @@ function FondPodium({ r }: { r: BoardRow }) {
   return <img src={r.bannerUrl || fondParDefaut(r.userId)} alt="" loading="lazy" decoding="async" draggable={false} />;
 }
 
-/** La place d'un joueur qui a composé sa bannière : la bannière entière (marge de débordement comprise), puis la plaque de son identité. */
+/** Le panneau qu'on sait faire sans les lectures de la page : le pseudo, le titre et le rang (aucun badge ni chiffre inventé). */
+function panneauMinimal(r: BoardRow): PanneauVue {
+  const rk = rankFor(r.elo, r.mastery, r.rank);
+  return {
+    nom: r.name,
+    titre: r.titre ?? null,
+    rang: { tier: rk.tierIndex, nom: `${rk.tier.name}${rk.division ? ` ${rk.division}` : ""}`, provisoire: r.gamesPlayed < PLACEMENT_GAMES ? `Placement ${Math.min(r.gamesPlayed, PLACEMENT_GAMES)}/${PLACEMENT_GAMES}` : null },
+    metal: TIERS[rk.tierIndex].metal[1],
+    badges: [],
+    stats: [],
+  };
+}
+
+/** Où la bannière commence et finit dans la boîte de la place, en part de sa largeur (la scène : marge de débordement comprise). */
+const BANNIERES = { gauche: -SCENE.x0 / SCENE_L, droite: (100 - SCENE.x0) / SCENE_L };
+
+/**
+ * La place d'un joueur qui a composé sa bannière : la bannière entière (marge
+ * de débordement comprise), un petit pied (la place et l'insigne), et, caché
+ * derrière elle, le volet de son panneau, qui sort au survol (voir l'en-tête).
+ */
 function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 | 3; composition: Composition }) {
   const first = place === 1;
   const rk = rankFor(r.elo, r.mastery, r.rank);
@@ -152,19 +182,105 @@ function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 
   const placement = r.gamesPlayed < PLACEMENT_GAMES;
   const nomRang = placement ? PODIUM.placement(r.gamesPlayed, PLACEMENT_GAMES) : `${rk.tier.name}${rk.division ? ` ${rk.division}` : ""}`;
   const style = { "--teinte": teinteDeRang(tier) } as CSSProperties;
+  const panneau = r.panneau ?? panneauMinimal(r);
+
+  const [ouvert, setOuvert] = useState(false);
+  const [cote, setCote] = useState<CoteVolet>("gauche");
+  const hote = useRef<HTMLDivElement | null>(null);
+  const volet = useRef<HTMLDivElement | null>(null);
+  // le dernier pointeur était un doigt : le premier toucher ouvre le volet, le second suit le lien
+  const doigt = useRef(false);
+  const idVolet = useId();
+
+  const ouvrir = useCallback(() => {
+    const h = hote.current;
+    const v = volet.current;
+    if (h && v) {
+      const zone = h.closest("main")?.getBoundingClientRect();
+      const ecran = document.documentElement.clientWidth;
+      const rect = h.getBoundingClientRect();
+      const p = placerVolet({
+        hote: { left: rect.left, width: rect.width },
+        bannieres: BANNIERES,
+        largeur: v.offsetWidth,
+        zone: { left: Math.max(0, zone?.left ?? 0), right: Math.min(ecran, zone?.right ?? ecran) },
+      });
+      v.style.setProperty("--dx", `${p.dx}px`);
+      setCote(p.cote);
+    }
+    setOuvert(true);
+  }, []);
+  const fermer = useCallback(() => setOuvert(false), []);
+
+  // ouvert : un toucher ailleurs, Échap ou un redimensionnement le referment
+  useEffect(() => {
+    if (!ouvert) return;
+    const dehors = (ev: PointerEvent) => {
+      if (hote.current && ev.target instanceof Node && !hote.current.contains(ev.target)) setOuvert(false);
+    };
+    const echap = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") setOuvert(false);
+    };
+    document.addEventListener("pointerdown", dehors);
+    document.addEventListener("keydown", echap);
+    window.addEventListener("resize", fermer);
+    return () => {
+      document.removeEventListener("pointerdown", dehors);
+      document.removeEventListener("keydown", echap);
+      window.removeEventListener("resize", fermer);
+    };
+  }, [ouvert, fermer]);
+
   return (
-    <LienJoueur
-      id={r.userId}
-      nom={r.name}
-      className={s.composee + (first ? " " + s.premier : "")}
+    <div
+      ref={hote}
+      className={s.hote + (first ? " " + s.premier : "")}
       style={style}
-      data-holo=""
-      data-composee=""
-      aria-label={`${PODIUM.place(place)} : ${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
+      data-hote=""
+      data-ouvert={ouvert ? "1" : "0"}
+      data-cote={cote}
+      onPointerEnter={(e) => {
+        if (e.pointerType !== "touch") ouvrir();
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType !== "touch") fermer();
+      }}
+      onPointerDownCapture={(e) => {
+        doigt.current = e.pointerType === "touch";
+      }}
+      onClickCapture={(e) => {
+        // au doigt, le premier toucher ouvre le volet sans suivre le lien ; le second suit le lien (la carte du joueur)
+        if (doigt.current && !ouvert) {
+          e.preventDefault();
+          e.stopPropagation();
+          ouvrir();
+        }
+      }}
+      onFocus={(e) => {
+        let clavier = false;
+        try {
+          clavier = (e.target as HTMLElement).matches(":focus-visible");
+        } catch {
+          clavier = false;
+        }
+        if (clavier) ouvrir();
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) fermer();
+      }}
     >
-      <BanniereComposee composition={composition} fond={<FondPodium r={r} />} metal={TIERS[tier].metal[1]} />
-      <span className={s.plaqueId}>
-        <span className={s.plaqueTete}>
+      <LienJoueur
+        id={r.userId}
+        nom={r.name}
+        className={s.composee}
+        data-holo=""
+        data-composee=""
+        aria-label={`${PODIUM.place(place)} : ${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
+        aria-expanded={ouvert}
+        aria-controls={idVolet}
+      >
+        <BanniereComposee composition={composition} fond={<FondPodium r={r} />} metal={TIERS[tier].metal[1]} />
+        <span className={s.plaqueId}>
           <span aria-hidden className={s.placeC + " font-brand"}>
             {place}
           </span>
@@ -179,14 +295,12 @@ function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 
             <img src={`/ranks/v2/petit-${tier}-128.png`} width={128} height={128} alt="" draggable={false} />
           </span>
         </span>
-        <span className={s.pseudo + " font-brand"}>{r.isMe ? PODIUM.toi : r.name}</span>
-        <TitrePorte titre={r.titre} className="-mt-[1cqw] text-[length:max(10px,5.4cqw)] [color:rgba(255,255,255,0.86)] [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]" />
-        <span className={s.rang}>
-          <span>{nomRang}</span>
-          <b>{nombre(r.elo)}</b>
-        </span>
-      </span>
-    </LienJoueur>
+      </LienJoueur>
+      {/* le volet : le panneau de gauche, caché derrière la bannière tant que la place n'est pas survolée */}
+      <div ref={volet} id={idVolet} className={s.volet} data-volet="">
+        <PanneauJoueur v={panneau} isole cote={cote} />
+      </div>
+    </div>
   );
 }
 
