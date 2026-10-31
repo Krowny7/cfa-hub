@@ -81,14 +81,14 @@ check("le lien « Récupérer mes 2 quêtes → » vers /codex", base.includes("
 check("la salle : 23 trophées, Diamant 1 · Or 3 · Argent 6 · Bronze 13, dernier gagné et sa règle", base.includes("23 trophées gagnés") && base.includes("Dernier gagné") && base.includes("Trophée d'or · Les 30 du jour") && base.includes("27/30 ou plus") && /Diamant/.test(base) && />13</.test(base));
 
 titre("# l'encre : 8 liquides par défaut, la palette jade");
-check("exactement 8 class rl-encre-vif : 5 boutons (objectif, lacunes, gagner, calculs, série chronométrée) et 3 options (Radar, 30 j, Aucune)", compte(base, /class="rl-encre-vif"/g) === 8, String(compte(base, /class="rl-encre-vif"/g)));
+check("exactement 9 class rl-encre-vif : 6 boutons (objectif, Mon profil, lacunes, gagner, calculs, série chronométrée) et 3 options (Radar, 30 j, Aucune)", compte(base, /class="rl-encre-vif"/g) === 9, String(compte(base, /class="rl-encre-vif"/g)));
 {
-  const liquides = ["Faire mes 9 questions", "Atelier sur ta pire notion", "Commencer par", "Session de calculs", "Série chronométrée"];
+  const liquides = ["Faire mes 9 questions", "Mon profil", "Atelier sur ta pire notion", "Commencer par", "Session de calculs", "Série chronométrée"];
   check("les 5 boutons d'encre attendus sont là", liquides.every((t) => base.includes(t)), liquides.filter((t) => !base.includes(t)).join(" | "));
   const parCarte = base.split("<section").slice(1).map((x) => compte(x.slice(0, x.indexOf("</section>")), /class="rl-encre-vif"/g));
   check("un liquide au plus par carte, sauf Tes matières (ses deux options actives)", parCarte.every((n, i) => n <= 1 || (i === 2 && n === 2)), parCarte.join());
 }
-check('data-palette="jade" sur chaque liquide, et aucune autre palette', compte(base, /data-palette="jade"/g) === 8 && !/data-palette="(?!jade)/.test(base));
+check('data-palette="jade" sur chaque liquide, et aucune autre palette', compte(base, /data-palette="jade"/g) === 9 && !/data-palette="(?!jade)/.test(base));
 check("la palette est posée sur la racine : --pal-1 noir … --pal-4 blanc, texture jade.webp", base.includes("--pal-1:#121016") && base.includes("--pal-2:#5a3a8f") && base.includes("--pal-3:#2f8f5f") && base.includes("--pal-4:#f4f2f7") && base.includes("/encres/jade.webp"));
 check("aucune trace d'ébène, ni d'image de la maquette", !/ebene/i.test(base) && !base.includes("/_blob/") && !base.includes("Ébène"));
 check("aucun antislash ni chemin de travail dans la page", !base.includes(String.fromCharCode(92)) && !/scratchpad|AppData|C:[/]/.test(base));
@@ -107,7 +107,7 @@ titre("# les variantes");
 {
   const sans = rendre("sansObjectif");
   const objectifDe = (html: string) => html.slice(html.indexOf('aria-labelledby="syn-objectif"'), html.indexOf("</section>", html.indexOf('aria-labelledby="syn-objectif"')));
-  check("sans objectif : « Fixe ton jour J » et un lien vers reglages#objectif ; ce bouton reste le seul liquide de la carte", sans.includes("Fixe ton jour J") && sans.includes('href="/moi?onglet=reglages#objectif"') && compte(objectifDe(sans), /class="rl-encre-vif"/g) === 1 && compte(sans, /class="rl-encre-vif"/g) === 8 && !sans.includes("Ta quête du jour"));
+  check("sans objectif : « Fixe ton jour J » et un lien vers reglages#objectif ; ce bouton reste le seul liquide de la carte", sans.includes("Fixe ton jour J") && sans.includes('href="/moi?onglet=reglages#objectif"') && compte(objectifDe(sans), /class="rl-encre-vif"/g) === 1 && compte(sans, /class="rl-encre-vif"/g) === 9 && !sans.includes("Ta quête du jour"));
   const sd = rendre("sansDate");
   check("sans date : pas de pavé J-n, la carte invite à fixer le jour J", sd.includes("Fixe ton jour J") && !/class="jour"/.test(sd));
   const neuf = rendre("nouveau");
@@ -120,9 +120,9 @@ titre("# les variantes");
   check("sans temps : la ligne disparaît, les deux autres restent", !st.includes("Temps sur le site") && st.includes("Codex") && st.includes("Marquées"));
   const sa = rendre("sansAdmin");
   check("sans admin : pas de « Dernier gagné », la salle dit que les autres trophées arrivent", !sa.includes("Dernier gagné") && sa.includes("Les autres trophées arrivent") && sa.includes('id="trophees"'));
-  check("sans admin (sans maitrise_synthese ni rythme_joueur) : ni Calcul, ni Rythme, ni Progression ; la carte sur 90 jours ; pas de comparaison dans le temps", !sa.includes("syn-calcul") && !sa.includes("syn-rythme") && !sa.includes("syn-progression") && sa.includes("pas vue depuis 90") && sa.includes('id="carte"') && !sa.includes("Se comparer") && compte(sa, /class="rl-encre-vif"/g) === 4, String(compte(sa, /class="rl-encre-vif"/g)));
+  check("sans admin (sans maitrise_synthese ni rythme_joueur) : ni Calcul, ni Rythme, ni Progression ; la carte sur 90 jours ; pas de comparaison dans le temps", !sa.includes("syn-calcul") && !sa.includes("syn-rythme") && !sa.includes("syn-progression") && sa.includes("pas vue depuis 90") && sa.includes('id="carte"') && !sa.includes("Se comparer") && compte(sa, /class="rl-encre-vif"/g) === 5, String(compte(sa, /class="rl-encre-vif"/g)));
   const at = rendre("atteint");
-  check("objectif atteint : félicitation, plus de bouton d'encre dans la carte, plus de quête", at.includes("est atteint : bravo") && !objectifDe(at).includes("rl-encre-vif") && compte(at, /class="rl-encre-vif"/g) === 7 && !at.includes("Ta quête du jour") && at.includes(`100${NB}%`));
+  check("objectif atteint : félicitation, plus de bouton d'encre dans la carte, plus de quête", at.includes("est atteint : bravo") && !objectifDe(at).includes("rl-encre-vif") && compte(at, /class="rl-encre-vif"/g) === 8 && !at.includes("Ta quête du jour") && at.includes(`100${NB}%`));
   const pire = rendre("pire");
   check("cas extrêmes : pseudo très long, 0 % fait, note à 100 %, quête de 100 par jour en barre", pire.includes("Rochefoucauld-Montmorency") && pire.includes(`0${NB}%`) && pire.includes(`100${NB}%`) && !/class="pip/.test(pire) && pire.includes("Faire mes 100 questions"));
   const zero = rendre("zero");

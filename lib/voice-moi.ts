@@ -152,6 +152,7 @@ export const SYN = {
   // ── Carte du joueur ──
   joueur: {
     cabinet: "Ton cabinet",
+    profil: "Mon profil",
     insigne: (palier: string) => `Insigne ${palier}`,
     eloLigne: (elo: number, place: string | null) => `${nombre(elo)}${NBSP}ELO${place ? ` · ${place}` : ""}`,
     place: (rang: number, joueurs: number) => `${rang === 1 ? "1er" : `${rang}e`} sur ${nombre(joueurs)}`,

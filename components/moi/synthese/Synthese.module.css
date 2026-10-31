@@ -755,8 +755,14 @@ a.stat:hover {
   font-weight: 700;
   white-space: nowrap;
 }
-.joueurLien {
+.joueurPied {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-top: auto;
+}
+.joueurBouton {
+  width: 100%;
 }
 
 /* ——— la salle des trophées (une bande) ——— */

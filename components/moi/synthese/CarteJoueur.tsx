@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Bookmark, Clock } from "lucide-react";
+import { Bookmark, Clock, UserRound } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
 import { LigneCodex } from "@/components/moi/CodexMoi";
-import { Phrase, SceauUni } from "@/components/moi/synthese/Encre";
+import { Bouton, Phrase, SceauUni } from "@/components/moi/synthese/Encre";
 import { barreRang, entier, ligneRang } from "@/components/moi/synthese/modele";
 import type { JoueurSynthese } from "@/components/moi/synthese/types";
 import { Illustration } from "@/components/ui/Illustration";
@@ -102,11 +102,17 @@ export function CarteJoueur({ j, className }: { j: JoueurSynthese; className?: s
             <Marquees j={j} />
           </li>
         </ul>
-        {j.codex && j.codex.aRecuperer > 0 && (
-          <Link href="/codex" className={s.lien + " " + s.joueurLien}>
-            {SYN.joueur.codex.recuperer(j.codex.aRecuperer)}
-          </Link>
-        )}
+        {/* en bas de la carte : les quêtes à récupérer, puis « Mon profil » (le bouton d'encre de la carte) */}
+        <div className={s.joueurPied}>
+          {j.codex && j.codex.aRecuperer > 0 && (
+            <Link href="/codex" className={s.lien + " " + s.joueurLien}>
+              {SYN.joueur.codex.recuperer(j.codex.aRecuperer)}
+            </Link>
+          )}
+          <Bouton href={`/people/${j.id}`} className={s.joueurBouton}>
+            <UserRound size={16} aria-hidden /> {SYN.joueur.profil}
+          </Bouton>
+        </div>
       </div>
     </section>
   );
