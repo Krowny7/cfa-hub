@@ -15,6 +15,7 @@ import { loadSubjectsSafe } from "@/components/reviser/load";
 import { RV } from "@/lib/voice-reviser";
 import { cleMatiere, cleSet, etatListe, type EtatListe } from "@/lib/flashcards/progression";
 import { lireProgressions } from "@/lib/flashcards/progression-serveur";
+import { clesAvances, suiviProgramme } from "@/lib/flashcards/avancement";
 import { compterCartesMarquees } from "@/lib/flashcards/marquees";
 import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
 import { MARQUE_CARTE } from "@/lib/voice-z3c";
@@ -33,12 +34,15 @@ type PageProps = { searchParams?: Promise<SearchParams> };
 // ni n'importe de paquet. La liste suit le gabarit commun de Réviser (carte du
 // lieu « Le casier », bande « Reprendre », index du programme, puis les paquets
 // de la matière choisie, chacun avec où en est sa boucle sur le compte :
-// flashcard_progress, seulement les clés affichées, puis relue sur l'appareil
-// s'il a plus récent ; rien si la table n'est pas encore créée). Sous la
-// bande, une entrée discrète « Flashcards marquées · N » vers leur révision
-// (/flashcards/marquees), seulement s'il y en a (rien sans la table) ; des
-// marques gardées sur l'appareil qui rejoignent le compte font relire la
-// page une fois (SynchroMarquesCartes), pour que l'entrée apparaisse.
+// flashcard_progress, puis relue sur l'appareil s'il a plus récent ; rien si
+// la table n'est pas encore créée). Dans l'index du programme, chaque matière
+// montre ses cartes déjà vues et une pastille par paquet (lib/flashcards/
+// avancement.ts : toutes les boucles des paquets et des matières, en une
+// seule lecture). Sous la bande, une entrée discrète « Flashcards marquées ·
+// N » vers leur révision (/flashcards/marquees), seulement s'il y en a (rien
+// sans la table) ; des marques gardées sur l'appareil qui rejoignent le compte
+// font relire la page une fois (SynchroMarquesCartes), pour que l'entrée
+// apparaisse.
 export default async function FlashcardsPage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
 
@@ -87,9 +91,13 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
   const subjects: Record<string, string> = {};
   for (const g of groups) if (!g.key.startsWith("x-")) for (const r of g.rows) subjects[r.id] = g.name;
 
-  // la matière affichée : seules ses boucles (paquets et matière) sont lues
+  // les boucles lues sur le compte, en une requête : celles de la matière
+  // affichée (paquets et matière) et, pour l'index du programme, celles de
+  // tous les paquets et de toutes les matières
   const paquets = flashcardPaquets(system, counts, sp.subject);
-  const cles = (paquets?.groups ?? []).flatMap((g) => [...g.rows.map((r) => cleSet(r.id)), cleMatiere(g.key)]);
+  const cles = [
+    ...new Set([...(paquets?.groups ?? []).flatMap((g) => [...g.rows.map((r) => cleSet(r.id)), cleMatiere(g.key)]), ...clesAvances(groups)]),
+  ];
   // le mémo de toutes les cartes de la matière affichée (Fixed Income d'abord), sous ses paquets
   const slugMemo = paquets?.groups.length === 1 ? (subjectByKey(paquets.groups[0].key)?.onePager ?? null) : null;
   const memo = slugMemo
@@ -123,6 +131,9 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
     }
   }
 
+  // l'avancement de chaque matière pour l'index (undefined : table pas encore créée, l'index reste tel quel)
+  const avances = progressions ? suiviProgramme(groups, progressions, user.id) : undefined;
+
   const bande = (
     <>
       <BandeReprise fallback={first && firstGroup ? { id: first.id, title: first.title, subject: firstGroup.name } : null} counts={counts} subjects={subjects} />
@@ -137,6 +148,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
     <ListeReviser
       kind="cartes"
       subjects={subjectsAvail}
+      avances={avances}
       bande={
         <div className="flex flex-col gap-4">
           {bande}

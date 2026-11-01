@@ -2,30 +2,37 @@ import { BandeEncre } from "@/components/ui/BandeEncre";
 import { Icone } from "@/components/adn/icons";
 import { IndexProgramme, LieuHorizontal, ListeEntete, courseOf, shelfRows } from "@/components/reviser/Briques";
 import type { SubjectAvailability } from "@/components/reviser/catalog";
+import { LegendeAvance } from "@/components/reviser/Pastilles";
 import { ficheInfo } from "@/components/reviser/shelves";
+import type { AvancesProgramme } from "@/lib/flashcards/avancement";
 import { LIEUX, RV, type KindListe } from "@/lib/voice-reviser";
 
 // Le gabarit commun des trois listes de Réviser (/fiches, /courses,
 // /flashcards), variante C « Index + vignette du lieu » : en-tête, carte
 // horizontale du lieu, une bande d'encre (une seule action forte), puis
 // l'index du programme. `bande` est la bande d'encre de la page ; `suite`
-// vient après l'index (les paquets des flashcards…). Sans état ni requête.
+// vient après l'index (les paquets des flashcards…). `avances` (flashcards
+// seulement, quand le compte est lisible) : sous chaque matière, les cartes
+// déjà vues et une pastille par paquet, avec leur légende. Sans état ni requête.
 
 export function ListeReviser({
   kind,
   subjects,
   bande,
   suite,
+  avances,
 }: {
   kind: KindListe;
   subjects: SubjectAvailability[];
   /** la bande d'encre (déjà composée par la page) */
   bande: React.ReactNode;
   suite?: React.ReactNode;
+  avances?: AvancesProgramme;
 }) {
   const l = LIEUX[kind];
   const rows = shelfRows(kind, subjects);
   const n = rows.filter((r) => r.href).length;
+  const suivi = kind === "cartes" && avances && Object.keys(avances.matieres).length > 0 ? avances : undefined;
   return (
     <div className="rl-wide rl-page">
       <div className="flex flex-col gap-7 md:gap-10">
@@ -34,11 +41,14 @@ export function ListeReviser({
         {bande}
       </div>
       <section className="rl-section" aria-label={RV.programme}>
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="t-h2 m-0">{RV.programme}</h2>
-          <span className="t-micro">{RV.programmeAide}</span>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 className="t-h2 m-0">{RV.programme}</h2>
+            <span className="t-micro">{RV.programmeAide}</span>
+          </div>
+          {suivi && <LegendeAvance />}
         </div>
-        <IndexProgramme rows={rows} />
+        <IndexProgramme rows={rows} avances={suivi} />
       </section>
       {suite}
     </div>

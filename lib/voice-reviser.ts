@@ -83,6 +83,14 @@ export const RV = {
   surDix: (n: number) => `${n} matière${s(n)} sur 10`,
   programme: "Le programme, matière par matière",
   programmeAide: "ta maîtrise · en filigrane, ce qui arrive",
+  // flashcards : les cartes déjà vues de chaque matière, une pastille par paquet
+  avanceVues: (vues: number, total: number) => `${vues}/${total} vues`,
+  avanceAide: (nom: string, vues: number, total: number, maitrises: number, enCours: number, neufs: number) =>
+    `${nom} : ${vues} carte${s(vues)} vue${s(vues)} sur ${total}. Paquets : ${maitrises} maîtrisé${s(maitrises)}, ${enCours} en cours, ${neufs} pas commencé${s(neufs)}.`,
+  avanceLegende: "Une pastille par paquet",
+  avanceMaitrise: "maîtrisé",
+  avanceCours: "en cours",
+  avanceNeuf: "pas commencé",
   aVenir: (n: number) => `${n} matière${s(n)} à venir`,
   aVenirUne: "à venir",
   voir: "voir",

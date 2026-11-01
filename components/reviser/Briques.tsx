@@ -5,6 +5,8 @@ import { MasteryLine, TwoColumnRows } from "@/components/reviser/SubjectRows";
 import { pad2 } from "@/components/reviser/rail";
 import { SUBJECTS, type SubjectAvailability } from "@/components/reviser/catalog";
 import { ficheInfo } from "@/components/reviser/shelves";
+import { AvanceFlashcards } from "@/components/reviser/AvanceFlashcards";
+import type { AvancesProgramme } from "@/lib/flashcards/avancement";
 import { COURSES } from "@/lib/courses";
 import { LIEUX, RV, type KindListe } from "@/lib/voice-reviser";
 
@@ -68,8 +70,11 @@ export function LieuHorizontal({ kind, n }: { kind: KindListe; n: number }) {
   );
 }
 
-/** Index du programme : les 10 matières numérotées ; celles sans contenu en filigrane, sans lien (repliées en une ligne au-delà de 4, en bas de l'index). */
-export function IndexProgramme({ rows }: { rows: ShelfRow[] }) {
+/**
+ * Index du programme : les 10 matières numérotées ; celles sans contenu en filigrane, sans lien (repliées en une ligne au-delà de 4, en bas de l'index).
+ * `avances` (flashcards, quand le compte est lisible) : sous le nom, les cartes déjà vues et une pastille par paquet remplacent « 4 paquets · 60 cartes ».
+ */
+export function IndexProgramme({ rows, avances }: { rows: ShelfRow[]; avances?: AvancesProgramme }) {
   const later = rows.filter((r) => !r.href);
   const fold = later.length > 4;
   const shown = fold ? rows.filter((r) => r.href) : rows;
@@ -79,12 +84,17 @@ export function IndexProgramme({ rows }: { rows: ShelfRow[] }) {
         items={shown}
         keyOf={(it) => it.key}
         render={(it) => {
+          const suivi = it.href ? avances?.matieres[it.key] : undefined;
           const inner = (
             <>
               <span className={"w-7 shrink-0 font-mono text-[13px] font-semibold " + (it.href ? "" : "text-faint")}>{pad2(it.index)}</span>
               <span className="min-w-0 flex-1">
                 <span className={"block truncate text-[16px] font-bold leading-tight tracking-[-0.01em] " + (it.href ? "" : "text-faint")}>{it.name}</span>
-                <span className="t-micro mt-1 block truncate">{it.href ? it.meta : RV.aVenirUne}</span>
+                {suivi && avances ? (
+                  <AvanceFlashcards suivi={suivi} joueur={avances.joueur} />
+                ) : (
+                  <span className="t-micro mt-1 block truncate">{it.href ? it.meta : RV.aVenirUne}</span>
+                )}
               </span>
               {it.href && (
                 <>

@@ -209,16 +209,26 @@ export function etatListe(cle: string, ligne: LigneProgression | null | undefine
 }
 
 /**
+ * La boucle de l'appareil qui l'emporte sur la version du compte `e.maj`, si
+ * elle est à ce joueur (même règle que la révision : appareilPrime) ; null :
+ * garder ce que dit le serveur (rien sur l'appareil, boucle d'un autre
+ * compte, même version, ou compte plus récent).
+ */
+export function boucleLocalePrime(local: EtatBoucle | null, e: Pick<EtatListe, "maj" | "joueur">): EtatBoucle | null {
+  const mien = boucleDuJoueur(local, e.joueur);
+  if (!mien || horodatage(mien) === e.maj || !appareilPrime(mien, e.maj)) return null;
+  return mien;
+}
+
+/**
  * L'état de la boucle de l'appareil à montrer à la place de celui du serveur,
- * s'il est à ce joueur et l'emporte sur la version du compte (même règle que
- * la révision : appareilPrime) — null s'il n'y a rien à afficher (boucle
- * recommencée, pas encore arrivée sur le compte) ; undefined : garder celui
- * du serveur.
+ * s'il est à ce joueur et l'emporte sur la version du compte (boucleLocalePrime)
+ * — null s'il n'y a rien à afficher (boucle recommencée, pas encore arrivée
+ * sur le compte) ; undefined : garder celui du serveur.
  */
 export function etatLocalAffiche(local: EtatBoucle | null, e: EtatListe): EtatAffiche | null | undefined {
-  const mien = boucleDuJoueur(local, e.joueur);
-  if (!mien || horodatage(mien) === e.maj || !appareilPrime(mien, e.maj)) return undefined;
-  return afficher(resumer(mien, e.total));
+  const mien = boucleLocalePrime(local, e);
+  return mien ? afficher(resumer(mien, e.total)) : undefined;
 }
 
 // ---------------------------------------------------------------------------
