@@ -6,6 +6,7 @@ out
 .DS_Store
 _backup_before_nav_rework/
 tsconfig.tsbuildinfo
-.claude/
+.claude/settings.local.json
+.claude/worktrees/
 .vercel
 .env*
