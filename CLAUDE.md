@@ -24,6 +24,8 @@ Règles dans .claude/rules/da-encre.md, chargées quand on touche aux composants
 
 ## Livraison
 - tsc OK et build OK (ou build Vercel) → commit en français, puis push direct sur main sans redemander.
-- SQL : écrire un fichier `migration_*.sql` à la racine, et l'utilisateur le colle dans Supabase.
-  Ne jamais modifier la base soi-même. Le MCP Supabase est en lecture seule : il sert à vérifier qu'une migration est bien appliquée.
+- SQL : écrire un fichier `migration_*.sql` à la racine, puis l'appliquer soi-même avec le connecteur Supabase (`apply_migration`, autorisé par Théo le 2026-11-01), toujours en vérifiant :
+  1. Avant : lire l'état de la base avec `execute_sql` en lecture seule, pour savoir ce qui existe déjà et ce qui manque. La migration doit être idempotente (IF NOT EXISTS, CREATE OR REPLACE).
+  2. Jamais de DROP TABLE, DELETE, TRUNCATE, ni d'UPDATE massif de données sans l'accord explicite de Théo pour cette migration-là.
+  3. Après : revérifier en lecture que tout est en place (fonctions, colonnes, droits), puis le dire à Théo.
 - Les textes affichés viennent de lib/voice*.ts. Les questions : énoncés et choix en anglais, explications en français.
