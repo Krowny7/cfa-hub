@@ -8,7 +8,9 @@ import s from "./Lobby.module.css";
 // Les 5 du jour : le défi éclair classé, une petite carte dense. Cinq cases (vides
 // à jouer, pleines une fois répondues, noires pour les justes), le nombre de
 // joueurs et la meilleure copie, un seul bouton : d'encre tant qu'il reste à
-// jouer, à contour une fois les 5 rendues. Composant serveur.
+// jouer, à contour une fois les 5 rendues. Couleurs inversées (carte sombre,
+// demande de l'utilisateur) : sceau, cases et boutons dans leur version claire.
+// Composant serveur.
 
 const ID = "lobby-cinq";
 
@@ -17,13 +19,13 @@ export function CarteCinq({ c, className }: { c: CarteCinqLobby; className?: str
   const justes = c.cases.filter((x) => x === "juste").length;
   const repondues = c.cases.filter((x) => x !== null).length;
   return (
-    <section className={[s.carte, s.petite, className].filter(Boolean).join(" ")} aria-labelledby={ID}>
+    <section className={[s.carte, s.petite, s.inverse, className].filter(Boolean).join(" ")} aria-labelledby={ID}>
       <header className={s.tete}>
-        <SceauUni>
+        <SceauUni clair>
           <Zap size={15} aria-hidden />
         </SceauUni>
         <div className={s.teteTexte}>
-          <p className={s.eyebrow}>{C.surTitre}</p>
+          <p className={s.eyebrow + " " + s.eyebrowC}>{C.surTitre}</p>
           <h2 id={ID} className={"font-brand " + s.ttl}>
             {C.titre}
           </h2>
@@ -51,11 +53,11 @@ export function CarteCinq({ c, className }: { c: CarteCinqLobby; className?: str
         </p>
       )}
       {c.etat === "done" ? (
-        <Contour href={c.action.href} className={s.sm}>
+        <Contour href={c.action.href} className={s.sm + " " + s.contourC}>
           {c.action.libelle}
         </Contour>
       ) : (
-        <Bouton href={c.action.href} taille="sm">
+        <Bouton href={c.action.href} taille="sm" sur>
           <Play size={15} aria-hidden />
           {c.action.libelle}
         </Bouton>
