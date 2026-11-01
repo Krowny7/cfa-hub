@@ -7,7 +7,7 @@ Toujours écrire à l'utilisateur en français.
 ## Vérifier son travail
 - Types : `npm run typecheck`. Le hook Stop (.claude/hooks/typecheck-si-ts.mjs) le relance tout seul en fin de tour si des .ts/.tsx ont changé.
 - Machine faible (7,7 Go de RAM) : jamais deux builds en même temps, ni un build pendant un rendu vidéo ou un serveur de captures.
-  Si `next build` plante faute de mémoire alors que tsc passe, pousser : Vercel construit, et un build raté n'est pas mis en ligne.
+  Pour un changement visible, ne pas lancer next build en local : le vérifier sur une préversion Vercel (skill « apercu », branche apercu).
 - Aperçu : serveur de dev « cfa-hub » de .claude/launch.json (port 3000). Regarder la page à l'écran avant de dire « fini ».
 - Après un push : vérifier le déploiement. Utiliser le MCP Vercel s'il est branché ; sinon
   `curl -s https://api.github.com/repos/Krowny7/cfa-hub/commits/<sha>/status` (contexte « Vercel »).
