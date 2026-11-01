@@ -93,7 +93,7 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 
 // Espace « S'affronter » (ex-Classement), disposition A « L'arène » (maquette
 // validée), dans le même langage que S'entraîner (Affronter.module.css : cartes
-// en papier, diptyque peint, boutons et onglets d'encre, palette san-romano).
+// en papier, diptyque peint, boutons et onglets d'encre, palette florence).
 // Dans l'ordre : l'en-tête simple (espace · domaine, titre) ; le diptyque « La Grande
 // Salle » (l'examen classé, la pièce maîtresse, peinte, à gauche) | la carte du
 // duel (en haut ton ELO et ton insigne, une ligne de rang ; en bas la peinture des

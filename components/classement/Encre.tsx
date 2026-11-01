@@ -4,13 +4,13 @@ import { PALETTES, styleDePalette } from "@/lib/palettes";
 import s from "./Affronter.module.css";
 
 // Les pièces d'encre de l'espace « S'affronter », partagées par la vue et ses
-// cartes : la palette de l'onglet (san-romano), un bouton d'encre et le sceau
+// cartes : la palette de l'onglet (florence), un bouton d'encre et le sceau
 // d'une carte en papier, comme sur S'entraîner. `PorteeEncre` pose cette palette
 // (et les jetons de l'espace) autour d'une page qui n'est pas la vue S'affronter :
 // les Salles y retrouvent les mêmes boutons et sceaux.
 
 /** La palette de l'espace (lib/palettes.ts). */
-export const PAL = PALETTES["san-romano"];
+export const PAL = PALETTES.florence;
 
 /** Un bouton d'encre (le liquide vivant de la palette de l'espace), comme sur S'entraîner ; `surPeinture` : un liseré clair. */
 export function Bouton({

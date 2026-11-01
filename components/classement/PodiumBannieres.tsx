@@ -447,11 +447,11 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
 // Une place que personne n'a encore prise (le joueur n'a pas joué) : la même
 // bannière, en grisé, qui mène aux duels.
 function BanniereLibre({ place }: { place: 1 | 2 | 3 }) {
-  const style = { "--liq": "url(/encres/san-romano.webp)", "--teinte": "var(--muted, #8a8a84)", "--n": 0 } as CSSProperties;
+  const style = { "--liq": "url(/encres/florence.webp)", "--teinte": "var(--muted, #8a8a84)", "--n": 0 } as CSSProperties;
   return (
     <Link href="/duel" className={s.banniere + (place === 1 ? " " + s.premier : "")} style={style} data-holo="" aria-label={PODIUM.libreAria(place)}>
-      <span aria-hidden className={"rl-encre " + s.cadre} data-palette="san-romano">
-        <EncreVive tons={PALETTES["san-romano"].liquide} echelle={160} />
+      <span aria-hidden className={"rl-encre " + s.cadre} data-palette="florence">
+        <EncreVive tons={PALETTES.florence.liquide} echelle={160} />
       </span>
       <span aria-hidden className={s.forme}>
         {/* eslint-disable-next-line @next/next/no-img-element */}

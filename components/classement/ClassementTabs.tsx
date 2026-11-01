@@ -13,7 +13,7 @@ export type TabDef = {
   panel: React.ReactNode;
 };
 
-const PAL = PALETTES["san-romano"];
+const PAL = PALETTES.florence;
 
 // Les onglets du Classement général (Classement | Amis | Ta courbe | Les 8
 // rangs | Comment ça marche). Les panneaux sont rendus côté serveur ; seul le

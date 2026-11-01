@@ -19,7 +19,7 @@ import s from "./Rival.module.css";
 // rencontres prend la place du face-à-face. Composant serveur : tout arrive
 // en données (modele-rival.ts) ; `className` donne le placement dans la grille.
 
-const PAL = PALETTES.florence;
+const PAL = PALETTES.graphite;
 const classes = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
 /** Une phrase en segments : du texte, du gras, un passage surligné, ou un chiffre en rouge. */

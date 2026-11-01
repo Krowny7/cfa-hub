@@ -15,7 +15,7 @@ import s from "./Lobby.module.css";
 // .rl-encre positionné).
 
 /** La palette de la page (lib/palettes.ts). */
-export const PAL = PALETTES.florence;
+export const PAL = PALETTES.graphite;
 
 const classes = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 

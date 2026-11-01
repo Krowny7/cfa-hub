@@ -374,7 +374,7 @@ async function main() {
   check("panneau ouvert : un dialogue nommé, avec son bouton de fermeture", ouvert.includes('role="dialog"') && ouvert.includes('aria-labelledby=') && ouvert.includes(CARTE_JOUR.reglages.fermer));
   check("   dix puces de matières, FSA et Fixed Income cochées", compte(ouvert, /class="chip( chipOn)?"/g) === 10 && compte(ouvert, /class="chip chipOn" aria-pressed="true"/g) === 2);
   check("   trois sources en radios natives, une seule cochée (toutes)", compte(ouvert, /type="radio"/g) === 3 && compte(ouvert, /checked=""/g) === 1 && ouvert.includes(CARTE_JOUR.sources.marquees.libelle) && ouvert.includes(CARTE_JOUR.sources.faibles.libelle));
-  check("   « Enregistrer » est le SEUL liquide : un bouton d'encre florence", compte(ouvert, /rl-encre/g) >= 1 && compte(ouvert, /class="rl-encre( [^"]*)?"/g) === 1 && ouvert.includes('data-palette="florence"') && compte(ouvert, /rl-encre-vif/g) === 1 && ouvert.includes(">Enregistrer<"));
+  check("   « Enregistrer » est le SEUL liquide : un bouton d'encre graphite", compte(ouvert, /rl-encre/g) >= 1 && compte(ouvert, /class="rl-encre( [^"]*)?"/g) === 1 && ouvert.includes('data-palette="graphite"') && compte(ouvert, /rl-encre-vif/g) === 1 && ouvert.includes(">Enregistrer<"));
   check("   la note du pied : « 2 matières cochées · toutes les flashcards »", ouvert.includes("2 matières cochées · toutes les flashcards"));
   check("   la carte et le HUD sont inertes derrière le panneau", compte(ouvert, /\binert=""/g) === 2);
   check("   l'engrenage annonce le panneau ouvert", ouvert.includes('aria-expanded="true"'));

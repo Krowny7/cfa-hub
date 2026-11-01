@@ -16,7 +16,7 @@ import { activeSpace, type Space } from "./nav";
 // (url de la texture), `--pal-voile-haut` / `--pal-voile-bas` (opacité du voile
 // sombre qui garde le texte blanc lisible) et `data-palette` pour les styles.
 
-export type PaletteCle = "san-romano" | "atelier" | "studiolo" | "ebene" | "jade" | "florence" | "carnet";
+export type PaletteCle = "san-romano" | "atelier" | "studiolo" | "ebene" | "jade" | "florence" | "carnet" | "graphite";
 
 export type CouleurNommee = { nom: string; hex: string };
 
@@ -81,19 +81,19 @@ export const PALETTES: Record<PaletteCle, Palette> = Object.fromEntries(
 
 /** Routes de chaque palette (le premier préfixe qui correspond l'emporte). */
 const ROUTES: { palette: PaletteCle; prefixes: string[] }[] = [
-  { palette: "san-romano", prefixes: ["/classement", "/people", "/duel", "/defi", "/mock-exams", "/eclair", "/salles"] },
+  { palette: "florence", prefixes: ["/classement", "/people", "/duel", "/defi", "/mock-exams", "/eclair", "/salles"] },
   { palette: "atelier", prefixes: ["/entrainement", "/calculs", "/practice", "/qcm", "/official-exams", "/atelier"] },
   { palette: "studiolo", prefixes: ["/reviser", "/fiches", "/courses", "/flashcards"] },
   { palette: "carnet", prefixes: ["/codex"] },
   { palette: "jade", prefixes: ["/moi"] },
-  { palette: "florence", prefixes: ["/dashboard"] },
+  { palette: "graphite", prefixes: ["/dashboard"] },
 ];
 
 /** Repli : une page sans palette propre prend celle de son espace. */
 const PALETTE_DE_L_ESPACE: Record<Space["key"], PaletteCle> = {
   reviser: "studiolo",
   entrainer: "atelier",
-  classement: "san-romano",
+  classement: "florence",
   moi: "jade",
 };
 
@@ -101,7 +101,7 @@ const sous = (chemin: string, prefixe: string) => chemin === prefixe || chemin.s
 
 /** La palette de la page, ou null hors des espaces (connexion, partage…). */
 export function paletteDeChemin(chemin: string): Palette | null {
-  if (chemin === "/") return PALETTES.florence;
+  if (chemin === "/") return PALETTES.graphite;
   for (const r of ROUTES) if (r.prefixes.some((p) => sous(chemin, p))) return PALETTES[r.palette];
   const espace = activeSpace(chemin);
   return espace ? PALETTES[PALETTE_DE_L_ESPACE[espace]] : null;

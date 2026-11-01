@@ -7,7 +7,7 @@
 // puis le rendu de LobbyView sur les données d'exemple (scripts/accueil/lobby-exemple.ts) :
 // l'en-tête, l'ORDRE FINAL des cartes (l'affiche « La Lice » à la place de la
 // ligue, le carnet de jours tout en bas), les repères de Léonard, la palette
-// « florence », l'inventaire des liquides (4 par défaut), les variantes (nouveau
+// « graphite », l'inventaire des liquides (4 par défaut), les variantes (nouveau
 // joueur, 30 bientôt, ni 30 ni 5, tout fait, copie en cours, placement, sans
 // classement, sans migrations, sans date, personnage du vainqueur, sans clé de
 // service, sans rival, sans carte du jour, socle seul), la version téléphone (les
@@ -232,15 +232,15 @@ const html = rendre("base");
 titre("# Léonard, la palette et l'inventaire des liquides");
 {
   check('data-leonard="defi" sur la carte héros (une fois) et data-leonard="anneau" sur l\'anneau (une fois)', compte(html, /data-leonard="defi"/g) === 1 && compte(html, /data-leonard="anneau"/g) === 1);
-  check("la palette est posée sur la racine : terre cuite, ocre rosé, bleu pâle, ivoire, texture florence.webp", html.includes("--pal-1:#a94d31") && html.includes("--pal-2:#d8a186") && html.includes("--pal-3:#a8c0d6") && html.includes("--pal-4:#f3ebdb") && html.includes("/encres/florence.webp"));
-  check('data-palette="florence" sur chaque liquide, et aucune autre palette', compte(html, /data-palette="florence"/g) === compte(html, /class="rl-encre-vif"/g) && !/data-palette="(?!florence)/.test(html));
+  check("la palette est posée sur la racine : noir, anthracite, gris perle, blanc, texture graphite.webp", html.includes("--pal-1:#111113") && html.includes("--pal-2:#3b3b3f") && html.includes("--pal-3:#8d8d92") && html.includes("--pal-4:#f1f1f2") && html.includes("/encres/graphite.webp"));
+  check('data-palette="graphite" sur chaque liquide, et aucune autre palette', compte(html, /data-palette="graphite"/g) === compte(html, /class="rl-encre-vif"/g) && !/data-palette="(?!graphite)/.test(html));
   check("exactement 4 liquides par défaut : Rendre ma copie, Jouer les 5 du jour, l'option active « Aujourd'hui » et Lui lancer un défi", compte(html, /class="rl-encre-vif"/g) === 4, String(compte(html, /class="rl-encre-vif"/g)));
   const iDefi = html.indexOf("Lui lancer un défi");
   const boutonDefi = html.slice(html.lastIndexOf("<a ", iDefi), iDefi);
   const iPlus = html.indexOf('class="plus"');
   const boutonPlus = html.slice(html.lastIndexOf("<button", iPlus), html.indexOf("</button>", iPlus));
-  check("« Lui lancer un défi » porte le liquide du rival (palette florence), « Relancer » reste un bouton à contour sans encre", boutonDefi.includes("rl-encre-vif") && boutonDefi.includes('data-palette="florence"') && boutonPlus.includes("Relancer") && !boutonPlus.includes("rl-encre"), boutonPlus.slice(0, 80));
-  check("chaque liquide est l'enfant direct d'un .rl-encre positionné", compte(html, /rl-encre[^>]*data-palette="florence"[^>]*><canvas[^>]*class="rl-encre-vif"/g) === 4 || compte(html, /class="rl-encre encre [^"]*"[^>]*><canvas/g) + compte(html, /class="rl-encre encre"[^>]*><canvas/g) === 4);
+  check("« Lui lancer un défi » porte le liquide du rival (palette graphite), « Relancer » reste un bouton à contour sans encre", boutonDefi.includes("rl-encre-vif") && boutonDefi.includes('data-palette="graphite"') && boutonPlus.includes("Relancer") && !boutonPlus.includes("rl-encre"), boutonPlus.slice(0, 80));
+  check("chaque liquide est l'enfant direct d'un .rl-encre positionné", compte(html, /rl-encre[^>]*data-palette="graphite"[^>]*><canvas[^>]*class="rl-encre-vif"/g) === 4 || compte(html, /class="rl-encre encre [^"]*"[^>]*><canvas/g) + compte(html, /class="rl-encre encre"[^>]*><canvas/g) === 4);
   const parCarte = html.split("<section").slice(1).map((x) => compte(x.slice(0, x.indexOf("</section>")), /class="rl-encre-vif"/g));
   check("un liquide au plus par carte, sauf la carte des 30 (son bouton et l'option active du classement)", parCarte.every((n, i) => n <= 1 || (i === 0 && n === 2)), parCarte.join());
   check("la carte du jour, panneau fermé : aucun liquide (« Enregistrer » n'existe qu'ouvert) ; la Grande Salle et l'affiche non plus", !/data-matiere="fsa"(?:(?!<\/section>).)*rl-encre-vif/s.test(html) && !/<figure(?:(?!<\/figure>).)*rl-encre/s.test(html));

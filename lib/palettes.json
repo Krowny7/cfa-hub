@@ -196,6 +196,33 @@
           "hex": "#e9d9b4"
         }
       ]
+    },
+    {
+      "key": "graphite",
+      "nom": "Graphite",
+      "inspiration": "l'encre de Chine sur papier blanc : noir, gris et blanc",
+      "voile": [
+        0.52,
+        0.76
+      ],
+      "couleurs": [
+        {
+          "nom": "noir d'encre",
+          "hex": "#111113"
+        },
+        {
+          "nom": "anthracite",
+          "hex": "#3b3b3f"
+        },
+        {
+          "nom": "gris perle",
+          "hex": "#8d8d92"
+        },
+        {
+          "nom": "blanc",
+          "hex": "#f1f1f2"
+        }
+      ]
     }
   ]
 }

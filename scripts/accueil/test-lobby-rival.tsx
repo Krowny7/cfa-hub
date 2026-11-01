@@ -305,7 +305,7 @@ let rival: RivalLobby;
 
   // l'encre : un seul liquide, sur « Lui lancer un défi » ; « Relancer » reste en contour
   check("un seul liquide dans la carte", compte(html, /rl-encre-vif/g) === 1 && compte(html, /class="rl-encre /g) === 1);
-  check("le liquide est celui de la palette « florence »", html.includes('data-palette="florence"'));
+  check("le liquide est celui de la palette « graphite »", html.includes('data-palette="graphite"'));
   check("le bouton d'encre est « Lui lancer un défi », vers le lobby des duels", html.includes(`href="/duel?adversaire=${ID}"`) && html.includes('class="rl-encre encre bouton"') && html.includes("Lui lancer un défi"));
   check("l'encre est enfant direct du bouton (premier enfant), comme les autres pages", /class="rl-encre encre bouton"[^>]*><canvas[^>]*class="rl-encre-vif"/.test(html));
   check("« Relancer Marie » : un vrai bouton en contour, sans encre", /<button type="button" class="plus"[^>]*>/.test(html) && html.includes("Relancer Marie") && compte(html, /<button/g) === 1 && !html.includes('class="rl-encre plus"'));
