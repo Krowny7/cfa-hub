@@ -7,6 +7,7 @@
 // passages en gras est une liste de segments (lib/voice-moi.ts : Segment) :
 // une chaîne simple, ou `{ b }` en gras.
 
+import { nombre } from "@/lib/voice";
 import type { Segment } from "@/lib/voice-moi";
 
 /** Le genre d'un fait de la liste. */
@@ -18,6 +19,15 @@ export const DIRECT = {
   chiffres: "Les chiffres du lobby",
   /** libellé de la liste des faits récents (lecteurs d'écran) */
   fil: "Ce qui vient de se passer",
+  /** libellé de la rangée des visages des joueurs en ligne (lecteurs d'écran) */
+  joueurs: "Les joueurs en ligne",
+  /** ton propre visage dans la rangée */
+  toi: "Toi",
+  /** à lire après le prénom d'un ami en ligne */
+  ami: ", ami",
+  /** ce qui dépasse les visages : « +12 » ; lu « et 12 autres joueurs en ligne » */
+  plus: (n: number) => `+${nombre(n)}`,
+  plusLu: (n: number) => (n > 1 ? `et ${nombre(n)} autres joueurs en ligne` : "et 1 autre joueur en ligne"),
   enLigne: (n: number) => (n > 1 ? "joueurs en ligne" : "joueur en ligne"),
   duels: (n: number) => (n > 1 ? "duels en cours" : "duel en cours"),
   copies: (n: number) => (n > 1 ? "copies des 30 rendues dans l'heure" : "copie des 30 rendue dans l'heure"),

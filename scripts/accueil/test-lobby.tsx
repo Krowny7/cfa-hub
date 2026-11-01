@@ -227,6 +227,14 @@ const html = rendre("base");
   check("la Grande Salle a un bouton NOIR en aplat, sans liquide", html.includes("Voir l'examen blanc") && !/lobby-salle-titre(?:(?!<\/section>).)*rl-encre/s.test(html));
   check("du nouveau garde sa cible de Léonard et liste la relance de Marie en premier (« ce matin »)", compte(html, /data-leonard="du-nouveau"/g) === 1 && html.indexOf("t'a relancé") > 0 && html.indexOf("t'a relancé") < html.indexOf("t'a battu") && html.includes("ce matin"));
   check("le carnet reçoit la journée : « 26 traits sur 40 »", html.includes("26 traits sur 40"));
+  // le lobby en direct : toi d'abord, tes amis, les autres, « +N » ; la carte garde sa hauteur naturelle (plus de grand vide blanc)
+  const direct = html.slice(html.indexOf('id="lobby-direct-titre"'), html.indexOf('id="lobby-rang"'));
+  const noms = [...direct.matchAll(/<li class="joueur( moi)?" title="([^"]*)"/g)].map((m) => m[2]);
+  check("lobby en direct : toi en premier (« Toi »), tes amis en ligne (Inès, Hugo) juste après, puis les autres", noms.join(",") === "Toi,Inès K.,Hugo B.,Marie L.,Sarah T.,Lucas M." && /<li class="joueur moi"/.test(direct), noms.join(","));
+  check("lobby en direct : le reste se compte (« +32 » sur 38)", direct.includes('aria-hidden="true">+32</b>'), direct.slice(direct.indexOf('class="joueurs"'), direct.indexOf('class="joueurs"') + 120));
+  check("lobby en direct : la carte n'est plus étirée à la hauteur du rang (pas de classe etire), le vainqueur non plus quand le lobby est là", !/class="[^"]*etire[^"]*" aria-labelledby="lobby-direct-titre"/.test(html) && !/class="[^"]*etire[^"]*"/.test(html.slice(html.indexOf('class="vqw'), html.indexOf('id="lobby-direct-titre"'))));
+  const amis = html.slice(html.indexOf('id="lobby-amis-titre"'));
+  check("tes amis, à côté de « Du nouveau » : colonne ordinaire (c4), pas la bande", /class="carte petite amis c4"/.test(html) && !html.includes("amisSeule") && amis.includes("Inès"));
 }
 
 titre("# Léonard, la palette et l'inventaire des liquides");
@@ -258,6 +266,8 @@ titre("# les variantes");
   check("nouveau joueur : pas de bande vainqueur, le lobby en direct reste seul dans sa colonne à côté du rang, placement 0/5, phase à fixer", !neuf.includes("Vainqueur des 30 d'hier") && neuf.includes("lobby-direct-titre") && neuf.includes("Placement") && neuf.includes("0/5") && neuf.includes("Fixe ton jour J pour suivre ta phase de révision"));
   check("nouveau joueur : classement vide (« Le premier trait est à toi »), pas de sélecteur Hier, pas de série ni de joker", neuf.includes("Le premier trait est à toi") && !neuf.includes('aria-label="Quel jour"') && !neuf.includes("Joker de la semaine") && !neuf.includes("Série d'encre"));
   check("nouveau joueur : 2 liquides (les 30 et les 5), pas d'option active à encrer sans sélecteur", compte(neuf, /class="rl-encre-vif"/g) === 2, String(compte(neuf, /class="rl-encre-vif"/g)));
+  check("nouveau joueur : pas de « Du nouveau », donc tes amis prennent la rangée en bande (amisSeule, c12), pas en colonne étirée et vide", /class="carte petite amis amisSeule c12"/.test(neuf) && !neuf.includes('id="lobby-nouveau-titre"'));
+  check("nouveau joueur : « Toi » ouvre la rangée du lobby en direct, une seule fois", /<li class="joueur moi" title="Toi"/.test(neuf) && neuf.search(/<li class="joueur( moi)?"/) === neuf.search(/<li class="joueur moi"/) && compte(neuf, /<li class="joueur moi"/g) === 1);
 
   const enCours = rendre("enCours");
   const herosEnCours = enCours.slice(enCours.indexOf('id="lobby-defi"'), enCours.indexOf('id="lobby-cinq"'));
@@ -425,7 +435,7 @@ titre("# les fichiers : îlots clients et garde-fous (tout le dossier du lobby)"
   const fichiers = readdirSync(dossier).filter((f) => /\.(tsx?|css)$/.test(f));
   const attendus = [
     "types.ts", "modele.ts", "donnees.ts", "plafond.ts", "LobbyView.tsx", "Lobby.module.css", "Encre.tsx", "Entete.tsx", "CarteTrente.tsx", "ClassementTrente.tsx", "CarteCinq.tsx", "CarteTraits.tsx", "BandeVainqueur.tsx", "CarteRang.tsx",
-    "EnDirect.tsx", "PersoVainqueur.tsx", "modele-direct.ts", "lecture-direct.ts", "EnDirect.module.css",
+    "EnDirect.tsx", "Visage.tsx", "PersoVainqueur.tsx", "modele-direct.ts", "lecture-direct.ts", "EnDirect.module.css",
     "CarteRival.tsx", "BoutonRelance.tsx", "actions-rival.ts", "modele-rival.ts", "lecture-rival.ts", "Rival.module.css",
     "CarteDuJour.tsx", "CarteDuJourIle.tsx", "actions-carte.ts", "modele-carte.ts", "lecture-carte.ts", "CarteDuJour.module.css",
     "CarteScores.tsx", "CarteDeblocage.tsx", "CarteQuete.tsx", "BandeGrandeSalle.tsx", "Affiche.tsx", "DuNouveau.tsx", "TesAmis.tsx", "CarnetJours.tsx", "modele-parcours.ts", "lecture-parcours.ts", "Parcours.module.css", "CarnetJours.module.css",

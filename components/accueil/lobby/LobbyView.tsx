@@ -117,9 +117,10 @@ export function LobbyView({ l }: { l: Lobby }) {
         <div className={[s.rangee, s.rangeeAeree].join(" ")} data-n={colonneVq ? undefined : 1}>
           {colonneVq && (
             <div className={[s.colonne, s.c7].join(" ")}>
-              {/* seule dans sa colonne, la bande remplit la hauteur du rang ; avec le lobby, c'est lui qui s'étire */}
+              {/* seule dans sa colonne, la bande remplit la hauteur du rang ; le lobby, lui, garde sa hauteur naturelle
+                  (étiré à côté du rang, il montrait un grand vide blanc : la colonne finit alors un peu plus haut) */}
               {v && <BandeVainqueur v={v} perso={v.perso ? <PersoVainqueur perso={v.perso} /> : undefined} className={l.enDirect ? undefined : s.etire} />}
-              {l.enDirect && <EnDirect d={l.enDirect} className={s.etire} />}
+              {l.enDirect && <EnDirect d={l.enDirect} />}
             </div>
           )}
           <CarteRang r={l.rang} className={colonneVq ? s.c5 : s.c12} />
@@ -146,7 +147,8 @@ export function LobbyView({ l }: { l: Lobby }) {
         {(l.nouveau || l.amis) && (
           <div className={s.rangee}>
             {l.nouveau && <DuNouveau nouvelles={l.nouveau} aujourdhui={l.traits.jour} className={l.amis ? s.c8 : s.c12} />}
-            {l.amis && <TesAmis amis={l.amis} className={l.nouveau ? s.c4 : s.c12} />}
+            {/* seule, la carte des amis prend toute la rangée mais en bande (tout sur une ligne), pas en colonne étirée et vide */}
+            {l.amis && <TesAmis amis={l.amis} seule={!l.nouveau} className={l.nouveau ? s.c4 : s.c12} />}
           </div>
         )}
 

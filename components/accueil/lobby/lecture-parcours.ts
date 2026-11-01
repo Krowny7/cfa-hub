@@ -162,7 +162,7 @@ export async function lireAmis(ctx: CtxLecture): Promise<AmisLobby | null> {
   const lu = await amisDe(ctx.user.id, ctx.sb);
   if (!lu) return null;
   const [presents, demandes] = await Promise.all([enLigneParmi(ctx.sb, lu.amis.map((a) => a.id), ctx.now.getTime()), demandesDe(ctx.sb, ctx.user.id).catch(() => null)]);
-  return amisLobby({ amis: lu.amis.map((a) => ({ id: a.id, name: a.name })), total: lu.total, enLigne: presents, demandes: demandes?.recues.length ?? 0 });
+  return amisLobby({ amis: lu.amis.map((a) => ({ id: a.id, name: a.name, avatarUrl: a.avatarUrl })), total: lu.total, enLigne: presents, demandes: demandes?.recues.length ?? 0 });
 }
 
 // ── Ton carnet de jours ─────────────────────────────────────────────────────

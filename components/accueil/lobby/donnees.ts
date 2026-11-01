@@ -35,10 +35,10 @@ import { lireVainqueurDuJour } from "@/lib/vainqueur-du-jour";
 // est lu UNE fois (200 lignes) pour le classement de la page et le lobby en
 // direct. Module serveur.
 
-type Profil = { username: string | null };
+type Profil = { username: string | null; avatar_url: string | null };
 
 async function lireProfil(sb: SupabaseClient, id: string): Promise<Profil | null> {
-  const r = await sb.from("profiles").select("username").eq("id", id).maybeSingle();
+  const r = await sb.from("profiles").select("username, avatar_url").eq("id", id).maybeSingle();
   return r.error ? null : (r.data as Profil | null);
 }
 
@@ -76,6 +76,8 @@ export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
   // le classement du jour, lu une fois ; le vainqueur d'hier, puis son personnage
   const classementAuj = getDailyBoard(sb, jour, LIGNES_CLASSEMENT).catch(() => null);
   const vainqueurLu = lireVainqueurDuJour(sb, admin, id, jour).catch(() => null);
+  // le profil, lu une fois : le salut, et ton visage « Toi » dans le lobby en direct
+  const profilLu = lireProfil(sb, id).catch(() => null);
   const [
     profil,
     xp,
@@ -105,7 +107,7 @@ export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
     amis,
     carnet,
   ] = await Promise.all([
-    lireProfil(sb, id).catch(() => null),
+    profilLu,
     lireXp(sb).catch(() => [] as XpDay[]),
     getTodayDaily(sb, id).catch(() => null),
     getTodayDaily(sb, id, "cinq").catch(() => null),
@@ -122,7 +124,11 @@ export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
     lireSerieEncre(sb).catch(() => null),
     dateExamen(id).catch(() => null),
     // les cartes des lots 2 à 5, chacune avec son filet
-    plafonner(classementAuj.then((b) => lireEnDirect(ctx, { classements: { trente: b } }))),
+    plafonner(
+      Promise.all([classementAuj, profilLu]).then(([b, p]) =>
+        lireEnDirect(ctx, { classements: { trente: b }, moi: p ? { nom: p.username?.trim() || null, avatarUrl: p.avatar_url } : undefined }),
+      ),
+    ),
     plafonner(lireRivalActivite(ctx)),
     plafonner(lireCarteDuJour({ sb, user, jour })),
     plafonner(lireScores(ctx), FILET_MS),

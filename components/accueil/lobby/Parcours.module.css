@@ -310,6 +310,24 @@
   font-size: 14px;
   line-height: 1.4;
 }
+/* seule sur sa rangée (pas de « Du nouveau » à côté) : une bande, tout sur une ligne (le titre, le
+   chiffre, les visages, les demandes), le lien à droite ; ça passe à la ligne si la place manque.
+   Sur téléphone, la colonne ordinaire. */
+.amisSeule.amisSeule {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 36px;
+}
+.amisSeule.amisSeule > header {
+  flex: none;
+}
+.amisSeule.amisSeule .demandes {
+  align-self: center;
+}
+.amisSeule.amisSeule .basLien {
+  margin: 0 0 0 auto;
+}
 
 /* ——— les tailles : on suit la largeur du bloc ——— */
 /* page étroite : l'affiche, seule sur sa ligne, se contente d'une bande */
@@ -338,6 +356,17 @@
   }
   .amis.amis {
     padding: 18px 16px;
+  }
+  .amisSeule.amisSeule {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .amisSeule.amisSeule .demandes {
+    align-self: flex-start;
+  }
+  .amisSeule.amisSeule .basLien {
+    margin: auto 0 0;
   }
   /* la date passe sous le texte, le bouton reste à droite */
   .nvLigne {

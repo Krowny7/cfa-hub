@@ -357,7 +357,7 @@ async function main() {
   const ferme = rendre(carte());
   check("la carte se rend", ferme.length > 500);
   check("une section nommée par son titre « La carte du jour » (h2), placement donné", ferme.includes("<section") && ferme.includes(">La carte du jour</h2>") && ferme.includes("aria-labelledby=") && ferme.includes("placement"));
-  check("le recto (question en anglais) et le verso (réponse en français)", ferme.includes(RECTO) && ferme.includes(VERSO) && ferme.includes(CARTE_JOUR.recto.etiquette) && ferme.includes(CARTE_JOUR.verso.etiquette));
+  check("le recto et le verso, sans étiquette de langue (demande de l'utilisateur)", ferme.includes(RECTO) && ferme.includes(VERSO) && !ferme.includes("en anglais") && !ferme.includes("en français"));
   check("la carte est un bouton à bascule, non retournée (aria-pressed=false)", ferme.includes('aria-pressed="false"') && compte(ferme, /class="fcj"/g) === 1);
   check("la face cachée sort de l'arbre d'accessibilité (le verso est aria-hidden)", compte(ferme, /aria-hidden="true"[^>]*><span class="idx"/g) === 1 && /class="jf verso"[^>]*aria-hidden="true"/.test(ferme));
   check("les coins portent le code de la matière, quatre fois", compte(ferme, /<b>FSA<\/b>/g) === 4);

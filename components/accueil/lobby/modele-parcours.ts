@@ -12,6 +12,7 @@ import { sourcesAuMoins, tropheesAuMoins } from "@/lib/trophees";
 import { NBSP } from "@/lib/voice";
 import { PARC } from "@/lib/voice-accueil-lobby-parcours";
 import { COURTS_FR, type Segment } from "@/lib/voice-moi";
+import { photoDe } from "./modele-direct";
 import type { AmisLobby, CarnetLobby, DeblocageLobby, GrandeSalleLobby, NouveauLobby, NouveauteRelance, QueteLobby, RecordLobby, ScoresLobby } from "./types";
 
 // Le modèle des cartes « parcours » de l'accueil « Le lobby » (lot 5) : Tes
@@ -320,7 +321,8 @@ export function fusionnerNouveau(amis: readonly NouveauLobby[] | null, relances:
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const VISAGES = 3;
-export type AmiLu = { id: string; name: string };
+/** Un ami tel que la lecture le rend : `avatarUrl`, sa photo de profil (absente ou null : ses initiales). */
+export type AmiLu = { id: string; name: string; avatarUrl?: string | null };
 
 /** Le premier mot d'un nom (« Lucas M. » → « Lucas »). */
 export const prenomDe = (nom: string): string => nom.trim().split(/\s+/)[0] || nom;
@@ -328,7 +330,7 @@ export const prenomDe = (nom: string): string => nom.trim().split(/\s+/)[0] || n
 /**
  * Tes amis : le compte, qui est en ligne (null quand la présence ne se lit pas :
  * la carte dit alors « 14 amis »), trois visages (les amis en ligne d'abord, dans
- * l'ordre de la liste), les demandes en attente.
+ * l'ordre de la liste ; la photo de profil quand l'ami en a une), les demandes en attente.
  * @param enLigne les identifiants en ligne ; null : présence illisible
  */
 export function amisLobby(o: { amis: readonly AmiLu[]; total: number; enLigne: ReadonlySet<string> | null; demandes: number }): AmisLobby {
@@ -337,7 +339,7 @@ export function amisLobby(o: { amis: readonly AmiLu[]; total: number; enLigne: R
   return {
     total: Math.max(o.total, o.amis.length),
     enLigne: o.enLigne ? o.amis.filter((a) => en(a.id)).length : null,
-    visages: tries.slice(0, VISAGES).map((a) => ({ id: a.id, nom: prenomDe(a.name), initiales: initials(a.name), enLigne: en(a.id) })),
+    visages: tries.slice(0, VISAGES).map((a) => ({ id: a.id, nom: prenomDe(a.name), initiales: initials(a.name), avatarUrl: photoDe(a.avatarUrl), enLigne: en(a.id) })),
     demandes: Math.max(0, o.demandes),
   };
 }

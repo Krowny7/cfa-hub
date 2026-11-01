@@ -3,8 +3,9 @@
 // La lecture (lecture-direct.ts) rassemble des faits bruts, partagés par tous
 // les joueurs ; ce module en tire ce que CE joueur voit : les copies dans
 // l'heure, les quatre faits les plus récents (les siens à la deuxième personne,
-// ceux des joueurs qui masquent leur présence retirés), les trois chiffres, et
-// le cadrage du personnage de la bannière du vainqueur.
+// ceux des joueurs qui masquent leur présence retirés), les trois chiffres, les
+// petits visages des joueurs en ligne (toi d'abord, tes amis, les autres) et le
+// cadrage du personnage de la bannière du vainqueur.
 
 import { agoLabel } from "@/components/accueil/format";
 import { initials } from "@/components/classement/format";
@@ -12,7 +13,7 @@ import { hauteurCalque, type Composition } from "@/lib/profil/banniere";
 import { bornerPersoPos, bornerPersoTaille } from "@/lib/profil/perso";
 import { nombre } from "@/lib/voice";
 import { DIRECT, type GenreFait } from "@/lib/voice-accueil-lobby-direct";
-import type { EnDirectLobby, EvenementLobby, PersoVainqueur } from "./types";
+import type { EnDirectLobby, EvenementLobby, JoueurLobby, PersoVainqueur } from "./types";
 
 // ── Les faits bruts (ce que la lecture met en cache, 60 s, pour tout le monde) ──
 
@@ -20,6 +21,8 @@ import type { EnDirectLobby, EvenementLobby, PersoVainqueur } from "./types";
 export type CopieBrute = { userId: string; nom: string; score: number; total: number; finishedAt: string; format: "trente" | "cinq" };
 /** Un duel gagné : le gagnant et l'instant du règlement. */
 export type VictoireBrute = { userId: string; nom: string; finishedAt: string };
+/** Un joueur en ligne, tel que la lecture l'a vu : son identifiant, son pseudo et sa photo de profil (null : aucune). */
+export type JoueurBrut = { id: string; nom: string; avatarUrl: string | null };
 /** Tout ce que la lecture rapporte, sans rien de propre au joueur qui regarde. */
 export type DirectBrut = {
   /** joueurs en ligne (présence montrée, signal de moins de 2 min 30) ; null : non lu (pas d'accès admin, table absente) */
@@ -30,6 +33,8 @@ export type DirectBrut = {
   victoires: VictoireBrute[];
   /** parmi les joueurs des faits les plus récents, ceux qui masquent leur présence (Moi › Réglages) */
   masques: string[];
+  /** les joueurs en ligne qu'on a pu nommer (les plus récents d'abord, JOUEURS_LUS au plus) ; absent : non lus */
+  joueurs?: JoueurBrut[];
 };
 
 /** « Dans l'heure » : strictement moins d'une heure. */
@@ -40,6 +45,10 @@ export const DERIVE_MS = 5 * 60 * 1000;
 export const EVENEMENTS_MAX = 4;
 /** Combien de faits récents la lecture vérifie côté présence (de quoi en garder quatre si quelques-uns se masquent). */
 export const CANDIDATS_MAX = 16;
+/** Combien de joueurs en ligne la lecture nomme au plus (de quoi trouver ses amis parmi eux). */
+export const JOUEURS_LUS = 40;
+/** La rangée des visages en montre huit au plus, toi compris ; le reste se dit « +N ». */
+export const JOUEURS_MAX = 8;
 
 /** L'instant d'une date ISO, en ms ; null si elle est illisible. */
 function instantDe(iso: string): number | null {
@@ -119,16 +128,64 @@ export function evenementsDe(brut: DirectBrut, maintenant: number, moiId: string
     });
 }
 
+// ── Les joueurs en ligne ──
+
+/** Ce que CE joueur apporte à la carte : son pseudo et sa photo (le contexte ne les donne pas) et ses amis. */
+export type RegardDirect = {
+  moi?: { nom: string | null; avatarUrl: string | null };
+  /** les identifiants de ses amis : ceux qui sont en ligne passent devant les autres */
+  amis?: Iterable<string>;
+};
+
+/**
+ * Les petits visages de la carte et le vrai nombre de joueurs en ligne. Toi,
+ * tu es en ligne par définition : tu ouvres toujours la rangée (« Toi »), même
+ * si ta présence est masquée, pas encore comptée ou illisible, et le compte te
+ * rajoute quand la liste lue (complète) ne te contient pas. Viennent ensuite
+ * tes amis en ligne, puis les autres, chacun dans l'ordre de la lecture (les
+ * plus récents d'abord) ; huit visages au plus, le reste se compte dans `plus`.
+ * `enLigne` reste null quand le compte n'a pas pu être lu.
+ */
+export function joueursDe(brut: Pick<DirectBrut, "enLigne" | "joueurs">, moiId: string, regard: RegardDirect = {}): { enLigne: number | null; joueurs: JoueurLobby[]; plus: number } {
+  const lus = brut.joueurs ?? [];
+  const amis = new Set(regard.amis ?? []);
+  // te rajouter au compte seulement si la liste lue est complète et ne te contient pas (sinon on ne sait pas)
+  const moiLu = lus.some((j) => j.id === moiId);
+  const complete = brut.enLigne !== null && lus.length >= brut.enLigne;
+  const enLigne = brut.enLigne === null ? null : Math.max(1, brut.enLigne + (!moiLu && complete ? 1 : 0));
+
+  const vus = new Set<string>([moiId]);
+  const autres: JoueurBrut[] = [];
+  for (const j of lus) {
+    if (!j.id || vus.has(j.id)) continue;
+    vus.add(j.id);
+    autres.push(j);
+  }
+  const tries = [...autres.filter((j) => amis.has(j.id)), ...autres.filter((j) => !amis.has(j.id))];
+
+  const nomMoi = regard.moi?.nom?.trim() || DIRECT.toi;
+  const toi: JoueurLobby = { id: moiId, nom: nomMoi, prenom: DIRECT.toi, initiales: initials(nomMoi), avatarUrl: photoDe(regard.moi?.avatarUrl), moi: true, ami: false };
+  const joueurs = [
+    toi,
+    ...tries.slice(0, JOUEURS_MAX - 1).map(
+      (j): JoueurLobby => ({ id: j.id, nom: j.nom, prenom: prenomDe(j.nom), initiales: initials(j.nom), avatarUrl: photoDe(j.avatarUrl), moi: false, ami: amis.has(j.id) }),
+    ),
+  ];
+  return { enLigne, joueurs, plus: enLigne === null ? 0 : Math.max(0, enLigne - joueurs.length) };
+}
+
 /**
  * La carte, pour ce joueur. null quand il n'y a rien à montrer : aucun chiffre
  * au-dessus de zéro et aucun fait récent (une carte de zéros ne donne pas
- * envie de venir).
+ * envie de venir). Le compte des joueurs en ligne, une fois lu, n'est jamais
+ * nul : tu en fais partie (voir joueursDe).
  */
-export function directDe(brut: DirectBrut, maintenant: number, moiId: string): EnDirectLobby | null {
+export function directDe(brut: DirectBrut, maintenant: number, moiId: string, regard: RegardDirect = {}): EnDirectLobby | null {
   const copiesHeure = brut.copies.filter((c) => c.format === "trente" && dansLHeure(c.finishedAt, maintenant)).length;
   const evenements = evenementsDe(brut, maintenant, moiId);
-  if ((brut.enLigne ?? 0) <= 0 && (brut.duels ?? 0) <= 0 && copiesHeure === 0 && evenements.length === 0) return null;
-  return { enLigne: brut.enLigne, duels: brut.duels, copiesHeure, evenements };
+  const { enLigne, joueurs, plus } = joueursDe(brut, moiId, regard);
+  if ((enLigne ?? 0) <= 0 && (brut.duels ?? 0) <= 0 && copiesHeure === 0 && evenements.length === 0) return null;
+  return { enLigne, duels: brut.duels, copiesHeure, evenements, joueurs, plus };
 }
 
 /** Un chiffre de la colonne de gauche : sa clé, sa valeur (nombre à l'espace insécable), son libellé. */
@@ -140,7 +197,7 @@ export type ChiffreDirect = { cle: "enLigne" | "duels" | "copies"; val: string; 
  * 30 dès qu'il y en a ou dès qu'un autre chiffre est là (trois lignes, jamais
  * deux qui laissent croire que le troisième est caché).
  */
-export function chiffresDe(d: EnDirectLobby): ChiffreDirect[] {
+export function chiffresDe(d: Pick<EnDirectLobby, "enLigne" | "duels" | "copiesHeure">): ChiffreDirect[] {
   const out: ChiffreDirect[] = [];
   if (d.enLigne !== null) out.push({ cle: "enLigne", val: nombre(d.enLigne), lib: DIRECT.enLigne(d.enLigne) });
   if (d.duels !== null) out.push({ cle: "duels", val: nombre(d.duels), lib: DIRECT.duels(d.duels) });
@@ -158,6 +215,9 @@ const entre = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 
 /** Une adresse qu'on peut mettre dans un <img> sans crainte : du site ou d'un stockage en https. */
 const adresseSure = (v: unknown): v is string => typeof v === "string" && (v.startsWith("https://") || v.startsWith("http://") || (v.startsWith("/") && !v.startsWith("//")));
+
+/** La photo de profil d'un joueur, pour un <img> : son adresse si elle est sûre, sinon null (ses initiales). */
+export const photoDe = (v: unknown): string | null => (adresseSure(v) ? v : null);
 
 /** Ce que la carte lit du style d'un joueur (podiumDe, lib/profil/styles.ts : banniereDepuis). */
 export type StylePerso = { perso?: string | null; persoTaille?: number; persoPos?: number; banniere?: Composition | null };

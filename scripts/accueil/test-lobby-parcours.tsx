@@ -320,6 +320,27 @@ titre("# Tes amis");
   const sans = amisLobby({ amis, total: 14, enLigne: null, demandes: 0 });
   check("présence illisible : enLigne null, visages sans pastille", sans.enLigne === null && sans.visages.every((v) => !v.enLigne) && sans.visages.length === 3);
   check("le total ne descend jamais sous la liste lue", amisLobby({ amis, total: 2, enLigne: null, demandes: 0 }).total === 5);
+
+  // la photo de profil de l'ami (profiles.avatar_url) : le composant Avatar du site ; sans photo, les initiales
+  const PHOTO = "https://exemple.supabase.co/storage/v1/object/public/avatars/ines.png";
+  const avecPhotos = amisLobby({ amis: amis.map((m, i) => ({ ...m, avatarUrl: i === 1 ? PHOTO : i === 3 ? "javascript:alert(1)" : null })), total: 14, enLigne: new Set(["u3", "u1", "u4"]), demandes: 0 });
+  check("la photo suit le visage de l'ami (Inès) ; sans photo ou adresse dangereuse (javascript:) : null", avecPhotos.visages.map((v) => v.avatarUrl).join("|") === `${PHOTO}||` && a.visages.every((v) => v.avatarUrl === null) && sans.visages.every((v) => v.avatarUrl === null), JSON.stringify(avecPhotos.visages.map((v) => v.avatarUrl)));
+  const hp = rendre(<TesAmis amis={avecPhotos} />);
+  check(
+    "avec photo : l'image de l'ami (alt vide, 36 px), à la place de ses initiales IK ; les deux autres gardent les leurs (ML, ST)",
+    compte(hp, /<img /g) === 1 && hp.includes(`<img src="${PHOTO}"`) && hp.includes('alt=""') && hp.includes('width="36" height="36"') && hp.includes('class="av avPhoto"') && !hp.includes(">IK<") && hp.includes(">ML<") && hp.includes(">ST<"),
+  );
+  check("avec photo : la pastille verte « en ligne » reste sur chaque visage (3), lue aux lecteurs d'écran", compte(hp, /<i><\/i>/g) === 3 && compte(hp, /sr-only">, en ligne/g) === 3 && hp.indexOf("<img") < hp.indexOf("<i></i>"));
+  check("sans photo : aucune image, que des initiales", !rendre(<TesAmis amis={a} />).includes("<img"));
+  const hseule = rendre(<TesAmis amis={a} seule className="place" />);
+  check("seule sur la rangée (pas de « Du nouveau ») : la carte se met en bande (amisSeule) ; à côté d'une autre, non", hseule.includes("amisSeule") && !rendre(<TesAmis amis={a} />).includes("amisSeule") && !rendre(<TesAmis amis={a} className="place" />).includes("amisSeule"));
+  const hseule0 = rendre(<TesAmis amis={{ total: 0, enLigne: null, visages: [], demandes: 0 }} seule />);
+  check("seule et sans ami : la bande reste lisible (invitation et lien)", hseule0.includes("amisSeule") && hseule0.includes("Ajoute tes premiers amis") && hseule0.includes("Trouver des joueurs →"));
+  const css = readFileSync("components/accueil/lobby/Parcours.module.css", "utf8");
+  check(
+    "CSS : la bande (amisSeule) est une ligne qui passe à la ligne, le lien à droite ; sur téléphone elle redevient une colonne",
+    /\.amisSeule\.amisSeule \{\s*flex-direction: row;\s*flex-wrap: wrap;/.test(css) && /\.amisSeule\.amisSeule \.basLien \{\s*margin: 0 0 0 auto/.test(css) && /@container \(max-width: 760px\)[\s\S]*\.amisSeule\.amisSeule \{\s*flex-direction: column/.test(css),
+  );
   const h = rendre(<TesAmis amis={a} className="place" />);
   check("« 3 » en grand, « en ligne sur 14 », trois visages, trois pastilles vertes lues « en ligne »", h.includes("<b class=\"font-brand\">3</b>") && h.includes("en ligne sur 14") && compte(h, /class="visage"/g) === 3 && compte(h, /sr-only">, en ligne/g) === 3 && compte(h, /<i><\/i>/g) === 3);
   check("la pastille « 2 demandes d'ami » mène à la liste ; le lien « Tes amis → » aussi", h.includes("2 demandes d'ami") && compte(h, /href="\/people\?view=amis"/g) === 2 && h.includes("Tes amis →"));
@@ -327,7 +348,7 @@ titre("# Tes amis");
   check("sans présence : « 14 amis »", hs.includes("<b class=\"font-brand\">14</b>") && hs.includes("<span>amis</span>") && !hs.includes("en ligne sur") && !hs.includes("<i></i>"));
   const h0 = rendre(<TesAmis amis={{ total: 0, enLigne: null, visages: [], demandes: 0 }} />);
   check("0 ami : « Ajoute tes premiers amis » et un lien vers les joueurs", h0.includes("Ajoute tes premiers amis") && h0.includes('href="/people"') && h0.includes("Trouver des joueurs →") && !h0.includes("visage"));
-  const h1 = rendre(<TesAmis amis={{ total: 1, enLigne: null, visages: [{ id: "u", nom: "Léa", initiales: "L", enLigne: false }], demandes: 1 }} />);
+  const h1 = rendre(<TesAmis amis={{ total: 1, enLigne: null, visages: [{ id: "u", nom: "Léa", initiales: "L", avatarUrl: null, enLigne: false }], demandes: 1 }} />);
   check("un seul ami : « amis » devient « ami » ; une demande", h1.includes("<span>ami</span>") && h1.includes("1 demande d'ami"));
   check("aucun liquide, aucun bouton", !h.includes("rl-encre") && !h.includes("<button"));
 }
@@ -392,7 +413,7 @@ titre("# les règles de DA et de code");
 {
   const dossier = "components/accueil/lobby/";
   const fichiers = [
-    ...["CarteScores.tsx", "CarteDeblocage.tsx", "CarteQuete.tsx", "BandeGrandeSalle.tsx", "Affiche.tsx", "DuNouveau.tsx", "TesAmis.tsx", "CarnetJours.tsx", "modele-parcours.ts", "lecture-parcours.ts", "Parcours.module.css", "CarnetJours.module.css"].map((f) => dossier + f),
+    ...["CarteScores.tsx", "CarteDeblocage.tsx", "CarteQuete.tsx", "BandeGrandeSalle.tsx", "Affiche.tsx", "DuNouveau.tsx", "TesAmis.tsx", "Visage.tsx", "CarnetJours.tsx", "modele-parcours.ts", "lecture-parcours.ts", "Parcours.module.css", "CarnetJours.module.css"].map((f) => dossier + f),
     "lib/voice-accueil-lobby-parcours.ts",
     "scripts/accueil/test-lobby-parcours.tsx",
   ];
@@ -422,7 +443,7 @@ titre("# les règles de DA et de code");
     rendre(<BandeGrandeSalle g={{ titre: "t", ligne: "l", action: { href: "/mock-exams/x", libelle: "Voir" } }} />),
     rendre(<Affiche a={AFFICHES.rival} />),
     rendre(<DuNouveau nouvelles={NOUVELLES} aujourdhui={AUJ} />),
-    rendre(<TesAmis amis={{ total: 2, enLigne: 1, visages: [{ id: "a", nom: "A", initiales: "A", enLigne: true }], demandes: 0 }} />),
+    rendre(<TesAmis amis={{ total: 2, enLigne: 1, visages: [{ id: "a", nom: "A", initiales: "A", avatarUrl: null, enLigne: true }], demandes: 0 }} />),
     rendre(<CarnetJours carnet={CARNET} aujourdhui={null} />),
   ].join("\n");
   check("zéro liquide dans les huit cartes (aucun rl-encre, aucun data-palette)", !tout.includes("rl-encre") && !tout.includes("data-palette"));

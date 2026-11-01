@@ -185,7 +185,6 @@ export function CarteDuJourIle({ matiere, recto, verso, resume, prompt, reglages
           <span className={c.jf} aria-hidden={vu || undefined}>
             <Coins code={matiere.code} />
             <span className={c.jcorps}>
-              <span className={c.jlab}>{CARTE_JOUR.recto.etiquette}</span>
               <span className={c.jq}>{recto}</span>
               <span className={c.indice}>
                 <RotateCcw size={13} strokeWidth={2.2} aria-hidden />
@@ -196,7 +195,6 @@ export function CarteDuJourIle({ matiere, recto, verso, resume, prompt, reglages
           <span className={classes(c.jf, c.verso)} aria-hidden={!vu || undefined}>
             <Coins code={matiere.code} />
             <span className={c.jcorps}>
-              <span className={c.jlab}>{CARTE_JOUR.verso.etiquette}</span>
               <span className={c.jq}>{verso}</span>
               <span className={c.indice}>
                 <RotateCcw size={13} strokeWidth={2.2} aria-hidden />

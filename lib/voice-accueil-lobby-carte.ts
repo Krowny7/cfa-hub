@@ -21,8 +21,8 @@ export const CONSIGNE_IA =
 
 export const CARTE_JOUR = {
   titre: "La carte du jour",
-  recto: { etiquette: "Question · en anglais", indice: "Clique la carte pour la retourner" },
-  verso: { etiquette: "Réponse · en français", indice: "Reclique pour revoir la question" },
+  recto: { indice: "Clique la carte pour la retourner" },
+  verso: { indice: "Reclique pour revoir la question" },
   /** annoncé aux lecteurs d'écran quand la carte se retourne */
   statut: { question: "Question affichée.", reponse: "Carte retournée : la réponse est affichée." },
   /** « Copier pour l'IA » : nom donné par l'utilisateur, on ne le change pas */

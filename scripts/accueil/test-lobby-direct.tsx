@@ -21,9 +21,14 @@ import {
   dansLHeure,
   directDe,
   evenementsDe,
+  joueursDe,
   persoDe,
+  photoDe,
   prenomDe,
+  JOUEURS_LUS,
+  JOUEURS_MAX,
   type DirectBrut,
+  type JoueurBrut,
 } from "@/components/accueil/lobby/modele-direct";
 import type { CtxLecture, EnDirectLobby } from "@/components/accueil/lobby/types";
 import { bornerCalque, compositionDefaut } from "@/lib/profil/banniere";
@@ -137,12 +142,31 @@ const PLANCHES: Record<string, unknown> = {
   [`cinq_leaderboard|${JOUR}`]: planche(JOUR, [ligne(1, SARAH, "Sarah T.", 4, 5, il_y_a(3))]),
 };
 
-/** Les tables d'un site complet : 47 joueurs en ligne, 6 duels en cours, Lucas a gagné un duel il y a 2 min, Marie masque sa présence. */
-const TABLES: NonNullable<Config["tables"]> = {
-  user_presence: (q) => (q.head ? { count: 47, error: null } : { data: [{ user_id: MARIE }], error: null }),
-  duels: (q) => (q.head ? { count: 6, error: null } : { data: [{ winner_id: LUCAS, finished_at: il_y_a(2) }], error: null }),
-  profiles: () => ({ data: [{ id: LUCAS, username: "Lucas M." }], error: null }),
+/** Les profils du faux site : pseudo et photo (Lucas a une photo ; l'adresse de Zoé est dangereuse, elle ne sera jamais une image). */
+const PHOTO_LUCAS = "https://exemple.supabase.co/storage/v1/object/public/avatars/lucas.png";
+const PROFILS: Record<string, [string, string | null]> = {
+  [INES]: ["Inès K.", null],
+  [HUGO]: ["Hugo B.", null],
+  [LUCAS]: ["Lucas M.", PHOTO_LUCAS],
+  [SARAH]: ["Sarah T.", null],
+  [ZOE]: ["Zoé", "javascript:alert(1)"],
+  [BOB]: ["Bob", null],
 };
+/** Les joueurs en ligne du faux site, le plus récent d'abord (le compte exact, lui, est de 47). */
+const EN_LIGNE_LUS = [INES, LUCAS, HUGO, SARAH, ZOE, BOB];
+const idsDe = (q: Requete) => (q.filtres.find((f) => f[0] === "in" && f[1] === "id")?.[2] as string[] | undefined) ?? [];
+
+/** Les tables d'un site complet : 47 joueurs en ligne (six nommés), 6 duels en cours, Lucas a gagné un duel il y a 2 min, Marie masque sa présence. */
+const TABLES: NonNullable<Config["tables"]> = {
+  user_presence: (q) => (a_filtre(q, "eq", "visible", true) ? { data: EN_LIGNE_LUS.map((u) => ({ user_id: u })), count: 47, error: null } : { data: [{ user_id: MARIE }], error: null }),
+  duels: (q) => (q.head ? { count: 6, error: null } : { data: [{ winner_id: LUCAS, finished_at: il_y_a(2) }], error: null }),
+  profiles: (q) => ({ data: idsDe(q).filter((u) => PROFILS[u]).map((u) => ({ id: u, username: PROFILS[u][0], avatar_url: PROFILS[u][1] })), error: null }),
+};
+/** Les amis de Théo : Hugo et Sarah (une amitié où il demande, une où il répond). */
+const AMITIES: NonNullable<Config["tables"]> = {
+  friendships: () => ({ data: [{ requester: THEO, addressee: HUGO }, { requester: SARAH, addressee: THEO }], error: null }),
+};
+const MOI = { nom: "Theo", avatarUrl: null };
 
 function contexte(sb: SupabaseClient, admin: SupabaseClient | null, user = THEO, now = NOW, jour = JOUR): CtxLecture {
   return { sb, admin, user: { id: user, user_metadata: {}, created_at: "2026-01-01T00:00:00Z" }, now, jour };
@@ -228,8 +252,13 @@ async function main() {
   check("un fait hors de l'heure ne revient pas dans le fil", !d.evenements.some((e) => e.initiales === "BO" || e.initiales === "ZO"));
 
   // rien du tout → null
-  check("rien du tout (zéros, aucun fait) → null", directDe({ enLigne: 0, duels: 0, copies: [], victoires: [], masques: [] }, t0, THEO) === null);
+  check("rien du tout (compte non lu, zéro duel, aucun fait) → null", directDe({ enLigne: null, duels: 0, copies: [], victoires: [], masques: [] }, t0, THEO) === null);
   check("rien non lu (null, null, aucun fait) → null", directDe({ enLigne: null, duels: null, copies: [], victoires: [], masques: [] }, t0, THEO) === null);
+  {
+    // le compte est lu à zéro (personne ne montre sa présence) : toi, tu regardes, donc tu es en ligne
+    const seul = directDe({ enLigne: 0, duels: 0, copies: [], victoires: [], masques: [], joueurs: [] }, t0, THEO, { moi: MOI })!;
+    check("compte lu à zéro : la carte reste avec toi seul (1 joueur en ligne), pas « 0 »", !!seul && seul.enLigne === 1 && seul.joueurs.length === 1 && seul.joueurs[0].moi && seul.plus === 0, JSON.stringify(seul));
+  }
   check("des faits seuls (sans admin) → une carte", directDe({ enLigne: null, duels: null, copies: [brut.copies[1]], victoires: [], masques: [] }, t0, THEO) !== null);
   check("des joueurs en ligne seuls → une carte", directDe({ enLigne: 3, duels: null, copies: [], victoires: [], masques: [] }, t0, THEO) !== null);
   check(
@@ -244,28 +273,77 @@ async function main() {
   const ch = chiffresDe(d);
   check("3 chiffres quand tout est lu", ch.length === 3 && ch.map((c) => c.cle).join(",") === "enLigne,duels,copies");
   check("libellés : joueurs en ligne, duels en cours, copies des 30 rendues dans l'heure", ch[0].lib === "joueurs en ligne" && ch[1].lib === "duels en cours" && ch[2].lib === "copies des 30 rendues dans l'heure", ch.map((c) => c.lib).join(" | "));
-  check("les valeurs sont formatées (espace insécable aux milliers)", chiffresDe({ enLigne: 1204, duels: 1, copiesHeure: 1, evenements: [] })[0].val === `1${NB}204`);
-  const un = chiffresDe({ enLigne: 1, duels: 1, copiesHeure: 1, evenements: [] });
+  check("les valeurs sont formatées (espace insécable aux milliers)", chiffresDe({ enLigne: 1204, duels: 1, copiesHeure: 1 })[0].val === `1${NB}204`);
+  const un = chiffresDe({ enLigne: 1, duels: 1, copiesHeure: 1 });
   check("singulier à 1 : joueur en ligne, duel en cours, copie ... rendue", un[0].lib === "joueur en ligne" && un[1].lib === "duel en cours" && un[2].lib === "copie des 30 rendue dans l'heure");
-  check("sans admin : seules les copies, s'il y en a", chiffresDe({ enLigne: null, duels: null, copiesHeure: 2, evenements: [] }).map((c) => c.cle).join(",") === "copies");
-  check("sans admin et sans copie : aucun chiffre", chiffresDe({ enLigne: null, duels: null, copiesHeure: 0, evenements: [] }).length === 0);
-  check("avec admin, zéro copie : les trois lignes quand même", chiffresDe({ enLigne: 4, duels: 0, copiesHeure: 0, evenements: [] }).length === 3);
+  check("sans admin : seules les copies, s'il y en a", chiffresDe({ enLigne: null, duels: null, copiesHeure: 2 }).map((c) => c.cle).join(",") === "copies");
+  check("sans admin et sans copie : aucun chiffre", chiffresDe({ enLigne: null, duels: null, copiesHeure: 0 }).length === 0);
+  check("avec admin, zéro copie : les trois lignes quand même", chiffresDe({ enLigne: 4, duels: 0, copiesHeure: 0 }).length === 3);
+
+  // les joueurs en ligne : toi d'abord, tes amis, puis les autres
+  titre("3 bis. Les visages des joueurs en ligne");
+  const jb = (n: number, nom = `Joueur ${n}`, avatarUrl: string | null = null): JoueurBrut => ({ id: id(n), nom, avatarUrl });
+  {
+    const lus = [jb(1, "Inès K."), jb(2, "Marie L."), jb(3, "Hugo B.", "https://exemple.supabase.co/h.png"), jb(4, "Bob")];
+    const r = joueursDe({ enLigne: 4, joueurs: lus }, THEO, { moi: { nom: "Théo C.", avatarUrl: "https://exemple.supabase.co/t.png" }, amis: [HUGO, BOB] });
+    check("toi en premier (« Toi »), puis tes amis en ligne, puis les autres dans l'ordre de la lecture", r.joueurs.map((j) => j.prenom).join(",") === "Toi,Hugo,Bob,Inès,Marie", r.joueurs.map((j) => j.prenom).join(","));
+    check("toi : ta photo, tes initiales, le drapeau « moi »", r.joueurs[0].moi && r.joueurs[0].avatarUrl === "https://exemple.supabase.co/t.png" && r.joueurs[0].initiales === "TC" && r.joueurs[0].nom === "Théo C.");
+    check("les amis sont marqués, les autres non ; la photo suit le joueur", r.joueurs[1].ami && r.joueurs[2].ami && !r.joueurs[3].ami && r.joueurs[1].avatarUrl === "https://exemple.supabase.co/h.png" && r.joueurs[3].avatarUrl === null);
+    check("la liste est complète et ne te contient pas : tu t'ajoutes au compte (4 → 5), aucun « +N »", r.enLigne === 5 && r.plus === 0, `${r.enLigne} +${r.plus}`);
+    check("sans photo ni pseudo connus, tu restes « Toi » (initiale T)", (() => { const t = joueursDe({ enLigne: 1, joueurs: [] }, THEO).joueurs[0]; return t.moi && t.prenom === "Toi" && t.nom === "Toi" && t.initiales === "T" && t.avatarUrl === null; })());
+  }
+  {
+    const lus = [jb(1, "Inès K."), { id: THEO, nom: "Théo C.", avatarUrl: null }, jb(2, "Marie L.")];
+    const r = joueursDe({ enLigne: 3, joueurs: lus }, THEO, { moi: MOI });
+    check("la liste te contient déjà : pas de doublon, pas de +1", r.enLigne === 3 && r.joueurs.length === 3 && r.joueurs.filter((j) => j.id === THEO).length === 1 && r.joueurs[0].moi, JSON.stringify(r.joueurs.map((j) => j.prenom)));
+  }
+  {
+    const lus = Array.from({ length: 5 }, (_, i) => jb(i + 1));
+    const tronquee = joueursDe({ enLigne: 47, joueurs: lus }, THEO, { moi: MOI });
+    check("liste tronquée (5 nommés sur 47) : on ne peut pas savoir si tu y es, le compte reste 47 ; « +41 » pour le reste", tronquee.enLigne === 47 && tronquee.joueurs.length === 6 && tronquee.plus === 41, `${tronquee.enLigne} +${tronquee.plus}`);
+    const beaucoup = Array.from({ length: 9 }, (_, i) => jb(i));
+    const r = joueursDe({ enLigne: 9, joueurs: beaucoup }, THEO, { moi: MOI });
+    check(`huit visages au plus (toi compris) : ${JOUEURS_MAX}, le reste en « +N »`, r.joueurs.length === JOUEURS_MAX && r.joueurs[0].moi && r.plus === 10 - JOUEURS_MAX, `${r.joueurs.length} +${r.plus}`);
+    check("la lecture ne nomme pas plus de 40 joueurs", JOUEURS_LUS === 40);
+  }
+  {
+    const sans = joueursDe({ enLigne: null, joueurs: [] }, THEO, { moi: MOI });
+    check("compte non lu : enLigne null, « Toi » quand même, pas de « +N »", sans.enLigne === null && sans.joueurs.length === 1 && sans.joueurs[0].moi && sans.plus === 0);
+    const zero = joueursDe({ enLigne: 0, joueurs: [] }, THEO, { moi: MOI });
+    check("compte à zéro : 1 joueur en ligne, c'est toi", zero.enLigne === 1 && zero.plus === 0);
+    const doublons = joueursDe({ enLigne: 2, joueurs: [jb(1), jb(1)] }, THEO, { moi: MOI });
+    check("un joueur listé deux fois n'a qu'un visage", doublons.joueurs.length === 2);
+    const dangereux = joueursDe({ enLigne: 1, joueurs: [jb(1, "Inès K.", "javascript:alert(1)"), jb(2, "Marie L.", "//evil.example/x.png")] }, THEO, { moi: { nom: "T", avatarUrl: "data:image/png;base64,AAAA" } });
+    check("adresse de photo dangereuse (javascript:, //, data:) → pas de photo, des initiales", dangereux.joueurs.every((j) => j.avatarUrl === null));
+    check("photoDe : du site ou en https, sinon null", photoDe("/avatars/x.png") === "/avatars/x.png" && photoDe("https://exemple.supabase.co/x.png") === "https://exemple.supabase.co/x.png" && photoDe(null) === null && photoDe(undefined) === null && photoDe("") === null && photoDe(12) === null);
+  }
 
   // ── 4. les lectures, sur un faux client ──────────────────────────────────
   titre("4. Les lectures");
   {
-    const sb = faux({ planches: PLANCHES });
+    const sb = faux({ planches: PLANCHES, tables: AMITIES });
     const admin = faux({ tables: TABLES });
-    const r = (await lireEnDirect(contexte(sb.client, admin.client), { sansCache: true }))!;
+    const r = (await lireEnDirect(contexte(sb.client, admin.client), { sansCache: true, moi: MOI }))!;
     check("carte complète : 47 en ligne, 6 duels, 3 copies", r.enLigne === 47 && r.duels === 6 && r.copiesHeure === 3, JSON.stringify({ e: r.enLigne, d: r.duels, c: r.copiesHeure }));
+    check(
+      "visages : toi d'abord, puis tes amis en ligne (Hugo, Sarah), puis les autres dans l'ordre de présence (Inès, Lucas, Zoé, Bob)",
+      r.joueurs.map((j) => j.prenom).join(",") === "Toi,Hugo,Sarah,Inès,Lucas,Zoé,Bob",
+      r.joueurs.map((j) => j.prenom).join(","),
+    );
+    check("toi : ton pseudo, ton drapeau « moi » ; tes amis marqués", r.joueurs[0].moi && r.joueurs[0].nom === "Theo" && r.joueurs[1].ami && r.joueurs[2].ami && !r.joueurs[3].ami);
+    check("la photo de Lucas vient de profiles.avatar_url ; l'adresse dangereuse de Zoé est écartée ; les autres n'ont pas de photo", r.joueurs.find((j) => j.prenom === "Lucas")!.avatarUrl === PHOTO_LUCAS && r.joueurs.find((j) => j.prenom === "Zoé")!.avatarUrl === null && r.joueurs.find((j) => j.prenom === "Inès")!.avatarUrl === null);
+    check("47 en ligne, 7 visages : « +40 » pour le reste", r.joueurs.length === 7 && r.plus === 40, `+${r.plus}`);
     check("fil : Inès, Lucas, Sarah, Hugo ; Marie (présence masquée) exclue", r.evenements.map((e) => e.initiales).join(",") === "IK,LM,ST,HB", r.evenements.map((e) => e.initiales).join(","));
     check("les classements demandés : les 30 et les 5 d'aujourd'hui, 200 lignes, pas la veille", sb.appels.length === 2 && sb.appels.every((a) => a.jour === JOUR && a.limite === 200) && sb.appels.map((a) => a.rpc).sort().join(",") === "cinq_leaderboard,daily_leaderboard", JSON.stringify(sb.appels));
     const presence = admin.journal.filter((q) => q.table === "user_presence");
-    const enLigne = presence.find((q) => q.head)!;
-    check("en ligne : on compte (head), seulement ceux qui montrent leur présence", !!enLigne && a_filtre(enLigne, "eq", "visible", true));
+    const enLigne = presence.find((q) => a_filtre(q, "eq", "visible", true))!;
+    check("en ligne : un seul passage compte (count exact) et nomme, seulement ceux qui montrent leur présence", !!enLigne && !enLigne.head && a_filtre(enLigne, "eq", "visible", true) && presence.filter((q) => a_filtre(q, "eq", "visible", true)).length === 1);
+    check("en ligne : les plus récents d'abord, 40 au plus", enLigne.filtres.some((f) => f[0] === "order" && f[1] === "last_seen_at" && (f[2] as { ascending?: boolean })?.ascending === false) && enLigne.filtres.some((f) => f[0] === "limit" && f[1] === JOUEURS_LUS));
     const seuil = (enLigne.filtres.find((f) => f[0] === "gt" && f[1] === "last_seen_at") ?? [])[2];
     check("en ligne : signal de moins de 2 min 30", seuil === new Date(t0 - 150_000).toISOString(), String(seuil));
-    const masques = presence.find((q) => !q.head)!;
+    const profils = admin.journal.filter((q) => q.table === "profiles" && String(q.cols).includes("avatar_url"));
+    check("visages : pseudo et photo lus d'un coup dans profiles (username, avatar_url), pour les joueurs en ligne seulement", profils.length === 1 && String(profils[0].cols) === "id, username, avatar_url" && EN_LIGNE_LUS.every((u) => idsDe(profils[0]).includes(u)) && idsDe(profils[0]).length === EN_LIGNE_LUS.length);
+    const masques = presence.find((q) => a_filtre(q, "eq", "visible", false))!;
     check("présence masquée : on ne demande que les joueurs du fil", !!masques && a_filtre(masques, "eq", "visible", false) && masques.filtres.some((f) => f[0] === "in" && f[1] === "user_id" && Array.isArray(f[2]) && (f[2] as string[]).includes(MARIE)));
     const duels = admin.journal.filter((q) => q.table === "duels");
     const actifs = duels.find((q) => q.head)!;
@@ -273,14 +351,27 @@ async function main() {
     const gagnes = duels.find((q) => !q.head)!;
     check("duels gagnés : réglés, un gagnant, depuis moins d'une heure et dix minutes", !!gagnes && a_filtre(gagnes, "eq", "status", "finished") && gagnes.filtres.some((f) => f[0] === "gt" && f[1] === "finished_at"));
     check("le fil ne lit que le gagnant et l'instant (pas la matière, que la table n'a pas)", String(gagnes.cols) === "winner_id, finished_at");
-    check("aucune lecture du client du joueur sur duels ni user_presence", sb.journal.length === 0);
+    check("le client du joueur ne lit que ses amitiés (jamais duels ni user_presence ni profiles)", sb.journal.length === 1 && sb.journal[0].table === "friendships");
+    const amitie = sb.journal[0];
+    check("amis : amitiés acceptées dont il est l'un des deux", a_filtre(amitie, "eq", "status", "accepted") && amitie.filtres.some((f) => f[0] === "or" && String(f[1]).includes(`requester.eq.${THEO}`) && String(f[1]).includes(`addressee.eq.${THEO}`)));
+  }
+  {
+    // sans les amis ni le profil du joueur : « Toi » quand même, personne ne passe devant
+    const sb = faux({ planches: PLANCHES });
+    const admin = faux({ tables: TABLES });
+    const r = (await lireEnDirect(contexte(sb.client, admin.client), { sansCache: true }))!;
+    check("sans amitiés lues ni profil : « Toi » en tête (nom « Toi »), les autres dans l'ordre de présence, aucun ami", r.joueurs[0].moi && r.joueurs[0].prenom === "Toi" && r.joueurs.map((j) => j.prenom).slice(1).join(",") === "Inès,Lucas,Hugo,Sarah,Zoé,Bob" && r.joueurs.every((j) => !j.ami));
+    const casse = faux({ planches: PLANCHES, tables: { friendships: () => ({ data: null, error: { code: "42P01", message: "x" } }) } });
+    const r2 = (await lireEnDirect(contexte(casse.client, admin.client), { sansCache: true, moi: MOI }))!;
+    check("amitiés illisibles : la carte se rend quand même", r2.joueurs.length === 7 && r2.joueurs[0].moi);
   }
   {
     const sb = faux({ planches: PLANCHES });
-    const r = (await lireEnDirect(contexte(sb.client, null), { sansCache: true }))!;
+    const r = (await lireEnDirect(contexte(sb.client, null), { sansCache: true, moi: MOI }))!;
     check("sans admin : enLigne et duels nuls (lignes masquées)", r.enLigne === null && r.duels === null);
+    check("sans admin : tu es quand même là, seul dans la rangée (« Toi »), sans « +N »", r.joueurs.length === 1 && r.joueurs[0].moi && r.plus === 0);
     check("sans admin : les faits des classements seuls (Marie y est : aucune présence à vérifier)", r.evenements.map((e) => e.initiales).join(",") === "IK,ST,ML,HB" && r.copiesHeure === 3, r.evenements.map((e) => e.initiales).join(","));
-    check("sans admin : on ne lit que les classements", sb.journal.length === 0 && sb.appels.length === 2);
+    check("sans admin : on ne lit que les classements (aucune requête d'amitiés : pas de liste de joueurs à trier)", sb.journal.length === 0 && sb.appels.length === 2);
   }
   {
     // les tables de présence et de duels n'existent pas (erreur 42P01) : leurs lignes se masquent, le fil reste
@@ -292,13 +383,21 @@ async function main() {
     check("tables absentes : pas de duel dans le fil", !r.evenements.some((e) => texteDe(e).includes("duel")));
   }
   {
-    // la liste est vide et les compteurs à zéro : pas de carte
+    // la liste est vide et les compteurs à zéro
     const sb = faux({ planches: { [`daily_leaderboard|${JOUR}`]: planche(JOUR, []), [`cinq_leaderboard|${JOUR}`]: planche(JOUR, []) } });
-    const admin = faux({ tables: { user_presence: () => ({ count: 0, error: null }), duels: () => ({ count: 0, data: [], error: null }) } });
-    check("liste vide et compteurs à zéro → null", (await lireEnDirect(contexte(sb.client, admin.client), { sansCache: true })) === null);
-    const seul = faux({ tables: { user_presence: (q) => (q.head ? { count: 12, error: null } : { data: [], error: null }), duels: () => ({ count: 0, data: [], error: null }) } });
+    const admin = faux({ tables: { user_presence: () => ({ data: [], count: 0, error: null }), duels: () => ({ count: 0, data: [], error: null }) } });
+    check("sans admin, liste vide et rien à compter → null (une carte de zéros ne donne pas envie de venir)", (await lireEnDirect(contexte(sb.client, null), { sansCache: true, moi: MOI })) === null);
+    const vide = (await lireEnDirect(contexte(sb.client, admin.client), { sansCache: true, moi: MOI }))!;
+    check("compteurs lus à zéro : tu regardes, donc la carte dit 1 joueur en ligne (toi), sans « +N » ni vide", !!vide && vide.enLigne === 1 && vide.duels === 0 && vide.joueurs.length === 1 && vide.joueurs[0].moi && vide.plus === 0 && vide.evenements.length === 0, JSON.stringify(vide));
+    const seul = faux({ tables: { user_presence: (q) => (a_filtre(q, "eq", "visible", true) ? { data: [], count: 12, error: null } : { data: [], error: null }), duels: () => ({ count: 0, data: [], error: null }) } });
     const r = (await lireEnDirect(contexte(sb.client, seul.client), { sansCache: true }))!;
     check("des joueurs en ligne, aucun fait : la carte reste, sans fil", r.enLigne === 12 && r.evenements.length === 0 && r.copiesHeure === 0);
+    // la liste lue est complète (3 sur 3) : le compte te rajoute quand tu n'y es pas, pas quand tu y es
+    const trois = (extra: string[]) => faux({ tables: { user_presence: (q) => (a_filtre(q, "eq", "visible", true) ? { data: [INES, HUGO, ...extra].map((u) => ({ user_id: u })), count: 2 + extra.length, error: null } : { data: [], error: null }), duels: () => ({ count: 0, data: [], error: null }), profiles: (q) => ({ data: idsDe(q).filter((u) => PROFILS[u]).map((u) => ({ id: u, username: PROFILS[u][0], avatar_url: PROFILS[u][1] })), error: null }) } });
+    const sans = (await lireEnDirect(contexte(sb.client, trois([]).client), { sansCache: true, moi: MOI }))!;
+    check("2 joueurs lus, tu n'y es pas (présence masquée ou pas encore comptée) : 3 en ligne avec toi", sans.enLigne === 3 && sans.joueurs.length === 3 && sans.joueurs[0].moi && sans.plus === 0, `${sans.enLigne}`);
+    const dedans = (await lireEnDirect(contexte(sb.client, trois([THEO]).client), { sansCache: true, moi: MOI }))!;
+    check("tu es dans la liste lue : 3 en ligne (pas 4), un seul visage pour toi, en tête", dedans.enLigne === 3 && dedans.joueurs.length === 3 && dedans.joueurs[0].moi && dedans.joueurs.filter((j) => j.id === THEO).length === 1, `${dedans.enLigne}`);
   }
   {
     // rien ne répond : pas de carte, pas d'exception
@@ -335,7 +434,7 @@ async function main() {
   {
     // les faits de toi, par la lecture entière
     const sb = faux({ planches: PLANCHES });
-    const r = (await lireEnDirect(contexte(sb.client, null, INES), { sansCache: true }))!;
+    const r = (await lireEnDirect(contexte(sb.client, null, INES), { sansCache: true, moi: { nom: "Inès K.", avatarUrl: null } }))!;
     check("lu pour Inès : son fait se dit « Tu viens de rendre ta copie »", texteDe(r.evenements[0]).startsWith("Tu viens de rendre ta copie : 28/30"));
   }
 
@@ -388,9 +487,9 @@ async function main() {
   // ── 6. le rendu ──────────────────────────────────────────────────────────
   titre("6. Le rendu");
   {
-    const sb = faux({ planches: PLANCHES });
+    const sb = faux({ planches: PLANCHES, tables: AMITIES });
     const admin = faux({ tables: TABLES });
-    const plein = (await lireEnDirect(contexte(sb.client, admin.client), { sansCache: true }))!;
+    const plein = (await lireEnDirect(contexte(sb.client, admin.client), { sansCache: true, moi: MOI }))!;
     const html = renderToStaticMarkup(<EnDirect d={plein} className="place" />);
     check("une carte (section) nommée par son titre", compte(html, /<section /g) === 1 && html.includes('aria-labelledby="lobby-direct-titre"') && html.includes('id="lobby-direct-titre"'));
     check("le titre est un h2 (le h1 de la page est le salut)", compte(html, /<h2 /g) === 1 && !html.includes("<h1"));
@@ -405,21 +504,44 @@ async function main() {
     check("le cadre, le HUD et le point vert viennent du socle", html.includes('class="carte hud carte place"') && html.includes('class="live" aria-hidden="true"'));
     check("l'instant de chaque fait", html.includes("à l&#x27;instant") && html.includes("il y a 2 min"));
     check("le point vert est décoratif", html.includes('class="live" aria-hidden="true"'));
-    check("aucun lien, bouton ni image : une carte à lire", !html.includes("<a ") && !html.includes("<button") && !html.includes("<img"));
+    check("aucun lien ni bouton : une carte à lire", !html.includes("<a ") && !html.includes("<button"));
     check("aucun liquide, aucune encre", !html.includes("rl-encre") && !html.includes("data-palette"));
+
+    // la rangée des joueurs en ligne
+    check("la rangée des joueurs en ligne est une liste nommée, dans la même grille que les chiffres et le fil", html.includes('<ul class="joueurs" aria-label="Les joueurs en ligne">') && compte(html, /<li class="joueur( moi)?"/g) === 7);
+    check("toi en premier, en gras (« moi »), nommé « Toi », initiales sur rond plein, à 40 px", html.includes('<li class="joueur moi" title="Toi"><span class="av avN" style="width:40px;height:40px;font-size:14px" aria-hidden="true">T</span><span class="pseudo">Toi</span></li>') && html.indexOf("joueur moi") < html.indexOf('title="Hugo B."'));
+    check("tes amis juste après (Hugo puis Sarah), lus « ami » aux lecteurs d'écran", html.indexOf('title="Hugo B."') < html.indexOf('title="Sarah T."') && html.indexOf('title="Sarah T."') < html.indexOf('title="Inès K."') && compte(html, />, ami</g) === 2);
+    check("sans photo : les initiales dans le rond du socle (Inès : IK)", html.includes('<span class="av" style="width:40px;height:40px;font-size:14px" aria-hidden="true">IK</span>'));
+    check("avec photo : l'image du site (Avatar), décorative, à la taille du rond ; plus d'initiales pour Lucas", compte(html, /<img /g) === 1 && html.includes(`<img src="${PHOTO_LUCAS}"`) && html.includes('alt=""') && html.includes('width="40" height="40"') && html.includes('class="av avPhoto"') && !html.includes('font-size:14px" aria-hidden="true">LM'));
+    check("l'adresse dangereuse de Zoé n'est jamais une image (ses initiales)", !html.includes("javascript:") && html.includes('font-size:14px" aria-hidden="true">Z</span>'));
+    check("« +40 » pour le reste, lu « et 40 autres joueurs en ligne »", html.includes('<li class="autres"><b class="mono" aria-hidden="true">+40</b><span class="sr-only">et 40 autres joueurs en ligne</span></li>'));
+    check("le pseudo complet en infobulle (title)", html.includes('title="Lucas M."') && html.includes('title="Bob"'));
 
     const sansFil: EnDirectLobby = { ...plein, evenements: [] };
     const h1 = renderToStaticMarkup(<EnDirect d={sansFil} />);
-    check("sans fait : une colonne, les chiffres seuls", h1.includes('data-colonnes="1"') && !h1.includes('class="fil"') && compte(h1, /class="fait"/g) === 0 && h1.includes("joueurs en ligne"));
-    const sansAdmin: EnDirectLobby = { enLigne: null, duels: null, copiesHeure: 3, evenements: plein.evenements };
+    check("sans fait : une colonne, les chiffres seuls, les visages dessous", h1.includes('data-colonnes="1"') && !h1.includes('class="fil"') && compte(h1, /class="fait"/g) === 0 && h1.includes("<span>joueurs en ligne</span>") && h1.includes('class="joueurs"'));
+    const sansAdmin: EnDirectLobby = { ...plein, enLigne: null, duels: null, copiesHeure: 3, joueurs: plein.joueurs.slice(0, 1), plus: 0 };
     const h2 = renderToStaticMarkup(<EnDirect d={sansAdmin} />);
-    check("sans admin : plus de joueurs en ligne ni de duels, les copies restent", !h2.includes("joueurs en ligne") && !h2.includes("duels en cours") && h2.includes("copies des 30 rendues"));
-    const seulFil: EnDirectLobby = { enLigne: null, duels: null, copiesHeure: 0, evenements: plein.evenements };
+    check("sans admin : plus de joueurs en ligne ni de duels, les copies restent, et toi (« Toi ») seul dans la rangée", !h2.includes("<span>joueurs en ligne</span>") && !h2.includes("<span>joueur en ligne</span>") && !h2.includes("duels en cours") && h2.includes("copies des 30 rendues") && compte(h2, /<li class="joueur( moi)?"/g) === 1 && h2.includes('<li class="joueur moi"') && !h2.includes('class="autres"'));
+    const seulFil: EnDirectLobby = { ...plein, enLigne: null, duels: null, copiesHeure: 0, plus: 0 };
     const h3 = renderToStaticMarkup(<EnDirect d={seulFil} />);
     check("sans chiffre : le fil prend toute la carte", h3.includes('data-colonnes="1"') && !h3.includes('class="chiffres"') && compte(h3, /class="fait"/g) === 4);
-    const echappe: EnDirectLobby = { enLigne: 1, duels: 0, copiesHeure: 0, evenements: [{ cle: "x", initiales: "AB", sombre: true, texte: ["<script>alert(1)</script> ", { b: "28/30" }], quand: "à l'instant" }] };
+    const seulMoi: EnDirectLobby = { enLigne: 1, duels: 0, copiesHeure: 0, evenements: [], joueurs: plein.joueurs.slice(0, 1), plus: 0 };
+    const h5 = renderToStaticMarkup(<EnDirect d={seulMoi} />);
+    check("ni fait ni autre joueur : les chiffres en rangée et toi dessous, pas de fil vide ni de « +N »", h5.includes('data-colonnes="1"') && h5.includes('<b class="mono">1</b>') && h5.includes("joueur en ligne") && compte(h5, /<li class="joueur( moi)?"/g) === 1 && !h5.includes('class="fil"') && !h5.includes('class="autres"'));
+    const echappe: EnDirectLobby = {
+      enLigne: 2,
+      duels: 0,
+      copiesHeure: 0,
+      evenements: [{ cle: "x", initiales: "AB", sombre: true, texte: ["<script>alert(1)</script> ", { b: "28/30" }], quand: "à l'instant" }],
+      joueurs: [
+        plein.joueurs[0],
+        { id: "x", nom: "<script>alert(2)</script>", prenom: "<script>alert(2)</script>", initiales: "<S", avatarUrl: null, moi: false, ami: false },
+      ],
+      plus: 0,
+    };
     const h4 = renderToStaticMarkup(<EnDirect d={echappe} />);
-    check("un pseudo malicieux est échappé", !h4.includes("<script>") && h4.includes("&lt;script&gt;"));
+    check("un pseudo malicieux est échappé (fil, visage, infobulle)", !h4.includes("<script>") && h4.includes("&lt;script&gt;alert(1)") && h4.includes("&lt;script&gt;alert(2)"));
 
     const perso = renderToStaticMarkup(<PersoVainqueur perso={{ src: ADRESSE, taille: 115, pos: 40 }} />);
     check("perso : une image décorative (alt vide), chargée à la demande, sans glisser", perso.includes('alt=""') && perso.includes('loading="lazy"') && perso.includes('decoding="async"') && perso.includes('draggable="false"'));
@@ -436,6 +558,7 @@ async function main() {
   const fichiers = [
     "components/accueil/lobby/EnDirect.tsx",
     "components/accueil/lobby/EnDirect.module.css",
+    "components/accueil/lobby/Visage.tsx",
     "components/accueil/lobby/PersoVainqueur.tsx",
     "components/accueil/lobby/modele-direct.ts",
     "components/accueil/lobby/lecture-direct.ts",

@@ -144,6 +144,14 @@ export function suiteMaquette(): NonNullable<EntreesLobby["suite"]> {
     ],
     victoires: [],
     masques: [],
+    // une partie des 38 joueurs en ligne, nommés (aucune photo dans la maquette : des initiales)
+    joueurs: [
+      { id: ID_MARIE, nom: "Marie L.", avatarUrl: null },
+      { id: "00000000-0000-4000-8000-000000000002", nom: "Inès K.", avatarUrl: null },
+      { id: "00000000-0000-4000-8000-000000000003", nom: "Hugo B.", avatarUrl: null },
+      { id: "00000000-0000-4000-8000-000000000004", nom: "Sarah T.", avatarUrl: null },
+      { id: "00000000-0000-4000-8000-000000000005", nom: "Lucas M.", avatarUrl: null },
+    ],
   };
   const rival = construireRival({
     id: ID_MARIE,
@@ -162,7 +170,10 @@ export function suiteMaquette(): NonNullable<EntreesLobby["suite"]> {
   const joueur = (i: number, nom: string) => ({ id: `00000000-0000-4000-8000-0000000000${String(i).padStart(2, "0")}`, nom, avatarUrl: null });
   const jours = Array.from({ length: 34 }, (_, i): [string, number] => [decale(JOUR, -(i * 9 + 1)), 10 + ((i * 7) % 40)]);
   return {
-    enDirect: directDe(brut, MAINTENANT.getTime(), "00000000-0000-4000-8000-000000000099"),
+    enDirect: directDe(brut, MAINTENANT.getTime(), "00000000-0000-4000-8000-000000000099", {
+      moi: { nom: "Theo", avatarUrl: null },
+      amis: ["00000000-0000-4000-8000-000000000003", "00000000-0000-4000-8000-000000000002"],
+    }),
     rival,
     carteDuJour: {
       id: "fsa-lifo-fifo",
@@ -193,9 +204,9 @@ export function suiteMaquette(): NonNullable<EntreesLobby["suite"]> {
       total: 14,
       enLigne: 3,
       visages: [
-        { id: joueur(2, "Inès K.").id, nom: "Inès K.", initiales: "IK", enLigne: true },
-        { id: joueur(3, "Hugo B.").id, nom: "Hugo B.", initiales: "HB", enLigne: true },
-        { id: joueur(5, "Lucas M.").id, nom: "Lucas M.", initiales: "LM", enLigne: true },
+        { id: joueur(2, "Inès K.").id, nom: "Inès K.", initiales: "IK", avatarUrl: null, enLigne: true },
+        { id: joueur(3, "Hugo B.").id, nom: "Hugo B.", initiales: "HB", avatarUrl: null, enLigne: true },
+        { id: joueur(5, "Lucas M.").id, nom: "Lucas M.", initiales: "LM", avatarUrl: null, enLigne: true },
       ],
       demandes: 1,
     },

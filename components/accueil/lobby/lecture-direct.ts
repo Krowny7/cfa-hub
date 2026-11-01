@@ -7,7 +7,10 @@
 //   session du joueur : la RPC la demande).
 // - Joueurs en ligne : user_presence (migration_presence.sql), client admin,
 //   seulement ceux qui montrent leur présence et dont le signal a moins de
-//   2 min 30. Aucune ligne n'est lue, seulement comptée.
+//   2 min 30 : le compte exact, et les 40 plus récents avec leur pseudo et leur
+//   photo (profiles.username, profiles.avatar_url) pour les petits visages.
+//   Tes amis (friendships, avec ta session) passent devant dans la rangée ; toi,
+//   tu y es toujours (modele-direct.ts : joueursDe).
 // - Duels en cours : duels acceptés, ni réglés ni expirés (asynchrones : 48 h
 //   pour jouer). Duels gagnés dans l'heure : le gagnant et l'instant, pas la
 //   matière (la table n'en a pas).
@@ -24,7 +27,7 @@ import { displayName } from "@/components/classement/format";
 import { podiumDe } from "@/components/classement/data";
 import { getDailyBoard, parisDay, shiftDay, type DailyBoard } from "@/lib/daily";
 import { EN_LIGNE_SECONDES } from "@/lib/presence";
-import { CANDIDATS_MAX, FENETRE_MS, candidatsDe, directDe, persoDe, type CopieBrute, type DirectBrut, type VictoireBrute } from "./modele-direct";
+import { CANDIDATS_MAX, FENETRE_MS, JOUEURS_LUS, candidatsDe, directDe, persoDe, type CopieBrute, type DirectBrut, type JoueurBrut, type VictoireBrute } from "./modele-direct";
 import type { CtxLecture, EnDirectLobby, PersoVainqueur } from "./types";
 
 /** Combien de lignes on demande à un classement (les copies de l'heure y sont, sauf jour de très grande affluence). */
@@ -49,14 +52,50 @@ function copiesDe(planche: DailyBoard | null, format: "trente" | "cinq", depuis:
   return out;
 }
 
-/** Les joueurs en ligne : le signal de présence est récent et le joueur montre sa présence. Null si la table manque. */
-async function compterEnLigne(admin: SupabaseClient, now: Date): Promise<number | null> {
+/** Les profils (pseudo, photo) de ces joueurs, dans l'ordre donné. Un profil illisible laisse le joueur sans photo, nommé par son identifiant court. */
+async function nommer(admin: SupabaseClient, ids: string[]): Promise<JoueurBrut[]> {
+  if (ids.length === 0) return [];
+  const profils = new Map<string, { username: string | null; avatar_url: string | null }>();
+  try {
+    const { data } = await admin.from("profiles").select("id, username, avatar_url").in("id", ids);
+    for (const p of (Array.isArray(data) ? data : []) as { id: string; username: string | null; avatar_url: string | null }[]) profils.set(p.id, p);
+  } catch {
+    // profils illisibles : des visages sans photo
+  }
+  return ids.map((id) => ({ id, nom: displayName(profils.get(id)?.username, id), avatarUrl: profils.get(id)?.avatar_url ?? null }));
+}
+
+/**
+ * Les joueurs en ligne : le signal de présence est récent et le joueur montre sa
+ * présence. Le compte exact, et les JOUEURS_LUS plus récents avec leur profil.
+ * Null si la table manque.
+ */
+async function lireEnLigne(admin: SupabaseClient, now: Date): Promise<{ nombre: number; joueurs: JoueurBrut[] } | null> {
   try {
     const depuis = new Date(now.getTime() - EN_LIGNE_SECONDES * 1000).toISOString();
-    const { count, error } = await admin.from("user_presence").select("user_id", { count: "exact", head: true }).eq("visible", true).gt("last_seen_at", depuis);
-    return error ? null : (count ?? null);
+    const { data, count, error } = await admin
+      .from("user_presence")
+      .select("user_id", { count: "exact" })
+      .eq("visible", true)
+      .gt("last_seen_at", depuis)
+      .order("last_seen_at", { ascending: false })
+      .limit(JOUEURS_LUS);
+    if (error) return null;
+    const ids = [...new Set((Array.isArray(data) ? (data as { user_id: string | null }[]) : []).map((r) => r.user_id).filter((id): id is string => typeof id === "string" && id.length > 0))];
+    return { nombre: count ?? ids.length, joueurs: await nommer(admin, ids) };
   } catch {
     return null;
+  }
+}
+
+/** Les identifiants des amis de ce joueur (ses amitiés acceptées, lues avec sa session). [] si la lecture échoue : personne ne passe devant. */
+async function lireAmisIds(sb: SupabaseClient, moi: string): Promise<string[]> {
+  try {
+    const { data, error } = await sb.from("friendships").select("requester,addressee").eq("status", "accepted").or(`requester.eq.${moi},addressee.eq.${moi}`).limit(500);
+    if (error || !Array.isArray(data)) return [];
+    return (data as { requester: string; addressee: string }[]).map((r) => (r.requester === moi ? r.addressee : r.requester));
+  } catch {
+    return [];
   }
 }
 
@@ -112,17 +151,17 @@ async function lireMasques(admin: SupabaseClient, ids: string[]): Promise<string
 }
 
 /** La partie de la lecture qui vient du client admin : la même pour tous les joueurs, donc gardée 60 s. */
-type PartieAdmin = { enLigne: number | null; duels: number | null; victoires: VictoireBrute[] };
+type PartieAdmin = { enLigne: number | null; duels: number | null; victoires: VictoireBrute[]; joueurs: JoueurBrut[] };
 
 async function lirePartieAdmin(admin: SupabaseClient, now: Date): Promise<PartieAdmin> {
-  const [enLigne, duels, victoires] = await Promise.all([compterEnLigne(admin, now), compterDuels(admin, now), lireVictoires(admin, now)]);
-  return { enLigne, duels, victoires };
+  const [enLigne, duels, victoires] = await Promise.all([lireEnLigne(admin, now), compterDuels(admin, now), lireVictoires(admin, now)]);
+  return { enLigne: enLigne ? enLigne.nombre : null, duels, victoires, joueurs: enLigne ? enLigne.joueurs : [] };
 }
 
 /** La partie admin, gardée 60 s (hors d'une requête, où le cache n'existe pas, on lit sans lui). */
 async function partieAdminEnCache(admin: SupabaseClient, now: Date, jour: string): Promise<PartieAdmin> {
   try {
-    return await unstable_cache(() => lirePartieAdmin(admin, now), ["rl-accueil-direct", jour], { revalidate: 60 })();
+    return await unstable_cache(() => lirePartieAdmin(admin, now), ["rl-accueil-direct-2", jour], { revalidate: 60 })();
   } catch {
     return lirePartieAdmin(admin, now);
   }
@@ -136,6 +175,8 @@ export type OptionsDirect = {
   sansCache?: boolean;
   /** le classement des 30 d'aujourd'hui, si la page l'a déjà lu avec au moins 200 lignes */
   classements?: ClassementsLus;
+  /** le pseudo et la photo du joueur qui regarde (la page les a lus avec son profil) : son visage « Toi » */
+  moi?: { nom: string | null; avatarUrl: string | null };
 };
 
 /**
@@ -150,7 +191,7 @@ export async function lireBrutDirect({ sb, admin, jour, now }: SourceDirect, opt
   // dans la première heure d'un jour, les copies de la veille au soir comptent encore
   const veille = parisDay(new Date(maintenant - FENETRE_MS)) !== jour;
   const lu = options.classements?.trente;
-  const vide: PartieAdmin = { enLigne: null, duels: null, victoires: [] };
+  const vide: PartieAdmin = { enLigne: null, duels: null, victoires: [], joueurs: [] };
   const [trenteAuj, cinqAuj, trenteVeille, cinqVeille, partie] = await Promise.all([
     lu !== undefined ? Promise.resolve(lu) : getDailyBoard(sb, jour, LIMITE_CLASSEMENT, "trente"),
     getDailyBoard(sb, jour, LIMITE_CLASSEMENT, "cinq"),
@@ -163,7 +204,7 @@ export async function lireBrutDirect({ sb, admin, jour, now }: SourceDirect, opt
   // la présence des joueurs que le fil pourrait nommer (une petite lecture, propre à cet instant)
   const recents = candidatsDe({ copies, victoires: partie.victoires }, maintenant, CANDIDATS_MAX).map((c) => c.userId);
   const masques = admin ? await lireMasques(admin, recents) : [];
-  return { enLigne: partie.enLigne, duels: partie.duels, copies, victoires: partie.victoires, masques };
+  return { enLigne: partie.enLigne, duels: partie.duels, copies, victoires: partie.victoires, masques, joueurs: partie.joueurs ?? [] };
 }
 
 /**
@@ -172,8 +213,13 @@ export async function lireBrutDirect({ sb, admin, jour, now }: SourceDirect, opt
  */
 export async function lireEnDirect(ctx: CtxLecture, options: OptionsDirect = {}): Promise<EnDirectLobby | null> {
   try {
-    const brut = await lireBrutDirect({ sb: ctx.sb, admin: ctx.admin, jour: ctx.jour, now: ctx.now }, options);
-    return brut ? directDe(brut, ctx.now.getTime(), ctx.user.id) : null;
+    // les amis se lisent en même temps que le reste (une petite requête de plus, pas d'attente de plus) ;
+    // sans accès admin, il n'y a pas de liste de joueurs en ligne à trier : pas de requête
+    const [brut, amis] = await Promise.all([
+      lireBrutDirect({ sb: ctx.sb, admin: ctx.admin, jour: ctx.jour, now: ctx.now }, options),
+      ctx.admin ? lireAmisIds(ctx.sb, ctx.user.id) : Promise.resolve([] as string[]),
+    ]);
+    return brut ? directDe(brut, ctx.now.getTime(), ctx.user.id, { moi: options.moi, amis }) : null;
   } catch {
     return null;
   }

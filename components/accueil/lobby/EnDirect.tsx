@@ -2,18 +2,23 @@ import type { Segment } from "@/lib/voice-moi";
 import { DIRECT } from "@/lib/voice-accueil-lobby-direct";
 import { chiffresDe } from "./modele-direct";
 import type { EnDirectLobby } from "./types";
+import { Visage } from "./Visage";
 import l from "./Lobby.module.css";
 import s from "./EnDirect.module.css";
 
 // « En ce moment dans le lobby » : une carte vivante façon jeu en ligne. À
 // gauche, trois chiffres (joueurs en ligne, duels en cours, copies des 30
 // rendues dans l'heure) ; à droite, les quatre derniers faits (« Inès vient de
-// rendre sa copie : 28/30 »). Composant serveur, sans bouton : aucune encre
-// (la règle d'encre ne la concerne pas), que des aplats. Le cadre, les équerres
-// du HUD, le point vert et les visages sont ceux du socle (Lobby.module.css) ;
-// les chiffres et le fil sont à elle (EnDirect.module.css). Les lignes dont la
-// source manque (pas d'accès admin) disparaissent ; sans fait récent, les
-// chiffres s'étalent en rangée ; sans chiffre, le fil prend toute la carte.
+// rendre sa copie : 28/30 ») ; dessous, les joueurs en ligne en petits visages
+// (photo de profil, sinon initiales) : toi d'abord (« Toi »), tes amis, puis les
+// autres, huit au plus et « +N » pour le reste. Composant serveur, sans bouton :
+// aucune encre (la règle d'encre ne la concerne pas), que des aplats. Le cadre,
+// les équerres du HUD, le point vert et les visages sont ceux du socle
+// (Lobby.module.css) ; les chiffres, le fil et la rangée de visages sont à elle
+// (EnDirect.module.css). Les lignes dont la source manque (pas d'accès admin)
+// disparaissent ; sans fait récent, les chiffres s'étalent en rangée ; sans
+// chiffre, le fil prend toute la carte. La carte garde sa hauteur naturelle :
+// elle ne s'étire pas pour remplir la colonne voisine.
 
 const classes = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -73,6 +78,27 @@ export function EnDirect({ d, className }: { d: EnDirectLobby; className?: strin
                 <span className={s.quand}>{e.quand}</span>
               </li>
             ))}
+          </ul>
+        )}
+        {d.joueurs.length > 0 && (
+          <ul className={s.joueurs} aria-label={DIRECT.joueurs}>
+            {d.joueurs.map((j) => (
+              <li key={j.id} className={classes(s.joueur, j.moi && s.moi)} title={j.moi ? DIRECT.toi : j.nom}>
+                <Visage nom={j.nom} initiales={j.initiales} avatarUrl={j.avatarUrl} taille={40} sombre={j.moi} />
+                <span className={s.pseudo}>
+                  {j.prenom}
+                  {j.ami && <span className="sr-only">{DIRECT.ami}</span>}
+                </span>
+              </li>
+            ))}
+            {d.plus > 0 && (
+              <li className={s.autres}>
+                <b className={s.mono} aria-hidden="true">
+                  {DIRECT.plus(d.plus)}
+                </b>
+                <span className="sr-only">{DIRECT.plusLu(d.plus)}</span>
+              </li>
+            )}
           </ul>
         )}
       </div>

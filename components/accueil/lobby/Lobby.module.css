@@ -627,6 +627,11 @@
   height: 26px;
   font-size: 11px;
 }
+/* un visage en photo : l'image (Avatar) remplit le rond ; un fin anneau au-dehors (l'anneau d'initiales, lui, serait caché par l'image) */
+.avPhoto {
+  background: none;
+  box-shadow: 0 0 0 1.5px var(--line-2);
+}
 .avRiv {
   background: var(--etat-fond);
   color: var(--etat-texte);

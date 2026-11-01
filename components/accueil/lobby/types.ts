@@ -160,7 +160,17 @@ export type CalmeLobby = { etat: "bientot" | "indispo" };
 // ── lots 2 à 5 (null tant qu'ils ne sont pas branchés) ─────────────────────
 
 export type EvenementLobby = { cle: string; initiales: string; sombre: boolean; texte: Segment[]; quand: string };
-export type EnDirectLobby = { enLigne: number | null; duels: number | null; copiesHeure: number; evenements: EvenementLobby[] };
+/**
+ * Un joueur en ligne, en petit visage : sa photo de profil quand il en a une
+ * (`avatarUrl`), sinon ses initiales. `moi` : c'est toi (toujours en tête, « Toi »).
+ */
+export type JoueurLobby = { id: string; nom: string; prenom: string; initiales: string; avatarUrl: string | null; moi: boolean; ami: boolean };
+/**
+ * « En ce moment dans le lobby ». `joueurs` : toi d'abord, puis tes amis en ligne,
+ * puis les autres, huit au plus ; `plus` : combien d'autres joueurs en ligne ne
+ * tiennent pas dans la rangée (« +12 »).
+ */
+export type EnDirectLobby = { enLigne: number | null; duels: number | null; copiesHeure: number; evenements: EvenementLobby[]; joueurs: JoueurLobby[]; plus: number };
 export type MesureRival = { cle: "traits" | "jours" | "temps" | "serie" | "duels"; lib: string; toi: number; lui: number; toiTxt: string; luiTxt: string; aria: string };
 export type RivalLobby = {
   id: string;
@@ -204,7 +214,8 @@ export type AfficheLobby = { nom: IllustrationNom; legende: string; position?: s
 export type NouveauteRelance = { type: "relance"; cle: string; jour: string; joueur: Joueur; quand: string };
 /** Ce que « Du nouveau » liste : les nouvelles des amis (palier, victoire, dépassement) et les relances reçues. */
 export type NouveauLobby = Nouveaute | NouveauteRelance;
-export type AmisLobby = { total: number; enLigne: number | null; visages: { id: string; nom: string; initiales: string; enLigne: boolean }[]; demandes: number };
+/** `avatarUrl` : la photo de profil de l'ami (null : ses initiales). */
+export type AmisLobby = { total: number; enLigne: number | null; visages: { id: string; nom: string; initiales: string; avatarUrl: string | null; enLigne: boolean }[]; demandes: number };
 export type CarnetLobby = { jours: [string, number][]; aujourdhui: string; serie: number; record: number; seuil: number | null };
 
 export type Lobby = {
