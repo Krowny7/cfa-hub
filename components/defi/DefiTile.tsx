@@ -7,7 +7,7 @@ import { joueurs, voixDefi } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
 
 // Tuile « Défi du jour » prête à poser (accueil, S'entraîner), sur la même
-// grille que les tuiles de l'accueil (components/accueil/Tile) : étiquette
+// grille que les tuiles de l'ancien accueil (supprimées avec lui) : étiquette
 // avec l'icône maison, un seul élément fort, une ligne, puis l'action.
 // Données : getTodayDaily(supabase, userId) de lib/daily.ts, un seul appel.
 //   <DefiTile daily={await getTodayDaily(supabase, user.id)} nowIso={new Date().toISOString()} actionEnBas />

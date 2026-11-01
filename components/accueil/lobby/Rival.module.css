@@ -1,0 +1,436 @@
+/* La carte « Ton rival » de l'accueil « Le lobby » (lot 3), dans la palette
+   « florence » (lib/palettes.ts : la racine du lobby pose --pal-1 terre cuite,
+   --pal-2 ocre rosé, --pal-3 bleu pâle, --pal-4 ivoire). Règles de DA :
+   - le vrai liquide (EncreVive dans un élément .rl-encre[data-palette]) ne sert
+     qu'au bouton principal de la carte, « Lui lancer un défi » ;
+   - tout le reste est en aplats : sceau, avatars, barres, pastilles, « Relancer »
+     (en contour) ; aucune texture qui glisse ;
+   - jetons du site (jour et nuit) ; les couleurs de la palette ne servent qu'en
+     accent (lien, chiffre en rouge, barre du rival, surlignage).
+   La carte est autonome : elle ne dépend pas de Lobby.module.css, et le
+   placement (colonne, rangée) lui vient de `className`. Sur téléphone, les
+   cibles passent à 44 px (requête de conteneur, comme Synthese.module.css). */
+
+.carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  box-shadow: var(--shadow-1);
+  color: var(--ink);
+  /* la palette, nommée par rôle : l'accent du texte et la barre du rival */
+  --riv-accent: var(--pal-1, #a94d31);
+  --riv-ocre: var(--pal-2, #d8a186);
+}
+/* nuit : la terre cuite s'éclaircit pour rester lisible sur le fond sombre */
+:global(html[data-theme="nuit"]) .carte {
+  --riv-accent: color-mix(in srgb, var(--pal-1, #a94d31) 55%, white);
+}
+.carte :where(h2, p, ul) {
+  margin: 0;
+}
+.carte :where(ul) {
+  padding: 0;
+  list-style: none;
+}
+.carte b {
+  font-weight: 700;
+}
+
+/* ——— l'en-tête : le sceau, le nom du rival, « Son profil » ——— */
+.tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.titreSceau {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.titreTexte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.ttl {
+  overflow: hidden;
+  font-size: 20px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* le sceau : un aplat d'encre unie, l'icône en réserve (jamais de liquide) */
+.sceau {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--riv-accent) 45%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--riv-accent) 10%, transparent);
+}
+.lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 32px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--riv-accent);
+  text-decoration: none;
+}
+.lien:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lien:focus-visible {
+  outline: 2px solid var(--riv-accent);
+  outline-offset: 3px;
+}
+
+/* ——— le face-à-face : toi | cinq lignes | lui ——— */
+.duo {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 1px solid var(--line-2);
+}
+.duoTete {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+.qui {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 13.5px;
+}
+.qui b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quiD {
+  justify-content: flex-end;
+}
+.periode {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.av {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+}
+.avMoi {
+  background: var(--ink);
+  color: var(--paper);
+}
+.avRival {
+  background: var(--pal-4, #f3ebdb);
+  color: var(--pal-1, #a94d31);
+  box-shadow: inset 0 0 0 1.5px var(--riv-ocre);
+}
+.acts {
+  display: grid;
+  gap: 8px;
+}
+.act {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 4px 8px;
+}
+.v {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.vD {
+  text-align: right;
+}
+/* le chiffre le plus bas de la ligne s'efface un peu */
+.bas {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.lab {
+  font-size: 11.5px;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+/* deux barres de chaque côté d'un axe : la plus longue des deux remplit sa moitié */
+.barres {
+  position: relative;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px;
+}
+.barres::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ink);
+}
+.b {
+  display: flex;
+  height: 7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ink) 9%, var(--paper));
+  overflow: hidden;
+}
+.b > i {
+  display: block;
+  height: 100%;
+}
+.bToi {
+  justify-content: flex-end;
+}
+.bToi > i {
+  border-radius: 4px 0 0 4px;
+  background: var(--ink);
+}
+.bLui > i {
+  border-radius: 0 4px 4px 0;
+  background: var(--riv-ocre);
+}
+
+/* ——— le repli : le bilan des rencontres, faute de chiffres communs ——— */
+.bilan {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.ns {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* ——— le verdict ——— */
+.verdict {
+  display: grid;
+  gap: 3px;
+}
+.verdictTexte {
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+.rattrape {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.surligne {
+  padding: 0 4px;
+  margin: 0 -4px;
+  background: linear-gradient(
+    180deg,
+    transparent 52%,
+    color-mix(in srgb, var(--riv-ocre) 42%, transparent) 52%,
+    color-mix(in srgb, var(--riv-ocre) 42%, transparent) 94%,
+    transparent 94%
+  );
+}
+.neg {
+  font-weight: 700;
+  color: var(--riv-accent);
+}
+
+/* la relance qu'il t'a envoyée */
+.recue {
+  padding: 7px 11px;
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, var(--riv-ocre) 70%, transparent);
+  background: color-mix(in srgb, var(--riv-ocre) 14%, var(--surface));
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* ——— les actions ——— */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+.note {
+  flex: 0 0 100%;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* le bouton d'encre : le vrai liquide de la palette (EncreVive), un seul par carte */
+.encre {
+  position: relative;
+  color: #fff;
+  background: var(--pal-1, #a94d31);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  color: #fff;
+  box-shadow: var(--shadow-btn);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.bouton:hover {
+  color: #fff;
+}
+.bouton:active {
+  transform: scale(0.98);
+}
+.bouton:focus-visible {
+  outline: 2px solid var(--riv-accent);
+  outline-offset: 3px;
+}
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .bouton.encre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-4, #f3ebdb) 35%, transparent),
+    var(--shadow-btn);
+}
+
+/* « Relancer » : le bouton secondaire, un contour d'encre sur fond de papier */
+.plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.plus:hover:not(:disabled) {
+  background: var(--paper);
+}
+.plus:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.plus:focus-visible {
+  outline: 2px solid var(--riv-accent);
+  outline-offset: 3px;
+}
+/* « Relance envoyée » : un état, pas un bouton */
+.etat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 10px;
+  background: var(--pal-4, #f3ebdb);
+  color: var(--pal-1, #a94d31);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ——— mode discret (réviser en public) : le liquide est coupé, le bouton devient plein ——— */
+:global(html[data-discreet="1"]) .encre {
+  background: var(--ink);
+  color: var(--paper);
+  text-shadow: none;
+}
+:global(html[data-discreet="1"]) .bouton:hover {
+  color: var(--paper);
+}
+
+/* ——— téléphone : cibles de 44 px, les deux boutons sur toute la largeur si besoin ——— */
+@container (max-width: 760px) {
+  .bouton,
+  .plus,
+  .etat,
+  .lien {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bouton {
+    transition: none;
+  }
+}

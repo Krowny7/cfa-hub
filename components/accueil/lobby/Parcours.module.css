@@ -1,0 +1,372 @@
+/* Les cartes « parcours » de l'accueil « Le lobby » (lot 5, maquette D2) : Tes
+   meilleurs scores, Prochain déblocage, Ta prochaine quête, La Grande Salle,
+   l'affiche, Du nouveau et Tes amis. Le cadre blanc, les titres, les sceaux, les
+   liens, les pistes, les visages et la peinture viennent du socle partagé
+   (Lobby.module.css : .carte, .petite, .tete, .eyebrow, .sceau, .lien, .piste,
+   .av, .peint …) ; ici, seulement ce qui est propre à ces cartes. Règles de DA :
+   aucune encre vive dans ce lot (la Grande Salle a un bouton NOIR en aplat), des
+   aplats partout, jamais de texture qui glisse. Les palettes viennent de la
+   racine (--noir, --terre, --ocre, --ivoire …), avec un repli de la maquette.
+   Les mises en page suivent la largeur du bloc (requêtes de conteneur), pas
+   celle de l'écran. Les règles qui doivent battre le socle quel que soit l'ordre
+   des feuilles sont doublées (.x.x). */
+
+/* le lien du bas d'une petite carte : collé en bas */
+.basLien {
+  margin-top: auto;
+}
+
+/* ——— Tes meilleurs scores : un bloc lisible par record ——— */
+.recs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.rec {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 14px 13px;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.rlib {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink-2);
+}
+.ri {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+}
+.rv {
+  margin-top: 4px;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.rv small {
+  font-family: inherit;
+  font-size: 17px;
+  color: var(--ink-3);
+}
+/* un rang s'écrit en lettres : plus petit qu'un chiffre */
+.rvTexte {
+  font-size: 22px;
+  line-height: 1.1;
+}
+.rvVide {
+  color: var(--ink-3);
+}
+.rd {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+.rd b {
+  color: var(--ink);
+}
+
+/* ——— Prochain déblocage : la silhouette, la barre ——— */
+.debCorps {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.silh {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 1.5px dashed var(--pencil-2);
+  color: var(--pencil);
+}
+.debTexte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.debNom {
+  font-size: 14px;
+  line-height: 1.25;
+}
+.debBarre {
+  display: grid;
+  gap: 4px;
+}
+.piste8 {
+  height: 8px;
+  border-radius: 4px;
+}
+.piste8 > i {
+  border-radius: 4px;
+}
+.debPied {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.debPied b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ——— Ta prochaine quête ——— */
+.queteNom {
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.queteLigne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.queteBarre {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.queteChiffre {
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ——— La Grande Salle : la bande peinte, le bouton noir en aplat ——— */
+.salle.salle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 208px;
+  padding: 28px 34px 30px;
+  border-color: var(--noir, #1a120b);
+}
+.salleTitre {
+  font-size: 32px;
+  line-height: 1.05;
+  max-width: 560px;
+}
+.salleLigne {
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--ivoire, #f3ebdb);
+}
+.salleBouton {
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+/* ——— l'affiche : une peinture, une légende, rien d'autre ——— */
+.affiche.affiche {
+  position: relative;
+  overflow: hidden;
+  min-height: 340px;
+  background: var(--noir, #1a120b);
+  border-color: var(--noir, #1a120b);
+}
+.afficheImg {
+  position: absolute;
+  inset: 0;
+}
+.afficheLegende {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 99px;
+  background: rgba(26, 18, 11, 0.6);
+  color: var(--ivoire, #f3ebdb);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ——— Du nouveau ——— */
+.nv.nv {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 24px;
+}
+.nvTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.nvTitre {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  line-height: 1.1;
+}
+.nvListe {
+  display: grid;
+}
+.nvLigne {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
+  grid-template-areas: "av tx qd bt";
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  border-top: 1px solid var(--line);
+}
+.nvAv {
+  grid-area: av;
+}
+.nvTexte {
+  grid-area: tx;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.quand {
+  grid-area: qd;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.nvBouton {
+  grid-area: bt;
+}
+
+/* ——— Tes amis ——— */
+.amis.amis {
+  gap: 12px;
+  padding: 20px 24px;
+}
+.amisChiffre {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.amisChiffre > b {
+  font-size: 36px;
+  line-height: 1;
+}
+.amisChiffre > span {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.visages {
+  display: flex;
+  gap: 16px;
+}
+.visage {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.demandes {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 99px;
+  background: var(--etat-fond, #f3ebdb);
+  color: var(--etat-texte, #a94d31);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.demandes:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.premiers {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* ——— les tailles : on suit la largeur du bloc ——— */
+/* page étroite : l'affiche, seule sur sa ligne, se contente d'une bande */
+@container (max-width: 1080px) {
+  .affiche.affiche {
+    min-height: 220px;
+  }
+}
+@container (max-width: 760px) {
+  .salle.salle {
+    min-height: 0;
+    padding: 22px 20px 24px;
+  }
+  .salleTitre {
+    font-size: 26px;
+  }
+  .salleBouton {
+    align-self: stretch;
+    min-height: 48px;
+  }
+  .affiche.affiche {
+    min-height: 160px;
+  }
+  .nv.nv {
+    padding: 18px 16px;
+  }
+  .amis.amis {
+    padding: 18px 16px;
+  }
+  /* la date passe sous le texte, le bouton reste à droite */
+  .nvLigne {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "av tx bt"
+      "av qd bt";
+    gap: 2px 12px;
+    padding: 8px 0;
+  }
+  .nvAv {
+    align-self: center;
+  }
+  .nvBouton {
+    align-self: center;
+  }
+  .visage {
+    min-width: 44px;
+  }
+  /* « 2 demandes en attente » est un lien : une cible de 44 px au doigt */
+  .demandes {
+    min-height: 44px;
+  }
+}
+@container (max-width: 390px) {
+  .recs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .salleTitre {
+    font-size: 24px;
+  }
+}

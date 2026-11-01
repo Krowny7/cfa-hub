@@ -1,0 +1,1391 @@
+/* L'accueil « Le lobby » (maquette D2 « Le lobby resserré », retouchée), dans la
+   palette « Florence à l'aube » (lib/palettes.ts : LobbyView pose --pal-1 terre
+   cuite, --pal-2 ocre rosé, --pal-3 bleu pâle, --pal-4 ivoire sur la racine).
+   Règles de DA, fixées par l'utilisateur :
+   - le vrai liquide (EncreVive dans un élément .rl-encre[data-palette]) ne sert
+     qu'au bouton d'action principal d'une carte (un par carte au plus) et à
+     l'option active d'un sélecteur ;
+   - tout le reste est en aplats : sceaux, pistes, cases, pastilles, tuiles ;
+     jamais de texture qui glisse, ni de fond d'encre sur une case ou un pavé ;
+   - mise en scène de jeu vidéo (lobby, HUD net, chiffres lisibles), mais avec
+     les éléments du site : papier clair, cartes blanches, encre, Dela Gothic
+     One pour les titres, Geist Mono pour les chiffres, très peu de couleurs.
+   Ce fichier est le SOCLE partagé par les cartes des lots 1 à 5 (.carte,
+   .petite, .tete, .eyebrow, .ttl, .sceau, .lien, .peint, .puce, .tuile,
+   .piste, .av …) et porte la mise en page des cartes du lot 1. Les mises en
+   page suivent la largeur du bloc (requêtes de conteneur), pas celle de
+   l'écran. Jetons du site, jour et nuit ; liquide coupé en mode discret. */
+
+/* le cadre : un conteneur autour de la racine, pour que les requêtes de
+   conteneur de la racine elle-même trouvent un parent à mesurer */
+.cadre {
+  container-type: inline-size;
+}
+.racine {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+  color: var(--ink);
+  /* la palette, nommée par rôle */
+  --noir: #1a120b;
+  --terre: var(--pal-1);
+  --ocre: var(--pal-2);
+  --ivoire: var(--pal-4);
+  /* le texte posé sur un aplat noir, et sur une peinture */
+  --sur-noir: #fff;
+  --sur-peint: #f6f1e7;
+  /* aplats chauds : état, tuile « toi », bas de la carte du rang */
+  --etat-fond: var(--pal-4);
+  --etat-texte: var(--pal-1);
+  --creme: color-mix(in srgb, var(--pal-4) 40%, var(--surface));
+  --bas-carte: color-mix(in srgb, var(--pal-4) 22%, var(--surface));
+  --surligne: color-mix(in srgb, var(--pal-2) 42%, transparent);
+  --piste: var(--well);
+  --live: #3f8f5a;
+  --zone-rouge: #b4412f;
+}
+/* nuit : l'encre brune devient l'encre claire du site (icône sombre dessus), les aplats chauds s'assombrissent */
+:global(html[data-theme="nuit"]) .racine {
+  --noir: var(--ink);
+  --sur-noir: var(--paper);
+  --terre: color-mix(in srgb, var(--pal-1) 45%, white);
+  --etat-fond: color-mix(in srgb, var(--pal-1) 26%, var(--surface));
+  --etat-texte: color-mix(in srgb, var(--pal-1) 45%, white);
+  --creme: color-mix(in srgb, var(--pal-1) 14%, var(--surface));
+  --bas-carte: color-mix(in srgb, var(--pal-1) 8%, var(--surface));
+  --surligne: color-mix(in srgb, var(--pal-1) 38%, transparent);
+  --live: #5bb67b;
+  --zone-rouge: #ff7a5c;
+}
+.racine :where(h1, h2, h3, p, ul, ol, dl, dd, figure) {
+  margin: 0;
+}
+.racine :where(ul, ol) {
+  padding: 0;
+  list-style: none;
+}
+.racine :where(h2, h3) {
+  text-wrap: balance;
+}
+.racine b {
+  font-weight: 700;
+}
+
+/* ——— l'en-tête : le salut à gauche, J-n et la date de l'examen à droite ——— */
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.salut {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.examen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+}
+.examenJ {
+  font-size: 56px;
+  line-height: 0.9;
+  color: var(--ink);
+}
+.examenTexte {
+  font-size: 16px;
+  color: var(--ink-2);
+}
+.examenTexte b {
+  color: var(--ink);
+}
+.fixer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--terre);
+  text-decoration: none;
+}
+.fixer:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ——— la grille : douze colonnes, les rangées se recomposent (data-n) ——— */
+.rangee {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+.rangee > .c3 {
+  grid-column: span 3;
+}
+.rangee > .c4 {
+  grid-column: span 4;
+}
+.rangee > .c5 {
+  grid-column: span 5;
+}
+.rangee > .c6 {
+  grid-column: span 6;
+}
+.rangee > .c7 {
+  grid-column: span 7;
+}
+.rangee > .c8 {
+  grid-column: span 8;
+}
+.rangee > .c12 {
+  grid-column: span 12;
+}
+.rangee[data-n="1"] > * {
+  grid-column: span 12;
+}
+.rangee[data-n="2"] > * {
+  grid-column: span 6;
+}
+/* la rangée de la carte du jour : trois colonnes inégales (la carte du jour, le rival, l'affiche) ;
+   sans l'une des deux premières, deux colonnes égales (data-n="2") ; la grille ne rogne rien :
+   le petit paquet derrière la carte du jour dépasse de quelques pixels */
+.rangeeJour {
+  display: grid;
+  grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr) minmax(0, 0.86fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.rangeeJour[data-n="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.rangeeJour > * {
+  min-width: 0;
+}
+/* une colonne de cartes empilées dans une rangée */
+.colonne {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.colonne > .etire {
+  flex: 1 1 auto;
+}
+/* la rangée du vainqueur, du lobby et du rang respire plus haut : 26 px en plus de l'écart des
+   rangées, comme la maquette ; le personnage du vainqueur (il dépasse de 40 px) tient dans cet
+   air sans mordre sur la rangée de la carte du jour */
+.rangeeAeree {
+  margin-top: 26px;
+}
+
+/* ——— les cartes en papier ——— */
+.carte {
+  position: relative;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  box-shadow: var(--shadow-1);
+}
+.petite {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 16px;
+}
+.tete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.teteTexte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.teteEntre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ttl {
+  font-size: 20px;
+  line-height: 1.1;
+}
+.ttlSm {
+  font-size: 18px;
+  line-height: 1.1;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.eyebrowC {
+  color: var(--ivoire);
+}
+.st {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.st b {
+  color: var(--ink);
+}
+.ns {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+.mono {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.pos {
+  color: var(--ink);
+  font-weight: 700;
+}
+.neg {
+  color: var(--terre);
+  font-weight: 700;
+}
+.surligne {
+  background: linear-gradient(180deg, transparent 52%, var(--surligne) 52%, var(--surligne) 94%, transparent 94%);
+  padding: 0 4px;
+  margin: 0 -4px;
+}
+
+/* ——— le sceau d'une carte : une pastille noire unie, l'icône en réserve (jamais de liquide) ——— */
+.sceau {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--sur-noir);
+  background: var(--noir);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--pal-1) 45%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--pal-1) 10%, transparent);
+}
+/* sur une peinture : un liseré ivoire */
+.sceauC {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--pal-4) 60%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--pal-4) 14%, transparent);
+}
+
+/* ——— les liens ——— */
+.lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--terre);
+  text-decoration: none;
+}
+.lien:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* le lien posé sur une peinture : ivoire, souligné */
+.lienc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ivoire);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lienc:hover {
+  color: #fff;
+}
+
+/* ——— le bouton d'encre : le vrai liquide de la palette (EncreVive), un par carte au plus ——— */
+.encre {
+  position: relative;
+  color: #fff;
+  background: var(--pal-1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  color: #fff;
+  box-shadow: var(--shadow-btn);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.bouton:hover {
+  color: #fff;
+}
+.bouton:active {
+  transform: scale(0.98);
+}
+.bouton:focus-visible,
+.contour:focus-visible,
+.mini:focus-visible,
+.opt:focus-visible,
+.lien:focus-visible,
+.lienc:focus-visible,
+.noir:focus-visible {
+  outline: 2px solid var(--terre);
+  outline-offset: 3px;
+}
+.sm {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  border-radius: 10px;
+}
+.gd {
+  min-height: 52px;
+  padding: 0 24px;
+  font-size: 15.5px;
+  border-radius: 14px;
+}
+/* le bouton posé sur une peinture : un liseré ivoire */
+.sur {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--pal-4) 70%, transparent),
+    0 12px 24px -10px rgba(0, 0, 0, 0.7);
+}
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .bouton.encre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-4) 35%, transparent),
+    var(--shadow-btn);
+}
+/* le bouton secondaire : à contour, jamais d'encre */
+.contour {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.contour:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+/* un petit bouton d'une ligne de liste */
+.mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.mini:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+/* le bouton noir en aplat (La Grande Salle) : pas d'encre */
+.noir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 46px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  background: #111;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  text-shadow: none;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--pal-4) 60%, transparent),
+    0 12px 22px -10px rgba(0, 0, 0, 0.7);
+}
+.noir:hover {
+  color: #fff;
+  background: #2a2a2e;
+}
+
+/* ——— les peintures : une illustration du site, un voile en dégradé, le texte ivoire ——— */
+.peint {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #1a120b;
+  color: var(--sur-peint);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.fond {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  display: block;
+}
+.fond img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.peint::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(26, 18, 11, 0.45) 0%, rgba(26, 18, 11, 0.5) 35%, rgba(26, 18, 11, 0.92) 100%);
+}
+.peint.g::after {
+  background: linear-gradient(90deg, rgba(26, 18, 11, 0.92) 0%, rgba(26, 18, 11, 0.74) 52%, rgba(26, 18, 11, 0.3) 100%);
+}
+.peint.b::after {
+  background: linear-gradient(180deg, rgba(26, 18, 11, 0.12) 0%, rgba(26, 18, 11, 0.18) 45%, rgba(26, 18, 11, 0.88) 100%);
+}
+.puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 99px;
+  background: rgba(26, 18, 11, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-shadow: none;
+}
+.tuile {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  text-shadow: none;
+}
+.tuile b {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #fff;
+}
+.tuile span {
+  font-size: 11.5px;
+  color: var(--ivoire);
+  white-space: nowrap;
+}
+
+/* ——— pistes, pastilles, cases : des aplats ——— */
+.piste {
+  position: relative;
+  display: block;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--piste);
+  overflow: hidden;
+}
+.piste > i {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--noir);
+}
+.fine {
+  height: 6px;
+}
+.pips {
+  display: flex;
+  gap: 4px;
+}
+.pip {
+  display: block;
+  flex: 1 1 0;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--piste);
+}
+.pipOn {
+  background: var(--noir);
+}
+/* le HUD : quatre équerres aux coins, comme le cadre d'un écran de jeu */
+.hud {
+  position: relative;
+}
+.hud::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    linear-gradient(var(--noir), var(--noir)) left top / 16px 2px no-repeat,
+    linear-gradient(var(--noir), var(--noir)) left top / 2px 16px no-repeat,
+    linear-gradient(var(--noir), var(--noir)) right top / 16px 2px no-repeat,
+    linear-gradient(var(--noir), var(--noir)) right top / 2px 16px no-repeat,
+    linear-gradient(var(--noir), var(--noir)) left bottom / 16px 2px no-repeat,
+    linear-gradient(var(--noir), var(--noir)) left bottom / 2px 16px no-repeat,
+    linear-gradient(var(--noir), var(--noir)) right bottom / 16px 2px no-repeat,
+    linear-gradient(var(--noir), var(--noir)) right bottom / 2px 16px no-repeat;
+}
+.live {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--live) 15%, transparent);
+}
+/* un visage : les initiales dans un rond ; .n : plein ; .p : petit ; .riv : le rival ; <i> : la pastille « en ligne » */
+.av {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  text-shadow: none;
+}
+.avN {
+  background: var(--noir);
+  color: var(--sur-noir);
+  box-shadow: none;
+}
+.avP {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+}
+.avRiv {
+  background: var(--etat-fond);
+  color: var(--etat-texte);
+  box-shadow: inset 0 0 0 1.5px var(--ocre);
+}
+.av > i {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--live);
+  border: 2px solid var(--surface);
+}
+/* une étiquette d'état (à rendre, disponible, +120 XP) */
+.etat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 99px;
+  background: var(--etat-fond);
+  color: var(--etat-texte);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.feuille {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--etat-fond);
+  color: var(--etat-texte);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-shadow: none;
+}
+/* une liste « clé : valeur » à icône */
+.kvl {
+  display: grid;
+}
+.kvl > li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  font-size: 13.5px;
+  border-top: 1px solid var(--line);
+}
+.kvl b.mono {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.indice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+/* ——— les sélecteurs : un groupe de boutons, l'option active seule porte l'encre vive ——— */
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 1px solid var(--line-2);
+}
+.opt {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.opt:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+.opt.encre {
+  color: #fff;
+  background: var(--pal-1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 6px 12px -8px rgba(40, 25, 10, 0.7);
+}
+
+/* ——————————————————————————————————————————————————————————————
+   Lot 1 : Les 30 du jour (héros) et le classement accolé
+   —————————————————————————————————————————————————————————————— */
+.heros {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 384px;
+  overflow: hidden;
+}
+/* sans classement (les 5 en héros, ou la lecture absente) : le héros n'a qu'une colonne
+   (deux classes : la règle de 1080 px sur .heros ne lui rend pas sa colonne de 330 px vide) */
+.heros.herosSeul {
+  grid-template-columns: minmax(0, 1fr);
+}
+.herosPeint {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 420px;
+  padding: 26px 28px 28px;
+}
+.herosHaut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.herosCorps {
+  display: grid;
+  gap: 14px;
+}
+.herosDate {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ivoire);
+}
+.herosTitre {
+  font-size: 46px;
+  line-height: 0.95;
+}
+.herosSous {
+  max-width: 340px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.tuiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.herosActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  margin-top: 4px;
+}
+/* la copie en cours : trente coches, les répondues pleines */
+.copie {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 420px;
+}
+.copie .pips {
+  flex: 1 1 auto;
+  gap: 3px;
+}
+.copie .pip {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.22);
+}
+.copie .pipOn {
+  background: var(--ivoire);
+}
+.copie b {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.classement {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 22px 22px 20px;
+}
+.classementTete {
+  display: grid;
+  gap: 4px;
+}
+.classementTitre {
+  font-size: 21px;
+  line-height: 1.1;
+}
+.classementBarre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.classementJoueurs {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.lignes {
+  display: grid;
+}
+.rg {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--line);
+}
+.rgPod {
+  min-height: 46px;
+}
+.med {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--noir);
+  color: var(--sur-noir);
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 12px;
+  font-weight: 600;
+}
+.medOr {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 3.5px var(--ocre);
+}
+.num {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.nm {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  line-height: 1.2;
+}
+.nm b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.nm span {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.nm span:empty {
+  display: none;
+}
+.sc {
+  font-size: 15px;
+  font-weight: 600;
+}
+.vide {
+  padding: 14px 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.toi {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 6px;
+  border-radius: 12px;
+  background: var(--creme);
+  border: 1.5px dashed var(--ocre);
+}
+.toi .av {
+  justify-self: center;
+}
+.classementPied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+/* ——— Les 5 du jour ——— */
+.cinqRang {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cases {
+  display: flex;
+  gap: 5px;
+}
+.case5 {
+  display: block;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--paper);
+  border: 1.5px dashed var(--pencil-2);
+}
+.case5Faite {
+  background: var(--surface);
+  border: 1.5px solid var(--noir);
+}
+.case5Juste {
+  background: var(--noir);
+  border: 1.5px solid var(--noir);
+}
+.cinqTexte {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  text-align: right;
+}
+.cinqTexte b {
+  color: var(--ink);
+}
+.cinqLigne {
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.cinqLigne b {
+  color: var(--ink);
+}
+
+/* ——— Tes traits du jour ——— */
+.traitsCorps {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+.traitsTitre {
+  font-size: 16px;
+  font-weight: 700;
+}
+.traitsTexte {
+  display: grid;
+  gap: 6px;
+}
+.tenu {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px dashed var(--pencil);
+  color: var(--ink-3);
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  transform: rotate(-10deg);
+}
+.sceauTenu {
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+.traitsPied {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+}
+
+/* ——— Le vainqueur des 30 d'hier ——— */
+.vqw {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.vqw > .vq {
+  flex: 1 1 auto;
+}
+.vq {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  min-height: 188px;
+  padding: 22px 26px;
+  border-color: var(--noir);
+}
+.vqAvecPerso .vq {
+  padding-right: 250px;
+}
+.vqNom {
+  font-size: 34px;
+  line-height: 1;
+}
+.vqLigne {
+  font-size: 14.5px;
+}
+.vqLigne b {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+}
+.vqPied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+
+/* ——— Ton rang et ta phase de révision ——— */
+.rang {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.rangHaut {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  min-width: 0;
+  padding: 24px 26px;
+}
+.rangTete {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.rangTexte {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.rangPalier {
+  font-size: 32px;
+  line-height: 1;
+}
+.chiffres {
+  display: flex;
+  align-items: stretch;
+}
+.lc {
+  display: grid;
+  flex: 1 1 0;
+  min-width: 0;
+  align-content: start;
+  gap: 4px;
+  padding: 0 22px;
+  border-left: 1px solid var(--line);
+}
+.lc:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.lc b {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+}
+.lc span {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+.rangBarre {
+  display: grid;
+  gap: 6px;
+}
+.rangBarre .piste {
+  height: 8px;
+}
+.rangLegende {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.rangLegende b {
+  color: var(--ink);
+}
+.rangSeul {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.phase {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 20px 26px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--bas-carte);
+}
+.phaseTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.phaseNom {
+  font-size: 22px;
+  line-height: 1.05;
+}
+.phases {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.ph {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ph > i {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--piste);
+}
+.phFait {
+  color: var(--ink-2);
+}
+.phFait > i {
+  background: var(--ink-3);
+}
+.phOn {
+  color: var(--ink);
+  font-weight: 700;
+}
+.phOn > i {
+  background: var(--noir);
+}
+
+/* ——— quand ni les 30 ni les 5 ne sont jouables : Tes traits du jour en grand ——— */
+.traitsGrand {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) auto;
+  align-items: center;
+  gap: 18px 36px;
+  padding: 28px;
+}
+.traitsGrandTexte {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.traitsGrandTitre {
+  font-size: 40px;
+  line-height: 1;
+}
+.calme {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+}
+.calmeTitre {
+  font-size: 24px;
+  line-height: 1.05;
+  color: var(--ink-2);
+}
+
+/* ——————————————————————————————————————————————————————————————
+   Les tailles : on suit la largeur du bloc, pas celle de l'écran
+   —————————————————————————————————————————————————————————————— */
+@container (max-width: 1080px) {
+  .heros {
+    grid-template-columns: minmax(0, 1fr) 330px;
+  }
+  .rangee > .c3,
+  .rangee > .c4,
+  .rangee > .c5,
+  .rangee > .c6,
+  .rangee > .c7,
+  .rangee > .c8 {
+    grid-column: span 12;
+  }
+  .rangee[data-n="2"] > * {
+    grid-column: span 12;
+  }
+  /* la carte du jour prend toute la largeur, le rival et l'affiche se partagent la suivante */
+  .rangeeJour {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rangeeJour:not([data-n="2"]) > :first-child {
+    grid-column: 1 / -1;
+  }
+  /* une colonne de cartes empilées passe en deux colonnes */
+  .colonne.enDeux {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vqAvecPerso .vq {
+    padding-right: 200px;
+  }
+}
+@container (max-width: 760px) {
+  /* au téléphone, toutes les cibles tactiles font 44 px */
+  .lien,
+  .lienc,
+  .sm,
+  .mini,
+  .opt {
+    min-height: 44px;
+  }
+  .heros {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* une seule colonne, dans l'ordre du document */
+  .rangeeJour,
+  .rangeeJour[data-n="2"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rangeeJour:not([data-n="2"]) > :first-child {
+    grid-column: auto;
+  }
+  .herosPeint {
+    min-height: 0;
+    padding: 22px 20px 24px;
+  }
+  .herosTitre {
+    font-size: 38px;
+  }
+  .classement {
+    padding: 20px 16px 18px;
+  }
+  .colonne.enDeux {
+    display: flex;
+  }
+  /* le personnage du vainqueur est masqué au téléphone : la rangée n'a plus besoin de son air */
+  .rangeeAeree {
+    margin-top: 0;
+  }
+  .examenJ {
+    font-size: 40px;
+  }
+  .salut {
+    font-size: 26px;
+  }
+  .vq {
+    padding: 20px;
+  }
+  .vqAvecPerso .vq {
+    padding-right: 20px;
+  }
+  .rangHaut {
+    padding: 20px;
+  }
+  .phase {
+    padding: 18px 20px 20px;
+  }
+  .lc {
+    padding: 0 12px;
+  }
+  .lc b {
+    font-size: 24px;
+  }
+  .traitsGrand {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 22px 20px;
+  }
+}
+/* le classement sur un petit téléphone : plus de ligne de temps sous le nom (le score reste) */
+@container (max-width: 360px) {
+  .rg .nm span {
+    display: none;
+  }
+  .rgPod {
+    min-height: 38px;
+  }
+}
+@container (max-width: 390px) {
+  .rangPalier {
+    font-size: 26px;
+  }
+  .herosTitre {
+    font-size: 34px;
+  }
+  .vqNom {
+    font-size: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bouton {
+    transition: none;
+  }
+}
+
+/* le bouton à contour posé sur une peinture (la copie rendue : plus d'encre à poser) */
+.contourC {
+  border-color: var(--ivoire);
+  background: rgba(26, 18, 11, 0.4);
+  color: #fff;
+  text-shadow: none;
+}
+.contourC:hover {
+  background: rgba(26, 18, 11, 0.6);
+  color: #fff;
+}
+
+.contour.gd {
+  min-height: 52px;
+  padding: 0 24px;
+  font-size: 15.5px;
+  border-radius: 14px;
+}
+.contour.sm {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  border-radius: 10px;
+}
+/* au téléphone, le petit bouton à contour (« Revoir mes 5 ») garde ses 44 px : cette règle-ci passe après celle des cibles */
+@container (max-width: 760px) {
+  .contour.sm {
+    min-height: 44px;
+  }
+}

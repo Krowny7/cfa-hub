@@ -1,5 +1,5 @@
 // Le vainqueur du jour : la meilleure copie des 30 d'HIER, pour la bannière de
-// l'accueil (components/accueil/VainqueurDuJour.tsx). Lecture seule, côté
+// l'accueil (components/accueil/lobby/BandeVainqueur.tsx). Lecture seule, côté
 // serveur : le classement d'un jour passé (RPC du défi, figé une fois le jour
 // passé), puis ce qu'il faut pour son insigne (ELO, maîtrise, place) et sa
 // bannière de profil (son image, et la couleur de contour qu'il a choisie pour

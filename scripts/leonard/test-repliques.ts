@@ -232,8 +232,8 @@ check(
 // ou dataLeonard passé à un composant qui le pose (TuileCalme) ; hors commentaires.
 // « moi-codex » : la ligne Codex (LigneCodex) de la carte du joueur de Moi « La synthèse »
 const CIBLES: Record<string, string> = {
-  defi: "components/accueil/Rendezvous.tsx",
-  anneau: "components/accueil/Rendezvous.tsx",
+  defi: "components/accueil/lobby/CarteTrente.tsx",
+  anneau: "components/accueil/lobby/CarteTraits.tsx",
   "sceau-quetes": "components/codex/SceauQuetes.tsx",
   "moi-codex": "components/moi/CodexMoi.tsx",
   reglages: "components/moi/AppearanceSwitches.tsx",

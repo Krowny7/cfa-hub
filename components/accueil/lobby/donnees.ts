@@ -1,0 +1,188 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadActivity, parisHour, withLiveDaily } from "@/components/accueil/queries";
+import { longDay } from "@/components/accueil/format";
+import { countPlayers } from "@/components/classement/data";
+import { lireCarteDuJour } from "@/components/accueil/lobby/lecture-carte";
+import { lireEnDirect, lirePersoVainqueur } from "@/components/accueil/lobby/lecture-direct";
+import { lireAmis, lireCarnet, lireDeblocage, lireGrandeSalle, lireQuete, lireScores } from "@/components/accueil/lobby/lecture-parcours";
+import { lireRelancesRecues, lireRivalActivite } from "@/components/accueil/lobby/lecture-rival";
+import { construireLobby, dejaVenu } from "@/components/accueil/lobby/modele";
+import { fusionnerNouveau, nouveauteRelance } from "@/components/accueil/lobby/modele-parcours";
+import { FILET_MS, plafonner } from "@/components/accueil/lobby/plafond";
+import type { CtxLecture, Lobby } from "@/components/accueil/lobby/types";
+import { getDailyBoard, getTodayDaily, shiftDay, type TodayDaily } from "@/lib/daily";
+import { lireSobre } from "@/lib/codex/sobre";
+import { calcStreakAndToday, type XpDay } from "@/lib/leveling";
+import { getTopicMastery, programMastery } from "@/lib/mastery";
+import { dateExamen, etatObjectif, objectifDe } from "@/lib/objectif";
+import { OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourEvents";
+import { nouveautesAmis } from "@/lib/profil/nouveau";
+import { DEFAULT_ELO } from "@/lib/ranks";
+import { getLeaderboardRank, getMyRating, getRatingHistory } from "@/lib/rating";
+import { joursEncreUnifies, lireSerieEncre } from "@/lib/serie-encre";
+import { lireVainqueurDuJour } from "@/lib/vainqueur-du-jour";
+
+// La lecture de l'accueil « Le lobby » (/dashboard) : UN seul Promise.all,
+// chaque lecture avec son .catch(() => null). Le socle (le joueur, les 30 et les
+// 5 du jour et leur classement, la journée, le vainqueur d'hier, le rang) et les
+// cartes des lots 2 à 5 (le lobby en direct, le rival, la carte du jour, les
+// records, le déblocage, la quête, la Grande Salle, du nouveau, les amis, le
+// carnet de jours). Tant qu'une migration n'est pas collée, ou sans clé de
+// service, la source concernée vaut null et la carte se masque ou se simplifie :
+// aucune valeur inventée. Les lectures lentes (le lobby en direct, le rival, la
+// carte du jour, le déblocage, la quête) sont plafonnées à 1,5 s : au-delà, la
+// carte se masque et la page ne l'attend pas. Le classement des 30 d'aujourd'hui
+// est lu UNE fois (200 lignes) pour le classement de la page et le lobby en
+// direct. Module serveur.
+
+type Profil = { username: string | null };
+
+async function lireProfil(sb: SupabaseClient, id: string): Promise<Profil | null> {
+  const r = await sb.from("profiles").select("username").eq("id", id).maybeSingle();
+  return r.error ? null : (r.data as Profil | null);
+}
+
+/** L'XP par jour sur 30 jours : sert à savoir si le joueur est déjà venu et à l'ancien calcul de la série. */
+async function lireXp(sb: SupabaseClient): Promise<XpDay[]> {
+  try {
+    const r = await sb.rpc("get_xp_daily", { p_days: 30 });
+    return Array.isArray(r.data) ? (r.data as XpDay[]).map((x) => ({ day: String(x.day).slice(0, 10), xp: Number(x.xp) || 0 })) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Le jour d'une copie commencée ou rendue (la preuve qu'il est venu) ; les défis « bientôt » ou à jouer n'en sont pas une. */
+const copieOuverte = (d: TodayDaily | null) => (d && (d.status === "playing" || d.status === "done") ? d.day : null);
+
+/** Le rang au classement du programme, une fois l'ELO connu (une seule lecture de la note). */
+async function lireNote(sb: SupabaseClient, id: string) {
+  const r = await getMyRating(sb, id);
+  return { ...r, place: await getLeaderboardRank(sb, id, r.elo) };
+}
+
+/** Le classement du jour : assez de lignes pour que le lobby en direct y trouve les copies de l'heure (la page n'en montre que 5). */
+const LIGNES_CLASSEMENT = 200;
+
+/**
+ * Tout ce que la page montre.
+ * @param ctx les deux clients (admin : null sans clé de service), le joueur, l'instant et le jour de Paris
+ */
+export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
+  const { sb, admin, user, now, jour } = ctx;
+  const id = user.id;
+  // la journée d'abord : l'objectif en dépend (la courbe se recale sur les questions du jour)
+  const activite = loadActivity(sb, id, now).catch(() => null);
+  // le classement du jour, lu une fois ; le vainqueur d'hier, puis son personnage
+  const classementAuj = getDailyBoard(sb, jour, LIGNES_CLASSEMENT).catch(() => null);
+  const vainqueurLu = lireVainqueurDuJour(sb, admin, id, jour).catch(() => null);
+  const [
+    profil,
+    xp,
+    daily,
+    cinq,
+    boardAuj,
+    boardHier,
+    act,
+    etat,
+    vainqueur,
+    persoVainqueur,
+    note,
+    historique,
+    joueurs,
+    topics,
+    serieBase,
+    examen,
+    enDirect,
+    rival,
+    carteDuJour,
+    scores,
+    deblocage,
+    quete,
+    grandeSalle,
+    nouveauAmis,
+    relances,
+    amis,
+    carnet,
+  ] = await Promise.all([
+    lireProfil(sb, id).catch(() => null),
+    lireXp(sb).catch(() => [] as XpDay[]),
+    getTodayDaily(sb, id).catch(() => null),
+    getTodayDaily(sb, id, "cinq").catch(() => null),
+    classementAuj,
+    getDailyBoard(sb, shiftDay(jour, -1), 5).catch(() => null),
+    activite,
+    activite.then((a) => etatObjectif(user, a?.today ?? 0)).catch(() => null),
+    vainqueurLu,
+    vainqueurLu.then((v) => (v ? plafonner(lirePersoVainqueur(ctx, v.userId), FILET_MS) : null)).catch(() => null),
+    lireNote(sb, id).catch(() => null),
+    getRatingHistory(sb, id, 1).catch(() => []),
+    countPlayers(sb).catch(() => null),
+    getTopicMastery(sb, id).catch(() => null),
+    lireSerieEncre(sb).catch(() => null),
+    dateExamen(id).catch(() => null),
+    // les cartes des lots 2 à 5, chacune avec son filet
+    plafonner(classementAuj.then((b) => lireEnDirect(ctx, { classements: { trente: b } }))),
+    plafonner(lireRivalActivite(ctx)),
+    plafonner(lireCarteDuJour({ sb, user, jour })),
+    plafonner(lireScores(ctx), FILET_MS),
+    plafonner(lireDeblocage(ctx)),
+    plafonner(lireQuete(ctx)),
+    plafonner(lireGrandeSalle(ctx), FILET_MS),
+    plafonner(nouveautesAmis(sb, admin, id), FILET_MS),
+    plafonner(lireRelancesRecues(ctx), FILET_MS),
+    plafonner(lireAmis(ctx), FILET_MS),
+    plafonner(lireCarnet(ctx), FILET_MS),
+  ]);
+
+  // la journée : les réponses du jour, avec une copie ouverte ou rendue recalée (withLiveDaily)
+  const activity = act ? withLiveDaily(withLiveDaily(act, daily), cinq) : null;
+  const repondues = activity?.today ?? 0;
+  const heure = parisHour(now);
+  // UNE seule série : celle d'encre (10 questions, joker) quand la migration est collée, l'ancien calcul sinon
+  const ancien = calcStreakAndToday(xp, { today: jour, actifs: activity?.activeDays });
+  const { streak, dayState, serie, reste } = joursEncreUnifies(serieBase, repondues, heure, ancien);
+  const venu = dejaVenu([...xp.filter((x) => x.xp > 0).map((x) => x.day), ...(activity?.activeDays ?? []), copieOuverte(daily), copieOuverte(cinq)]);
+
+  const dernier = historique.length ? historique[historique.length - 1].delta : null;
+  return construireLobby({
+    now,
+    jour,
+    heure,
+    dateLabel: longDay(now),
+    pseudo: profil?.username?.trim() || null,
+    dejaVenu: venu,
+    examen,
+    daily,
+    cinq,
+    boardAuj,
+    boardHier,
+    repondues,
+    objectif: etat ? objectifDe(etat) : OBJECTIF_DU_JOUR,
+    serie,
+    streak,
+    dayState,
+    reste,
+    vainqueur,
+    persoVainqueur,
+    rating: { elo: note?.elo ?? DEFAULT_ELO, gamesPlayed: note?.gamesPlayed ?? 0 },
+    place: note?.place ?? null,
+    joueurs,
+    dernierDelta: dernier,
+    mastery: topics ? programMastery(topics) : 0,
+    sobre: lireSobre(user),
+    suite: {
+      enDirect,
+      rival,
+      carteDuJour,
+      scores,
+      deblocage,
+      quete,
+      grandeSalle,
+      // les relances reçues d'abord, puis les nouvelles des amis
+      nouveau: fusionnerNouveau(nouveauAmis, relances ? relances.map(nouveauteRelance) : null),
+      amis,
+      carnet,
+    },
+  });
+}

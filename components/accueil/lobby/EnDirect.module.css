@@ -1,0 +1,163 @@
+/* « En ce moment dans le lobby » et le personnage du vainqueur de l'accueil
+   (maquette D2). Tout est en aplats : cette carte n'a ni bouton ni encre. Le
+   cadre blanc, les équerres du HUD (.hud), le point vert (.live) et les visages
+   (.av) viennent du socle partagé (Lobby.module.css) ; ici, seulement ce qui est
+   propre à la carte : les chiffres, le fil, le personnage. La mise en page suit
+   la largeur de la carte elle-même (requête de conteneur), pas celle de l'écran,
+   pour que le lot d'assemblage la pose où il veut sans rien régler ici. */
+
+.carte {
+  container-type: inline-size;
+  color: var(--ink);
+}
+.corps {
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+  align-content: start;
+  gap: 12px 22px;
+  padding: 16px 20px 18px;
+}
+.corps[data-colonnes="1"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.corps :where(h2, ul, li) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mono {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+/* le titre : un petit surtitre, précédé du point vert « en ligne » (discret) */
+.titre {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* les chiffres : un grand nombre, son libellé */
+.chiffres {
+  display: grid;
+  align-content: start;
+}
+.chiffres li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 4px 0;
+  border-top: 1px solid var(--line-2);
+}
+.chiffres li:first-child {
+  border-top: 0;
+}
+.chiffres b {
+  flex: none;
+  min-width: 46px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+}
+.chiffres span {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+/* sans fil à côté : les chiffres s'alignent en rangée */
+.corps[data-colonnes="1"] .chiffres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 32px;
+}
+.corps[data-colonnes="1"] .chiffres li {
+  border-top: 0;
+}
+
+/* le fil : des pastilles, une par fait récent */
+.fil {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+.fait {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px 0 6px;
+  border-radius: 99px;
+  background: var(--paper);
+  border: 1px solid var(--line-2);
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+.texte {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.texte b {
+  font-weight: 700;
+}
+.quand {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 11px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* carte étroite (téléphone, colonne serrée) : une seule colonne, les faits passent à la ligne */
+@container (max-width: 560px) {
+  .corps {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+  .fait {
+    height: auto;
+    min-height: 38px;
+    padding-block: 6px;
+    border-radius: 19px;
+  }
+  .texte {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+}
+
+/* le personnage du vainqueur : il sort du haut de la bande, posé en bas à droite.
+   L'enveloppe (« vqw » de LobbyView) est relative ; l'image est un enfant direct. */
+.perso {
+  position: absolute;
+  right: 34px;
+  bottom: 1px;
+  z-index: 2;
+  display: block;
+  width: auto;
+  height: calc(100% + 40px);
+  max-width: 216px;
+  object-fit: contain;
+  object-position: 50% 100%;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+  transform: translateY(var(--decalage, 0%)) scale(var(--echelle, 1));
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.4));
+}
+/* téléphone : pas de place pour lui à côté du texte (on suit la largeur de la page, comme le reste du lobby) */
+@container (max-width: 760px) {
+  .perso {
+    display: none;
+  }
+}

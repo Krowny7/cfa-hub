@@ -1,6 +1,5 @@
 import { SERIE } from "@/lib/voice-serie";
 import { libelleMult, type SerieEncre } from "@/lib/serie-encre";
-import type { AccueilData } from "@/components/accueil/types";
 
 // La série d'encre sur l'Accueil. C'est la seule série du site : ses jours sont
 // les « jours d'encre » de la ligne de contexte (« J-35 · 9 jours d'encre · ×2 »,
@@ -11,6 +10,9 @@ import type { AccueilData } from "@/components/accueil/types";
 // Sans état. Les règles : lib/serie-encre.ts.
 
 const HEURE_RAPPEL = 18;
+
+/** Ce que la ligne lit de la journée : la série d'encre, le retour d'absence, l'heure de Paris et l'instant du rendu (ISO). */
+export type DonneesSerie = { serieEncre?: SerieEncre | null; returning: boolean; hour: number; nowIso: string };
 
 /** « · ×2 » à la suite des jours d'encre, quand la série a un palier d'XP ; rien avant 3 jours ni sans la migration. */
 export function PalierSerie({ s }: { s?: SerieEncre | null }) {
@@ -25,7 +27,7 @@ export function PalierSerie({ s }: { s?: SerieEncre | null }) {
   );
 }
 
-export function SerieEncreLigne({ d }: { d: AccueilData }) {
+export function SerieEncreLigne({ d }: { d: DonneesSerie }) {
   const s = d.serieEncre;
   if (!s || d.returning) return null;
   // jour pas encore assuré, une série à garder, le soir

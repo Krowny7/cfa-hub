@@ -227,9 +227,9 @@ qu'un nouveau collage de `migration_notions.sql` ne touche pas) ; le re-test
 d'un calcul n'entre pas dans `calc_attempts`. Tant que la table manque, ou par thème, aucun point
 d'entrée ne s'affiche et `/atelier` dit « bientôt ».
 
-Autour : la tuile « Ton point faible » de l'accueil
-(`components/accueil/point-faible.ts`, `points_faibles()` seule, jamais
-`getAnswerStats`) prend la place de celle des ratures quand le n° 1 est net ;
+Autour : l'accueil « Le lobby » (`components/accueil/lobby`) ne montre plus de tuile « Ton point faible »
+(retirée avec l'ancien accueil) : les points faibles y sont une source de la carte du jour
+(`lecture-carte.ts`, `points_faibles()` seule, jamais `getAnswerStats`) ;
 le carnet de Moi › Erreurs se range aussi par notion
 (`migration_carnet_notions.sql`, `ratures_par_notion`, repli par source) ;
 Moi › Stats montre l'historique des Ateliers clos (« Tes Ateliers », lecture

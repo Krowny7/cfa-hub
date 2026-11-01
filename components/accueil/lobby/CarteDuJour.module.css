@@ -1,0 +1,669 @@
+/* « La carte du jour » de l'accueil « Le lobby » (maquette D2 : la tuile EST la
+   carte). Une flashcard posée sur la table, avec un petit paquet derrière :
+   un clic la retourne (recto : la question en anglais ; verso : la réponse en
+   français), un bouton copie un prompt pour l'IA, un engrenage ouvre le choix
+   des cartes (matières, source) dans un panneau qui se superpose à la carte.
+   Règles de DA :
+   - la carte est un OBJET : papier blanc au recto, ivoire au verso, encre brune
+     fixe, jour comme nuit (comme une peinture, elle ne suit pas le thème) ;
+   - le vrai liquide (BoutonAction de ./Encre) ne sert qu'à « Enregistrer », le
+     seul bouton d'action de la carte ; tout le reste est en aplats (puces
+     cochées en noir, radios, boutons à contour) ;
+   - rien ne glisse : seul le retournement bouge, et il s'arrête en mouvement
+     réduit ;
+   - sur téléphone (requêtes de conteneur, comme le reste de la page) toutes les
+     cibles tactiles font 44 px. */
+
+.jc {
+  --cj-encre: #1a120b;
+  --cj-gris: #5f5f66;
+  --cj-bord: #e2e2dc;
+  --cj-terre: #a94d31;
+  --cj-ocre: #d8a186;
+  --cj-ivoire: #f3ebdb;
+  --cj-rouge: #b4412f;
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: 476px;
+  border-radius: 20px;
+}
+/* le petit paquet derrière la carte : deux feuilles légèrement de travers */
+.jc::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 10px;
+  right: -5px;
+  bottom: -7px;
+  z-index: -1;
+  border-radius: 20px;
+  background: #efe6d6;
+  border: 1px solid #e0d5c2;
+  transform: rotate(1.8deg);
+}
+.jc::after {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 14px;
+  right: 12px;
+  bottom: -10px;
+  z-index: -2;
+  border-radius: 20px;
+  background: #e8dfcf;
+  border: 1px solid #d9ccb6;
+  transform: rotate(-1.6deg);
+}
+
+/* ——— la carte : un bouton qui la retourne ——— */
+.fcj {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--cj-encre);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  perspective: 1400px;
+}
+.fcj:focus-visible {
+  outline: 2px solid var(--cj-terre);
+  outline-offset: 3px;
+}
+.fcjIn {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.vu .fcjIn {
+  transform: rotateY(180deg);
+}
+.jf {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 104px 44px 92px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid var(--cj-bord);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.03),
+    0 28px 46px -22px rgba(0, 0, 0, 0.5);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+/* le filet intérieur, comme une carte de jeu */
+.jf::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  right: 10px;
+  bottom: 10px;
+  border-radius: 13px;
+  border: 1.5px solid #eadfce;
+  pointer-events: none;
+}
+.verso {
+  transform: rotateY(180deg);
+  background: var(--cj-ivoire);
+  border-color: #e6d6bd;
+}
+.verso::before {
+  border-color: var(--cj-ocre);
+}
+/* le code de la matière aux coins, un losange dessous (le coin bas est la carte à l'envers) */
+.idx {
+  position: absolute;
+  left: 24px;
+  top: 22px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  color: var(--cj-terre);
+}
+.idx b {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.losange {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+.idxFin {
+  left: auto;
+  top: auto;
+  right: 24px;
+  bottom: 22px;
+  transform: rotate(180deg);
+}
+
+.jcorps {
+  display: grid;
+  gap: 16px;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.jlab {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cj-terre);
+}
+.jq {
+  display: block;
+  font-size: 26px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--cj-encre);
+  overflow-wrap: anywhere;
+}
+.indice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cj-gris);
+}
+
+/* ——— le texte rendu au serveur (TexteCarte.tsx) ——— */
+.ligne {
+  display: block;
+}
+.blanc {
+  display: block;
+  height: 8px;
+}
+.image {
+  display: block;
+  max-width: 100%;
+  max-height: 130px;
+  margin: 8px auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+.formuleBloc {
+  display: block;
+  margin: 0.4em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.versoTexte {
+  display: block;
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+.cases {
+  display: grid;
+  gap: 14px;
+}
+.retenir {
+  display: grid;
+  gap: 6px;
+}
+.retenirTexte {
+  display: block;
+  font-size: 23px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.retenirFormule {
+  display: block;
+  font-size: 19px;
+  max-width: 100%;
+}
+.suite {
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--cj-gris);
+}
+.liste {
+  display: grid;
+  gap: 5px;
+}
+.item {
+  position: relative;
+  display: block;
+  padding-left: 16px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  background: var(--cj-terre);
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+.clair {
+  display: block;
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: #3a3a3f;
+}
+.piege {
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--cj-rouge);
+}
+.etiq {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cj-terre);
+}
+.piege .etiq {
+  color: var(--cj-rouge);
+}
+
+/* ——— le HUD : titre, engrenage, copier (posés SUR la carte, qui reste cliquable partout ailleurs) ——— */
+.jhud {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.jt {
+  position: absolute;
+  left: 62px;
+  right: 62px;
+  top: 22px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.jt h2 {
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--cj-encre);
+}
+.jt p {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--cj-gris);
+}
+.engr,
+.ferme {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1.5px solid #d9d9d2;
+  background: #ffffff;
+  color: var(--cj-encre);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.engr {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+}
+.engr:hover,
+.ferme:hover {
+  border-color: var(--cj-encre);
+}
+.engr:focus-visible,
+.ferme:focus-visible,
+.ia:focus-visible,
+.chip:focus-visible {
+  outline: 2px solid var(--cj-terre);
+  outline-offset: 2px;
+}
+/* le focus d une radio se voit sur sa puce (a part : un navigateur sans :has ne doit pas perdre les règles du dessus) */
+.src:has(input:focus-visible) {
+  outline: 2px solid var(--cj-terre);
+  outline-offset: 2px;
+}
+
+/* « Copier pour l'IA » : un bouton à contour, l'aperçu du prompt en infobulle */
+.iaw {
+  position: absolute;
+  left: 22px;
+  bottom: 22px;
+  pointer-events: auto;
+}
+.ia {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 13px;
+  border-radius: 10px;
+  border: 1.5px solid var(--cj-encre);
+  background: #ffffff;
+  color: var(--cj-encre);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ia:hover {
+  background: #f7f6f1;
+}
+.iaw[data-etat="ok"] .ia {
+  background: var(--cj-encre);
+  color: #ffffff;
+}
+.apercu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  z-index: 4;
+  display: grid;
+  gap: 6px;
+  width: min(330px, 78vw);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--cj-encre);
+  color: var(--cj-ivoire);
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: 0 14px 28px -12px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
+  pointer-events: none;
+}
+.apercu::after {
+  content: "";
+  position: absolute;
+  left: 26px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: var(--cj-encre);
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+.apercu b {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cj-ocre);
+}
+.ia:hover + .apercu,
+.ia:focus-visible + .apercu,
+.iaw[data-etat="ok"] .apercu,
+.iaw[data-etat="echec"] .apercu {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+/* copie impossible : on peut sélectionner le texte à la main */
+.iaw[data-etat="echec"] .apercu {
+  pointer-events: auto;
+  user-select: text;
+}
+
+/* ——— le panneau des réglages, superposé à la carte ——— */
+.regl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: #ffffff;
+  color: var(--cj-encre);
+  border: 1.5px solid var(--cj-encre);
+  box-shadow: 0 18px 34px -16px rgba(0, 0, 0, 0.45);
+  overflow: auto;
+}
+.regl:focus {
+  outline: none;
+}
+.rh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 2px;
+}
+.rh h3 {
+  font-size: 16px;
+  line-height: 1.15;
+}
+.eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cj-gris);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 99px;
+  border: 1.5px solid #d9d9d2;
+  background: #ffffff;
+  color: #3a3a3f;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--cj-encre);
+}
+.chipOn {
+  background: var(--cj-encre);
+  border-color: var(--cj-encre);
+  color: #ffffff;
+}
+.srcs {
+  display: grid;
+  gap: 5px;
+  margin-top: 3px;
+}
+.src {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--cj-bord);
+  background: #ffffff;
+  color: var(--cj-encre);
+  font-weight: 600;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.src:hover {
+  border-color: #8a8a90;
+}
+.srcOn {
+  border-color: var(--cj-encre);
+}
+/* le vrai bouton radio reste là (clavier, lecteurs d'écran), seulement invisible */
+.radioNatif {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.rad {
+  display: block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px #b9b9b2;
+}
+.srcOn .rad {
+  box-shadow: inset 0 0 0 5px var(--cj-encre);
+}
+.rpied {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 2px;
+}
+.note {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--cj-gris);
+}
+.alerte {
+  color: var(--cj-rouge);
+  font-weight: 700;
+}
+/* « Enregistrer » : le petit bouton d'encre de la carte (le sélecteur plus long gagne sur .bouton du socle) */
+.regl .enregistrer {
+  flex: none;
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ——— téléphone : la carte suit la largeur du bloc, les cibles font 44 px ——— */
+@container (max-width: 760px) {
+  .jc {
+    min-height: 440px;
+  }
+  .jf {
+    padding: 96px 28px 86px;
+  }
+  .jq {
+    font-size: 23px;
+  }
+  .retenirTexte {
+    font-size: 21px;
+  }
+  .jt {
+    left: 64px;
+    right: 64px;
+  }
+  .engr,
+  .ferme {
+    width: 44px;
+    height: 44px;
+  }
+  .engr {
+    right: 10px;
+    top: 10px;
+  }
+  .ia,
+  .chip {
+    min-height: 44px;
+    height: auto;
+  }
+  .src {
+    min-height: 44px;
+  }
+  .regl {
+    padding: 14px;
+  }
+  .idx {
+    left: 20px;
+    top: 18px;
+  }
+  .idxFin {
+    left: auto;
+    top: auto;
+    right: 20px;
+    bottom: 18px;
+  }
+  .iaw {
+    left: 18px;
+    bottom: 14px;
+  }
+}
+@container (max-width: 390px) {
+  .jf {
+    padding: 96px 22px 84px;
+  }
+  .jq {
+    font-size: 21px;
+  }
+}
+
+/* mouvement réduit : la carte se retourne d'un coup, l'infobulle apparaît sans glisser */
+@media (prefers-reduced-motion: reduce) {
+  .fcjIn,
+  .apercu {
+    transition: none;
+  }
+}

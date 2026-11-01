@@ -127,9 +127,13 @@ console.log("\n# une séance gardée avant la mise en ligne se relit en clair");
 
 console.log("\n# l'accueil, la barre, Moi");
 {
-  const fichiers = ["app/dashboard/page.tsx", "components/DashboardView.tsx", ...readdirSync("components/accueil").filter((f) => /\.tsx?$/.test(f)).map((f) => join("components/accueil", f))];
-  const avecCodex = fichiers.filter((f) => /from "@\/(lib|components)\/codex\//.test(readFileSync(f, "utf8")));
-  check("l'accueil n'importe rien du Codex", avecCodex.length === 0, J(avecCodex));
+  // « Le lobby » (components/accueil/lobby) montre la prochaine quête du Codex (carte « Ta prochaine quête ») :
+  // il la lit par lib/codex (serveur, vue), le mode sobre (sobre) et les seuils de phase (catalogue), jamais par un composant du Codex
+  const fichiers = ["app/dashboard/page.tsx", ...["components/accueil", "components/accueil/lobby"].flatMap((d) => readdirSync(d).filter((f) => /\.tsx?$/.test(f)).map((f) => join(d, f)))];
+  const avecComposants = fichiers.filter((f) => /from "@\/components\/codex\//.test(readFileSync(f, "utf8")));
+  check("l'accueil n'importe aucun composant du Codex", avecComposants.length === 0, J(avecComposants));
+  const libCodex = new Set(fichiers.flatMap((f) => [...readFileSync(f, "utf8").matchAll(/from "@\/lib\/codex\/([a-z-]+)"/g)].map((m) => m[1])));
+  check("l'accueil ne lit le Codex que par sa quête recommandée, le mode sobre et les seuils de phase", [...libCodex].every((x) => ["serveur", "vue", "sobre", "catalogue"].includes(x)), J([...libCodex]));
   check("les composants du Codex de l'accueil sont retirés", !existsSync("components/codex/SeanceAccueil.tsx") && !existsSync("components/codex/CodexAccueil.tsx"));
   const nav = readFileSync("lib/nav.ts", "utf8");
   check("le Codex n'est plus un espace de la barre", !/key:\s*"codex"/.test(nav), "lib/nav.ts");
