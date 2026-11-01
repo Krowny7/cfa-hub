@@ -11,6 +11,7 @@ import {
   LOGO_TAIL,
   LOGO_TRACK,
 } from "@/components/ink/paths";
+import { OUVERTURE } from "@/lib/voice";
 
 /*
  * Intro « L'encre » — joue une fois par session de navigation, par-dessus la
@@ -30,6 +31,11 @@ import {
  * vidéo ne démarre pas à temps (réseau lent, lecture automatique refusée), et
  * sert aussi d'image fixe quand l'utilisateur préfère réduire les animations.
  *
+ * Sous « RANKED LOBBY », deux phrases en anglais (lib/voice.ts, OUVERTURE)
+ * apparaissent en fondu l'une après l'autre ; l'envol de l'anneau attend
+ * ensuite HOLD_MS pour laisser le temps de lire (le film reste figé sur sa
+ * dernière image). Avec le mouvement réduit, elles sont déjà là, sans fondu.
+ *
  * Un clic, une touche ou « Passer » saute à l'envol de l'anneau.
  * `?splash=1` la rejoue, `?splash=svg` force la version dessinée,
  * `?splash=off` la coupe.
@@ -46,18 +52,40 @@ const T = {
   brushDur: 1.5,
   ranked: 2.45,
   lobby: 2.7,
-  handoff: 3.7,
+  handoff: 3.8, // durée du film : la version dessinée s'aligne dessus
+  // Les deux phrases : la 1re juste après « LOBBY » (T.lobby + 0,3), la 2de 0,7 s plus tard
+  mot1: 3.0,
+  mot2: 3.7,
 };
 const FLIGHT_MS = 760;
 const FADE_MS = 520;
+// Temps de lecture ajouté avant l'envol de l'anneau (fin du film, ou T.handoff en version dessinée) :
+// la 2de phrase est entièrement posée 0,5 s après la fin, il lui reste ainsi ≈ 1,4 s de lecture
+const HOLD_MS = 1900;
+// Mouvement réduit : tout est déjà posé, l'anneau part après ce temps de lecture
+const REDUCE_MS = 2800;
+// Mise en page des phrases : interligne, écart entre les deux, en em
+const MOT_LH = 1.3;
+const MOT_GAP = 0.3;
+const MOT_EM = 2 * MOT_LH + MOT_GAP;
 
 // Films : boîte du masque de l'anneau en pixels vidéo (x, y, côté — le logo
-// 240 × 240 plus 24 unités de marge de chaque côté) et zone utile à garder
-// entièrement visible (centre x, centre y, largeur, hauteur).
-type Film = { src: string; mask: string; ow: number; oh: number; box: [number, number, number]; content: [number, number, number, number] };
+// 240 × 240 plus 24 unités de marge de chaque côté), zone utile à garder
+// entièrement visible (centre x, centre y, largeur, hauteur) et emplacement
+// des phrases, sous « LOBBY » (centre x, haut, largeur de la boîte). La zone
+// utile englobe les phrases : elle descend jusqu'à leur dernière ligne.
+type Film = {
+  src: string;
+  mask: string;
+  ow: number;
+  oh: number;
+  box: [number, number, number];
+  content: [number, number, number, number];
+  mot: [number, number, number];
+};
 const FILMS: Record<"land" | "port", Film> = {
-  land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [960, 540, 1300, 500] },
-  port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 482.4, 626.1], content: [540, 958, 760, 820] },
+  land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [960, 540, 1300, 560], mot: [1154.5, 696, 900] },
+  port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 482.4, 626.1], content: [540, 1044, 760, 992], mot: [540, 1362, 1000] },
 };
 const MASK_MARGIN = 24;
 const START_TIMEOUT_MS = 1700;
@@ -108,6 +136,26 @@ function placeFilm(f: Film) {
   if (dw >= W) left = Math.min(0, Math.max(W - dw, left));
   if (dh >= H) top = Math.min(0, Math.max(H - dh, top));
   return { s, left, top, dw, dh, covers: dw >= W - 0.5 && dh >= H - 0.5 };
+}
+
+// Les phrases suivent le film : boîte centrée sous « LOBBY », taille de
+// lecture (≈ 22 à 28 px en paysage, 18 à 24 px en portrait selon la largeur),
+// réduite si besoin pour que les deux lignes restent dans la zone utile.
+function placeMot(el: HTMLElement, f: Film, g: ReturnType<typeof placeFilm>) {
+  const W = window.innerWidth;
+  const t = (x: number, a: number, b: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));
+  const base = f.ow > f.oh ? 22 + 6 * t(W, 1024, 1920) : 18 + 6 * t(W, 340, 768);
+  const [cx, top, w] = f.mot;
+  const [, zy, , zh] = f.content;
+  const room = (zy + zh / 2 - top) * g.s;
+  const size = Math.max(13, Math.min(base, room / MOT_EM));
+  const width = Math.min(w * g.s, W - 32);
+  Object.assign(el.style, {
+    left: `${g.left + cx * g.s - width / 2}px`,
+    top: `${g.top + top * g.s}px`,
+    width: `${width}px`,
+    fontSize: `${size.toFixed(1)}px`,
+  });
 }
 
 function dropCover() {
@@ -213,8 +261,13 @@ const CSS = `
 .rli-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 45%,transparent 55%,color-mix(in oklab,var(--ink) 7%,transparent))}
 .rli-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:clamp(18px,3.5vw,56px);padding:24px;color:var(--ink)}
 .rli-ring{width:min(27vw,330px);height:auto;overflow:visible;flex:none}
-.rli-words{width:min(46vw,560px);height:auto;overflow:visible}
-@media (max-aspect-ratio:4/5){.rli-stage{flex-direction:column;gap:22px}.rli-ring{width:min(50vw,250px)}.rli-words{width:min(86vw,470px)}}
+.rli-wordcol{position:relative;width:min(46vw,560px);display:flex;flex-direction:column;align-items:center}
+.rli-words{width:100%;height:auto;overflow:visible}
+.rli-mot{font:500 clamp(18px,1.9vw,26px)/${MOT_LH} var(--font-sans);letter-spacing:-.005em;text-align:center;text-wrap:balance;color:var(--ink);pointer-events:none}
+.rli-wordcol .rli-mot{position:absolute;top:100%;left:50%;width:100%;margin-top:clamp(14px,2.6vh,28px);transform:translateX(-50%)}
+.rli-mot span{display:block}
+.rli-mot span+span{margin-top:${MOT_GAP}em}
+@media (max-aspect-ratio:4/5){.rli-stage{flex-direction:column;gap:22px}.rli-ring{width:min(50vw,250px)}.rli-wordcol{width:min(86vw,470px)}.rli-wordcol .rli-mot{width:max(100%,min(calc(100vw - 32px),560px))}.rli-mot{font-size:clamp(17px,4.8vw,22px)}}
 .rli-skip{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;height:34px;padding:0 14px;border:2px solid var(--ink);border-radius:3px;background:var(--paper);color:var(--ink);font:700 13px var(--font-sans);cursor:pointer}
 .rli-out .rli-skip{opacity:0;transition:opacity .2s}
 .rli-pen{stroke-dasharray:100 130;animation:rliDraw .7s var(--d,0s) cubic-bezier(.4,0,.2,1) backwards,rliGone .5s 2.2s ease forwards}
@@ -226,8 +279,12 @@ const CSS = `
 .rli-drop{animation:rliFly .55s var(--d) cubic-bezier(.2,.8,.3,1) both}
 .rli-breathe{transform-box:fill-box;transform-origin:center;animation:rliBreathe .6s ${(T.brush + T.brushDur - 0.05).toFixed(2)}s ease-in-out both}
 .rli-paint{stroke-dasharray:100 130;animation:rliDraw .52s var(--d) cubic-bezier(.6,0,.3,1) backwards}
+.rli-m1{animation:rliMot .6s ${T.mot1}s ease both}
+.rli-m2{animation:rliMot .6s ${T.mot2}s ease both}
 .rli-out .rli-fadeaway{opacity:0;transition:opacity .28s ease}
+.rli-out .rli-mot{opacity:0;transition:opacity .25s ease}
 .rli-out .rli-bg{opacity:0;transition:opacity ${FADE_MS}ms ease .18s}
+@keyframes rliMot{from{opacity:0;transform:translateY(4px)}}
 @keyframes rliDraw{from{stroke-dashoffset:100}}
 @keyframes rliGone{to{opacity:0}}
 @keyframes rliFall{0%{opacity:0;transform:translateY(-190px) scale(.7,1.5)}12%{opacity:1}96%{opacity:1;transform:translateY(-6px) scale(.9,1.35)}100%{opacity:0;transform:translateY(0) scale(1.2,.6)}}
@@ -238,6 +295,9 @@ const CSS = `
 @media (prefers-reduced-motion:reduce){.rli *{animation:none!important}}
 .rli-v .rli-bg{background-image:none}
 .rli-v .rli-bg::after{display:none}
+.rli-v .rli-mot{position:absolute}
+.rli-v .rli-mot span{opacity:0;transform:translateY(4px);transition:opacity .6s ease,transform .6s ease}
+.rli-v .rli-mot span.is-on{opacity:1;transform:none}
 .rli-film{position:absolute;inset:0;overflow:hidden}
 .rli-film video{position:absolute;max-width:none;opacity:0;transition:opacity .25s ease}
 .rli-film video.is-on{opacity:1}
@@ -277,6 +337,7 @@ export function Splash() {
   const ringRef = useRef<SVGSVGElement | null>(null);
   const filmBoxRef = useRef<HTMLDivElement | null>(null);
   const filmRingRef = useRef<HTMLDivElement | null>(null);
+  const filmMotRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const modeRef = useRef<"film" | "svg">("film");
   const timers = useRef<number[]>([]);
@@ -384,11 +445,11 @@ export function Splash() {
     };
   }, [phase, leave]);
 
-  // Version dessinée : l'envol part à heure fixe
+  // Version dessinée : l'envol part à heure fixe, après le temps de lecture des phrases
   useEffect(() => {
     if (phase !== "on" || mode !== "svg") return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const t = window.setTimeout(leave, reduce ? 1300 : T.handoff * 1000);
+    const t = window.setTimeout(leave, reduce ? REDUCE_MS : T.handoff * 1000 + HOLD_MS);
     return () => window.clearTimeout(t);
   }, [phase, mode, leave]);
 
@@ -398,7 +459,8 @@ export function Splash() {
     if (phase !== "on" || mode !== "film") return;
     const box = filmBoxRef.current;
     const ringEl = filmRingRef.current;
-    if (!box || !ringEl) return;
+    const motEl = filmMotRef.current;
+    if (!box || !ringEl || !motEl) return;
     const video = window.__rlIntro ?? makeIntroVideo();
     window.__rlIntro = undefined;
     videoRef.current = video;
@@ -412,13 +474,32 @@ export function Splash() {
       video.classList.toggle("rli-feather", !g.covers);
       const [bx, by, bs] = film.box;
       Object.assign(ringEl.style, { left: `${g.left + bx * g.s}px`, top: `${g.top + by * g.s}px`, width: `${bs * g.s}px`, height: `${bs * g.s}px` });
+      placeMot(motEl, film, g);
     };
     place();
     window.addEventListener("resize", place);
 
+    // Les phrases suivent l'horloge du film (et non celle de la page) : elles
+    // arrivent aux mêmes images même si la lecture démarre tard ou saccade.
+    const lignes = Array.from(motEl.children) as HTMLElement[];
+    const dates = [T.mot1, T.mot2];
+    let raf = 0;
+    const showMot = (all?: boolean) => {
+      const t = all ? Infinity : video.currentTime;
+      lignes.forEach((el, i) => {
+        if (t >= dates[i]) el.classList.add("is-on");
+      });
+    };
+    const watchMot = () => {
+      showMot();
+      if (!lignes.every((el) => el.classList.contains("is-on"))) raf = window.requestAnimationFrame(watchMot);
+    };
+    watchMot();
+
     let started = false;
     let stall = 0;
     let startTimer = 0;
+    let hold = 0;
     const fallback = () => {
       if (started) {
         leave();
@@ -457,13 +538,21 @@ export function Splash() {
       window.clearTimeout(stall);
       stall = window.setTimeout(leave, STALL_MS);
     };
+    // Fin du film : il reste figé sur sa dernière image le temps de lire les
+    // phrases, puis l'anneau s'envole.
+    const onEnded = () => {
+      window.clearTimeout(stall);
+      showMot(true);
+      window.clearTimeout(hold);
+      hold = window.setTimeout(leave, HOLD_MS);
+    };
     const events: [string, () => void][] = [
       ["canplaythrough", onProgress],
       ["progress", onProgress],
       ["loadeddata", onProgress],
       ["playing", onPlaying],
       ["waiting", onWaiting],
-      ["ended", leave],
+      ["ended", onEnded],
       ["error", fallback],
     ];
     events.forEach(([e, f]) => video.addEventListener(e, f));
@@ -476,9 +565,11 @@ export function Splash() {
     else if (ready()) start();
     return () => {
       window.removeEventListener("resize", place);
+      window.cancelAnimationFrame(raf);
       events.forEach(([e, f]) => video.removeEventListener(e, f));
       window.clearTimeout(startTimer);
       window.clearTimeout(stall);
+      window.clearTimeout(hold);
     };
   }, [phase, mode, leave]);
 
@@ -505,6 +596,11 @@ export function Splash() {
         <>
           <div ref={filmBoxRef} className="rli-film" />
           <div ref={filmRingRef} className="rli-ring-film" aria-hidden />
+          {/* Les deux phrases : incrustation HTML posée sous « LOBBY », révélée par l'horloge du film */}
+          <div ref={filmMotRef} className="rli-mot" aria-hidden>
+            <span>{OUVERTURE.constat}</span>
+            <span>{OUVERTURE.promesse}</span>
+          </div>
         </>
       ) : (
         <div className="rli-stage">
@@ -568,41 +664,47 @@ export function Splash() {
             <Drops list={TAIL} />
           </svg>
 
-          {/* Le nom, peint d'un large coup de pinceau */}
-          <svg className="rli-words rli-fadeaway" viewBox="0 26 560 210" aria-hidden>
-            <defs>
-              <mask id={maskRanked} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
-                <path
-                  className="rli-paint"
-                  style={{ ["--d" as string]: `${T.ranked}s` }}
-                  d="M -30 72 C 120 58 300 86 620 66"
-                  pathLength={100}
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth={140}
-                  strokeLinecap="round"
-                />
-              </mask>
-              <mask id={maskLobby} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
-                <path
-                  className="rli-paint"
-                  style={{ ["--d" as string]: `${T.lobby}s` }}
-                  d="M -30 184 C 140 198 320 170 620 186"
-                  pathLength={100}
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth={150}
-                  strokeLinecap="round"
-                />
-              </mask>
-            </defs>
-            <text x={0} y={112} mask={`url(#${maskRanked})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
-              RANKED
-            </text>
-            <text x={0} y={222} mask={`url(#${maskLobby})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
-              LOBBY
-            </text>
-          </svg>
+          {/* Le nom, peint d'un large coup de pinceau, et les deux phrases dessous */}
+          <div className="rli-wordcol">
+            <svg className="rli-words rli-fadeaway" viewBox="0 26 560 210" aria-hidden>
+              <defs>
+                <mask id={maskRanked} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
+                  <path
+                    className="rli-paint"
+                    style={{ ["--d" as string]: `${T.ranked}s` }}
+                    d="M -30 72 C 120 58 300 86 620 66"
+                    pathLength={100}
+                    fill="none"
+                    stroke="#fff"
+                    strokeWidth={140}
+                    strokeLinecap="round"
+                  />
+                </mask>
+                <mask id={maskLobby} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
+                  <path
+                    className="rli-paint"
+                    style={{ ["--d" as string]: `${T.lobby}s` }}
+                    d="M -30 184 C 140 198 320 170 620 186"
+                    pathLength={100}
+                    fill="none"
+                    stroke="#fff"
+                    strokeWidth={150}
+                    strokeLinecap="round"
+                  />
+                </mask>
+              </defs>
+              <text x={0} y={112} mask={`url(#${maskRanked})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
+                RANKED
+              </text>
+              <text x={0} y={222} mask={`url(#${maskLobby})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
+                LOBBY
+              </text>
+            </svg>
+            <div className="rli-mot" aria-hidden>
+              <span className="rli-m1">{OUVERTURE.constat}</span>
+              <span className="rli-m2">{OUVERTURE.promesse}</span>
+            </div>
+          </div>
         </div>
       )}
       <button
@@ -615,7 +717,9 @@ export function Splash() {
       >
         Passer ›
       </button>
-      <span className="sr-only">Ranked Lobby</span>
+      <span className="sr-only">
+        Ranked Lobby. <span lang="en">{OUVERTURE.constat} {OUVERTURE.promesse}</span>
+      </span>
     </div>
   );
 }

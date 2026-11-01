@@ -21,6 +21,15 @@
 export const DEVISE = "Le savoir se conquiert.";
 export const SIGNATURE = "À toi le trait.";
 
+/**
+ * L'intro d'ouverture (components/Splash.tsx) : deux phrases, en anglais, posées
+ * en deux temps sous « Ranked Lobby ». D'abord le constat, puis la promesse.
+ */
+export const OUVERTURE = {
+  constat: "Nobody starts great.",
+  promesse: "Nobody stays bad after 1,000 tries.",
+} as const;
+
 /** Un mot par chose. Les pages lisent ces termes au lieu de les réécrire. */
 export const LEXIQUE = {
   /** l'objectif du jour */
