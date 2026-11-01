@@ -139,7 +139,8 @@ function placeFilm(f: Film) {
   return { s, left, top, dw, dh, covers: dw >= W - 0.5 && dh >= H - 0.5 };
 }
 
-// Les phrases suivent le film : boîte centrée sous « LOBBY », taille de
+// Les phrases suivent le film : boîte calée sur la largeur de « RANKED LOBBY » (texte aligné à gauche,
+// sur le bord gauche du nom, demande de l'utilisateur), taille de
 // lecture (≈ 15 à 18 px en paysage, 13 à 15 px en portrait selon la largeur), sur une
 // seule ligne en italique (demande de l'utilisateur), réduite si besoin pour rester dans la zone utile.
 function placeMot(el: HTMLElement, f: Film, g: ReturnType<typeof placeFilm>) {
@@ -264,11 +265,11 @@ const CSS = `
 .rli-ring{width:min(27vw,330px);height:auto;overflow:visible;flex:none}
 .rli-wordcol{position:relative;width:min(46vw,560px);display:flex;flex-direction:column;align-items:center}
 .rli-words{width:100%;height:auto;overflow:visible}
-.rli-mot{font:italic 400 clamp(13px,1.15vw,17px)/${MOT_LH} var(--font-sans);letter-spacing:0;text-align:center;text-wrap:balance;color:var(--ink);pointer-events:none}
-.rli-wordcol .rli-mot{position:absolute;top:100%;left:50%;width:100%;margin-top:clamp(14px,2.6vh,28px);transform:translateX(-50%)}
+.rli-mot{font:italic 400 clamp(13px,1.15vw,17px)/${MOT_LH} var(--font-sans);letter-spacing:0;text-align:left;color:var(--ink);pointer-events:none}
+.rli-wordcol .rli-mot{position:absolute;top:100%;left:0;width:100%;margin-top:clamp(14px,2.6vh,28px)}
 .rli-mot span{display:inline-block}
 .rli-mot span+span{margin-left:.32em}
-@media (max-aspect-ratio:4/5){.rli-stage{flex-direction:column;gap:22px}.rli-ring{width:min(50vw,250px)}.rli-wordcol{width:min(86vw,470px)}.rli-wordcol .rli-mot{width:max(100%,min(calc(100vw - 32px),560px))}.rli-mot{font-size:clamp(13px,3.6vw,15px)}}
+@media (max-aspect-ratio:4/5){.rli-stage{flex-direction:column;gap:22px}.rli-ring{width:min(50vw,250px)}.rli-wordcol{width:min(86vw,470px)}.rli-mot{font-size:clamp(13px,3.6vw,15px)}}
 .rli-skip{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;height:34px;padding:0 14px;border:2px solid var(--ink);border-radius:3px;background:var(--paper);color:var(--ink);font:700 13px var(--font-sans);cursor:pointer}
 .rli-out .rli-skip{opacity:0;transition:opacity .2s}
 .rli-pen{stroke-dasharray:100 130;animation:rliDraw .7s var(--d,0s) cubic-bezier(.4,0,.2,1) backwards,rliGone .5s 2.2s ease forwards}
