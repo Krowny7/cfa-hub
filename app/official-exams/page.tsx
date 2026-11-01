@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { tryAdmin } from "@/components/classement/data";
 import { OfficialExamsView, type OfficialExamGroup, type OfficialTopic, type ProchainMock } from "@/components/session/OfficialExamsView";
 
 // Remplace l'ancienne page /exercises : au lieu de sets d'exercices de
@@ -25,12 +26,18 @@ export default async function OfficialExamsPage() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
 
-  const { data: folder } = await supabase
-    .from("library_folders")
-    .select("id")
-    .eq("name", FOLDER_NAME)
-    .eq("kind", "quizzes")
-    .maybeSingle();
+  // Le dossier appartient au compte qui l'a créé : sans la politique de lecture des dossiers
+  // « (Système) » (migration_dossiers_systeme.sql), les autres joueurs ne le voient pas et la page
+  // restait vide. Le client de service le retrouve (les séries, elles, sont lisibles par tous).
+  const lu = await supabase.from("library_folders").select("id").eq("name", FOLDER_NAME).eq("kind", "quizzes").maybeSingle();
+  let folder: { id: string } | null = (lu.data as { id: string } | null) ?? null;
+  if (!folder) {
+    const admin = tryAdmin();
+    if (admin) {
+      const parAdmin = await admin.from("library_folders").select("id").eq("name", FOLDER_NAME).eq("kind", "quizzes").maybeSingle();
+      folder = (parAdmin.data as { id: string } | null) ?? null;
+    }
+  }
 
   let sets: SetRow[] = [];
   const counts = new Map<string, number>();
