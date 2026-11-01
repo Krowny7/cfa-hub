@@ -4,6 +4,7 @@
 // réseau ni navigateur :
 //   npx tsx --tsconfig tsconfig.json scripts/accueil/test-lobby-direct.tsx
 import "../codex/sans-css";
+import { poserFauxCache } from "./faux-cache";
 import fs from "node:fs";
 import path from "node:path";
 import React from "react";
@@ -400,6 +401,30 @@ async function main() {
     check("tu es dans la liste lue : 3 en ligne (pas 4), un seul visage pour toi, en tête", dedans.enLigne === 3 && dedans.joueurs.length === 3 && dedans.joueurs[0].moi && dedans.joueurs.filter((j) => j.id === THEO).length === 1, `${dedans.enLigne}`);
   }
   {
+    // le cache de 60 s de la partie admin : il sert vraiment (pas contourné) et un échec n'y reste pas
+    const fc = poserFauxCache();
+    const sb = faux({ planches: PLANCHES });
+    const source = (admin: SupabaseClient | null) => ({ sb: sb.client, admin, jour: JOUR, now: NOW });
+    const echec = { message: "hors service" };
+    const casse = faux({ tables: { user_presence: () => ({ data: null, error: echec }), duels: () => ({ data: null, error: echec }) } });
+    const b1 = await lireBrutDirect(source(casse.client));
+    check("admin en échec (en ligne et duels illisibles) : la carte garde ses faits, les chiffres restent non lus", !!b1 && b1.enLigne === null && b1.duels === null && b1.copies.length > 0);
+    check("   et RIEN n'est gardé : un échec ne reste pas 60 s", fc.posees.length === 0 && fc.memoire.size === 0);
+    const bon = faux({ tables: TABLES });
+    const b2 = await lireBrutDirect(source(bon.client));
+    check("l'admin répond de nouveau : relu aussitôt (pas de chiffre figé), puis gardé 60 s pour ce jour", !!b2 && b2.enLigne === 47 && b2.duels === 6 && bon.journal.some((q) => q.table === "duels") && fc.posees.length === 1 && fc.posees[0].revalidate === 60 && fc.posees[0].cle.includes(JOUR), JSON.stringify(fc.posees.map((p) => p.revalidate)));
+    const encore = faux({ tables: TABLES });
+    const b3 = await lireBrutDirect(source(encore.client));
+    check("visite suivante : les chiffres viennent du cache (ni duels ni profils relus), mêmes valeurs", !!b3 && b3.enLigne === 47 && b3.duels === 6 && fc.relues.n === 1 && !encore.journal.some((q) => q.table === "duels" || q.table === "profiles"), encore.journal.map((q) => q.table).join());
+    check("   seule la petite lecture propre à l'instant (qui masque sa présence) se refait", encore.journal.length === 1 && encore.journal[0].table === "user_presence" && a_filtre(encore.journal[0], "eq", "visible", false));
+    const apresEchec = await lireBrutDirect(source(casse.client));
+    check("   un cache chaud n'est pas écrasé par un admin qui tombe ensuite : les chiffres gardés restent servis", !!apresEchec && apresEchec.enLigne === 47 && fc.posees.length === 1);
+    fc.retirer();
+    const sansCache = faux({ tables: TABLES });
+    const b4 = await lireBrutDirect(source(sansCache.client));
+    check("sans cache disponible (hors requête) : la lecture se fait quand même, sans lever", !!b4 && b4.enLigne === 47 && sansCache.journal.some((q) => q.table === "duels"));
+  }
+  {
     // rien ne répond : pas de carte, pas d'exception
     const sb = faux({ planches: {} });
     check("rien ne répond (RPC absentes, pas d'admin) → null", (await lireEnDirect(contexte(sb.client, null), { sansCache: true })) === null);
@@ -578,7 +603,8 @@ async function main() {
   check("CSS : pas de liquide (aplats seulement)", !css.includes("rl-encre") && !css.includes("EncreVive"));
   const lecture = fs.readFileSync(path.join(racine, "components/accueil/lobby/lecture-direct.ts"), "utf8");
   const iCache = lecture.indexOf("unstable_cache(() =>");
-  check("lecture : le client du joueur n'entre jamais dans un cache partagé (seule la partie admin est gardée)", iCache >= 0 && !lecture.slice(iCache, iCache + 70).includes("sb") && lecture.slice(iCache, iCache + 70).includes("lirePartieAdmin(admin, now)"));
+  check("lecture : le client du joueur n'entre jamais dans un cache partagé (seule la partie admin est gardée)", iCache >= 0 && !lecture.slice(iCache, iCache + 70).includes("sb") && lecture.slice(iCache, iCache + 70).includes("partieOuEchec(admin, now)"));
+  check("lecture : la fonction gardée lève sur un échec (chiffres illisibles), pour que le cache ne le retienne pas", lecture.includes("if (partie.enLigne === null || partie.duels === null) throw new PartieEnEchec(partie);") && lecture.includes("e instanceof PartieEnEchec ? e.partie"));
 
   console.log("");
   console.log(ko === 0 ? "TOUT EST VERT" : `${ko} VÉRIFICATION(S) EN ÉCHEC`);

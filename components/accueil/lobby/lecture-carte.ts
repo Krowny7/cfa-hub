@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { subjectOfTitle } from "@/components/ContentDetailHeader";
 import type { LigneNotion } from "@/components/moi/points-faibles-data";
@@ -18,6 +19,7 @@ import {
   partDuPaquet,
   promptIA,
   resumeReglages,
+  tagCarteDuJour,
   type CarteDuJourLobby,
   type ReglagesCarte,
 } from "./modele-carte";
@@ -38,6 +40,15 @@ import {
 // à tirer nulle part, ou une lecture qui échoue : null (la carte est absente).
 // Aucune migration : les paquets, les marques et points_faibles existent déjà,
 // et leur absence est un simple repli.
+//
+// Le tirage est le même toute la journée : lireCarteDuJourEnCache le garde côté
+// serveur, par joueur, jour de Paris et réglages, pour que les visites suivantes
+// soient instantanées. C'est unstable_cache de Next, pas une Map en mémoire :
+// la mémoire d'une fonction serverless n'est pas partagée entre instances (un
+// démarrage à froid repartirait de zéro, justement quand la lecture est lente),
+// le cache de données de Next l'est, et il se révoque par étiquette. Jamais un
+// échec ni une absence ne sont gardés (la fonction gardée lève plutôt) : une
+// lecture lente ou tombée ne fige pas « pas de carte » pour la journée.
 
 /** Ce que la lecture demande à la page : le client du joueur, son compte (id et métadonnées) et le jour de Paris. */
 export type CtxCarte = {
@@ -206,32 +217,84 @@ function habiller(t: Tiree, reglages: ReglagesCarte, repli: string | null): Cart
 }
 
 /**
- * La carte du jour du joueur, ou null (aucune flashcard à tirer, lecture en
- * échec). Les réglages viennent de son compte ; illisibles, ce sont les dix
- * matières et « toutes ».
+ * Tire la carte du jour du joueur : null quand il n'y a aucune flashcard à
+ * tirer, et LÈVE si une lecture échoue (de quoi ne rien garder en cache). Les
+ * réglages viennent de son compte ; illisibles, ce sont les dix matières et
+ * « toutes ».
  */
+async function tirerCarteDuJour(ctx: CtxCarte): Promise<CarteDuJourLobby | null> {
+  const reglages = lireReglages(ctx.user);
+  const graine = graineDuJour(ctx.user.id, ctx.jour, reglages);
+  let repli: string | null = null;
+  let tiree: Tiree | null = null;
+  if (reglages.src === "marquees") {
+    tiree = await carteMarquee(ctx.sb, reglages.mats, graine);
+    if (!tiree) repli = CARTE_JOUR.replis.marquees;
+  } else if (reglages.src === "faibles") {
+    tiree = await carteFaible(ctx.sb, reglages.mats, graine);
+    if (!tiree) repli = CARTE_JOUR.replis.faibles;
+  }
+  // la source choisie n'a rien donné (ou c'est « toutes ») : le paquet entier des matières cochées
+  if (!tiree) tiree = await carteDuPaquet(ctx.sb, reglages.mats, graine);
+  // aucune flashcard dans ces matières : le paquet entier du programme
+  if (!tiree && reglages.mats.length < TOUTES_LES_MATIERES.length) {
+    tiree = await carteDuPaquet(ctx.sb, TOUTES_LES_MATIERES, `${graine}|programme`);
+    if (tiree) repli = repli ?? CARTE_JOUR.replis.toutes;
+  }
+  return tiree ? habiller(tiree, reglages, repli) : null;
+}
+
+/** La carte du jour du joueur, ou null (aucune flashcard à tirer, lecture en échec), sans cache. */
 export async function lireCarteDuJour(ctx: CtxCarte): Promise<CarteDuJourLobby | null> {
   try {
-    const reglages = lireReglages(ctx.user);
-    const graine = graineDuJour(ctx.user.id, ctx.jour, reglages);
-    let repli: string | null = null;
-    let tiree: Tiree | null = null;
-    if (reglages.src === "marquees") {
-      tiree = await carteMarquee(ctx.sb, reglages.mats, graine);
-      if (!tiree) repli = CARTE_JOUR.replis.marquees;
-    } else if (reglages.src === "faibles") {
-      tiree = await carteFaible(ctx.sb, reglages.mats, graine);
-      if (!tiree) repli = CARTE_JOUR.replis.faibles;
-    }
-    // la source choisie n'a rien donné (ou c'est « toutes ») : le paquet entier des matières cochées
-    if (!tiree) tiree = await carteDuPaquet(ctx.sb, reglages.mats, graine);
-    // aucune flashcard dans ces matières : le paquet entier du programme
-    if (!tiree && reglages.mats.length < TOUTES_LES_MATIERES.length) {
-      tiree = await carteDuPaquet(ctx.sb, TOUTES_LES_MATIERES, `${graine}|programme`);
-      if (tiree) repli = repli ?? CARTE_JOUR.replis.toutes;
-    }
-    return tiree ? habiller(tiree, reglages, repli) : null;
+    return await tirerCarteDuJour(ctx);
   } catch {
     return null;
+  }
+}
+
+// ── la carte du jour, gardée pour la journée ────────────────────────────────
+
+/**
+ * Combien de temps une carte tirée reste gardée, en secondes. « toutes » ne
+ * dépend que du catalogue : la clé porte le jour de Paris, la carte vit donc
+ * jusqu'à minuit (24 h au plus, la clé du lendemain étant une autre). « Marquées »
+ * et « points faibles » dépendent de ce que le joueur fait (une carte marquée,
+ * des réponses) : quelques minutes, le temps de revenir sur la page sans tout relire.
+ */
+export const GARDE_CARTE_S = { toutes: 24 * 3600, vivantes: 10 * 60 } as const;
+
+/** Ce que la fonction gardée lève quand il n'y a rien de sûr à garder (échec, ou aucune carte) : jamais mis en cache. */
+class RienAGarder extends Error {}
+
+/**
+ * La carte du jour, gardée par joueur, jour de Paris et réglages (la graine du
+ * tirage les porte tous les trois : d'autres réglages sont une autre clé, donc
+ * jamais une carte périmée), et révoquée par l'étiquette du joueur à
+ * l'enregistrement de ses réglages (actions-carte.ts). Hors d'une requête (les
+ * tests), ou si le cache de Next est indisponible, on lit sans lui. Rend
+ * toujours null plutôt que de lever.
+ */
+export async function lireCarteDuJourEnCache(ctx: CtxCarte): Promise<CarteDuJourLobby | null> {
+  const reglages = lireReglages(ctx.user);
+  const graine = graineDuJour(ctx.user.id, ctx.jour, reglages);
+  try {
+    return await unstable_cache(
+      async () => {
+        let carte: CarteDuJourLobby | null = null;
+        try {
+          carte = await tirerCarteDuJour(ctx);
+        } catch {
+          throw new RienAGarder();
+        }
+        if (!carte) throw new RienAGarder();
+        return carte;
+      },
+      ["rl-carte-jour-1", graine],
+      { revalidate: reglages.src === "toutes" ? GARDE_CARTE_S.toutes : GARDE_CARTE_S.vivantes, tags: [tagCarteDuJour(ctx.user.id)] },
+    )();
+  } catch (e) {
+    if (e instanceof RienAGarder) return null;
+    return lireCarteDuJour(ctx);
   }
 }

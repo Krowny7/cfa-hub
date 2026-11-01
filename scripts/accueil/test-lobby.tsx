@@ -19,7 +19,8 @@ import "../codex/sans-css";
 import React from "react";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToReadableStream, renderToStaticMarkup } from "react-dom/server";
+import { prerender } from "react-dom/static";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { LobbyView } from "@/components/accueil/lobby/LobbyView";
 import { CarteTraitsGrande } from "@/components/accueil/lobby/CarteTraits";
@@ -39,8 +40,8 @@ import {
   titreDesTraits,
 } from "@/components/accueil/lobby/modele";
 import { fusionnerNouveau, nouveauteRelance, phraseNouveau, actionNouveau, quandDe } from "@/components/accueil/lobby/modele-parcours";
-import { FILET_MS, PLAFOND_MS, plafonner } from "@/components/accueil/lobby/plafond";
-import type { NouveauLobby } from "@/components/accueil/lobby/types";
+import { FILET_CARTES_MS, FILET_MS, plafonner } from "@/components/accueil/lobby/plafond";
+import type { CartesDifferees, Lobby, NouveauLobby } from "@/components/accueil/lobby/types";
 import { parisDay, type DailyBoard } from "@/lib/daily";
 import { exemple, entrees, JOUR, MAINTENANT, MINUIT, type Variante } from "./lobby-exemple";
 
@@ -371,13 +372,156 @@ titre("# du nouveau : les relances d'abord, cinq lignes au plus");
 titre("# le filet des lectures lentes");
 const attente = <T,>(ms: number, v: T) => new Promise<T>((fin) => setTimeout(() => fin(v), ms));
 const finAsync = (async () => {
-  check("les plafonds : 1,5 s pour les cartes lentes, 4 s de filet pour les autres", PLAFOND_MS === 1500 && FILET_MS === 4000 && FILET_MS > PLAFOND_MS);
+  check("les filets : 4 s pour les cartes lues avec la page, 6 s (au moins 4) pour les cinq cartes lues après elle ; plus de plafond de 1,5 s", FILET_MS === 4000 && FILET_CARTES_MS >= 4000 && FILET_CARTES_MS >= FILET_MS);
   check("une lecture rapide rend sa valeur", (await plafonner(attente(5, "ok"), 200)) === "ok");
   const t0 = Date.now();
   check("une lecture trop lente rend null à l'heure, sans l'attendre", (await plafonner(attente(400, "tard"), 30)) === null && Date.now() - t0 < 300, String(Date.now() - t0));
   check("une lecture qui échoue rend null (jamais d'exception)", (await plafonner(Promise.reject(new Error("boum")), 200)) === null);
   check("une lecture qui rend déjà null reste null", (await plafonner(Promise.resolve(null), 200)) === null);
 })();
+
+titre("# les cinq cartes lentes lues APRÈS la page (en continu) : squelettes, puis cartes");
+const finContinu = finAsync.then(async () => {
+  const lob = exemple("base");
+  const sansLentes = (l: Lobby): Lobby => ({ ...l, enDirect: null, rival: null, carteDuJour: null, deblocage: null, quete: null });
+  const lentesDe = (l: Lobby): Required<CartesDifferees> => ({
+    enDirect: Promise.resolve(l.enDirect),
+    rival: Promise.resolve(l.rival),
+    carteDuJour: Promise.resolve(l.carteDuJour),
+    deblocage: Promise.resolve(l.deblocage),
+    quete: Promise.resolve(l.quete),
+  });
+  const jamais = <T,>() => new Promise<T | null>(() => {});
+  const enAttente: Required<CartesDifferees> = { enDirect: jamais(), rival: jamais(), carteDuJour: jamais(), deblocage: jamais(), quete: jamais() };
+  const habille = (n: React.ReactElement) => <AppRouterContext.Provider value={routeur}>{n}</AppRouterContext.Provider>;
+  const net = (h: string) => h.replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/<!--[\s\S]*?-->/g, "");
+  /** la page quand toutes les lectures ont fini : prerender attend tous les <Suspense> et rend le HTML final, sans squelette ni commentaire de frontière */
+  const rendu = async (l: Lobby, d?: CartesDifferees): Promise<string> => {
+    // progressiveChunkSize énorme : sans lui React met à part (hors de la page, avec un script) les frontières volumineuses, même finies
+    const { prelude } = await prerender(habille(<LobbyView l={l} differees={d} />), { progressiveChunkSize: 1e9 });
+    return net(await new Response(prelude).text());
+  };
+  /** la page à l'instant où le serveur l'envoie, lectures en cours : les squelettes à la place des cartes */
+  const pendant = (l: Lobby, d: CartesDifferees): string => net(renderToStaticMarkup(habille(<LobbyView l={l} differees={d} />)));
+  const sansClasse = (h: string, ...classes: string[]) => classes.reduce((x, c) => x.split(` ${c}`).join(""), h);
+  const ouvertures = (h: string) => [...h.matchAll(/<div class="((?:rangee|colonne)[^"]*)"[^>]*>/g)].map((m) => m[1]);
+  const ids = (h: string) => [...h.matchAll(/aria-labelledby="(lobby-[^"]+)"/g)].map((m) => m[1]);
+  const NOMS = ["carteDuJour", "rival", "enDirect", "deblocage", "quete"];
+  const REELLES = ["data-matiere=", "lobby-rival-titre", "lobby-direct-titre", "lobby-deblocage-titre", "lobby-quete-titre"];
+
+  check("la maquette complète a bien les cinq cartes lentes", !!lob.carteDuJour && !!lob.rival && !!lob.enDirect && !!lob.deblocage && !!lob.quete);
+
+  // ── les squelettes, à la place exacte des cartes ──
+  const att = pendant(sansLentes(lob), enAttente);
+  check("pendant la lecture : les cinq squelettes sont là, chacun une fois, tous en aria-busy", NOMS.every((n) => compte(att, new RegExp(`data-squelette="${n}"`, "g")) === 1) && compte(att, /aria-busy="true"/g) === 5);
+  check("   aucune vraie carte lente à leur place (ni carte du jour, ni rival, ni lobby en direct, ni déblocage, ni quête)", !REELLES.some((r) => att.includes(r)));
+  check("   un texte réservé aux lecteurs d'écran dit laquelle arrive", ["La carte du jour arrive", "Ton rival arrive", "Le lobby en direct arrive", "Ton prochain déblocage arrive", "Ta prochaine quête arrive"].every((t) => att.includes(`>${t}<`)));
+  const complet = await rendu(sansLentes(lob), lentesDe(lob));
+  check("   chaque squelette est posé à la place EXACTE de sa carte : même ordre dans la page que les vraies cartes", croissant(positions(att, NOMS.map((n) => `data-squelette="${n}"`))) && croissant(positions(complet, REELLES)));
+  check("   la composition des rangées est la MÊME qu'une fois les cartes arrivées (rangée de la carte du jour, du vainqueur, colonne du déblocage…)", JSON.stringify(ouvertures(att)) === JSON.stringify(ouvertures(sansClasse(complet, "etireSeule"))), JSON.stringify(ouvertures(att)));
+  const LENTES_IDS = ["lobby-rival-titre", "lobby-direct-titre", "lobby-deblocage-titre", "lobby-quete-titre"];
+  check("   le reste de la page est déjà là (30 du jour, 5, traits, vainqueur, rang, scores, nouveau, amis, carnet, les deux affiches)", JSON.stringify(ids(att)) === JSON.stringify(ids(complet).filter((i) => !LENTES_IDS.includes(i))) && compte(att, /<figure/g) === 2, `${ids(att).length} cartes`);
+  check("   la bande du vainqueur reste étirable si elle finit seule (.etireSeule), le lobby en direct attend dans la même colonne", att.includes("etireSeule") && att.indexOf("lobby-vainqueur") < att.indexOf('data-squelette="enDirect"'));
+  {
+    const nv = exemple("nouveau");
+    const p = pendant(sansLentes(nv), { enDirect: jamais(), carteDuJour: jamais() });
+    check("   sans vainqueur, la colonne du lobby en direct se retire s'il n'arrive pas : .colonneDirect et .rangApresDirect posés (et seulement alors)", p.includes('class="colonne c7 colonneDirect"') && p.includes("rang c5 rangApresDirect") && !att.includes("colonneDirect"));
+  }
+
+  // ── la page part avant les cartes lentes (le vrai flux, comme le serveur l'envoie) ──
+  {
+    let finie = false;
+    // 1,5 s : le premier rendu du flux (à froid) peut dépasser 400 ms sur une machine chargée ; la lecture serait alors
+    // « finie » avant le premier morceau lu, et le contrôle échouerait sans que le code soit en cause
+    const lente = attente(1500, lob.carteDuJour).then((c) => {
+      finie = true;
+      return c;
+    });
+    const flux = await renderToReadableStream(habille(<LobbyView l={sansLentes(lob)} differees={{ ...lentesDe(lob), carteDuJour: lente }} />));
+    const lecteur = flux.getReader();
+    const decodeur = new TextDecoder();
+    // ce que le flux a déjà livré tant que la lecture lente n'est pas finie, puis le reste
+    let avant = "";
+    let apres = "";
+    for (;;) {
+      const r = await lecteur.read();
+      if (r.done) break;
+      const morceau = decodeur.decode(r.value, { stream: true });
+      if (finie) apres += morceau;
+      else avant += morceau;
+    }
+    check("la page part SANS attendre la carte lente : le flux livre déjà la page pendant que sa lecture dure encore", avant.length > 20000 && finie);
+    check("   ces premiers morceaux portent le socle (les 30, le rang, le carnet) et le squelette de la carte du jour, pas la carte", avant.includes("lobby-rang") && avant.includes("lobby-scores-titre") && avant.includes('data-squelette="carteDuJour"') && !avant.includes("data-matiere="));
+    check("   la carte du jour arrive ensuite dans le même flux, à la place du squelette (script de remplacement de React)", apres.includes("data-matiere=") && apres.includes("$RC("), `${apres.length} octets`);
+  }
+
+  // ── les cartes arrivées = la page rendue d'un bloc ──
+  const dUnBloc = await rendu(lob);
+  check("une fois les cinq lectures finies : EXACTEMENT la page rendue d'un bloc (seule la classe .etireSeule de la bande diffère)", sansClasse(complet, "etireSeule") === dUnBloc, `${complet.length} / ${dUnBloc.length} octets`);
+  check("   toutes les vraies cartes lentes sont là, plus aucun squelette", REELLES.every((r) => complet.includes(r)) && !complet.includes("data-squelette") && !complet.includes('aria-busy="true"'));
+
+  // ── une lecture lente n'est plus masquée ──
+  {
+    const t0 = Date.now();
+    const lente = plafonner(attente(120, lob.carteDuJour), FILET_CARTES_MS);
+    const h = await rendu(sansLentes(lob), { ...lentesDe(lob), carteDuJour: lente });
+    check("une lecture lente (120 ms, ici sous le filet) n'est plus masquée : la carte du jour est dans la page, après son attente", h.includes("data-matiere=") && !h.includes("data-squelette") && Date.now() - t0 >= 100, String(Date.now() - t0));
+    check("   ce que faisait l'ancien plafond, à petite échelle : la même lecture, coupée à 40 ms, aurait disparu", (await plafonner(attente(120, lob.carteDuJour), 40)) === null);
+    const tardive = await rendu(sansLentes(lob), { ...lentesDe(lob), rival: plafonner(attente(300, lob.rival), 40) });
+    check("   une lecture qui dépasse vraiment le filet est abandonnée : le rival est masqué, la page se rend sans l'attendre davantage", !tardive.includes("lobby-rival-titre") && tardive.includes("data-matiere="));
+  }
+
+  // ── un échec ou un dépassement du filet : la rangée se recompose comme avant, sans trou ──
+  {
+    const sans = async (cle: keyof CartesDifferees, attendu: Lobby, retire: (keyof CartesDifferees)[] = [], bandeSeule = false) => {
+      const d = lentesDe(lob);
+      for (const c of [cle, ...retire]) d[c] = Promise.resolve(null) as never;
+      const diffee = await rendu(sansLentes(lob), d);
+      const dUnBloc = await rendu(attendu);
+      // le lobby en direct absent : d'un bloc la bande a .etire, lue en continu elle a .etireSeule (le CSS l'étire alors qu'elle est seule)
+      return bandeSeule ? diffee.split("etireSeule").join("etire") === dUnBloc : sansClasse(diffee, "etireSeule") === sansClasse(dUnBloc, "etireSeule");
+    };
+    check("sans carte du jour : le rival et l'affiche se partagent la rangée (data-n=2), comme la variante « sans carte du jour »", await sans("carteDuJour", exemple("sansJour")));
+    check("sans carte du jour ni rival : la rangée disparaît (une affiche seule n'a pas de sens), comme « sans rival »", await sans("carteDuJour", exemple("sansRival"), ["rival"]));
+    check("sans lobby en direct (le vainqueur reste) : la bande remplit la colonne, comme avant", await sans("enDirect", { ...lob, enDirect: null }, [], true));
+    check("sans déblocage : la quête s'étire seule dans la colonne", await sans("deblocage", { ...lob, deblocage: null }));
+    check("sans déblocage ni quête : les scores s'étirent (c8), l'affiche reste", await sans("deblocage", { ...lob, deblocage: null, quete: null }, ["quete"]));
+    const rien = await rendu(sansLentes(lob), { enDirect: Promise.resolve(null), rival: Promise.resolve(null), carteDuJour: Promise.resolve(null), deblocage: Promise.resolve(null), quete: Promise.resolve(null) });
+    check("   les cinq en échec : aucun squelette ne reste, la page se rend entière sans les cinq cartes", !rien.includes("data-squelette") && !REELLES.some((r) => rien.includes(r)) && rien.includes("lobby-scores-titre") && rien.includes("lobby-rang"));
+    const nv = exemple("nouveau");
+    const sansVq = await rendu(sansLentes(nv), { enDirect: Promise.resolve(null), carteDuJour: Promise.resolve(nv.carteDuJour) });
+    check("   sans vainqueur ni lobby en direct : la colonne reste VIDE (le CSS la retire : :empty) et le rang reprend la rangée", sansVq.includes('<div class="colonne c7 colonneDirect"></div>') && sansVq.includes("rang c5 rangApresDirect"));
+    const avecVq = await rendu(sansLentes(nv), { enDirect: Promise.resolve(nv.enDirect), carteDuJour: Promise.resolve(nv.carteDuJour) });
+    check("   sans vainqueur mais avec le lobby en direct : la page d'un bloc (aux classes .colonneDirect et .rangApresDirect près)", sansClasse(avecVq, "colonneDirect", "rangApresDirect") === (await rendu(nv)));
+    const rejet = await rendu(sansLentes(lob), { ...lentesDe(lob), carteDuJour: new Promise((_, non) => setTimeout(() => non(new Error("boum")), 10)) });
+    check("   une promesse qui rejetterait malgré tout (plafonner ne le laisse pas faire) ne casse pas la page : la carte est masquée", !rejet.includes("data-matiere=") && rejet.includes("lobby-rival-titre"));
+  }
+
+  // ── le code ──
+  {
+    const lecture = (f: string) => readFileSync(join(process.cwd(), "components/accueil/lobby", f), "utf8");
+    const donnees = lecture("donnees.ts");
+    const grandPromiseAll = donnees.slice(donnees.indexOf("] = await Promise.all(["));
+    check("donnees.ts : les cinq lectures lentes sont HORS du Promise.all de la page (elle ne les attend plus)", ["lireEnDirect(", "lireRivalActivite(", "lireCarteDuJourEnCache(", "lireDeblocage(", "lireQuete("].every((f) => donnees.includes(f) && !grandPromiseAll.includes(f)));
+    const objet = donnees.slice(donnees.indexOf("const differees:"), donnees.indexOf("] = await Promise.all(["));
+    check("   chacune a le filet large (FILET_CARTES_MS), plus le plafond court de 1,5 s", compte(objet, /FILET_CARTES_MS/g) === 5 && !donnees.includes("PLAFOND_MS"), String(compte(objet, /FILET_CARTES_MS/g)));
+    check("   la page reçoit { lobby, differees } et les donne à LobbyView", donnees.includes("return { lobby, differees };") && readFileSync("app/dashboard/page.tsx", "utf8").includes("<LobbyView l={lobby} differees={differees} />"));
+    const plaf = await import("@/components/accueil/lobby/plafond");
+    check("plafond.ts : plus de PLAFOND_MS ; le filet des cinq cartes est large (au moins 4 s), le filet par défaut est FILET_MS", !("PLAFOND_MS" in plaf) && plaf.FILET_CARTES_MS >= 4000 && plaf.FILET_CARTES_MS >= plaf.FILET_MS && (await plafonner(attente(5, "ok"))) === "ok");
+    const vue = lecture("LobbyView.tsx");
+    check("LobbyView : les cinq cartes lentes passent par Rangees.tsx (plus de rendu direct de CarteDuJour, CarteRival, CarteDeblocage, CarteQuete)", !/<(CarteDuJour|CarteRival|CarteDeblocage|CarteQuete|CarteScores)\b/.test(vue) && vue.includes("RangeeJourEnContinu") && vue.includes("RangeeScoresEnContinu") && vue.includes("EnDirectEnContinu"));
+    const rangees = lecture("Rangees.tsx");
+    check("Rangees.tsx : un <Suspense> par lecture (la rangée de la carte du jour, celle du déblocage, le lobby en direct), serveur pur", compte(rangees, /<Suspense fallback=/g) === 3 && !rangees.includes("use client") && !/Intl|toLocale/.test(rangees));
+    const sq = lecture("Squelettes.tsx");
+    const sqCss = lecture("Squelettes.module.css");
+    const sqCode = sqCss.replace(/\/\*[\s\S]*?\*\//g, "");
+    check("Squelettes : aria-busy, texte réservé, aucune encre, aucune animation, aplats gris pâles du site (--well)", compte(sq, /aria-busy="true"/g) === 1 && sq.includes("sr-only") && !/Encre|EncreVive/.test(sq) && !/@keyframes|animation|transition|url\(/.test(sqCode) && sqCode.includes("var(--well)") && !sq.includes("use client"));
+    const reel = lecture("CarteDuJour.module.css");
+    check("   la carte du jour a la même hauteur que la vraie : 476 px, 440 px au téléphone (requête de conteneur à 760 px)", /\.jc \{[^}]*min-height: 476px/.test(reel) && /\.sq\.carteDuJour \{[^}]*min-height: 476px/.test(sqCss) && /@container \(max-width: 760px\)[\s\S]*\.sq\.carteDuJour \{\s*min-height: 440px/.test(sqCss) && /@container \(max-width: 760px\)\s*\{\s*\.jc \{\s*min-height: 440px/.test(reel));
+    const css = lecture("Lobby.module.css");
+    check("Lobby.module.css : la colonne et la bande se recomposent sans :has() (:empty, :only-child, frère adjacent)", css.includes(".colonne > .etireSeule:only-child") && css.includes(".colonneDirect:empty {") && css.includes(".colonneDirect:empty + .rangApresDirect") && !css.includes(":has("));
+  }
+});
 
 titre("# la version téléphone : les règles du CSS (il ne se charge pas ici)");
 {
@@ -424,7 +568,7 @@ titre("# la version téléphone : les règles du CSS (il ne se charge pas ici)")
 titre("# la bascule de /dashboard, les métadonnées et le code mort");
 {
   const page = readFileSync(join(process.cwd(), "app/dashboard/page.tsx"), "utf8");
-  check("/dashboard sert le lobby, sans drapeau ni ancienne page", page.includes("LobbyView") && page.includes("lireLobby") && !page.includes("lobby=1") && !page.includes("searchParams") && !page.includes("DashboardView"));
+  check("/dashboard sert le lobby, sans drapeau ni ancienne page", page.includes("LobbyView") && page.includes("lireLobby") && page.includes("differees") && !page.includes("lobby=1") && !page.includes("searchParams") && !page.includes("DashboardView"));
   check("les titres de l'onglet : « Accueil · Ranked Lobby »", page.includes('export const metadata = { title: "Accueil · Ranked Lobby" }'));
   check("les lectures mortes de l'ancienne page sont parties (moyennes, erreurs, reprise, duels ouverts)", !/getTopicAverages|getProgramAverage|loadErrors|loadResume|getReviewableDuels|getOpenChallenges|loadPointFaible/.test(page));
   check("le squelette propre à la route existe, sans donnée", existsSync("app/dashboard/loading.tsx") && !/supabase|await/.test(readFileSync("app/dashboard/loading.tsx", "utf8")));
@@ -463,7 +607,7 @@ titre("# les fichiers : îlots clients et garde-fous (tout le dossier du lobby)"
     "EnDirect.tsx", "Visage.tsx", "PersoVainqueur.tsx", "modele-direct.ts", "lecture-direct.ts", "EnDirect.module.css",
     "CarteRival.tsx", "BoutonRelance.tsx", "actions-rival.ts", "modele-rival.ts", "lecture-rival.ts", "Rival.module.css",
     "CarteDuJour.tsx", "CarteDuJourIle.tsx", "actions-carte.ts", "modele-carte.ts", "lecture-carte.ts", "CarteDuJour.module.css",
-    "CarteScores.tsx", "CarteDeblocage.tsx", "CarteQuete.tsx", "BandeGrandeSalle.tsx", "Affiche.tsx", "DuNouveau.tsx", "TesAmis.tsx", "CarnetJours.tsx", "modele-parcours.ts", "lecture-parcours.ts", "Parcours.module.css", "CarnetJours.module.css",
+    "CarteScores.tsx", "CarteDeblocage.tsx", "CarteQuete.tsx", "Rangees.tsx", "Squelettes.tsx", "Squelettes.module.css", "BandeGrandeSalle.tsx", "Affiche.tsx", "DuNouveau.tsx", "TesAmis.tsx", "CarnetJours.tsx", "modele-parcours.ts", "lecture-parcours.ts", "Parcours.module.css", "CarnetJours.module.css",
   ];
   check("les fichiers des six lots sont là", attendus.every((f) => fichiers.includes(f)), attendus.filter((f) => !fichiers.includes(f)).join());
   const sources = fichiers.map((f) => [f, readFileSync(join(dossier, f), "utf8")] as const);
@@ -492,7 +636,7 @@ titre("# les fichiers : îlots clients et garde-fous (tout le dossier du lobby)"
   check("la seule migration est celle des relances, idempotente", /CREATE TABLE IF NOT EXISTS relances/.test(migration) && /CREATE OR REPLACE FUNCTION relancer/.test(migration) && /DROP POLICY IF EXISTS/.test(migration));
 }
 
-finAsync.then(() => {
+Promise.all([finAsync, finContinu]).then(() => {
   console.log("");
   if (ko > 0) {
     console.log(`${ko} vérification(s) en échec`);

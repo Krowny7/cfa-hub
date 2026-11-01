@@ -9,6 +9,7 @@
 // local, pas de texture qui glisse). Les noms de classes des modules CSS sont
 // rendus tels quels.
 import "../codex/sans-css";
+import { poserFauxCache } from "./faux-cache";
 import fs from "node:fs";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -391,6 +392,69 @@ async function main() {
   check("verso hors format (ancienne carte) : le texte tel quel, sans les trois cases", libre.includes("Un verso libre,") && libre.includes("sur deux lignes.") && !libre.includes(">En clair<"));
   const dangereux = rendre(carte({ recto: "<script>alert(1)</script> & <b>x</b>" }));
   check("le texte de la carte est échappé (pas de balise injectée)", !dangereux.includes("<script>alert(1)</script>"));
+
+  // ── la carte gardée côté serveur ──────────────────────────────────────────
+  titre("# la carte du jour gardée côté serveur (par joueur, jour de Paris et réglages)");
+  {
+    const fc = poserFauxCache();
+    const ctx = (sbc: unknown, meta?: Record<string, unknown>, jour = "2026-11-01", id = "joueur-1") => ({ sb: sbc as never, user: { id, user_metadata: meta ?? null }, jour });
+    const EnCache = L.lireCarteDuJourEnCache;
+    const a = faux(tablesBase());
+    const c1 = await EnCache(ctx(a.sb));
+    check("première visite : la carte est lue (deux petites requêtes) et gardée une fois", !!c1 && a.journal.length === 2 && fc.posees.length === 1, `${a.journal.length} requêtes, ${fc.posees.length} gardée(s)`);
+    const b = faux(tablesBase());
+    const c2 = await EnCache(ctx(b.sb));
+    check("   visite suivante : la même carte, SANS aucune requête (instantanée)", !!c1 && !!c2 && JSON.stringify(c2) === JSON.stringify(c1) && b.journal.length === 0 && fc.relues.n === 1, `${b.journal.length} requêtes`);
+    check("   « toutes » : gardée pour la journée (24 h au plus ; la clé du lendemain est une autre)", fc.posees[0].revalidate === L.GARDE_CARTE_S.toutes && L.GARDE_CARTE_S.toutes === 86400);
+    check("   l'étiquette du joueur est posée (l'enregistrement de ses réglages la révoque)", fc.posees[0].tags.join() === "rl-carte-jour:joueur-1" && M.tagCarteDuJour("joueur-1") === "rl-carte-jour:joueur-1");
+    check("   la clé porte le joueur, le jour et les réglages (la graine du tirage)", fc.posees[0].cle.includes(M.graineDuJour("joueur-1", "2026-11-01", M.REGLAGES_DEFAUT)));
+
+    const d = faux(tablesBase());
+    const c3 = await EnCache(ctx(d.sb, { rl_carte_jour: { m: ["fsa"], s: "toutes" } }));
+    check("d'autres réglages : une autre clé, la carte est tirée de nouveau (jamais la carte périmée)", !!c3 && c3.id.startsWith("s-fsa") && c3.reglages.mats.join() === "fsa" && d.journal.length === 2 && fc.posees.length === 2);
+    const e = faux(tablesBase());
+    const c4 = await EnCache(ctx(e.sb, undefined, "2026-11-02"));
+    check("le lendemain : une autre clé, une nouvelle lecture", !!c4 && e.journal.length === 2 && fc.posees.length === 3);
+    const f = faux(tablesBase());
+    const c5 = await EnCache(ctx(f.sb, undefined, "2026-11-01", "joueur-2"));
+    check("un autre joueur ne reçoit jamais la carte gardée d'un autre : sa propre lecture, sa propre étiquette", !!c5 && f.journal.length === 2 && fc.posees[3].tags.join() === "rl-carte-jour:joueur-2");
+    const g = faux(tablesBase());
+    const c6 = await EnCache(ctx(g.sb, undefined, "2026-11-01", "joueur-1"));
+    check("   et le premier joueur retrouve la sienne, toujours sans requête", !!c6 && JSON.stringify(c6) === JSON.stringify(c1) && g.journal.length === 0);
+
+    const h = faux(tablesBase({ marquees: [{ carte: "s-fsa1-c2", set: "s-fsa1" }] }));
+    const c7 = await EnCache(ctx(h.sb, { rl_carte_jour: { m: ["fsa"], s: "marquees" } }));
+    check("« marquées » : gardée quelques minutes seulement (ce que le joueur marque change le tirage)", !!c7 && c7.id === "s-fsa1-c2" && fc.posees[fc.posees.length - 1].revalidate === L.GARDE_CARTE_S.vivantes && L.GARDE_CARTE_S.vivantes <= 15 * 60);
+
+    // un échec ou une absence ne sont JAMAIS gardés
+    fc.vider();
+    const casse = faux({
+      flashcard_sets: () => {
+        throw new Error("réseau coupé");
+      },
+    });
+    const cc = await EnCache(ctx(casse.sb));
+    check("une lecture qui échoue : null, sans exception, et RIEN n'est gardé", cc === null && fc.posees.length === 0 && fc.memoire.size === 0);
+    const bon = faux(tablesBase());
+    const cd = await EnCache(ctx(bon.sb));
+    check("   la visite suivante relit (et garde) : un échec ne fige pas « pas de carte » pour la journée", !!cd && bon.journal.length === 2 && fc.posees.length === 1);
+    fc.vider();
+    const vide = faux({ flashcard_sets: () => ({ data: [], error: null }) });
+    const cv = await EnCache(ctx(vide.sb));
+    check("aucune flashcard à tirer : null, non gardé (une lecture tombée ressemble à un catalogue vide)", cv === null && fc.posees.length === 0);
+    // hors requête, ou sans cache : on lit quand même
+    fc.retirer();
+    const sans = faux(tablesBase());
+    const cs = await EnCache(ctx(sans.sb));
+    check("sans cache disponible (hors requête) : la carte se lit quand même, une fois, sans lever", !!cs && sans.journal.length === 2);
+    const casse2 = await EnCache(ctx(casse.sb));
+    check("   sans cache et lecture en échec : null, sans exception", casse2 === null);
+
+    const action = lire(DOSSIER + "actions-carte.ts");
+    check("l'enregistrement des réglages révoque la carte gardée (revalidateTag de l'étiquette du joueur) avant de relire la page", /revalidateTag\(tagCarteDuJour\(auth\.user\.id\)\);\s*revalidatePath\("\/dashboard"\)/.test(action));
+    const donnees = lire(DOSSIER + "donnees.ts");
+    check("la page lit la carte par la lecture gardée, hors du Promise.all (plus de plafond court)", donnees.includes("lireCarteDuJourEnCache({ sb, user, jour })") && !/\blireCarteDuJour\(/.test(donnees));
+  }
 
   // ── les fichiers ──────────────────────────────────────────────────────────
   titre("# les fichiers du lot");

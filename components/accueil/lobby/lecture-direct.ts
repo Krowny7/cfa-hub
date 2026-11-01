@@ -18,7 +18,10 @@
 //   ni dans le fil (sauf à lui-même).
 // Ce qui vient du client admin est le même pour tous les joueurs : il est gardé
 // 60 s (unstable_cache ; le client du joueur n'entre jamais dans un cache
-// partagé). Ce qui dépend du joueur (« Tu viens de rendre ta copie ») se
+// partagé). Un ÉCHEC n'est jamais gardé : si le nombre de joueurs en ligne ou
+// celui des duels n'a pas pu être lu, la lecture lève dans la fonction gardée
+// (rien n'est mémorisé) et le résultat partiel est rendu tel quel ; la visite
+// suivante relit. Ce qui dépend du joueur (« Tu viens de rendre ta copie ») se
 // calcule après (modele-direct.ts).
 
 import { unstable_cache } from "next/cache";
@@ -158,12 +161,29 @@ async function lirePartieAdmin(admin: SupabaseClient, now: Date): Promise<Partie
   return { enLigne: enLigne ? enLigne.nombre : null, duels, victoires, joueurs: enLigne ? enLigne.joueurs : [] };
 }
 
-/** La partie admin, gardée 60 s (hors d'une requête, où le cache n'existe pas, on lit sans lui). */
+/** Une partie admin dont une lecture a échoué (en ligne ou duels illisibles) : levée dans la fonction gardée pour que le cache ne la retienne pas. */
+class PartieEnEchec extends Error {
+  constructor(readonly partie: PartieAdmin) {
+    super("lecture du lobby en direct incomplète");
+  }
+}
+
+/** La partie admin, ou, si une de ses deux lectures de chiffres a échoué, une PartieEnEchec qui la porte (rien n'est alors gardé). */
+async function partieOuEchec(admin: SupabaseClient, now: Date): Promise<PartieAdmin> {
+  const partie = await lirePartieAdmin(admin, now);
+  if (partie.enLigne === null || partie.duels === null) throw new PartieEnEchec(partie);
+  return partie;
+}
+
+/**
+ * La partie admin, gardée 60 s (hors d'une requête, où le cache n'existe pas, on
+ * lit sans lui). Un échec n'est pas gardé : voir partieOuEchec.
+ */
 async function partieAdminEnCache(admin: SupabaseClient, now: Date, jour: string): Promise<PartieAdmin> {
   try {
-    return await unstable_cache(() => lirePartieAdmin(admin, now), ["rl-accueil-direct-2", jour], { revalidate: 60 })();
-  } catch {
-    return lirePartieAdmin(admin, now);
+    return await unstable_cache(() => partieOuEchec(admin, now), ["rl-accueil-direct-2", jour], { revalidate: 60 })();
+  } catch (e) {
+    return e instanceof PartieEnEchec ? e.partie : lirePartieAdmin(admin, now);
   }
 }
 

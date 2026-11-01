@@ -60,6 +60,13 @@ export function matiereDe(cle: string | null | undefined) {
   return MATIERES_CARTE.find((m) => m.cle === cle) ?? null;
 }
 
+/**
+ * L'étiquette sous laquelle la carte du jour d'un joueur est gardée côté serveur
+ * (lecture-carte.ts) : l'enregistrement de ses réglages la révoque
+ * (actions-carte.ts : revalidateTag).
+ */
+export const tagCarteDuJour = (userId: string): string => `rl-carte-jour:${userId}`;
+
 /** Les clés connues, sans doublon, dans l'ordre du programme. */
 export function ordreProgramme(cles: readonly string[]): string[] {
   const voulues = new Set(cles);

@@ -180,4 +180,12 @@ export const LOBBY = {
     sansDate: "Fixe ton jour J pour suivre ta phase de révision.",
     fixer: "Fixe ton jour J →",
   },
+  /** ce que lisent les lecteurs d'écran sur le squelette d'une carte qui arrive (Squelettes.tsx) */
+  chargement: {
+    carteDuJour: "La carte du jour arrive",
+    rival: "Ton rival arrive",
+    enDirect: "Le lobby en direct arrive",
+    deblocage: "Ton prochain déblocage arrive",
+    quete: "Ta prochaine quête arrive",
+  },
 } as const;

@@ -242,3 +242,18 @@ export type Lobby = {
   /** pour l'anneau du logo, la célébration des 7 jours, le mode sobre */
   jour: { repondues: number; serieAffichee: number; cleSerie: string | null; doubleDeja: boolean; sobre: boolean };
 };
+
+/**
+ * Les cinq cartes lentes, lues APRÈS la page (en continu : chacune se rend dans son <Suspense>, un squelette de
+ * même taille attend à sa place). Ce sont des promesses qui ne rejettent JAMAIS : `null` veut dire que la lecture a
+ * vraiment échoué ou dépassé le filet (la carte se masque et sa rangée se recompose). Un champ absent : la carte
+ * vient de `Lobby` (aperçus, tests), rendue d'un bloc comme avant. Elles ne traversent jamais vers un îlot client :
+ * seuls les composants serveur de Rangees.tsx les attendent.
+ */
+export type CartesDifferees = {
+  enDirect?: Promise<EnDirectLobby | null>;
+  rival?: Promise<RivalLobby | null>;
+  carteDuJour?: Promise<CarteDuJourLobby | null>;
+  deblocage?: Promise<DeblocageLobby | null>;
+  quete?: Promise<QueteLobby | null>;
+};

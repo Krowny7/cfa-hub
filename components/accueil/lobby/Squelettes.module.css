@@ -1,0 +1,132 @@
+/* Les squelettes des cinq cartes lentes de l'accueil « Le lobby » (Squelettes.tsx) :
+   la même carte (cadre, rayon et ombre du socle, posés par la classe .carte de
+   Lobby.module.css), les mêmes marges et la même hauteur minimale que la vraie,
+   avec des barres en aplats gris pâles (--well). Rien ne bouge : un squelette
+   est un repère de place, pas une animation (pas de fausse encre qui coule).
+   La place suit la largeur du bloc (requêtes de conteneur), comme les vraies
+   cartes ; la hauteur minimale reprend celle du contenu courant de chacune. */
+
+.sq {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px;
+}
+
+/* une barre de texte : sa largeur est une des classes l* */
+.barre {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--well);
+}
+.barreGrosse {
+  height: 20px;
+  border-radius: 8px;
+}
+.l30 {
+  width: 30%;
+}
+.l45 {
+  width: 45%;
+}
+.l60 {
+  width: 60%;
+}
+.l75 {
+  width: 75%;
+}
+.l90 {
+  width: 90%;
+}
+
+/* un rond (le sceau, un visage) et un bloc plein (une barre de progression, la carte à retourner) */
+.rond {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--well);
+}
+.bloc {
+  border-radius: 12px;
+  background: var(--well);
+}
+
+/* l'en-tête : le rond et deux barres (le surtitre, le titre) */
+.tete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.teteTexte {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+}
+
+/* une rangée de petits visages */
+.visages {
+  display: flex;
+  gap: 8px;
+}
+.visages .rond {
+  width: 40px;
+  height: 40px;
+}
+
+/* ——— les hauteurs : celles du contenu courant de chaque vraie carte ——— */
+/* la carte du jour : 476 px (440 sur un bloc étroit), comme .jc de CarteDuJour.module.css */
+.sq.carteDuJour {
+  min-height: 476px;
+  border-radius: 20px;
+}
+.sq.carteDuJour .bloc {
+  flex: 1;
+  min-height: 300px;
+}
+/* le rival : cinq lignes de face-à-face et deux boutons (il s'étire à côté de la carte du jour) */
+.sq.rival {
+  min-height: 440px;
+  border-radius: 16px;
+}
+.sq.rival .bloc {
+  height: 26px;
+}
+/* le lobby en direct : le titre, les chiffres, le fil des quatre derniers faits, une rangée de visages */
+.sq.enDirect {
+  min-height: 360px;
+}
+.sq.enDirect .bloc {
+  height: 50px;
+}
+/* le déblocage et la quête : de petites cartes */
+.sq.deblocage {
+  min-height: 200px;
+  border-radius: 16px;
+}
+.sq.quete {
+  min-height: 180px;
+  border-radius: 16px;
+}
+.sq.deblocage .bloc,
+.sq.quete .bloc {
+  height: 10px;
+  border-radius: 5px;
+}
+
+@container (max-width: 760px) {
+  .sq.carteDuJour {
+    min-height: 440px;
+  }
+  .sq.carteDuJour .bloc {
+    min-height: 270px;
+  }
+  .sq.rival {
+    min-height: 400px;
+  }
+  .sq.enDirect {
+    min-height: 340px;
+  }
+}

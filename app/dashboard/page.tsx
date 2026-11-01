@@ -10,9 +10,11 @@ export const metadata = { title: "Accueil · Ranked Lobby" };
 
 // L'accueil « Le lobby » : la page ne fait que trouver le joueur et le client de
 // service, puis laisse components/accueil/lobby lire (UN Promise.all, chaque
-// carte avec son filet) et composer (LobbyView). Rien du Codex ici : ses quêtes
-// vivent derrière le sceau de la barre du haut, sur /codex et dans la carte
-// « Ta prochaine quête ».
+// carte avec son filet) et composer (LobbyView). Les cinq cartes lentes (la
+// carte du jour, le rival, le lobby en direct, le déblocage, la quête) ne sont
+// pas attendues : `differees` les passe à LobbyView, qui les rend en continu,
+// chacune avec son squelette. Rien du Codex ici : ses quêtes vivent derrière le
+// sceau de la barre du haut, sur /codex et dans la carte « Ta prochaine quête ».
 export default async function Dashboard() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -29,5 +31,6 @@ export default async function Dashboard() {
   }
 
   const now = new Date();
-  return <LobbyView l={await lireLobby({ sb: supabase, admin, user, now, jour: parisDay(now) })} />;
+  const { lobby, differees } = await lireLobby({ sb: supabase, admin, user, now, jour: parisDay(now) });
+  return <LobbyView l={lobby} differees={differees} />;
 }

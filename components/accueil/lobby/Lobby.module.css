@@ -181,6 +181,19 @@
 .colonne > .etire {
   flex: 1 1 auto;
 }
+/* le lobby en direct lu en continu (LobbyView, rangée du vainqueur et du rang) : on ne sait pas encore s'il arrive.
+   - la bande du vainqueur ne s'étire que s'il n'arrive pas (la bande reste alors seule dans la colonne) ;
+   - sans vainqueur, la colonne ne contient que lui : s'il n'arrive pas, elle se retire (vide) et le rang
+     reprend toute la rangée. :empty ignore les commentaires de React ; aucun sélecteur parent n'est nécessaire. */
+.colonne > .etireSeule:only-child {
+  flex: 1 1 auto;
+}
+.colonneDirect:empty {
+  display: none;
+}
+.colonneDirect:empty + .rangApresDirect {
+  grid-column: span 12;
+}
 /* la rangée du vainqueur, du lobby et du rang respire plus haut : 26 px en plus de l'écart des
    rangées, comme la maquette ; le personnage du vainqueur (il dépasse de 40 px) tient dans cet
    air sans mordre sur la rangée de la carte du jour */

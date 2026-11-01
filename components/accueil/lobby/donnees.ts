@@ -2,14 +2,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadActivity, parisHour, withLiveDaily } from "@/components/accueil/queries";
 import { longDay } from "@/components/accueil/format";
 import { countPlayers } from "@/components/classement/data";
-import { lireCarteDuJour } from "@/components/accueil/lobby/lecture-carte";
+import { lireCarteDuJourEnCache } from "@/components/accueil/lobby/lecture-carte";
 import { lireEnDirect, lirePersoVainqueur } from "@/components/accueil/lobby/lecture-direct";
 import { lireAmis, lireCarnet, lireDeblocage, lireGrandeSalle, lireQuete, lireScores } from "@/components/accueil/lobby/lecture-parcours";
 import { lireRelancesRecues, lireRivalActivite } from "@/components/accueil/lobby/lecture-rival";
 import { construireLobby, dejaVenu } from "@/components/accueil/lobby/modele";
 import { fusionnerNouveau, nouveauteRelance } from "@/components/accueil/lobby/modele-parcours";
-import { FILET_MS, plafonner } from "@/components/accueil/lobby/plafond";
-import type { CtxLecture, Lobby } from "@/components/accueil/lobby/types";
+import { FILET_CARTES_MS, FILET_MS, plafonner } from "@/components/accueil/lobby/plafond";
+import type { CartesDifferees, CtxLecture, Lobby } from "@/components/accueil/lobby/types";
 import { getDailyBoard, getTodayDaily, shiftDay, type TodayDaily } from "@/lib/daily";
 import { lireSobre } from "@/lib/codex/sobre";
 import { calcStreakAndToday, type XpDay } from "@/lib/leveling";
@@ -22,20 +22,30 @@ import { getLeaderboardRank, getMyRating, getRatingHistory } from "@/lib/rating"
 import { joursEncreUnifies, lireSerieEncre } from "@/lib/serie-encre";
 import { lireVainqueurDuJour } from "@/lib/vainqueur-du-jour";
 
-// La lecture de l'accueil « Le lobby » (/dashboard) : UN seul Promise.all,
-// chaque lecture avec son .catch(() => null). Le socle (le joueur, les 30 et les
-// 5 du jour et leur classement, la journée, le vainqueur d'hier, le rang) et les
-// cartes des lots 2 à 5 (le lobby en direct, le rival, la carte du jour, les
-// records, le déblocage, la quête, la Grande Salle, du nouveau, les amis, le
-// carnet de jours). Tant qu'une migration n'est pas collée, ou sans clé de
-// service, la source concernée vaut null et la carte se masque ou se simplifie :
-// aucune valeur inventée. Les lectures lentes (le lobby en direct, le rival, la
-// carte du jour, le déblocage, la quête) sont plafonnées à 1,5 s : au-delà, la
-// carte se masque et la page ne l'attend pas. Le classement des 30 d'aujourd'hui
-// est lu UNE fois (200 lignes) pour le classement de la page et le lobby en
-// direct. Module serveur.
+// La lecture de l'accueil « Le lobby » (/dashboard) : UN seul Promise.all pour
+// la page, chaque lecture avec son .catch(() => null). Le socle (le joueur, les
+// 30 et les 5 du jour et leur classement, la journée, le vainqueur d'hier, le
+// rang) et les cartes des lots 2 à 5 (les records, la Grande Salle, du nouveau,
+// les amis, le carnet de jours, chacune avec un filet de 4 s). Tant qu'une
+// migration n'est pas collée, ou sans clé de service, la source concernée vaut
+// null et la carte se masque ou se simplifie : aucune valeur inventée.
+//
+// Les cinq cartes lentes (le lobby en direct, le rival, la carte du jour, le
+// déblocage, la quête) NE bloquent PLUS la page et ne se masquent plus à 1,5 s
+// (« de temps en temps la carte du jour n'apparaît pas ») : leurs lectures
+// démarrent en même temps que le reste mais sortent du Promise.all, et la page
+// les reçoit en `differees` (des promesses qui ne rejettent jamais) pour les
+// rendre en continu, chacune dans un <Suspense> avec son squelette (Rangees.tsx).
+// Seule une lecture qui échoue vraiment, ou qui dépasse le filet large de
+// FILET_CARTES_MS, retire la carte. La carte du jour, la même toute la journée,
+// est gardée par joueur, jour et réglages (lecture-carte.ts). Le classement des
+// 30 d'aujourd'hui est lu UNE fois (200 lignes) pour le classement de la page et
+// le lobby en direct. Module serveur.
 
 type Profil = { username: string | null; avatar_url: string | null };
+
+/** Ce que lit la page : le lobby (le socle et les cartes lues avec elle) et les cinq cartes lentes qui arrivent après. */
+export type AccueilLu = { lobby: Lobby; differees: Required<CartesDifferees> };
 
 async function lireProfil(sb: SupabaseClient, id: string): Promise<Profil | null> {
   const r = await sb.from("profiles").select("username, avatar_url").eq("id", id).maybeSingle();
@@ -65,10 +75,11 @@ async function lireNote(sb: SupabaseClient, id: string) {
 const LIGNES_CLASSEMENT = 200;
 
 /**
- * Tout ce que la page montre.
+ * Tout ce que la page montre : le lobby, lu d'un bloc, et les cinq cartes lentes,
+ * dont les lectures sont déjà parties mais que la page n'attend pas.
  * @param ctx les deux clients (admin : null sans clé de service), le joueur, l'instant et le jour de Paris
  */
-export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
+export async function lireLobby(ctx: CtxLecture): Promise<AccueilLu> {
   const { sb, admin, user, now, jour } = ctx;
   const id = user.id;
   // la journée d'abord : l'objectif en dépend (la courbe se recale sur les questions du jour)
@@ -78,6 +89,20 @@ export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
   const vainqueurLu = lireVainqueurDuJour(sb, admin, id, jour).catch(() => null);
   // le profil, lu une fois : le salut, et ton visage « Toi » dans le lobby en direct
   const profilLu = lireProfil(sb, id).catch(() => null);
+  // les cinq cartes lentes : les lectures partent maintenant, en même temps que le reste, mais la page ne les attend
+  // pas (elles ne rejettent jamais : plafonner rend null sur un échec ou au-delà du filet)
+  const differees: Required<CartesDifferees> = {
+    enDirect: plafonner(
+      Promise.all([classementAuj, profilLu]).then(([b, p]) =>
+        lireEnDirect(ctx, { classements: { trente: b }, moi: p ? { nom: p.username?.trim() || null, avatarUrl: p.avatar_url } : undefined }),
+      ),
+      FILET_CARTES_MS,
+    ),
+    rival: plafonner(lireRivalActivite(ctx), FILET_CARTES_MS),
+    carteDuJour: plafonner(lireCarteDuJourEnCache({ sb, user, jour }), FILET_CARTES_MS),
+    deblocage: plafonner(lireDeblocage(ctx), FILET_CARTES_MS),
+    quete: plafonner(lireQuete(ctx), FILET_CARTES_MS),
+  };
   const [
     profil,
     xp,
@@ -95,12 +120,7 @@ export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
     topics,
     serieBase,
     examen,
-    enDirect,
-    rival,
-    carteDuJour,
     scores,
-    deblocage,
-    quete,
     grandeSalle,
     nouveauAmis,
     relances,
@@ -123,17 +143,8 @@ export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
     getTopicMastery(sb, id).catch(() => null),
     lireSerieEncre(sb).catch(() => null),
     dateExamen(id).catch(() => null),
-    // les cartes des lots 2 à 5, chacune avec son filet
-    plafonner(
-      Promise.all([classementAuj, profilLu]).then(([b, p]) =>
-        lireEnDirect(ctx, { classements: { trente: b }, moi: p ? { nom: p.username?.trim() || null, avatarUrl: p.avatar_url } : undefined }),
-      ),
-    ),
-    plafonner(lireRivalActivite(ctx)),
-    plafonner(lireCarteDuJour({ sb, user, jour })),
+    // les autres cartes des lots 2 à 5, chacune avec son filet
     plafonner(lireScores(ctx), FILET_MS),
-    plafonner(lireDeblocage(ctx)),
-    plafonner(lireQuete(ctx)),
     plafonner(lireGrandeSalle(ctx), FILET_MS),
     plafonner(nouveautesAmis(sb, admin, id), FILET_MS),
     plafonner(lireRelancesRecues(ctx), FILET_MS),
@@ -151,7 +162,7 @@ export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
   const venu = dejaVenu([...xp.filter((x) => x.xp > 0).map((x) => x.day), ...(activity?.activeDays ?? []), copieOuverte(daily), copieOuverte(cinq)]);
 
   const dernier = historique.length ? historique[historique.length - 1].delta : null;
-  return construireLobby({
+  const lobby = construireLobby({
     now,
     jour,
     heure,
@@ -177,13 +188,9 @@ export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
     dernierDelta: dernier,
     mastery: topics ? programMastery(topics) : 0,
     sobre: lireSobre(user),
+    // les cinq cartes lentes n'y sont pas : elles arrivent en `differees`
     suite: {
-      enDirect,
-      rival,
-      carteDuJour,
       scores,
-      deblocage,
-      quete,
       grandeSalle,
       // les relances reçues d'abord, puis les nouvelles des amis
       nouveau: fusionnerNouveau(nouveauAmis, relances ? relances.map(nouveauteRelance) : null),
@@ -191,4 +198,5 @@ export async function lireLobby(ctx: CtxLecture): Promise<Lobby> {
       carnet,
     },
   });
+  return { lobby, differees };
 }

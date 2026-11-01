@@ -1,16 +1,10 @@
 import { AnneauDuJourSync } from "@/components/adn/AnneauDuJourSync";
 import { CelebrationSerie } from "@/components/serie/CelebrationSerie";
-import { Affiche } from "@/components/accueil/lobby/Affiche";
 import { BandeGrandeSalle } from "@/components/accueil/lobby/BandeGrandeSalle";
 import { BandeVainqueur } from "@/components/accueil/lobby/BandeVainqueur";
 import { CarnetJours } from "@/components/accueil/lobby/CarnetJours";
 import { CarteCinq } from "@/components/accueil/lobby/CarteCinq";
-import { CarteDeblocage } from "@/components/accueil/lobby/CarteDeblocage";
-import { CarteDuJour } from "@/components/accueil/lobby/CarteDuJour";
-import { CarteQuete } from "@/components/accueil/lobby/CarteQuete";
 import { CarteRang } from "@/components/accueil/lobby/CarteRang";
-import { CarteRival } from "@/components/accueil/lobby/CarteRival";
-import { CarteScores } from "@/components/accueil/lobby/CarteScores";
 import { CarteTraits, CarteTraitsGrande } from "@/components/accueil/lobby/CarteTraits";
 import { CarteTrente } from "@/components/accueil/lobby/CarteTrente";
 import { DuNouveau } from "@/components/accueil/lobby/DuNouveau";
@@ -18,8 +12,9 @@ import { EnDirect } from "@/components/accueil/lobby/EnDirect";
 import { PAL } from "@/components/accueil/lobby/Encre";
 import { Entete } from "@/components/accueil/lobby/Entete";
 import { PersoVainqueur } from "@/components/accueil/lobby/PersoVainqueur";
+import { EnDirectEnContinu, RangeeJour, RangeeJourEnContinu, RangeeScores, RangeeScoresEnContinu, enCours } from "@/components/accueil/lobby/Rangees";
 import { TesAmis } from "@/components/accueil/lobby/TesAmis";
-import type { Lobby } from "@/components/accueil/lobby/types";
+import type { CartesDifferees, Lobby } from "@/components/accueil/lobby/types";
 import { styleDePalette } from "@/lib/palettes";
 import { LOBBY } from "@/lib/voice-accueil-lobby";
 import s from "@/components/accueil/lobby/Lobby.module.css";
@@ -41,31 +36,37 @@ import s from "@/components/accueil/lobby/Lobby.module.css";
 //   7. du nouveau | tes amis ;
 //   8. ton carnet de jours (la carte sombre), tout en bas.
 // Une carte dont la source manque (migration pas collée, pas de clé de service,
-// lecture trop lente) se masque et sa rangée se recompose (data-n et classes de
+// lecture en échec ou au-delà du filet) se masque et sa rangée se recompose (data-n et classes de
 // colonnes) : sans rival ni carte du jour, la rangée 3 disparaît (une affiche
 // seule n'a pas de sens) ; sans rien dans une rangée, elle est retirée. Sur
 // téléphone (requêtes de conteneur de Lobby.module.css), une seule colonne, dans
 // l'ordre du document. Composant de présentation serveur : tout vient de `l`
 // (lireLobby) ; les îlots clients (le classement, la carte du jour, la relance,
 // le sceau, l'insigne) ne reçoivent que des données ou des nœuds rendus ici.
+// Cinq cartes lentes (la carte du jour, le rival, le lobby en direct, le
+// déblocage, la quête) peuvent arriver en `differees` : des promesses lues APRÈS
+// la page. Chacune est alors rendue dans un <Suspense> (Rangees.tsx), avec son
+// squelette de même taille à sa place EXACTE, ordinateur comme téléphone ; sans
+// `differees` (aperçus, tests), elles viennent de `l`, rendues d'un bloc.
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-export function LobbyView({ l }: { l: Lobby }) {
+export function LobbyView({ l, differees }: { l: Lobby; differees?: CartesDifferees }) {
   const heros = l.heros;
   const j = l.jour;
   const v = l.vainqueur;
 
-  // rangée 3 : la carte du jour, le rival et l'affiche ; sans l'un des deux, l'affiche reste à côté de l'autre ; sans les deux, rien
-  const rangeeJour = !!(l.carteDuJour || l.rival);
-  const nJour = (l.carteDuJour ? 1 : 0) + (l.rival ? 1 : 0) + 1;
+  // les cinq cartes lentes : la promesse lue après la page, sinon la valeur lue d'avance (ou null)
+  const carteDuJour = differees?.carteDuJour ?? l.carteDuJour;
+  const rival = differees?.rival ?? l.rival;
+  const enDirect = differees?.enDirect ?? l.enDirect;
+  const deblocage = differees?.deblocage ?? l.deblocage;
+  const quete = differees?.quete ?? l.quete;
 
-  // rangée 4 : une colonne (le vainqueur, le lobby en direct) | le rang
-  const colonneVq = !!(v || l.enDirect);
-
-  // rangée 5 : le déblocage et la quête empilés | les scores | l'affiche ; sans l'un, les autres s'étirent
-  const colonneDeblocage = !!(l.deblocage || l.quete);
-  const rangeeScores = colonneDeblocage || !!l.scores;
+  // rangée 4 : une colonne (le vainqueur, le lobby en direct) | le rang ; lu en continu, le lobby en direct
+  // compte d'office (sa colonne est posée avant de savoir s'il arrive : voir .colonneDirect et .etireSeule)
+  const colonneVq = !!(v || enDirect);
+  const directEnCours = enCours(enDirect);
 
   return (
     <>
@@ -105,40 +106,41 @@ export function LobbyView({ l }: { l: Lobby }) {
           </div>
         )}
 
-        {/* 3. la carte du jour | ton rival | l'affiche (la peinture qui remplace la ligue) */}
-        {rangeeJour && (
-          <div className={s.rangeeJour} data-n={nJour === 2 ? 2 : undefined}>
-            {l.carteDuJour && <CarteDuJour carte={l.carteDuJour} />}
-            {l.rival && <CarteRival rival={l.rival} />}
-            <Affiche a={l.affiches.rival} />
-          </div>
+        {/* 3. la carte du jour | ton rival | l'affiche (la peinture qui remplace la ligue) ;
+            sans l'un des deux, l'affiche reste à côté de l'autre ; sans les deux, rien */}
+        {enCours(carteDuJour) || enCours(rival) ? (
+          <RangeeJourEnContinu carte={carteDuJour} rival={rival} affiche={l.affiches.rival} />
+        ) : (
+          <RangeeJour carte={carteDuJour} rival={rival} affiche={l.affiches.rival} />
         )}
 
         {/* 4. le vainqueur d'hier (et, dessous, le lobby en direct) | le rang et la phase */}
         <div className={[s.rangee, s.rangeeAeree].join(" ")} data-n={colonneVq ? undefined : 1}>
           {colonneVq && (
-            <div className={[s.colonne, s.c7].join(" ")}>
+            <div className={cx(s.colonne, s.c7, directEnCours && !v && s.colonneDirect)}>
               {/* seule dans sa colonne, la bande remplit la hauteur du rang ; le lobby, lui, garde sa hauteur naturelle
-                  (étiré à côté du rang, il montrait un grand vide blanc : la colonne finit alors un peu plus haut) */}
-              {v && <BandeVainqueur v={v} perso={v.perso ? <PersoVainqueur perso={v.perso} /> : undefined} className={l.enDirect ? undefined : s.etire} />}
-              {l.enDirect && <EnDirect d={l.enDirect} />}
+                  (étiré à côté du rang, il montrait un grand vide blanc : la colonne finit alors un peu plus haut).
+                  Lu en continu, on ne sait pas encore s'il arrive : .etireSeule étire la bande si elle reste seule */}
+              {v && (
+                <BandeVainqueur
+                  v={v}
+                  perso={v.perso ? <PersoVainqueur perso={v.perso} /> : undefined}
+                  className={directEnCours ? s.etireSeule : enDirect ? undefined : s.etire}
+                />
+              )}
+              {directEnCours ? <EnDirectEnContinu lu={enDirect} /> : enDirect && <EnDirect d={enDirect} />}
             </div>
           )}
-          <CarteRang r={l.rang} className={colonneVq ? s.c5 : s.c12} />
+          {/* sans vainqueur, le lobby en direct lu en continu est seul dans sa colonne : s'il n'arrive pas, la colonne
+              vide se retire et le rang reprend toute la rangée (.colonneDirect:empty + .rangApresDirect) */}
+          <CarteRang r={l.rang} className={cx(colonneVq ? s.c5 : s.c12, directEnCours && !v && s.rangApresDirect)} />
         </div>
 
         {/* 5. le déblocage et la quête | les scores | l'affiche de la bibliothèque */}
-        {rangeeScores && (
-          <div className={s.rangee}>
-            {colonneDeblocage && (
-              <div className={cx(s.colonne, l.deblocage && l.quete && s.enDeux, l.scores ? s.c3 : s.c6)}>
-                {l.deblocage && <CarteDeblocage d={l.deblocage} className={s.etire} />}
-                {l.quete && <CarteQuete q={l.quete} className={s.etire} />}
-              </div>
-            )}
-            {l.scores && <CarteScores scores={l.scores} className={colonneDeblocage ? s.c5 : s.c8} />}
-            <Affiche a={l.affiches.scores} className={colonneDeblocage && !l.scores ? s.c6 : s.c4} />
-          </div>
+        {enCours(deblocage) || enCours(quete) ? (
+          <RangeeScoresEnContinu deblocage={deblocage} quete={quete} scores={l.scores} affiche={l.affiches.scores} />
+        ) : (
+          <RangeeScores deblocage={deblocage} quete={quete} scores={l.scores} affiche={l.affiches.scores} />
         )}
 
         {/* 6. la Grande Salle : le prochain examen blanc, s'il y en a un */}
