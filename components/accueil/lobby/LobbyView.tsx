@@ -75,9 +75,10 @@ export function LobbyView({ l }: { l: Lobby }) {
         <AnneauDuJourSync repondues={j.repondues} />
         <Entete e={l.entete} />
 
-        {/* 2. les 30 du jour (ou, à défaut, les 5) et leur classement | les 5 et les traits */}
+        {/* 2. les 30 du jour (ou, à défaut, les 5) et leur classement | les 5 et les traits ;
+            rangeeHeros : sur ordinateur, la rangée est bornée par la hauteur de la fenêtre (Lobby.module.css) */}
         {heros ? (
-          <div className={s.rangee}>
+          <div className={cx(s.rangee, s.rangeeHeros)}>
             <CarteTrente className={s.c8} d={heros} classement={l.classement} />
             {/* deux cartes côte à côte sur tablette seulement quand il y en a deux (sinon une demi-rangée vide) */}
             <div className={cx(s.colonne, s.c4, l.cinq && s.enDeux)}>

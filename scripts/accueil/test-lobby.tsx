@@ -22,6 +22,7 @@ import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { LobbyView } from "@/components/accueil/lobby/LobbyView";
+import { CarteTraitsGrande } from "@/components/accueil/lobby/CarteTraits";
 import {
   carteCinq,
   carteDefi,
@@ -191,7 +192,15 @@ const html = rendre("base");
   check("le classement : les cinq noms, « En direct », 128 joueurs, « Toi : pas encore rendu », « Tout le classement → »", ["Marie L.", "Inès K.", "Hugo B.", "Sarah T.", "Lucas M."].every((n) => html.includes(n)) && html.includes("En direct") && html.includes("128 joueurs") && html.includes("Toi : pas encore rendu") && html.includes("Tout le classement →") && html.includes('href="/defi/2026-10-31"'));
   check("le sélecteur Aujourd'hui | Hier : un groupe de deux boutons, Aujourd'hui pressé", html.includes('role="group" aria-label="Quel jour"') && /aria-pressed="true"[^>]*>(<canvas[^>]*><\/canvas>)?Aujourd'hui</.test(html) && /aria-pressed="false"[^>]*>Hier</.test(html));
   check("les 5 : cinq cases, 342 joueurs, meilleur 5/5, « Jouer les 5 du jour »", compte(html, /class="case5"/g) === 5 && html.includes("<b>342</b> joueurs") && html.includes("meilleur <b>5/5</b>") && html.includes("Jouer les 5 du jour"));
-  check("les traits : « Encore 14 traits », le sceau TENU en pointillé, 9 jours à ×2, joker disponible, J-110", html.includes("Encore 14 traits") && html.includes('aria-label="Sceau TENU : pas encore, il se pose à 40 traits"') && html.includes(`9${NB}jours`) && html.includes('class="feuille">×2<') && html.includes("Joker de la semaine") && html.includes("disponible") && compte(html, /J-110/g) >= 2);
+  // la petite carte des traits : l'anneau (156 px) et « Encore 14 traits », rien d'autre (demande de l'utilisateur)
+  const traitsHtml = html.slice(html.lastIndexOf("<section", html.indexOf('id="lobby-traits"')), html.indexOf("</section>", html.indexOf('id="lobby-traits"')));
+  check("les traits : « Encore 14 traits » et le sceau TENU en pointillé ; J-110 reste dans l'en-tête", traitsHtml.includes("Encore 14 traits") && traitsHtml.includes('aria-label="Sceau TENU : pas encore, il se pose à 40 traits"') && html.includes("J-110"), traitsHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
+  check("les traits : ni liste du bas (série d'encre, joker de la semaine, examen) ni phrase d'explication dans la petite carte", !traitsHtml.includes("Série d'encre") && !traitsHtml.includes("Joker de la semaine") && !traitsHtml.includes("Examen") && !traitsHtml.includes(`9${NB}jours`) && !traitsHtml.includes('class="kvl') && !traitsHtml.includes('class="st"') && !traitsHtml.includes("traitsTexte") && !traitsHtml.includes("traitsPied") && !/J-\d/.test(traitsHtml));
+  check("les traits : l'anneau passe de 104 à 156 px, centré dans la carte avec le titre à côté, un seul anneau et le repère de Léonard gardé", traitsHtml.includes("width:156px;height:156px") && !traitsHtml.includes("104px") && compte(traitsHtml, /data-leonard="anneau"/g) === 1 && traitsHtml.indexOf('class="traitsCorps"') > 0 && traitsHtml.indexOf("width:156px") < traitsHtml.indexOf('class="traitsTitre"'));
+  // la carte des 5 : un éclair décoratif en bas à droite (l'arc électrique du site, ×2,2)
+  const cinqHtml = html.slice(html.lastIndexOf("<section", html.indexOf('id="lobby-cinq"')), html.indexOf("</section>", html.indexOf('id="lobby-cinq"')));
+  check("les 5 : un éclair électrique décoratif (aria-hidden, aura cyan clair du palier 3, 48 × 66 px, classe eclairCinq), posé en dernier dans la carte", /<span aria-hidden="true" data-arc="eclair" class="arc eclair eclairCinq" style="--arc-c:#9FF0FF;width:48\.4px;height:66px"><svg/.test(cinqHtml) && cinqHtml.indexOf('data-arc="eclair"') > cinqHtml.indexOf("Jouer les 5 du jour") && compte(cinqHtml, /data-arc=/g) === 1 && compte(html, /data-arc="eclair"/g) === 1, cinqHtml.slice(-260));
+  check("les 5 : l'éclair ne porte ni lien ni bouton ni texte (rien à lire, rien à cliquer)", !/data-arc="eclair"[^>]*(href|onclick|tabindex|role=)/.test(cinqHtml) && !/<span[^>]*data-arc="eclair"[^>]*>[^<]*<svg(?:(?!<\/span>).)*(<text|<title|<a )/s.test(cinqHtml));
   check("le vainqueur : Marie L., 29/30, 11 min 40 s, devant 130 joueurs, Platine, « Le classement d'hier → »", html.includes("Vainqueur des 30 d'hier") && html.includes(`11${NB}min${NB}40${NB}s`) && html.includes("devant 130 joueurs") && html.includes('class="puce">Platine<') && html.includes("Le classement d'hier →") && html.includes('href="/defi/2026-10-30"'));
   check("le rang : Platine II, 1 478, 7e sur 412 joueurs, +12, « Plus que 22 ELO avant Platine I »", html.includes("Platine II") && html.includes(`<b>1${NB}478</b>`) && html.includes("<b>7e</b>") && html.includes("sur 412 joueurs") && html.includes("<b>+12</b>") && html.includes(`22${NB}ELO</b> avant Platine I`));
   check("la phase : « phase 1 sur 3 » à J-110, Découverte active, trois étapes", html.includes("phase 1 sur 3") && html.includes("Ta phase de révision") && compte(html, /class="ph phOn"/g) === 1 && compte(html, /class="ph /g) + compte(html, /class="ph"/g) === 3);
@@ -297,8 +306,13 @@ titre("# les variantes");
   check("sans classement : pas de carte de classement ni de sélecteur, la carte des 30 garde son bouton", !sansCl.includes("Classement des 30") && !sansCl.includes('aria-label="Quel jour"') && sansCl.includes("herosSeul") && sansCl.includes("Rendre ma copie") && compte(sansCl, /class="rl-encre-vif"/g) === 3);
 
   const sansMig = rendre("sansMigrations");
-  check("sans migrations : ni joker ni palier, ni classement ni vainqueur ; la page tient", !sansMig.includes("Joker de la semaine") && !sansMig.includes('class="feuille">×') && sansMig.includes("4" + NB + "jours") && !sansMig.includes("Classement des 30") && !sansMig.includes("Vainqueur des 30 d'hier") && sansMig.includes("Ton rang") && sansMig.length > 5000);
-  check("sans migrations : la phrase des traits dit seulement le palier à venir (pas de ×2 inventé)", sansMig.includes("×1,5 dès 3") && !sansMig.includes('<b>×2</b>'));
+  check("sans migrations : ni joker ni palier, ni classement ni vainqueur ; la page tient", !sansMig.includes("Joker de la semaine") && !sansMig.includes('class="feuille">×') && !sansMig.includes("Classement des 30") && !sansMig.includes("Vainqueur des 30 d'hier") && sansMig.includes("Ton rang") && sansMig.length > 5000);
+  // la phrase et la liste du bas ont quitté la petite carte ; la grande variante (ni 30 ni 5) les garde, avec les mêmes données
+  const grandeSansMig = renderToStaticMarkup(<CarteTraitsGrande t={exemple("sansMigrations").traits} />).replace(/&#x27;/g, "'");
+  check("sans migrations : la phrase des traits (grande variante) dit seulement le palier à venir (pas de ×2 inventé), la série est à 4 jours sans palier ni joker", grandeSansMig.includes("×1,5 dès 3") && !grandeSansMig.includes('<b>×2</b>') && grandeSansMig.includes("4" + NB + "jours") && !grandeSansMig.includes("Joker de la semaine") && !grandeSansMig.includes('class="feuille">×'));
+  check("sans migrations : la petite carte n'a plus la phrase (×1,5 dès 3 absent de la page)", !sansMig.includes("×1,5 dès 3") && !sansMig.includes("4" + NB + "jours"));
+  const grande = rendre("sansDefis");
+  check("ni 30 ni 5 : la grande variante garde la phrase, la série d'encre (9 jours à ×2), le joker disponible et J-110 en bas", grande.includes('class="st"') && grande.includes("Série d'encre") && grande.includes(`9${NB}jours`) && grande.includes('class="feuille">×2<') && grande.includes("Joker de la semaine") && grande.includes("disponible") && compte(grande, /J-110/g) >= 2 && grande.includes("width:170px;height:170px"));
 
   const sd = rendre("sansDate");
   check("sans date d'examen : « Fixe ton jour J », plus de J-n ni de phase", sd.includes("Fixe ton jour J") && !/J-\d/.test(sd) && sd.includes("Fixe ton jour J pour suivre ta phase de révision"));
@@ -385,6 +399,17 @@ titre("# la version téléphone : les règles du CSS (il ne se charge pas ici)")
   check("sous 760 px : la rangée de la carte du jour passe en une colonne, dans l'ordre du document", /\.rangeeJour,\s*\.rangeeJour\[data-n="2"\]\s*\{\s*grid-template-columns: minmax\(0, 1fr\)/.test(tel));
   check("sous 760 px : J-n passe à 40 px et le personnage du vainqueur ne pousse plus le texte", /\.examenJ\s*\{\s*font-size: 40px/.test(tel) && /\.vqAvecPerso \.vq\s*\{\s*padding-right: 20px/.test(tel));
   check("sous 360 px : le classement n'a plus de ligne de temps", /\.rg \.nm span\s*\{\s*display: none/.test(petit));
+  // l'arrivée sur un ordinateur (~1737 × 870) : l'en-tête resserré, la rangée du héros entière sous lui
+  const bureau = bloc(/@container \(min-width: 761px\)/);
+  const large = bloc(/@container \(min-width: 1081px\)/);
+  check("dès 761 px : l'en-tête remonte (marge haute négative) et se rapproche du héros ; le J-n passe de 56 à 46 px (40 px au téléphone, inchangé)", /\.entete\s*\{[^}]*margin-top: -\d+px[^}]*margin-bottom: -\d+px/.test(bureau) && /\.examenJ\s*\{\s*font-size: 46px/.test(css) && !/margin-top: -/.test(tel));
+  check("dès 1081 px : la rangée du héros est bornée par la fenêtre (max-height: max(600px, calc(100svh - …)) sur une rangée à 1fr), le classement défile dans sa carte", /\.rangeeHeros\s*\{[^}]*grid-template-rows: minmax\(0, 1fr\)[^}]*max-height: max\(600px, calc\(100svh - \d+px\)\)/.test(large) && /\.rangeeHeros > \.heros\s*\{[^}]*grid-template-rows: minmax\(0, 1fr\)/.test(large) && /\.rangeeHeros \.classement\s*\{[^}]*min-height: 0/.test(large) && /\.rangeeHeros \.lignes\s*\{[^}]*overflow-y: auto/.test(large));
+  check("rien de cette limite sous 761 px ni entre 761 et 1080 px (les cartes y sont empilées) : ni .rangeeHeros ni svh en dehors des deux blocs", !tel.includes("rangeeHeros") && !tel.includes("svh") && !bureau.includes("rangeeHeros") && !bureau.includes("svh"));
+  check("LobbyView pose .rangeeHeros sur la rangée des 30 | 5 et traits, pas sur celle des traits en grand", html.includes('class="rangee rangeeHeros"') && !rendre("sansDefis").includes("rangeeHeros"));
+  check("l'éclair de la carte des 5 est posé en bas à droite, sur le noir fixe : trait et cœur clairs, au-dessus d'aucun texte", /\.inverse \.eclairCinq\s*\{[^}]*right: 16px[^}]*bottom: 6px[^}]*--trait: var\(--arc-c\)[^}]*--noyau: #fff/.test(css));
+  // l'éclair décoratif ne gêne rien et se tait quand il le faut : il ne capte aucun clic, s'efface en mode discret, reste posé en mouvement réduit
+  const arc = readFileSync(join(process.cwd(), "components/ui/ArcElectrique.module.css"), "utf8");
+  check("l'éclair : sans clic (pointer-events: none), coupé en mode discret, posé avec prefers-reduced-motion et data-rl-motion=off", /\.arc\s*\{[^}]*pointer-events: none/.test(arc) && /html\[data-discreet="1"\]\)\s*\.arc\s*\{\s*display: none/.test(arc) && /html\[data-rl-motion="off"\]\)\s*\.arc\s*\{\s*animation: none/.test(arc) && /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.arc\s*\{\s*animation: none/.test(arc));
   const direct = readFileSync(join(process.cwd(), "components/accueil/lobby/EnDirect.module.css"), "utf8");
   check("le personnage du vainqueur est masqué sous 760 px, par requête de conteneur (la largeur de la page, pas celle de l'écran)", /@container \(max-width: 760px\)\s*\{\s*\.perso\s*\{\s*display: none/.test(direct) && !/@media \(max-width: 760px\)/.test(direct));
   const carnet = readFileSync(join(process.cwd(), "components/accueil/lobby/CarnetJours.module.css"), "utf8");

@@ -96,7 +96,7 @@
   gap: 4px 14px;
 }
 .examenJ {
-  font-size: 56px;
+  font-size: 46px;
   line-height: 0.9;
   color: var(--ink);
 }
@@ -1026,21 +1026,33 @@
 .cinqLigne b {
   color: var(--ink);
 }
+/* l'éclair décoratif en bas à droite (EclairLiaison ×2,2 = 48 × 66 px) : sa hauteur tient dans
+   la bande du bouton (40 px) + le bas de la carte (20 px) + 6 px de l'écart du dessus, donc il
+   ne monte jamais sur la ligne de texte d'au-dessus, et le bouton (largeur de son texte, à
+   gauche) ne le touche pas. Fond toujours noir : trait et cœur clairs même en thème jour
+   (le .arc de base les assombrit pour le papier ; deux classes ici l'emportent) */
+.inverse .eclairCinq {
+  right: 16px;
+  bottom: 6px;
+  z-index: 0;
+  --trait: var(--arc-c);
+  --noyau: #fff;
+}
 
 /* ——— Tes traits du jour ——— */
+/* l'anneau (156 px) et le titre à côté ; si la carte est étirée, ils se centrent dans la place qui reste */
 .traitsCorps {
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
+  flex: 1 1 auto;
   align-items: center;
   gap: 16px;
 }
 .traitsTitre {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
-}
-.traitsTexte {
-  display: grid;
-  gap: 6px;
+  line-height: 1.2;
+  text-wrap: balance;
 }
 .tenu {
   display: grid;
@@ -1265,6 +1277,45 @@
   font-size: 24px;
   line-height: 1.05;
   color: var(--ink-2);
+}
+
+/* ——————————————————————————————————————————————————————————————
+   L'arrivée sur un écran d'ordinateur : la rangée du héros tient entière sous l'en-tête
+   (rien ne change sous 761 px : le téléphone garde sa colonne et ses espaces)
+   —————————————————————————————————————————————————————————————— */
+/* l'en-tête remonte (la page laisse 28 px sous la barre du haut, 16 suffisent) et se
+   rapproche du héros (écart de 16 px réduit à 12) ; le J-n est moins haut (46 px au lieu de 56) */
+@container (min-width: 761px) {
+  .entete {
+    margin-top: -12px;
+    margin-bottom: -4px;
+  }
+}
+/* dès 1081 px, les 30 et la colonne de droite sont côte à côte : la rangée ne dépasse pas la
+   fenêtre. Place = 100svh − 170 px (barre du haut 80 + marge 16 + en-tête ~42 + écart 12 + marge
+   basse 20), plancher de 600 px : la colonne de droite fait de ~550 à ~575 px (les 5 ~215-235, les
+   traits avec leur bouton ~325, écart 16) et les 30, sur une page de 1081 px (colonne de 330 px),
+   jusqu'à ~575 px ; sous ce plancher ces cartes seraient coupées ou déborderaient. Sur un
+   grand écran la rangée garde sa hauteur naturelle. Une seule ligne de rangée à 1fr : elle se
+   cale sur le max-height. Si le classement est plus haut que la place, ses lignes défilent
+   dans la carte plutôt que d'être coupées. */
+@container (min-width: 1081px) {
+  .rangeeHeros {
+    grid-template-rows: minmax(0, 1fr);
+    max-height: max(600px, calc(100svh - 170px));
+  }
+  .rangeeHeros > .heros {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .rangeeHeros .classement {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .rangeeHeros .lignes {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 }
 
 /* ——————————————————————————————————————————————————————————————

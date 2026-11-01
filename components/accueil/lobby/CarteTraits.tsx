@@ -7,13 +7,16 @@ import { LOBBY } from "@/lib/voice-accueil-lobby";
 import s from "./Lobby.module.css";
 
 // Tes traits du jour : l'anneau du jour (celui du logo, qui se trace avec les
-// réponses), le titre vivant, la série d'encre, le joker de la semaine, le
-// J-n de l'examen. Le sceau « TENU » se pose quand l'objectif est atteint (le
-// vrai coup de tampon, une fois par jour) ; avant, un sceau en pointillé dit à
-// combien de traits il se pose. Le bouton d'encre n'arrive qu'après les 30 et
-// les 5 (CarteTraitsLobby.action). `data-leonard="anneau"` : le repère des
-// répliques de Léonard. Un seul anneau par page (le masque SVG porte un id
-// fixe). Composant serveur ; seul SceauTenu est un îlot client.
+// réponses) et le titre vivant, rien d'autre (demande de l'utilisateur : peu de
+// texte, plus de place au logo). La petite carte n'a ni la phrase d'explication
+// ni la liste du bas (série d'encre, joker de la semaine, J-n) : ces données
+// restent dans CarteTraitsLobby et la grande variante les affiche encore. Le
+// sceau « TENU » se pose quand l'objectif est atteint (le vrai coup de tampon,
+// une fois par jour) ; avant, un sceau en pointillé dit à combien de traits il
+// se pose. Le bouton d'encre n'arrive qu'après les 30 et les 5
+// (CarteTraitsLobby.action). `data-leonard="anneau"` : le repère des répliques
+// de Léonard. Un seul anneau par page (le masque SVG porte un id fixe).
+// Composant serveur ; seul SceauTenu est un îlot client.
 
 const ID = "lobby-traits";
 
@@ -98,13 +101,8 @@ export function CarteTraits({ t, className }: { t: CarteTraitsLobby; className?:
         <Sceau t={t} />
       </header>
       <div className={s.traitsCorps}>
-        <Anneau t={t} taille={104} />
-        <div className={s.traitsTexte}>
-          <p className={s.traitsTitre}>{t.titre}</p>
-          <p className={s.st}>
-            <Phrase segments={t.phrase} />
-          </p>
-        </div>
+        <Anneau t={t} taille={156} />
+        <p className={s.traitsTitre}>{t.titre}</p>
       </div>
       {t.action && (
         <Bouton href={t.action.href} taille="sm">
@@ -112,7 +110,6 @@ export function CarteTraits({ t, className }: { t: CarteTraitsLobby; className?:
           {t.action.libelle}
         </Bouton>
       )}
-      <Lignes t={t} />
     </section>
   );
 }

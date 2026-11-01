@@ -66,8 +66,11 @@ export function ArcElectrique({ palier, rayon = 22, className = "" }: { palier: 
 /**
  * Un petit éclair vertical, 22 × 30 px, pour relier deux lignes d'une liste.
  * Se place en absolu sur la jonction (le parent est en position: relative).
+ * `echelle` l'agrandit en gardant le dessin net : la taille du cadre change, le
+ * viewBox reste 22 × 30, donc le trait, la lueur et le bruit grossissent avec
+ * (vectoriel, pas de transform: scale qui floute).
  */
-export function EclairLiaison({ palier, className = "" }: { palier: number; className?: string }) {
+export function EclairLiaison({ palier, className = "", echelle = 1 }: { palier: number; className?: string; /** facteur de taille (1 = 22 × 30 px) */ echelle?: number }) {
   const uid = sansSymboles(useId());
   const racine = useRef<HTMLSpanElement | null>(null);
   useEffect(() => {
@@ -77,7 +80,7 @@ export function EclairLiaison({ palier, className = "" }: { palier: number; clas
   }, []);
   const zig = "M11 1 L7.5 9 L13.5 14 L8.5 21 L11 29";
   return (
-    <span ref={racine} aria-hidden data-arc="eclair" className={`${s.arc} ${s.eclair} ${className}`} style={{ ["--arc-c" as string]: couleurArc(palier), width: 22, height: 30 }}>
+    <span ref={racine} aria-hidden data-arc="eclair" className={`${s.arc} ${s.eclair} ${className}`} style={{ ["--arc-c" as string]: couleurArc(palier), width: +(22 * echelle).toFixed(1), height: +(30 * echelle).toFixed(1) }}>
       <svg viewBox="0 0 22 30">
         <defs>
           <filter id={`${uid}f`} x="-60%" y="-20%" width="220%" height="140%">
