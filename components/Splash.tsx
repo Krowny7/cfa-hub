@@ -64,7 +64,8 @@ const FADE_MS = 520;
 const HOLD_MS = 1900;
 // Mouvement réduit : tout est déjà posé, l'anneau part après ce temps de lecture
 const REDUCE_MS = 2800;
-// Mise en page des phrases : interligne, écart entre les deux, en em
+// Mise en page des phrases (une seule ligne, en italique) : interligne en em ; la hauteur réservée
+// compte deux lignes, au cas où un téléphone étroit coupe la phrase en deux
 const MOT_LH = 1.3;
 const MOT_GAP = 0.3;
 const MOT_EM = 2 * MOT_LH + MOT_GAP;
@@ -139,12 +140,12 @@ function placeFilm(f: Film) {
 }
 
 // Les phrases suivent le film : boîte centrée sous « LOBBY », taille de
-// lecture (≈ 22 à 28 px en paysage, 18 à 24 px en portrait selon la largeur),
-// réduite si besoin pour que les deux lignes restent dans la zone utile.
+// lecture (≈ 15 à 18 px en paysage, 13 à 15 px en portrait selon la largeur), sur une
+// seule ligne en italique (demande de l'utilisateur), réduite si besoin pour rester dans la zone utile.
 function placeMot(el: HTMLElement, f: Film, g: ReturnType<typeof placeFilm>) {
   const W = window.innerWidth;
   const t = (x: number, a: number, b: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));
-  const base = f.ow > f.oh ? 22 + 6 * t(W, 1024, 1920) : 18 + 6 * t(W, 340, 768);
+  const base = f.ow > f.oh ? 15 + 3 * t(W, 1024, 1920) : 13 + 2 * t(W, 340, 768);
   const [cx, top, w] = f.mot;
   const [, zy, , zh] = f.content;
   const room = (zy + zh / 2 - top) * g.s;
@@ -263,11 +264,11 @@ const CSS = `
 .rli-ring{width:min(27vw,330px);height:auto;overflow:visible;flex:none}
 .rli-wordcol{position:relative;width:min(46vw,560px);display:flex;flex-direction:column;align-items:center}
 .rli-words{width:100%;height:auto;overflow:visible}
-.rli-mot{font:500 clamp(18px,1.9vw,26px)/${MOT_LH} var(--font-sans);letter-spacing:-.005em;text-align:center;text-wrap:balance;color:var(--ink);pointer-events:none}
+.rli-mot{font:italic 400 clamp(13px,1.15vw,17px)/${MOT_LH} var(--font-sans);letter-spacing:0;text-align:center;text-wrap:balance;color:var(--ink);pointer-events:none}
 .rli-wordcol .rli-mot{position:absolute;top:100%;left:50%;width:100%;margin-top:clamp(14px,2.6vh,28px);transform:translateX(-50%)}
-.rli-mot span{display:block}
-.rli-mot span+span{margin-top:${MOT_GAP}em}
-@media (max-aspect-ratio:4/5){.rli-stage{flex-direction:column;gap:22px}.rli-ring{width:min(50vw,250px)}.rli-wordcol{width:min(86vw,470px)}.rli-wordcol .rli-mot{width:max(100%,min(calc(100vw - 32px),560px))}.rli-mot{font-size:clamp(17px,4.8vw,22px)}}
+.rli-mot span{display:inline-block}
+.rli-mot span+span{margin-left:.32em}
+@media (max-aspect-ratio:4/5){.rli-stage{flex-direction:column;gap:22px}.rli-ring{width:min(50vw,250px)}.rli-wordcol{width:min(86vw,470px)}.rli-wordcol .rli-mot{width:max(100%,min(calc(100vw - 32px),560px))}.rli-mot{font-size:clamp(13px,3.6vw,15px)}}
 .rli-skip{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;height:34px;padding:0 14px;border:2px solid var(--ink);border-radius:3px;background:var(--paper);color:var(--ink);font:700 13px var(--font-sans);cursor:pointer}
 .rli-out .rli-skip{opacity:0;transition:opacity .2s}
 .rli-pen{stroke-dasharray:100 130;animation:rliDraw .7s var(--d,0s) cubic-bezier(.4,0,.2,1) backwards,rliGone .5s 2.2s ease forwards}
