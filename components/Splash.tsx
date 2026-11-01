@@ -32,8 +32,8 @@ import { OUVERTURE } from "@/lib/voice";
  * sert aussi d'image fixe quand l'utilisateur préfère réduire les animations.
  *
  * Sous « RANKED LOBBY », deux phrases en anglais (lib/voice.ts, OUVERTURE)
- * apparaissent en fondu l'une après l'autre ; l'envol de l'anneau attend
- * ensuite HOLD_MS pour laisser le temps de lire (le film reste figé sur sa
+ * apparaissent en fondu EN MÊME TEMPS que le nom (demande de l'utilisateur) ;
+ * l'envol de l'anneau attend ensuite HOLD_MS pour laisser le temps de lire (le film reste figé sur sa
  * dernière image). Avec le mouvement réduit, elles sont déjà là, sans fondu.
  *
  * Un clic, une touche ou « Passer » saute à l'envol de l'anneau.
@@ -53,15 +53,15 @@ const T = {
   ranked: 2.45,
   lobby: 2.7,
   handoff: 3.8, // durée du film : la version dessinée s'aligne dessus
-  // Les deux phrases : la 1re juste après « LOBBY » (T.lobby + 0,3), la 2de 0,7 s plus tard
-  mot1: 3.0,
-  mot2: 3.7,
+  // Les deux phrases : en même temps que « RANKED LOBBY », qui se peint à T.ranked
+  mot1: 2.45,
+  mot2: 2.45,
 };
 const FLIGHT_MS = 760;
 const FADE_MS = 520;
 // Temps de lecture ajouté avant l'envol de l'anneau (fin du film, ou T.handoff en version dessinée) :
-// la 2de phrase est entièrement posée 0,5 s après la fin, il lui reste ainsi ≈ 1,4 s de lecture
-const HOLD_MS = 1900;
+// la phrase est posée dès 3,05 s (avec le nom) : elle reste ainsi ≈ 2 s à lire avant l'envol
+const HOLD_MS = 1300;
 // Mouvement réduit : tout est déjà posé, l'anneau part après ce temps de lecture
 const REDUCE_MS = 2800;
 // Mise en page des phrases (une seule ligne, en italique) : interligne en em ; la hauteur réservée
