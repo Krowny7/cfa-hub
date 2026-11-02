@@ -41,6 +41,7 @@ import {
 } from "@/components/accueil/lobby/modele";
 import { fusionnerNouveau, nouveauteRelance, phraseNouveau, actionNouveau, quandDe } from "@/components/accueil/lobby/modele-parcours";
 import { FILET_CARTES_MS, FILET_MS, plafonner } from "@/components/accueil/lobby/plafond";
+import { couleurArc } from "@/components/ui/ArcElectrique";
 import type { CartesDifferees, Lobby, NouveauLobby } from "@/components/accueil/lobby/types";
 import { parisDay, type DailyBoard } from "@/lib/daily";
 import { exemple, entrees, JOUR, MAINTENANT, MINUIT, type Variante } from "./lobby-exemple";
@@ -556,6 +557,13 @@ titre("# la version téléphone : les règles du CSS (il ne se charge pas ici)")
   const coinAnim = readFileSync(join(process.cwd(), "components/ui/arc-coin-anim.ts"), "utf8");
   check("l'arc du coin : sans clic (pointer-events: none), coupé en mode discret", /\.coin\s*\{[^}]*pointer-events: none/.test(coinCss) && /html\[data-discreet="1"\]\)\s*\.coin\s*\{\s*display: none/.test(coinCss));
   check("l'arc du coin : posé (une image fixe) avec prefers-reduced-motion et data-rl-motion=off, en pause hors écran et onglet caché", coinAnim.includes('matchMedia("(prefers-reduced-motion: reduce)")') && coinAnim.includes('dataset.rlMotion === "off"') && coinAnim.includes("image(POSE, false)") && coinAnim.includes("IntersectionObserver") && coinAnim.includes("document.hidden"));
+  check("l'arc du coin : redessiné aussitôt après un changement de taille ou de densité d'écran (ni trou ni flou)", /const redimensionner = \(\) => \{\s*mesurer\(\);\s*image\(/.test(coinAnim) && coinAnim.includes("(resolution: ") && /if \(toile\.width !== lw\)/.test(coinAnim));
+  // la couleur ne passe plus par le HTML (le canvas est vide au rendu serveur) : on la contrôle à la source
+  const cinqSrc = readFileSync(join(process.cwd(), "components/accueil/lobby/CarteCinq.tsx"), "utf8");
+  check("les 5 : l'arc est froid sur le noir (palier 3, aura cyan clair #9FF0FF)", /const PALIER_ECLAIR = 3;/.test(cinqSrc) && cinqSrc.includes("<ArcCoin palier={PALIER_ECLAIR} />") && couleurArc(3).toUpperCase() === "#9FF0FF", couleurArc(3));
+  // ArcElectrique (contour du classement et du podium, éclair d'AutourDeToi) reste en service ailleurs : ses garde-fous aussi
+  const arc = readFileSync(join(process.cwd(), "components/ui/ArcElectrique.module.css"), "utf8");
+  check("ArcElectrique : sans clic (pointer-events: none), coupé en mode discret, posé avec prefers-reduced-motion et data-rl-motion=off", /\.arc\s*\{[^}]*pointer-events: none/.test(arc) && /html\[data-discreet="1"\]\)\s*\.arc\s*\{\s*display: none/.test(arc) && /html\[data-rl-motion="off"\]\)\s*\.arc\s*\{\s*animation: none/.test(arc) && /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.arc\s*\{\s*animation: none/.test(arc));
   const direct = readFileSync(join(process.cwd(), "components/accueil/lobby/EnDirect.module.css"), "utf8");
   check("le personnage du vainqueur est masqué sous 760 px, par requête de conteneur (la largeur de la page, pas celle de l'écran)", /@container \(max-width: 760px\)\s*\{\s*\.perso\s*\{\s*display: none/.test(direct) && !/@media \(max-width: 760px\)/.test(direct));
   const carnet = readFileSync(join(process.cwd(), "components/accueil/lobby/CarnetJours.module.css"), "utf8");

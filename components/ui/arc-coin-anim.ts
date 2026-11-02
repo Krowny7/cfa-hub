@@ -253,17 +253,22 @@ export function animerArcCoin(toile: HTMLCanvasElement, couleur: string): () => 
   let raf = 0;
   let visible = typeof IntersectionObserver === "undefined";
   let prochaine = 0;
+  /** taille en px CSS, non arrondie (donnée par le ResizeObserver) */
+  let boite: [number, number] = [0, 0];
 
   const mesurer = () => {
-    const w = toile.clientWidth;
-    const h = toile.clientHeight;
+    const w = boite[0] || toile.clientWidth;
+    const h = boite[1] || toile.clientHeight;
     if (!w || !h) {
       g = null;
       return;
     }
     dpr = Math.min(2, window.devicePixelRatio || 1);
-    toile.width = Math.round(w * dpr);
-    toile.height = Math.round(h * dpr);
+    // réécrire width ou height vide la toile : seulement si la taille change vraiment
+    const lw = Math.round(w * dpr);
+    const lh = Math.round(h * dpr);
+    if (toile.width !== lw) toile.width = lw;
+    if (toile.height !== lh) toile.height = lh;
     const r = parseFloat(getComputedStyle(toile.parentElement ?? toile).borderBottomRightRadius);
     g = geometrie(w, h, Number.isFinite(r) ? r : 16);
   };
@@ -309,12 +314,32 @@ export function animerArcCoin(toile: HTMLCanvasElement, couleur: string): () => 
     if (!raf && visible && !document.hidden && g) raf = requestAnimationFrame(boucle);
   };
 
-  const taille = new ResizeObserver(() => {
+  // après un changement de taille ou de densité, on redessine tout de suite :
+  // le ResizeObserver passe après la boucle, juste avant l'affichage
+  const redimensionner = () => {
     mesurer();
-    if (immobile() || !raf) image(immobile() ? POSE : performance.now() / 1000, false);
+    image(immobile() ? POSE : performance.now() / 1000, !immobile());
     relancer();
+  };
+  const taille = new ResizeObserver((l) => {
+    const b = l[l.length - 1].contentBoxSize?.[0];
+    boite = b ? [b.inlineSize, b.blockSize] : [toile.clientWidth, toile.clientHeight];
+    redimensionner();
   });
   taille.observe(toile);
+  // zoom du navigateur ou fenêtre passée sur un autre écran : la carte garde sa
+  // taille en px CSS, mais la densité change (sinon l'arc deviendrait flou)
+  let densite: MediaQueryList | null = null;
+  const surDensite = () => {
+    redimensionner();
+    suivreDensite();
+  };
+  const suivreDensite = () => {
+    densite?.removeEventListener?.("change", surDensite);
+    densite = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+    densite.addEventListener?.("change", surDensite);
+  };
+  suivreDensite();
   const vue =
     typeof IntersectionObserver === "undefined"
       ? null
@@ -334,6 +359,7 @@ export function animerArcCoin(toile: HTMLCanvasElement, couleur: string): () => 
     visible = false;
     taille.disconnect();
     vue?.disconnect();
+    densite?.removeEventListener?.("change", surDensite);
     document.removeEventListener("visibilitychange", relancer);
     reduit.removeEventListener?.("change", relancer);
   };
