@@ -17,11 +17,37 @@ export type SalleType = "questions" | "calculs" | "mixte";
 /**
  * D'où viennent les questions : `banque` = toute la banque officielle du
  * site ; `mocks` = questions d'examen (les dossiers dont les examens blancs
- * tirent leurs questions, plus les mocks officiels). Sans effet pour les calculs.
+ * tirent leurs questions, plus les mocks officiels) ; `examen` = un ou
+ * plusieurs mocks officiels choisis session par session (voir SalleMock).
+ * Sans effet pour les calculs.
  */
-export type SalleSource = "banque" | "mocks";
+export type SalleSource = "banque" | "mocks" | "examen";
 
 export type SalleDifficulte = "facile" | "moyen" | "difficile" | "melange";
+
+/** Les questions d'origine du mock, ses variantes, ou les deux. */
+export type SalleMockVersion = "base" | "variantes" | "tout";
+/** Dans l'ordre de l'examen (les variantes après, par matière) ou mélangées. */
+export type SalleMockOrdre = "examen" | "melange";
+
+/** Les réglages d'une partie sur mocks officiels (source `examen`). */
+export type SalleMock = {
+  /** les sessions choisies : « Mock A — Session 1 »… (au moins une) */
+  examens: string[];
+  version: SalleMockVersion;
+  /** toute la sélection, ou `nombre` questions tirées au hasard */
+  complet: boolean;
+  ordre: SalleMockOrdre;
+};
+
+/** Ce qu'offre une session de mock dans une matière (écran de réglages). */
+export type MockDisponible = {
+  /** « Mock A — Session 1 » */
+  examen: string;
+  topic: TopicKey;
+  base: number;
+  variantes: number;
+};
 
 /** Les réglages qu'un admin choisit pour une partie. */
 export type SalleParams = {
@@ -36,6 +62,8 @@ export type SalleParams = {
   temps: number;
   /** part des calculs en %, de 10 à 90 (type « mixte » seulement ; 0 pour questions, 100 pour calculs) */
   partCalculs: number;
+  /** source `examen` seulement : quels mocks, et comment */
+  mock?: SalleMock;
 };
 
 /** Les réglages tels que le serveur les a gardés : avec ce qui a vraiment été tiré. */

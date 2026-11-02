@@ -5,6 +5,7 @@ import type {
   CalculPourSalle,
   EtatSalle,
   Lecture,
+  MockDisponible,
   QuestionsDisponibles,
   ReponseResultat,
   SalleClassementLigne,
@@ -330,6 +331,18 @@ export function getQuestionsDisponibles(supabase: SupabaseClient, source: SalleS
       const r = obj(raw);
       const topic = topicOuNull(r.topic);
       return topic ? [{ topic, total: num(r.total), facile: num(r.facile), moyen: num(r.moyen), difficile: num(r.difficile) }] : [];
+    }),
+  );
+}
+
+/** Les mocks officiels proposés : par session et par matière, questions d'origine et variantes. */
+export function getMocksDisponibles(supabase: SupabaseClient): Promise<Lecture<MockDisponible[]>> {
+  return lire(supabase, "salle_mocks_disponibles", {}, (d) =>
+    liste(d).flatMap((raw) => {
+      const r = obj(raw);
+      const topic = topicOuNull(r.topic);
+      const examen = typeof r.examen === "string" ? r.examen : "";
+      return topic && examen ? [{ examen, topic, base: num(r.base), variantes: num(r.variantes) }] : [];
     }),
   );
 }

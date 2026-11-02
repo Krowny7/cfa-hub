@@ -1,0 +1,1082 @@
+[
+  {
+    "num": 1,
+    "topic": "equity",
+    "prompt": "Which of the following industry classification schemes covers private companies, non-profits, and government entities?",
+    "choices": [
+      "The Industry Classification Benchmark (ICB)",
+      "The Refinitiv Business Classification (TRBC)",
+      "The Global Industry Classification Standard (GICS)"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le GICS et l’ICB couvrent les sociétés cotées, tandis que la TRBC couvre aussi les sociétés non cotées, les organismes à but non lucratif et les administrations publiques."
+  },
+  {
+    "num": 2,
+    "topic": "portfolio",
+    "prompt": "Which of the following sections of an IPS most likely explains the steps to be taken to keep the IPS current?",
+    "choices": [
+      "Procedures",
+      "Investment Guidelines",
+      "Statement of Duties and Responsibilities"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la section Procedures (procédures) décrit les étapes à suivre pour tenir l’IPS à jour, ainsi que les procédures à appliquer pour faire face à divers imprévus."
+  },
+  {
+    "num": 3,
+    "topic": "derivatives",
+    "prompt": "A swap is most likely similar to a series of forward contracts when:",
+    "choices": [
+      "the combined value of all forward contracts is zero.",
+      "all the forward contracts have the same maturity date.",
+      "the value of the long forward contracts are matched with the value of the short forward contracts at each swap payment date."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : chaque contrat forward est conclu au prix fixe qui correspond au prix fixe d’un swap de même échéance, dont les paiements interviennent aux mêmes dates que la série de forwards. Certains de ces forwards ont donc une valeur positive et d’autres une valeur négative, mais leur valeur combinée est nulle."
+  },
+  {
+    "num": 4,
+    "topic": "portfolio",
+    "prompt": "The expected return calculated using the CAPM is least likely used for:",
+    "choices": [
+      "setting fair insurance premiums.",
+      "determining the economic feasibility of projects.",
+      "forecasting the internal rate of return of a project."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le rendement espéré issu du CAPM (MEDAF) ne sert pas à prévoir le taux de rendement interne (TRI) d’un projet ; il sert de hurdle rate (taux de rendement minimal exigé) ou de coût du capital pour actualiser les flux de trésorerie prévus et aboutir à une valorisation. Compte tenu du risque systématique d’un actif, le CAPM permet de calculer son rendement espéré. Rappel : le prix d’un actif est la somme de ses flux futurs actualisés au taux de rendement exigé, ce taux étant proportionné au risque de l’actif. Le TRI, lui, est le taux d’actualisation pour lequel la somme des valeurs actuelles des flux du projet est nulle."
+  },
+  {
+    "num": 5,
+    "topic": "alternatives",
+    "prompt": "Which of the following is considered an economic infrastructure asset?",
+    "choices": [
+      "Health care assets",
+      "Educational assets",
+      "Information and communication technology assets"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les infrastructures économiques soutiennent l’activité économique ; elles regroupent les actifs de transport, les actifs de technologies de l’information et de la communication (TIC) et les actifs de services collectifs et d’énergie. Les actifs TIC comprennent les infrastructures qui stockent, diffusent et transmettent des informations ou des données, comme les tours de télécommunication et les centres de données."
+  },
+  {
+    "num": 6,
+    "topic": "derivatives",
+    "prompt": "A hedge portfolio consists of underlying assets and derivatives on those underlying assets. In the absence of arbitrage, the portfolio is expected to earn:",
+    "choices": [
+      "zero return.",
+      "the risk-free rate of return.",
+      "the weighted average return of the underlying assets in the portfolio."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la valeur d’un dérivé est généralement tirée de celle du sous-jacent, en construisant une combinaison hypothétique de dérivés et de sous-jacents qui élimine le risque. Cette combinaison s’appelle un portefeuille de couverture (hedge portfolio). Le risque étant éliminé, ce portefeuille doit rapporter le taux sans risque."
+  },
+  {
+    "num": 7,
+    "topic": "equity",
+    "prompt": "A company’s non-callable, non-convertible preferred stock that pays an annual dividend of $3.75 is currently selling at its par value of $50 per share. If the required rate of return increases by 75 bps, the preferred stock’s new price is closest to:",
+    "choices": [
+      "$45.45.",
+      "$49.50.",
+      "$55.56."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le rendement exigé actuel des investisseurs = dividende / prix de marché = $3.75/$50 = 7.50%\nNouveau rendement exigé = 7.50% + 0.75% = 8.25%\nNouveau prix de marché = $3.75/0.0825 = $45.45"
+  },
+  {
+    "num": 8,
+    "topic": "portfolio",
+    "prompt": "Which of the following statements about pension plans is most accurate?",
+    "choices": [
+      "Defined benefit plans typically have a low risk tolerance",
+      "Defined contribution plans typically have a high risk tolerance",
+      "The sponsor of a defined benefit plan specifies the obligation owed to participants"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les régimes de retraite à prestations définies (DB plans) sont des régimes d’entreprise qui garantissent aux salariés une prestation prédéfinie à la retraite. La prestation future est définie, car le régime oblige l’entreprise qui le finance (le sponsor) à préciser son engagement, exprimé en revenus de retraite dus aux participants."
+  },
+  {
+    "num": 9,
+    "topic": "equity",
+    "prompt": "Short positions have the potential for:",
+    "choices": [
+      "unbounded gains only.",
+      "unbounded losses only.",
+      "both unbounded gains and unbounded losses."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le gain potentiel d’une position courte est limité à 100% au maximum, alors que la perte potentielle est illimitée."
+  },
+  {
+    "num": 10,
+    "topic": "equity",
+    "prompt": "An analyst gathers the following information about a company's common stock and the market:\n\nCurrent dividend per share (D0)\t$10.00\nBeta\t1.4\nExpected risk-free rate of return\t3%\nExpected market rate of return\t9%\nIf the growth rate of dividends is expected to be 2%, the stock's intrinsic value based on the Gordon growth model is closest to:",
+    "choices": [
+      "$106.38.",
+      "$108.51.",
+      "$145.71."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : selon le modèle de Gordon, la valeur intrinsèque d’une action ordinaire est V0 = D1 / (r – g) = D0 × (1 + g) / (r – g), où V0 = valeur intrinsèque de l’action aujourd’hui ; r = taux de rendement exigé sur l’action ; g = taux de croissance du dividende.\nLe rendement exigé sur une action ordinaire est la somme du taux sans risque anticipé et d’une prime de risque égale au produit du bêta de l’action (mesure du risque non diversifiable) par la prime de risque du marché (rendement espéré du marché au-delà du taux sans risque) :\nr = rf + β × (rm – rf) = 3% + 1.4 × (9% – 3%) = 11.4%\nV0 = $10 × (1 + 2%) / (11.4% – 2%) = 10.2 / 9.4% ≈ $108.51"
+  },
+  {
+    "num": 11,
+    "topic": "portfolio",
+    "prompt": "An analyst gathers the following information about an equally weighted portfolio comprised of 500 assets:\n\nAverage variance of the returns of the assets = 0.04\nAverage covariance between the returns of the assets = 0.01\nThe variance of the portfolio returns is closest to:",
+    "choices": [
+      "0.01.",
+      "0.04.",
+      "0.05."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : dans un portefeuille comportant un grand nombre d’actifs, la covariance entre les actifs explique la quasi-totalité du risque du portefeuille. Avec des pondérations égales, en utilisant la variance moyenne et la covariance moyenne, la variance du portefeuille s’écrit :\nσp² = σ̄²/n + ((n – 1)/n) × cov̄\nVariance du portefeuille = (0.04/500) + [(500 – 1)/500] × 0.01 = 0.00008 + 0.00998 = 0.01006 ≈ 0.01 (la covariance moyenne des rendements)."
+  },
+  {
+    "num": 12,
+    "topic": "portfolio",
+    "prompt": "Which of the following best describes the risk of having to make a significant price concession when selling an asset?",
+    "choices": [
+      "Liquidity risk",
+      "Solvency risk",
+      "Settlement risk"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le risque de liquidité est le risque de subir une forte décote de valorisation au moment de vendre un actif financier. Pour vendre, une partie peut devoir baisser son prix sous la valeur à laquelle l’actif est valorisé (marked value) ou sous sa propre estimation de la valeur fondamentale de l’actif. Dans certaines conditions de marché, le vendeur doit consentir une concession de prix importante."
+  },
+  {
+    "num": 13,
+    "topic": "portfolio",
+    "prompt": "You are preparing an investment policy statement for a client who manages her own successful marketing consultancy. Her annual income is approximately $500,000. She describes herself as a finance novice. Most of her savings are invested in bank term deposits and short-term government securities. In her responses to the standard risk assessment questionnaire, she strongly agrees with the statements that she “feels more comfortable putting money in a bank account than in the stock market.” Also, she “thinks of the word ‘risk’ as being a ‘loss’”. Based on this information, your client’s ability and willingness to take risk can best be described as:",
+    "choices": [
+      "low ability and high willingness.",
+      "high ability and willingness.",
+      "high ability and low willingness."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : bien que la cliente possède une entreprise prospère et un revenu élevé, elle montre une aversion au risque supérieure à la moyenne : sa capacité à prendre des risques est élevée, mais sa volonté de prendre des risques est faible."
+  },
+  {
+    "num": 14,
+    "topic": "equity",
+    "prompt": "The financial systems that are operationally efficient are most likely characterized by:",
+    "choices": [
+      "security prices that reflect fundamental values.",
+      "the use of resources where they are most valuable.",
+      "liquid markets with low commissions and order price impacts."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les marchés efficients sur le plan opérationnel sont des marchés liquides, dans lesquels les coûts d’organisation des transactions, les commissions, les fourchettes bid–ask et l’impact des ordres sur les prix sont faibles."
+  },
+  {
+    "num": 15,
+    "topic": "equity",
+    "prompt": "An analyst gathers the following information about an index composed of three securities:\n\n \tSecurity 1\tSecurity 2\tSecurity 3\nBeginning-of-period price\t$50\t$75\t$60\nEnd-of-period price\t$60\t$95\t$65\nShares outstanding\t300\t350\t400\nIf the number of constituent shares is constant, the weighting method that results in the highest return is:",
+    "choices": [
+      "price weighting.",
+      "equal weighting.",
+      "value weighting."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : avec une pondération par les prix, la rentabilité-prix (price return) est d’environ 18.9%.\nÉtape 1 : somme des prix en début de période = 50 + 75 + 60 = 185\nÉtape 2 : somme des prix en fin de période = 60 + 95 + 65 = 220\nÉtape 3 : rentabilité-prix = (220/185) – 1 ≈ 18.9%\nÀ titre de comparaison, la pondération égale donne (20% + 26.7% + 8.3%)/3 ≈ 18.3% et la pondération par la capitalisation (77,250/65,250) – 1 ≈ 18.4%."
+  },
+  {
+    "num": 16,
+    "topic": "alternatives",
+    "prompt": "Which of the following best describes a clawback provision?  A provision that:",
+    "choices": [
+      "protects clients from paying twice for the same performance.",
+      "reflects the right of limited partners to reclaim part of the general partner's performance fee.",
+      "represents the minimum rate of return that must be exceeded in order to earn a performance fee."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une clause de clawback traduit le droit des LP (limited partners) de récupérer une partie de la commission de performance du GP (general partner). Quel que soit le mode de waterfall, si un GP comptabilise (ou se verse effectivement) une commission de performance sur des gains pas encore entièrement réalisés, puis que ces gains disparaissent, l’investisseur peut généralement récupérer les commissions de performance déjà comptabilisées et versées. Les clauses de clawback jouent généralement quand un GP sort tôt de participations gagnantes, puis subit des pertes sur d’autres participations plus tard dans la vie du fonds."
+  },
+  {
+    "num": 17,
+    "topic": "derivatives",
+    "prompt": "Based on put–call–forward parity, a trader can replicate a short forward position with a:",
+    "choices": [
+      "short put, a long call, and a long bond.",
+      "short put, a short call, and a short bond.",
+      "long put, a short call, and a short bond."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le coût du fiduciary call doit être égal à celui du protective put synthétique, ce qui donne la parité put–call–forward :\nF0(T)/(1 + r)^T + p0 = c0 + X/(1 + r)^T\nOn en déduit : –F0(T)/(1 + r)^T = p0 – c0 – X/(1 + r)^T\nUne position courte sur forward peut donc être répliquée par l’achat d’un put, la vente d’un call et une position courte sur une obligation (un emprunt)."
+  },
+  {
+    "num": 18,
+    "topic": "portfolio",
+    "prompt": "An investor wants to avoid investing in companies that contribute to pollution. In the IPS, this requirement is most appropriately specified in the:",
+    "choices": [
+      "liquidity section.",
+      "unique circumstances section.",
+      "investment objectives section."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la section unique circumstances (situations particulières) de l’IPS doit couvrir tout autre aspect de la situation du client, y compris ses convictions et ses valeurs, susceptible d’avoir un effet important sur la composition du portefeuille. Ces considérations relèvent souvent de l’ESG (environnement, social, gouvernance), dont font partie les enjeux environnementaux comme la pollution de l’air et de l’eau."
+  },
+  {
+    "num": 19,
+    "topic": "fixed_income",
+    "prompt": "In bankruptcy, if losses are assessed in accordance with the priority of claims, which of the following debt categories is most likely to have the lowest loss severity given default?",
+    "choices": [
+      "Second lien debt",
+      "Subordinated debt",
+      "Senior unsecured debt"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la dette garantie de second rang (second lien) bénéficie d’une sûreté sur les actifs nantis, qui passe après la dette de premier rang (first lien) à la fois pour la protection par le collatéral et pour la priorité de paiement. Or, selon l’ordre de priorité des créances, les porteurs de dette non garantie sont payés après les créanciers garantis. La dette second lien est donc prioritaire sur la dette subordonnée comme sur la dette senior non garantie, d’où la sévérité de perte en cas de défaut la plus faible."
+  },
+  {
+    "num": 20,
+    "topic": "alternatives",
+    "prompt": "Which of the following is most likely a characteristic of real assets?",
+    "choices": [
+      "High liquidity",
+      "Homogeneity",
+      "Substantial management costs"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les actifs réels se caractérisent par leur illiquidité, et non par une liquidité élevée. Leur hétérogénéité, leur illiquidité et les coûts importants de leur gestion sont autant de facteurs qui compliquent leur valorisation."
+  },
+  {
+    "num": 21,
+    "topic": "equity",
+    "prompt": "All else being equal, which of the following indexes requires frequent rebalancing to adjust for price changes in the underlying securities?",
+    "choices": [
+      "Price-weighted index",
+      "Equal-weighted index",
+      "Market-capitalization-weighted index"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : avec la méthode équipondérée, une fois l’indice construit, les variations de prix des titres qui le composent font qu’il n’est plus équipondéré. Maintenir des poids égaux exige donc des ajustements fréquents (rééquilibrages) de l’indice."
+  },
+  {
+    "num": 22,
+    "topic": "derivatives",
+    "prompt": "If a call option is underpriced relative to the binomial model, investors can earn a return in excess of the risk-free rate by buying the call and simultaneously:",
+    "choices": [
+      "investing the present value of the strike price at the risk-free rate.",
+      "selling short the underlying and investing the proceeds at the risk-free rate.",
+      "buying the underlying and funding the transaction by borrowing at the risk-free rate."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : si le prix de l’option est trop bas, acheter le call, vendre le sous-jacent à découvert et placer le produit en obligations sans risque génère une position sans risque qui rapporte plus que le taux sans risque. En effet, un call peut être répliqué en empruntant au taux sans risque et en achetant le sous-jacent. Si le call est sous-évalué, on l’achète et on fait l’inverse de sa réplication : vendre le sous-jacent à découvert et placer le produit au taux sans risque."
+  },
+  {
+    "num": 23,
+    "topic": "derivatives",
+    "prompt": "The value of a long position in a forward contract at expiration is best defined as:",
+    "choices": [
+      "forward price agreed in the contract minus spot price of the underlying.",
+      "spot price of the underlying minus forward price agreed in the contract.",
+      "value of the forward at initiation minus spot price of the underlying."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : à l’échéance, la valeur d’une position longue sur un contrat forward est égale au prix au comptant du sous-jacent moins le prix forward fixé dans le contrat."
+  },
+  {
+    "num": 24,
+    "topic": "alternatives",
+    "prompt": "An investor seeking an indirect debt investment in real estate is most likely to:",
+    "choices": [
+      "originate a residential mortgage.",
+      "purchase a commercial property.",
+      "purchase a mortgage-backed security."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les titres adossés à des créances hypothécaires (MBS) sont des portefeuilles de prêts titrisés et proposés sur les marchés financiers ; ils offrent un investissement indirect en dette dans l’immobilier résidentiel."
+  },
+  {
+    "num": 25,
+    "topic": "alternatives",
+    "prompt": "Which of the following methods of investing in alternative investments most likely provides the greatest amount of flexibility for the investor?",
+    "choices": [
+      "Co-investing",
+      "Fund investing",
+      "Direct investing"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l’un des avantages de l’investissement direct est qu’il offre à l’investisseur la plus grande flexibilité parmi les trois modes d’investissement dans les actifs alternatifs. Il permet de construire un portefeuille exactement conforme à ses exigences et donne le plus haut niveau de contrôle sur la gestion de l’actif. Par exemple, un investisseur qui achète directement une participation dans une entreprise peut généralement peser sur des décisions importantes, comme le choix de l’équipe dirigeante, l’orientation stratégique et les décisions d’investissement de l’entreprise."
+  },
+  {
+    "num": 26,
+    "topic": "portfolio",
+    "prompt": "Which of the following behavioral biases most likely helps explain the momentum market anomaly?",
+    "choices": [
+      "Status quo bias",
+      "Availability bias",
+      "Anchoring and adjustment bias"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le momentum peut s’expliquer en partie par les biais de disponibilité, de rétrospection (hindsight bias) et d’aversion aux pertes. Des études ont mis en évidence chez les traders des modèles d’apprentissage défaillants, dans lesquels le raisonnement repose sur leur expérience récente. Sur le plan comportemental, c’est le biais de disponibilité."
+  },
+  {
+    "num": 27,
+    "topic": "portfolio",
+    "prompt": "Changes in interest rates due to central bank actions are best classified as:",
+    "choices": [
+      "total risk.",
+      "systematic risk.",
+      "diversifiable risk."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le risque systématique est un risque impossible à éviter, inhérent à l’ensemble du marché. Il n’est pas diversifiable, car il découle de facteurs propres au marché qui touchent le marché dans son ensemble. Les taux d’intérêt font partie de ces facteurs : ces événements touchent tout le marché et il n’existe aucun moyen d’échapper à leur effet."
+  },
+  {
+    "num": 28,
+    "topic": "derivatives",
+    "prompt": "The replacement of existing trades on a swap execution facility by the central counterparty is best described as:",
+    "choices": [
+      "novation.",
+      "market making.",
+      "marking to market."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : en compensation centrale, une transaction sur dérivés est d’abord exécutée (étape 1) sur une swap execution facility (SEF), une plateforme de négociation de swaps accessible à plusieurs dealers. Les caractéristiques de la transaction SEF initiale sont transmises à la CCP (contrepartie centrale) à l’étape 2, puis la CCP remplace la transaction existante à l’étape 3. Ce processus de novation substitue au contrat SEF initial des transactions identiques dont la CCP est la contrepartie."
+  },
+  {
+    "num": 29,
+    "topic": "fixed_income",
+    "prompt": "Following an increase in interest rates, the point in time at which a bondholder's gain on reinvested coupons equals the loss on the sale price is best measured by:",
+    "choices": [
+      "effective duration.",
+      "modified duration.",
+      "Macaulay duration."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : pour une hypothèse donnée de volatilité des taux, la duration de Macaulay indique l’horizon de placement pour lequel le risque de réinvestissement des coupons et le risque de prix de marché se compensent. Après une hausse des taux, il existe un moment de la vie de l’obligation où les effets sur les coupons réinvestis et sur le prix se neutralisent : le gain sur les coupons réinvestis est égal à la perte sur la vente de l’obligation. Ce moment correspond à la duration de Macaulay."
+  },
+  {
+    "num": 30,
+    "topic": "fixed_income",
+    "prompt": "Which of the following duration measures is most appropriate for a callable bond?",
+    "choices": [
+      "Effective duration",
+      "Modified duration",
+      "Macaulay duration"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la duration effective est indispensable pour mesurer le risque de taux d’une obligation complexe, comme une obligation assortie d’une option de remboursement anticipé (call). La duration d’une obligation callable n’est pas la sensibilité de son prix à une variation du yield-to-worst (le plus bas du rendement à l’échéance, du rendement au premier call, au deuxième call, etc.). Le problème est que les flux futurs sont incertains, car ils dépendent des taux futurs : la décision de l’émetteur d’exercer le call dépend de sa capacité à se refinancer à moindre coût. Bref, une obligation callable n’a pas de taux de rendement interne (rendement à l’échéance) bien défini. Les durations fondées sur le rendement, comme les durations modifiée et de Macaulay, ne s’appliquent donc pas : la duration effective est la mesure appropriée."
+  },
+  {
+    "num": 31,
+    "topic": "fixed_income",
+    "prompt": "The price sensitivity of an option-free bond to a non-parallel shift in the benchmark yield curve is best measured by:",
+    "choices": [
+      "effective duration.",
+      "key rate durations.",
+      "modified duration."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une key rate duration (ou duration partielle) mesure la sensibilité d’une obligation à une variation de la courbe des taux de référence sur un segment d’échéance précis. Contrairement à la duration effective, les key rate durations permettent d’identifier le « shaping risk » d’une obligation, c’est-à-dire sa sensibilité aux changements de forme de la courbe de référence (par exemple une pentification ou un aplatissement)."
+  },
+  {
+    "num": 32,
+    "topic": "fixed_income",
+    "prompt": "For an option-free fixed-rate bond, a change in the spread is most likely to arise from a change in the:",
+    "choices": [
+      "liquidity of the bond.",
+      "expected inflation rate.",
+      "expected real rate of interest."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : en général, le rendement à l’échéance d’une obligation d’entreprise se compose d’un rendement de référence d’État et d’un spread au-dessus de cette référence. Une variation du rendement à l’échéance peut provenir de l’une ou l’autre composante, ou des deux, et une variation du spread peut provenir d’une variation du risque de crédit de l’émetteur ou de la liquidité de l’obligation."
+  },
+  {
+    "num": 33,
+    "topic": "equity",
+    "prompt": "Compared to the market value of a company's equity, the book value of a company's equity is most likely:",
+    "choices": [
+      "measured by net income multiplied by ROE.",
+      "influenced more directly by management decisions.",
+      "reflective of investors' expectations about the company's future cash flows."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : comme les décisions de la direction influencent directement le résultat net de l’entreprise, elles influencent aussi directement la valeur comptable de ses capitaux propres. La valeur de marché, elle, reflète surtout les anticipations des investisseurs sur les flux de trésorerie futurs de l’entreprise."
+  },
+  {
+    "num": 34,
+    "topic": "equity",
+    "prompt": "An investment-grade bond index is typically further subdivided by:",
+    "choices": [
+      "maturity only.",
+      "credit rating only.",
+      "both maturity and credit rating."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les indices obligataires investment grade sont généralement subdivisés à la fois par échéance (courte, intermédiaire ou longue) et par notation de crédit (par exemple AAA, BBB, etc.)."
+  },
+  {
+    "num": 35,
+    "topic": "alternatives",
+    "prompt": "High-water marks are typically used when calculating the incentive fee on hedge funds. They are most likely used by clients to:",
+    "choices": [
+      "avoid prime brokerage fees.",
+      "claw back the management fees.",
+      "avoid paying twice for the same performance."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le high-water mark permet aux clients d’éviter de payer deux fois pour la même performance. Quand la valeur d’un hedge fund baisse, le gérant ne perçoit pas de commission de performance tant que la valeur du fonds n’est pas revenue à son niveau précédent."
+  },
+  {
+    "num": 36,
+    "topic": "fixed_income",
+    "prompt": "A 5% semiannual pay bond with a par value of $1,000 is priced for settlement on February 5. If interest payments are made on May 31 and November 30, accrued interest based on 30/360 day-count convention is closest to:",
+    "choices": [
+      "$9.03.",
+      "$9.18.",
+      "$9.31."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : les intérêts courus se calculent par AI = t/T × PMT. La convention de décompte 30/360, souvent utilisée pour les obligations d’entreprise, suppose que chaque mois compte 30 jours et l’année 360 jours. Pour un règlement le 5 février, les intérêts ont couru pendant deux mois et 5 jours depuis le 30 novembre, soit 65 jours.\n(65/180) × (5.0/2) = 0.9028 pour 100 de nominal ≈ $9.03 par obligation de $1,000"
+  },
+  {
+    "num": 37,
+    "topic": "fixed_income",
+    "prompt": "The price of a fixed-rate corporate bond with an annual modified duration of 7.15 increases from 92 to 97 per 100 of par value. If the government benchmark yield increases by 5 bps, the estimated decline in the spread over the benchmark yield is closest to:",
+    "choices": [
+      "71 bps.",
+      "76 bps.",
+      "81 bps."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le prix passe de 92 à 97, soit une hausse de (97 – 92)/92 ≈ 0.05435.\nAvec %ΔPVFull ≈ –AnnModDur × ΔYield : 0.05435 = –7.15 × ΔYield ⇒ ΔYield = –0.05435/7.15 ≈ –0.00760, soit une baisse de 0.00760.\nLe rendement à l’échéance d’une obligation d’entreprise se compose du rendement de référence d’État et d’un spread. Le rendement de référence augmentant de 5 bps, la baisse du spread est de 0.0076 + 0.0005 = 0.0081, soit 81 bps ; au total, le rendement à l’échéance baisse bien de –0.0005 + 0.0081 = 0.0076."
+  },
+  {
+    "num": 38,
+    "topic": "portfolio",
+    "prompt": "An optimal risky portfolio has an expected return of 15% and standard deviation of 20%. The risk-free rate is currently 5%. A risk-seeking investor who is considering investing along the capital allocation line (CAL) would most likely:",
+    "choices": [
+      "lend 100% of her wealth at the risk-free rate.",
+      "invest 100% of her wealth in the optimal risky portfolio.",
+      "borrow 25% of her wealth at the risk-free rate and invest 125% in the optimal risky portfolio."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les investisseurs en quête de risque (risk-seeking), c’est-à-dire ceux qui sont prêts à prendre plus de risque pour obtenir un rendement espéré plus élevé, investissent plus de 100% de leur richesse dans le portefeuille risqué optimal en empruntant au taux sans risque. Leur portefeuille se situe sur la CAL, à droite du portefeuille risqué optimal."
+  },
+  {
+    "num": 39,
+    "topic": "derivatives",
+    "prompt": "Which of the following European options has the greatest value at expiration?",
+    "choices": [
+      "A put with an exercise price of 72 and an underlying priced at 83",
+      "A put with an exercise price of 83 and an underlying priced at 72",
+      "A call with an exercise price of 83 and an underlying priced at 70"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : à l’échéance, la valeur d’un put est le maximum entre zéro et le prix d’exercice moins le prix du sous-jacent : pT = Max(0, X – ST), où X est le prix d’exercice et ST le prix du sous-jacent. Ici : pT = Max(0, 83 – 72) = 11.\nLes deux autres options valent 0 : Max(0, 72 – 83) pour le put A et Max(0, 70 – 83) pour le call C."
+  },
+  {
+    "num": 40,
+    "topic": "equity",
+    "prompt": "An analyst gathers the following information about a company and its common stock:\n\nExpected dividend per share (D1)\t$2\nEstimated dividend growth rate\t4%\nReturn on equity\t9%\nBased on the Gordon growth model, if the required rate of return increases from 8% to 14%, the value of the stock decreases by:",
+    "choices": [
+      "50%.",
+      "60%.",
+      "75%."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la valeur estimée s’écrit V0 = D1/(r – g), où D1 = dividende attendu l’an prochain ; r = rendement exigé ; g = taux de croissance du dividende.\nSelon les deux hypothèses de rendement exigé :\nr = 8% : V0 = 2 / (0.08 – 0.04) = 2 / 0.04 = $50\nr = 14% : V0 = 2 / (0.14 – 0.04) = 2 / 0.10 = $20\nQuand le rendement exigé passe à 14%, la valeur estimée baisse de $30, de $50 à $20, soit $30/$50 = 60%."
+  },
+  {
+    "num": 41,
+    "topic": "fixed_income",
+    "prompt": "Which of the following most likely has the highest priority claim in the event of default?",
+    "choices": [
+      "Secured debt",
+      "Unsecured debt",
+      "Subordinated debt"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la dette garantie (secured debt) est adossée à des actifs ou à des garanties financières nantis pour assurer son remboursement en cas de défaut. Elle est donc prioritaire sur la dette non garantie et sur la dette subordonnée."
+  },
+  {
+    "num": 42,
+    "topic": "fixed_income",
+    "prompt": "In a securitization, the seller of the pool of securitized assets is the:",
+    "choices": [
+      "trustee.",
+      "depositor.",
+      "special purpose entity."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : dans une titrisation, le collatéral est le portefeuille d’actifs titrisés qui générera les flux de trésorerie. Le vendeur de ce collatéral est le depositor (déposant), aussi appelé originator (initiateur)."
+  },
+  {
+    "num": 43,
+    "topic": "derivatives",
+    "prompt": "Which of the following positions gains if the price of the underlying decreases?",
+    "choices": [
+      "A short forward position only",
+      "A short call option position only",
+      "Both a short forward position and a short call option position"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : une position courte sur forward, une position courte sur call et une position longue sur put gagnent toutes à une baisse du prix du sous-jacent."
+  },
+  {
+    "num": 44,
+    "topic": "equity",
+    "prompt": "All else being equal, if a company declares a dividend of $1 per share, the company's share price is most likely to decrease by $1 on the:",
+    "choices": [
+      "declaration date.",
+      "ex-dividend date.",
+      "holder-of-record date."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les acheteurs d’actions à la date de détachement (ex-dividend date) n’ont plus droit au prochain dividende ; toutes choses égales par ailleurs, ce jour-là, le cours de l’action baisse immédiatement du montant du dividende auquel ils renoncent."
+  },
+  {
+    "num": 45,
+    "topic": "fixed_income",
+    "prompt": "A bond has an annual modified duration of 2.741, an annual convexity of 22.638, and is currently yielding 5.0%. If the bond’s yield-to-maturity decreases to 4.2%, the expected percentage price change is closest to:",
+    "choices": [
+      "–2.12%.",
+      "2.27%.",
+      "2.34%."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la variation de prix attendue est :\n%ΔPVFull ≈ (–AnnModDuration × ΔYield) + [1/2 × AnnConvexity × (ΔYield)²]\n= (–2.741 × –0.008) + [1/2 × 22.638 × (–0.008)²] = 0.02265 ≈ 2.27%"
+  },
+  {
+    "num": 46,
+    "topic": "alternatives",
+    "prompt": "Which of the following statements about distributed ledger technology (DLT) is most accurate?",
+    "choices": [
+      "DLT is considered energy-efficient as it requires minimal energy for transaction verification",
+      "Using DLT, a transaction entered incorrectly can easily be rectified by deleting the incorrect record",
+      "A DLT consensus mechanism requires nodes in a network to agree on a common state of the ledger"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le mécanisme de consensus est le processus par lequel les entités informatiques (ou nœuds) d’un réseau s’accordent sur un état commun du registre."
+  },
+  {
+    "num": 47,
+    "topic": "portfolio",
+    "prompt": "In which of the following stages of the enterprise risk management process will a company's board most likely identify shortfalls within the company that would cause it to fail to achieve critical goals? When:",
+    "choices": [
+      "monitoring and mitigating risk",
+      "making the risk tolerance decision",
+      "allocating capital to risky activities"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la tolérance au risque, élément clé d’une bonne gouvernance du risque, définit les risques acceptables et inacceptables, ainsi que le niveau de risque auquel l’organisation peut être exposée dans son ensemble. Elle détermine dans quelle mesure l’entité est prête à subir des pertes ou des coûts d’opportunité et à ne pas atteindre ses objectifs. La gestion des risques de l’entreprise (ERM) est le bon angle pour aborder la question de l’appétence au risque. La décision de tolérance au risque commence par deux analyses distinctes qu’il faut intégrer, une vue « interne » et une vue « externe ». D’abord : quelles insuffisances au sein de l’organisation la feraient échouer, ou du moins l’empêcheraient d’atteindre certains objectifs essentiels ? L’organe de gouvernance, souvent le conseil d’administration, fixe les objectifs de l’organisation et décide en conséquence de sa tolérance au risque."
+  },
+  {
+    "num": 48,
+    "topic": "fixed_income",
+    "prompt": "An analyst gathers the following information about three mortgage loans:\n\nMortgage Loan\tLoan-to-Value Ratio\tLien Position\n1\tLow\tFirst\n2\tLow\tSecond\n3\tHigh\tFirst\nAll else being equal, the mortgage loan most likely to be classified as prime is:",
+    "choices": [
+      "Loan 1.",
+      "Loan 2.",
+      "Loan 3."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : selon la qualité de crédit de l’emprunteur, on distingue deux types de prêts hypothécaires : les prêts prime et les prêts subprime. Les prêts prime ont généralement des emprunteurs de bonne qualité de crédit, avec un emploi et un historique de crédit solides, un revenu suffisant pour honorer le prêt et un apport important dans le bien. Les prêts subprime ont des emprunteurs de moindre qualité de crédit et/ou ne bénéficient pas d’une hypothèque de premier rang sur le bien. De plus, plus le LTV (loan-to-value) est faible, plus l’apport de l’emprunteur est élevé. Le prêt 1, avec un LTV faible et une hypothèque de premier rang, est donc le plus susceptible d’être classé prime."
+  },
+  {
+    "num": 49,
+    "topic": "equity",
+    "prompt": "Compared with public equity markets, which of the following statements is most accurate about private equity markets? Operating in the private market:",
+    "choices": [
+      "allows more opportunities to raise capital.",
+      "allows management to better adopt a long-term focus.",
+      "offers stronger incentives to improve corporate governance."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la direction d’une société cotée subit des pressions de court terme, comme celle d’atteindre chaque trimestre les prévisions de chiffre d’affaires et de bénéfices des analystes. Les propriétaires privés peuvent donc mieux se concentrer sur les occasions de création de valeur à long terme."
+  },
+  {
+    "num": 50,
+    "topic": "portfolio",
+    "prompt": "If the correlation between assets in a two-asset portfolio is less than one, the standard deviation of the portfolio is:",
+    "choices": [
+      "less than the weighted average standard deviation of the individual assets.",
+      "equal to the weighted average standard deviation of the individual assets.",
+      "greater than the weighted average standard deviation of the individual assets."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : l’écart-type d’un portefeuille n’est la simple moyenne pondérée des écarts-types des deux actifs que lorsque ceux-ci sont parfaitement corrélés. Le risque du portefeuille diminue dès que les deux actifs ne sont pas parfaitement corrélés (ρ12 < +1). On le voit avec la formule de l’écart-type du portefeuille :\nσp = √(w1²σ1² + w2²σ2² + 2w1w2ρ12σ1σ2) < √(w1²σ1² + w2²σ2² + 2w1w2σ1σ2) = w1σ1 + w2σ2\nLe terme de droite est le risque du portefeuille quand ρ12 = 1. Le terme de gauche est plus petit, car son coefficient de corrélation est inférieur à 1."
+  },
+  {
+    "num": 51,
+    "topic": "equity",
+    "prompt": "In an efficient market, asset prices most likely react to the release of:",
+    "choices": [
+      "expected information only.",
+      "unexpected information only.",
+      "both expected information and unexpected information."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : dans un marché efficient, les prix ne devraient réagir qu’aux éléments des annonces que les investisseurs n’avaient pas entièrement anticipés, c’est-à-dire à leur part « inattendue » ou de « surprise »."
+  },
+  {
+    "num": 52,
+    "topic": "alternatives",
+    "prompt": "An analyst gathers the following information about a hedge fund:\n\nBeginning-of-year assets under management (AUM)\t$80,000,000\nManagement fee (based on end-of-year AUM)\t2.0%\nIncentive fee\t20.0%\nSoft hurdle rate\t5.0%\nGross return for the year\t12.5%\nIf the incentive fee is calculated independently of the management fee, total fees for the year are:",
+    "choices": [
+      "$3,000,000.",
+      "$3,440,000.",
+      "$3,800,000."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la commission de performance est calculée indépendamment de la commission de gestion et, comme le hurdle rate est soft, elle porte sur la totalité du rendement. Le hurdle rate est le rendement minimal que le gérant doit dépasser pour percevoir la commission de performance. Avec un hurdle hard, la commission ne porte que sur le rendement au-delà du seuil ; avec un hurdle soft, elle porte sur la totalité du rendement brut dès lors que le seuil est dépassé (ici 12.5% > 5%).\nCommission de gestion : AUM de fin d’année = $80,000,000 × 1.125 = $90,000,000, d’où $90,000,000 × 0.02 = $1,800,000\nCommission de performance = ($80,000,000 × 0.125) × 0.2 = $2,000,000\nTotal des frais = $1,800,000 + $2,000,000 = $3,800,000"
+  },
+  {
+    "num": 53,
+    "topic": "alternatives",
+    "prompt": "Capital provided for companies moving toward operation but before commercial manufacturing and sales have occurred best describes which stage in venture capital investing?",
+    "choices": [
+      "Later stage",
+      "Seed stage",
+      "Early stage"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le financement early stage (ou de démarrage, start-up stage) s’adresse aux entreprises qui s’acheminent vers l’exploitation, avant le début de la production commerciale et des ventes, qu’il peut d’ailleurs servir à lancer."
+  },
+  {
+    "num": 54,
+    "topic": "equity",
+    "prompt": "Price multiples for relative comparisons are most likely used for:",
+    "choices": [
+      "time-series analyses only.",
+      "cross-sectional analyses only.",
+      "both time-series analyses and cross-sectional analyses."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le principal avantage des multiples de prix est de permettre des comparaisons relatives, à la fois en coupe transversale (par rapport au marché ou à un comparable) et en série temporelle."
+  },
+  {
+    "num": 55,
+    "topic": "alternatives",
+    "prompt": "Under US GAAP, an investment valued using reliable outside broker quotes is most appropriately categorized as a:",
+    "choices": [
+      "Level 1 asset.",
+      "Level 2 asset.",
+      "Level 3 asset."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les normes comptables américaines (US GAAP) classent les investissements en trois catégories de prix : Level 1, Level 2 et Level 3. Les actifs Level 1 sont ceux pour lesquels un prix coté sur un marché organisé est disponible et doit obligatoirement être utilisé pour la valorisation. Lorsque ce prix n’existe pas, on peut s’appuyer sur des cotations de courtiers externes, c’est-à-dire des valeurs Level 2."
+  },
+  {
+    "num": 56,
+    "topic": "portfolio",
+    "prompt": "Which of the following measures is zero for the risk-free asset?",
+    "choices": [
+      "M2",
+      "Sharpe ratio",
+      "Jensen's alpha"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l’alpha de Jensen ne fait pas intervenir le risque du portefeuille au dénominateur. Comme l’actif sans risque a un risque nul et un bêta nul, on ne peut pas calculer son ratio de Sharpe, son ratio de Treynor ni son M², qui exigent tous le risque du portefeuille au dénominateur. L’alpha de l’actif sans risque, lui, est nul."
+  },
+  {
+    "num": 57,
+    "topic": "derivatives",
+    "prompt": "A buyer's profit from an in-the-money put option is best described as the:",
+    "choices": [
+      "value of the option at expiration minus the option premium.",
+      "spot price of the underlying minus the exercise price of the option.",
+      "strike price of the option minus the value of the underlying at expiration."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le profit de l’acheteur du put est Max(0, X – ST) – p0, où X est le prix d’exercice, ST le prix du sous-jacent à l’échéance et p0 la prime payée. Or Max(0, X – ST) est la valeur d’exercice (valeur intrinsèque) à l’échéance. Le profit de l’acheteur du put est donc la valeur de l’option à l’échéance moins la prime."
+  },
+  {
+    "num": 58,
+    "topic": "fixed_income",
+    "prompt": "Yield measures for both bonds and money market instruments are most likely:",
+    "choices": [
+      "compounded.",
+      "stated in annual terms.",
+      "based on simple interest."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les rendements à l’échéance des obligations sont annualisés (et composés), et les mesures de rendement du marché monétaire sont annualisées (mais non composées) : dans les deux cas, elles sont exprimées en termes annuels."
+  },
+  {
+    "num": 59,
+    "topic": "portfolio",
+    "prompt": "Which of the following pooled investment products is most likely to trade at a price furthest from its NAV?",
+    "choices": [
+      "ETF",
+      "Open-end mutual fund",
+      "Closed-end mutual fund"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les fonds fermés peuvent coter avec une prime ou une décote par rapport à leur valeur liquidative (NAV), en raison de leur nombre fixe de parts. Contrairement aux fonds ouverts, où de nouvelles parts sont créées et vendues à la valeur liquidative du moment, les fonds fermés peuvent se négocier au-dessus ou en dessous de la NAV selon la demande pour leurs parts."
+  },
+  {
+    "num": 60,
+    "topic": "derivatives",
+    "prompt": "If futures prices are positively correlated with interest rates, then futures prices are likely to be:",
+    "choices": [
+      "lower than forward prices.",
+      "equal to forward prices.",
+      "higher than forward prices."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : si les prix des futures sont positivement corrélés aux taux d’intérêt, les futures sont plus intéressants que les forwards pour les détenteurs de positions longues (leurs gains de marge quotidiens sont réinvestis à des taux plus élevés). Le prix du future est donc supérieur à celui du forward."
+  },
+  {
+    "num": 61,
+    "topic": "portfolio",
+    "prompt": "An analyst gathers the following information:\n\n \tStandard Deviation of Returns\tBeta\nPortfolio\t10%\t0.5\nMarket\t20%\t1.0\nThe covariance between the returns of the portfolio and the market is closest to:",
+    "choices": [
+      "0.005.",
+      "0.010.",
+      "0.020."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le bêta du portefeuille se calcule par βp = Cov(Rp,Rm)/σm², où Cov(Rp,Rm) est la covariance entre les rendements du portefeuille p et ceux de l’indice de marché m, et σm² la variance des rendements du marché.\nDonc Cov(Rp,Rm) = βp × σm² = 0.5 × 0.2² = 0.020."
+  },
+  {
+    "num": 62,
+    "topic": "equity",
+    "prompt": "Which of the following valuation models does not require the estimation of required rate of return on a share?",
+    "choices": [
+      "A price multiple model",
+      "The Gordon growth model",
+      "A free-cash-flow-to-equity model"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : un multiple de prix est un ratio qui rapporte le cours de l’action à un flux ou à une valeur monétaire, afin d’évaluer la valeur relative de l’action d’une société. Le modèle des multiples de prix ne nécessite ni actualisation ni estimation du rendement exigé."
+  },
+  {
+    "num": 63,
+    "topic": "alternatives",
+    "prompt": "Debtor-in-possession (DIP) financing refers to financing for firms:",
+    "choices": [
+      "already in bankruptcy.",
+      "at the risk of bankruptcy without additional financing.",
+      "with strong financial positions and promising growth prospects."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : plusieurs fonds spécialisés dans la dette d’entreprises en difficulté (distressed debt) se concentrent sur le financement debtor-in-possession (DIP), qui fournit des fonds d’exploitation à des entreprises déjà en faillite."
+  },
+  {
+    "num": 64,
+    "topic": "fixed_income",
+    "prompt": "If an investor buys a 5-year, 8% annual-pay bond for 96.11, the bond’s yield-to-maturity is closest to:",
+    "choices": [
+      "7.33%.",
+      "8.32%.",
+      "9.00%."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le rendement à l’échéance est le taux d’actualisation r qui égalise le prix de l’obligation et la valeur actuelle des coupons et du nominal :\n8/(1 + r) + 8/(1 + r)² + 8/(1 + r)³ + 8/(1 + r)^4 + 108/(1 + r)^5 = 96.11 ⇒ r = 9.00%\nÀ la calculatrice : N = 5, PV = –96.11, PMT = 8, FV = 100 ⇒ I/Y = 9.00%"
+  },
+  {
+    "num": 65,
+    "topic": "fixed_income",
+    "prompt": "A bond portfolio manager is considering three bonds (1, 2, and 3) for his portfolio. Bond 1 allows the issuer to call the bond before the stated maturity, Bond 2 allows the investor to put the bond back to the issuer before the stated maturity, and Bond 3 contains no embedded options. The bonds are otherwise identical. The manager tells his assistant, “Bond 1 and Bond 2 should have larger nominal yield spreads to a US Treasury than Bond 3 to compensate for their embedded options.” Is the manager most likely correct?",
+    "choices": [
+      "Yes",
+      "No, because Bond 1’s nominal yield spread should be less than Bond 3’s",
+      "No, because Bond 2’s nominal yield spread should be less than Bond 3’s"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l’option de vente (put) incorporée dans l’obligation 2 profite à l’investisseur ; son spread est donc inférieur à celui de l’obligation 3, qui ne comporte ni cette option ni cet avantage."
+  },
+  {
+    "num": 66,
+    "topic": "equity",
+    "prompt": "Posting 55% equity, an investor purchases a stock for €95 per share. Assuming no other activity, if the maintenance margin is 30%, the price below which a margin call first occurs is closest to:",
+    "choices": [
+      "€42.75.",
+      "€61.07.",
+      "€74.64."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le prix d’appel de marge se calcule par prix initial × (1 – marge initiale) / (1 – marge de maintenance). Cette formule est le réarrangement algébrique de la condition marge de maintenance = (fonds propres initiaux par action + P – P0) / P, où P est le prix d’appel de marge et P0 le prix initial.\nIci : €95 × (1 – 0.55) / (1 – 0.30) = €95 × 0.64286 ≈ €61.07"
+  },
+  {
+    "num": 67,
+    "topic": "fixed_income",
+    "prompt": "A portfolio consists of four bonds with the following characteristics:\nBond\tMarket Value\tDuration\nA\t$1.2 million\t3.2\nB\t$3.4 million\t7.6\nC\t$2.9 million\t12.4\nD\t$1.6 million\t1.5\nThe duration of the portfolio is closest to:",
+    "choices": [
+      "5.4.",
+      "6.2",
+      "7.5."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la duration d’un portefeuille est la moyenne pondérée des durations des obligations, le poids de chaque obligation étant sa part dans la valeur du portefeuille :\nDuration du portefeuille = Σ w × duration de l’obligation, où w = valeur de l’obligation / valeur du portefeuille\nIci, la valeur du portefeuille est 1.2 + 3.4 + 2.9 + 1.6 = $9.1 millions, et la duration du portefeuille vaut :\n(1.2/9.1 × 3.2) + (3.4/9.1 × 7.6) + (2.9/9.1 × 12.4) + (1.6/9.1 × 1.5) = 0.4220 + 2.8396 + 3.9516 + 0.2637 ≈ 7.5"
+  },
+  {
+    "num": 68,
+    "topic": "alternatives",
+    "prompt": "Which of the following is best categorized as a hard commodity?",
+    "choices": [
+      "Cattle",
+      "Lumber",
+      "Crude oil"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les matières premières sont dites « hard » (celles qui sont extraites des mines, comme le cuivre, ou du sous-sol, comme le pétrole) ou « soft » (celles qui sont cultivées ou élevées sur une certaine durée, comme le bétail, les céréales et les cultures commerciales telles que le café)."
+  },
+  {
+    "num": 69,
+    "topic": "portfolio",
+    "prompt": "An investor gathers the following information:\n\nRisk-free rate of return\t4%\nExpected market return\t12%\nStandard deviation of market returns\t20%\nThe expected return of a portfolio on the capital market line with a standard deviation of returns of 15% is closest to:",
+    "choices": [
+      "6%.",
+      "8%.",
+      "10%."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon la théorie des marchés de capitaux, tous les portefeuilles p situés sur la capital market line (CML) ont un rendement espéré E(Rp) = Rf + [(E(Rm) – Rf)/σm] × σp. Pour σp = 15% :\nE(Rp) = 4% + [(12% – 4%)/20%] × 15% = 4% + (0.4 × 15%) = 4% + 6% = 10%\nAutre méthode : d’après son écart-type, ce portefeuille de la CML est investi à 75% dans le portefeuille de marché et à 25% dans l’actif sans risque. En effet, σp = (1 – w1)σm, où w1 est le poids de l’actif sans risque et (1 – w1) celui du marché, donc (1 – w1) = σp/σm = 15%/20% = 0.75.\nE(Rp) = (0.75 × 12%) + (0.25 × 4%) = 10%"
+  },
+  {
+    "num": 70,
+    "topic": "derivatives",
+    "prompt": "The value of a European call is inversely related to which of the following factors?",
+    "choices": [
+      "Exercise price",
+      "Time to expiration",
+      "Value of the underlying"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la valeur d’un call européen varie en sens inverse du prix d’exercice : plus le prix d’exercice est élevé, moins le call vaut."
+  },
+  {
+    "num": 71,
+    "topic": "equity",
+    "prompt": "Which of the following is most likely forecast by using historical depreciation and amortization expenses?",
+    "choices": [
+      "Growth capital expenditures",
+      "Future debt and equity levels",
+      "Maintenance capital expenditures"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les prévisions de dépenses d’investissement de maintien (maintenance capex) reposent souvent sur les dotations historiques aux amortissements (depreciation and amortization), en général légèrement relevées pour tenir compte de l’inflation du prix des biens d’équipement."
+  },
+  {
+    "num": 72,
+    "topic": "derivatives",
+    "prompt": "An investor sells a European put option with the following characteristics:\n\nPut price\t15\nExercise price\t250\nIf the price of the underlying at expiration is 260, the profit for the seller is:",
+    "choices": [
+      "5.",
+      "10.",
+      "15."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : pour le vendeur du put, le profit est Π = –Max(0, X – ST) + p0, où X est le prix d’exercice, ST le prix du sous-jacent à l’échéance et p0 le prix du put.\nDonc Π = –Max(0, 250 – 260) + 15 = 15."
+  },
+  {
+    "num": 73,
+    "topic": "alternatives",
+    "prompt": "Compared to the deal-by-deal waterfall distribution method in alternative investments, the whole-of-fund method is:",
+    "choices": [
+      "less advantageous to general partners than to limited partners.",
+      "equally advantageous to general partners and to limited partners.",
+      "more advantageous to general partners than to limited partners."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la méthode de waterfall whole-of-fund (sur l’ensemble du fonds) est moins avantageuse pour les GP. Le waterfall deal-by-deal (transaction par transaction) leur est plus favorable, car les commissions de performance sont perçues transaction par transaction, ce qui permet au GP d’être payé avant que les LP n’aient récupéré leur investissement initial et leur rendement préférentiel (le hurdle rate) sur l’ensemble du fonds. Avec le whole-of-fund, toutes les distributions vont aux LP au fil des cessions, et le GP ne participe aux profits qu’une fois que les LP ont récupéré leur investissement initial et que le hurdle rate est atteint."
+  },
+  {
+    "num": 74,
+    "topic": "fixed_income",
+    "prompt": "All else being equal, a bond issuer is most likely to be evaluated as less creditworthy than its peers if it has a:",
+    "choices": [
+      "lower debt/EBITDA and a lower EBITDA/interest expense.",
+      "lower debt/EBITDA and a higher EBITDA/interest expense.",
+      "higher debt/EBITDA and a lower EBITDA/interest expense."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un ratio dette/EBITDA plus élevé traduit un levier plus fort par rapport aux résultats, et un ratio de couverture EBITDA/charges d’intérêts plus faible indique que l’entreprise risque davantage de ne pas dégager assez de résultat pour payer ses intérêts (coupons) : toutes choses égales par ailleurs, la probabilité de défaut est plus élevée et la qualité de crédit plus faible.\nDette/EBITDA : mesure courante du levier. Plus le ratio est élevé, plus le levier et le risque de crédit sont élevés. Ce ratio peut être très volatil pour les entreprises dont les flux de trésorerie varient beaucoup, comme celles des secteurs cycliques ou à fort levier opérationnel (coûts fixes).\nLes ratios de couverture mesurent la capacité d’un émetteur à faire face à (« couvrir ») ses paiements d’intérêts ; les deux plus courants sont EBITDA/charges d’intérêts et EBIT/charges d’intérêts. EBITDA/charges d’intérêts est un peu plus généreux que la version fondée sur l’EBIT, car il ne retranche pas les dotations aux amortissements (non monétaires). Plus ce ratio est élevé, meilleure est la qualité de crédit."
+  },
+  {
+    "num": 75,
+    "topic": "equity",
+    "prompt": "An analyst tests market efficiency by computing the serial correlations in security returns. The analyst is most likely assessing whether markets are:",
+    "choices": [
+      "weak-form efficient.",
+      "semi-strong-form efficient.",
+      "strong-form efficient."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : tester la forme faible de l’efficience des marchés suppose de rechercher des régularités dans l’évolution des prix. Une approche consiste à vérifier s’il existe une autocorrélation (serial correlation) des rendements des titres, qui impliquerait une évolution prévisible."
+  },
+  {
+    "num": 76,
+    "topic": "fixed_income",
+    "prompt": "In a repurchase agreement:",
+    "choices": [
+      "only the lender of funds is exposed to credit risk.",
+      "credit risk is eliminated by using highly rated sovereign bonds as collateral.",
+      "the initial margin offers partial protection against changes in the market value of the collateral."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : outre la qualité élevée des titres sous-jacents, les repos comportent des mécanismes destinés à réduire le risque d’insuffisance de collatéral pendant la durée du contrat. L’un d’eux consiste à fournir un collatéral supérieur au montant prêté : c’est la marge initiale (initial margin), qui protège en partie contre les variations de valeur de marché du collatéral."
+  },
+  {
+    "num": 77,
+    "topic": "fixed_income",
+    "prompt": "The yields of a series of zero-coupon government bonds for a full range of maturities best define a:",
+    "choices": [
+      "par curve.",
+      "spot curve.",
+      "forward curve."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les rendements à l’échéance d’une série d’obligations d’État zéro-coupon couvrant toute la gamme des échéances forment la courbe des taux spot des emprunts d’État, parfois appelée courbe zéro-coupon ou courbe « strip »."
+  },
+  {
+    "num": 78,
+    "topic": "portfolio",
+    "prompt": "An overreaction in the financial markets causes a security’s price to experience a significant loss during a short period. If this overreaction is caused by investors that sell because other investors are selling, the behavior is best described as:",
+    "choices": [
+      "herding.",
+      "loss aversion.",
+      "overconfidence."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : il y a comportement moutonnier (herding) quand des investisseurs se placent du même côté du marché sur les mêmes titres, ou quand ils ignorent leurs propres informations ou analyses pour imiter les autres investisseurs. Le herding a été avancé comme explication possible des sous-réactions et des surréactions des marchés financiers."
+  },
+  {
+    "num": 79,
+    "topic": "derivatives",
+    "prompt": "Relative to spot markets, a key feature of derivatives markets is:",
+    "choices": [
+      "high transaction costs.",
+      "low capital requirements.",
+      "restrictions on short selling."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les marchés de dérivés offrent aux hedgers (opérateurs en couverture) et aux spéculateurs l’avantage de faibles besoins en capital."
+  },
+  {
+    "num": 80,
+    "topic": "equity",
+    "prompt": "With respect to margin, the leverage ratio:",
+    "choices": [
+      "is the value of the equity investment divided by the value of the position.",
+      "is the minimum fraction of the purchase price that must be trader's equity.",
+      "indicates how many times larger a position is than the equity that supports it."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le ratio de levier indique combien de fois la position est plus grande que les fonds propres qui la financent."
+  },
+  {
+    "num": 81,
+    "topic": "alternatives",
+    "prompt": "A hedge fund with $98 million of initial capital charges a management fee of 2% and an incentive fee of 20%. The management fee is based on assets under management at year end and the incentive fee is calculated independently from the management fee. The fee structure has a high-water mark provision. The fund value is $112 million at the end of Year 1, $100 million at the end of Year 2, and $116 million at the end of Year 3. The net-of-fees return earned by the fund in Year 3 is closest to:",
+    "choices": [
+      "11.87%.",
+      "12.33%.",
+      "14.15%."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le rendement net de frais du fonds en année 3 est d’environ 14.15%.\nAnnée 1 :\nGain du portefeuille = valeur de fin d’année – valeur de début = $112 millions – $98 millions = $14 millions\nCommission de gestion = $112 millions × 2% = $2.24 millions\nCommission de performance = $14 millions × 20% = $2.8 millions\nTotal des frais = $2.24 millions + $2.8 millions = $5.04 millions\nCapital en fin d’année = $112 millions – $5.04 millions = $106.96 millions, qui devient le high-water mark\nAnnée 2 :\nAucune commission de performance : le fonds perd de la valeur et le high-water mark de l’année 1 n’est pas dépassé.\nCommission de gestion = $100 millions × 2% = $2 millions\nCapital en fin d’année = $100 millions – $2 millions = $98 millions ; le high-water mark reste à $106.96 millions\nAnnée 3 (capital de début d’année = $98 millions) :\nCommission de gestion = $116 millions × 2% = $2.32 millions\nCommission de performance = ($116 millions – $106.96 millions) × 20% = $1.81 million\nTotal des frais = $2.32 millions + $1.81 million = $4.13 millions\nRendement net de frais = ($116 millions – $4.13 millions – $98 millions) / $98 millions = 14.15%"
+  },
+  {
+    "num": 82,
+    "topic": "fixed_income",
+    "prompt": "A callable bond most likely experiences negative convexity when the bond’s yield to maturity is:",
+    "choices": [
+      "less than the bond’s coupon rate.",
+      "equal to the bond’s coupon rate.",
+      "greater than the bond’s coupon rate."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : une obligation callable est plus susceptible de présenter une convexité négative quand son rendement à l’échéance est inférieur à son taux de coupon. Pour une obligation callable, la hausse de prix lorsque la courbe de référence baisse peut être plus faible, en valeur absolue, que la baisse de prix lorsque cette courbe monte : c’est la convexité négative. Quand une obligation callable entre dans cette zone, l’option de remboursement anticipé a plus de valeur pour l’émetteur et a plus de chances d’être exercée. Quand les taux sont bas, l’option vaut beaucoup plus, car l’émetteur est plus susceptible de l’exercer pour se refinancer à moindre coût."
+  },
+  {
+    "num": 83,
+    "topic": "portfolio",
+    "prompt": "In the portfolio management process, the feedback step most likely involves:",
+    "choices": [
+      "rebalancing the portfolio.",
+      "deciding on an asset allocation.",
+      "understanding the client's constraints."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : l’étape de feedback (retour d’information) aide le gérant à rééquilibrer le portefeuille à la suite d’un changement, par exemple des conditions de marché ou de la situation du client."
+  },
+  {
+    "num": 84,
+    "topic": "portfolio",
+    "prompt": "Which of the following approaches to implementing ESG considerations in portfolio construction most likely selects investments specifically based on their environmental or social benefits?",
+    "choices": [
+      "Impact investing",
+      "Negative screening",
+      "Engage/active ownership"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : l’impact investing (investissement à impact) sélectionne précisément les investissements selon leur intention de créer un impact environnemental et social positif."
+  },
+  {
+    "num": 85,
+    "topic": "fixed_income",
+    "prompt": "A $20,000,000 par value bond has a value of $23,275,000 and an annual modified duration of 6.39. If the yield-to-maturity increases by 50 basis points, the change in value is closest to:",
+    "choices": [
+      "–$743,636.",
+      "–$639,000.",
+      "$743,636."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la money duration se calcule ainsi : MoneyDur = AnnModDur × PVFull = 6.39 × $23,275,000 = $148,727,250.\nLa variation de valeur de l’obligation est : ΔPVFull ≈ –MoneyDur × ΔYield = –$148,727,250 × 0.005 = –$743,636.25 ≈ –$743,636"
+  },
+  {
+    "num": 86,
+    "topic": "fixed_income",
+    "prompt": "Which of the following asset-backed securities most likely utilizes credit tranching as a form of credit enhancement?",
+    "choices": [
+      "Covered bond",
+      "Credit card backed security",
+      "Agency mortgage pass-through security"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les ABS adossés à des créances de cartes de crédit combinent généralement plusieurs sources de rehaussement de crédit pour soutenir les différentes tranches. Ces structures assurent normalement le rehaussement de crédit par la subordination, c’est-à-dire par le découpage en tranches de crédit."
+  },
+  {
+    "num": 87,
+    "topic": "fixed_income",
+    "prompt": "Which of the following is most likely a limitation of the yield-to-maturity measure?",
+    "choices": [
+      "It does not reflect the timing of the cash flows",
+      "It assumes coupon payments can be invested at the yield-to-maturity",
+      "It does not consider the capital gain or loss the investor will realize by holding the bond to maturity"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le rendement à l’échéance tient compte des revenus de réinvestissement, mais il suppose que les coupons peuvent être réinvestis à un taux égal au rendement à l’échéance. C’est l’une de ses limites, car l’investisseur est exposé au risque de réinvestissement (les taux futurs peuvent être inférieurs au rendement à l’échéance en vigueur à l’achat de l’obligation)."
+  },
+  {
+    "num": 88,
+    "topic": "derivatives",
+    "prompt": "The concept of put–call parity best demonstrates the equivalence of:",
+    "choices": [
+      "puts and calls.",
+      "a covered call and a protective put.",
+      "a fiduciary call and a protective put."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la parité put–call montre qu’un protective put et un fiduciary call produisent le même résultat :\nc0 + X/(1 + r)^T = p0 + S0\noù c0 = call acheté, X/(1 + r)^T = valeur actualisée de l’obligation détenue, p0 = put acheté, S0 = sous-jacent détenu.\nUn fiduciary call consiste à acheter un call de prix d’exercice X et d’échéance T sur l’actif, ainsi qu’une obligation zéro-coupon sans risque de nominal X échéant en T ; le call coûte c0 et l’obligation coûte la valeur actuelle de X, soit X/(1 + r)^T. Détenir l’actif et un put sur cet actif est la stratégie appelée protective put : le put coûte p0 et l’actif vaut S0."
+  },
+  {
+    "num": 89,
+    "topic": "equity",
+    "prompt": "Which of the following is not a source of return from investing in equities?",
+    "choices": [
+      "Cash dividends",
+      "Stock dividends",
+      "Change in the market price of equities"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : un dividende en actions (stock dividend) n’a aucun effet économique sur la société ni sur les actionnaires : chaque actionnaire reçoit davantage d’actions, mais sa part du capital et la valeur totale de sa participation restent inchangées. Comme les divisions et regroupements d’actions (stock splits et reverse stock splits), il ne constitue donc pas une source de rendement pour l’actionnaire."
+  },
+  {
+    "num": 90,
+    "topic": "equity",
+    "prompt": "Instructions that tell brokers how to settle trades are best described as:",
+    "choices": [
+      "validity instructions.",
+      "clearing instructions.",
+      "execution instructions."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les instructions de compensation (clearing instructions) indiquent aux courtiers et aux bourses comment organiser le règlement final des transactions."
+  }
+]

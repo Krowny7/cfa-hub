@@ -127,7 +127,7 @@ console.log("# les réglages de l'admin");
   const html = rendre(<Reglages onLancer={noop} />);
   check("par défaut : questions, 10 au total, banque complète, difficulté mélangée, 45 s", /aria-checked="true"[^>]*><b>Questions</.test(html) && />10 <small>au total/.test(html) && /aria-checked="true"[^>]*><b>Banque complète</.test(html) && /aria-checked="true"[^>]*><b>Mélangé</.test(html) && /aria-checked="true"[^>]*><b>45 s</.test(html));
   check("les 10 matières, toutes cochées", compte(html, /type="checkbox"/g) === 10 && compte(html, /checked=""/g) === 10 && html.includes("Toutes les matières"));
-  check("trois types, deux sources, quatre difficultés, sept temps", compte(html, /role="radio"/g) === 3 + 2 + 4 + 7);
+  check("trois types, trois sources (banque, questions d'examen, mock officiel), quatre difficultés, sept temps", compte(html, /role="radio"/g) === 3 + 3 + 4 + 7);
   check("le curseur du nombre va de 5 à 50 par 5", /type="range"[^>]*min="5"[^>]*max="50"[^>]*step="5"/.test(html));
   check("pas de part de calculs avec des questions seules", !html.includes("Part des calculs"));
   check("le résumé et la durée estimée (10 × 50 s − 5 s + 8 s = 8 min 23 s)", html.includes("10 questions · banque complète · toutes les matières · difficulté mélangée · 45 s") && html.includes("Durée estimée : 8 min 23 s"));

@@ -10,7 +10,11 @@
 import { TOPICS } from "@/lib/practiceTopics";
 import type {
   EtatSalle,
+  MockDisponible,
   SalleDifficulte,
+  SalleMock,
+  SalleMockOrdre,
+  SalleMockVersion,
   SalleParams,
   SalleParamsStockes,
   SallePhase,
@@ -52,7 +56,13 @@ export const SALLE_DESCRIPTION_MAX = 120;
 export const SALLE_LECTURE_MS = 2500;
 
 export const SALLE_TYPES: SalleType[] = ["questions", "calculs", "mixte"];
-export const SALLE_SOURCES: SalleSource[] = ["banque", "mocks"];
+export const SALLE_SOURCES: SalleSource[] = ["banque", "mocks", "examen"];
+/** Mocks officiels : jusqu'à 600 questions (toutes les sessions, variantes comprises). */
+export const SALLE_NOMBRE_MAX_MOCK = 600;
+export const SALLE_MOCK_VERSIONS: SalleMockVersion[] = ["base", "variantes", "tout"];
+export const SALLE_MOCK_ORDRES: SalleMockOrdre[] = ["examen", "melange"];
+/** « Mock A — Session 1 » : le nom d'une session de mock officiel (même motif qu'en SQL). */
+export const MOCK_EXAMEN_RE = /^Mock [A-Z] — Session [0-9]$/;
 export const SALLE_DIFFICULTES: SalleDifficulte[] = ["facile", "moyen", "difficile", "melange"];
 
 export const SALLE_TYPE_LABELS: Record<SalleType, string> = {
@@ -63,6 +73,7 @@ export const SALLE_TYPE_LABELS: Record<SalleType, string> = {
 export const SALLE_SOURCE_LABELS: Record<SalleSource, string> = {
   banque: "Banque complète",
   mocks: "Questions d'examen (mocks)",
+  examen: "Mock exam officiel",
 };
 export const SALLE_DIFFICULTE_LABELS: Record<SalleDifficulte, string> = {
   facile: "Facile",
@@ -335,9 +346,12 @@ export function validerParams(brut: unknown): { ok: true; params: SalleParams } 
   const type = SALLE_TYPES.includes(r.type as SalleType) ? (r.type as SalleType) : null;
   if (!type) erreurs.push({ champ: "type", message: "Choisis le type de partie : questions, calculs ou les deux mêlés." });
 
+  const surMock = r.source === "examen";
   const nombre = entier(r.nombre);
   if (nombre === null) erreurs.push({ champ: "nombre", message: "Indique le nombre de questions (de 5 à 50)." });
-  else if (nombre < SALLE_NOMBRE_MIN || nombre > SALLE_NOMBRE_MAX) erreurs.push({ champ: "nombre", message: "Le nombre de questions va de 5 à 50." });
+  else if (surMock) {
+    if (nombre < 1 || nombre > SALLE_NOMBRE_MAX_MOCK) erreurs.push({ champ: "nombre", message: "Le nombre de questions va de 5 à 600 pour un mock." });
+  } else if (nombre < SALLE_NOMBRE_MIN || nombre > SALLE_NOMBRE_MAX) erreurs.push({ champ: "nombre", message: "Le nombre de questions va de 5 à 50." });
 
   let temps = SALLE_TEMPS_DEFAUT;
   if (r.temps !== undefined && r.temps !== null && r.temps !== "") {
@@ -370,11 +384,44 @@ export function validerParams(brut: unknown): { ok: true; params: SalleParams } 
     } else partCalculs = p;
   }
 
+  // un mock officiel : des questions seulement, sessions choisies (lues à plat
+  // depuis le JSON du serveur, ou dans `mock` depuis le formulaire)
+  let mock: SalleMock | undefined;
+  if (source === "examen") {
+    const m = (r.mock && typeof r.mock === "object" ? r.mock : r) as Record<string, unknown>;
+    const examens = Array.isArray(m.examens) ? [...new Set(m.examens.map((e) => String(e)).filter((e) => MOCK_EXAMEN_RE.test(e)))].sort() : [];
+    if (!examens.length) erreurs.push({ champ: "mock", message: "Choisis au moins une session de mock." });
+    const version = m.version === undefined || m.version === null || m.version === "" ? "base" : m.version;
+    if (!SALLE_MOCK_VERSIONS.includes(version as SalleMockVersion)) erreurs.push({ champ: "mock", message: "Choisis les questions d'origine, les variantes ou les deux." });
+    const ordre = m.ordre === undefined || m.ordre === null || m.ordre === "" ? "examen" : m.ordre;
+    if (!SALLE_MOCK_ORDRES.includes(ordre as SalleMockOrdre)) erreurs.push({ champ: "mock", message: "L'ordre est celui de l'examen ou mélangé." });
+    const complet = m.complet === undefined || m.complet === null ? true : m.complet === true || m.complet === "true";
+    if (!complet && nombre !== null && nombre < SALLE_NOMBRE_MIN) erreurs.push({ champ: "nombre", message: "Le nombre de questions va de 5 à 600 pour un mock." });
+    mock = { examens, version: version as SalleMockVersion, complet, ordre: ordre as SalleMockOrdre };
+  }
+
   if (erreurs.length || !type || nombre === null) return { ok: false, erreurs };
+  if (mock) {
+    return { ok: true, params: { type: "questions", nombre, source: "examen", topics, difficulte: "melange", temps, partCalculs: 0, mock } };
+  }
   return {
     ok: true,
     params: { type, nombre, source: type === "calculs" ? "banque" : source, topics, difficulte, temps, partCalculs },
   };
+}
+
+/** « Mock A — Session 1 » → « Mock A · S1 ». */
+export function examenCourt(examen: string): string {
+  const m = examen.match(/^Mock ([A-Z]) — Session ([0-9])$/);
+  return m ? `Mock ${m[1]} · S${m[2]}` : examen;
+}
+
+/** Combien de questions offre une sélection de mocks, dans les matières cochées ; null : pas encore lu. */
+export function disponiblesMock(dispos: MockDisponible[] | null | undefined, mock: SalleMock, topics: TopicKey[]): number | null {
+  if (!dispos) return null;
+  return dispos
+    .filter((d) => mock.examens.includes(d.examen) && topics.includes(d.topic))
+    .reduce((t, d) => t + (mock.version === "base" ? d.base : mock.version === "variantes" ? d.variantes : d.base + d.variantes), 0);
 }
 
 /**
@@ -406,9 +453,19 @@ export function libelleDuree(secondes: number): string {
 }
 
 /** Une ligne qui résume les réglages : « 20 questions · mocks · 3 matières · difficile · 45 s ». */
-export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" | "topics" | "difficulte" | "temps">): string {
+export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" | "topics" | "difficulte" | "temps" | "mock">): string {
   const quoi = p.type === "calculs" ? "calculs" : p.type === "mixte" ? "questions et calculs" : "questions";
   const matieres = p.topics.length === SALLE_TOPIC_KEYS.length ? "toutes les matières" : `${p.topics.length} matière${p.topics.length > 1 ? "s" : ""}`;
+  if (p.source === "examen" && p.mock) {
+    const version = p.mock.version === "base" ? "questions d'origine" : p.mock.version === "variantes" ? "variantes" : "origine + variantes";
+    return [
+      `${p.nombre} questions${p.mock.complet ? " (tout)" : ""}`,
+      p.mock.examens.map(examenCourt).join(", ") || "aucune session",
+      version,
+      p.mock.ordre === "examen" ? "ordre de l'examen" : "mélangées",
+      `${p.temps} s`,
+    ].join(" · ");
+  }
   const parts = [`${p.nombre} ${quoi}`];
   if (p.type !== "calculs") parts.push(p.source === "mocks" ? "mocks" : "banque complète");
   parts.push(matieres, p.difficulte === "melange" ? "difficulté mélangée" : p.difficulte, `${p.temps} s`);
@@ -420,7 +477,7 @@ export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" 
 
 /** Les réglages au format attendu par lancer_session. */
 export function paramsVersJson(p: SalleParams): Record<string, unknown> {
-  return {
+  const json: Record<string, unknown> = {
     type: p.type,
     nombre: p.nombre,
     source: p.source,
@@ -429,6 +486,13 @@ export function paramsVersJson(p: SalleParams): Record<string, unknown> {
     temps: p.temps,
     part_calculs: p.partCalculs,
   };
+  if (p.source === "examen" && p.mock) {
+    json.examens = p.mock.examens;
+    json.version = p.mock.version;
+    json.complet = p.mock.complet;
+    json.ordre = p.mock.ordre;
+  }
+  return json;
 }
 
 /** Les réglages gardés par le serveur (salle_sessions.params), avec les nombres effectivement tirés. */

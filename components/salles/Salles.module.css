@@ -491,9 +491,10 @@
 }
 .blocTete {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
   padding: 0;
 }
 .valeur {
@@ -591,6 +592,10 @@
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 6px;
 }
+/* les sessions d'un mock : deux colonnes (session 1 | session 2), une sur téléphone */
+.sessions {
+  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
+}
 .topic {
   display: flex;
   align-items: center;
@@ -632,6 +637,7 @@
 }
 .raccourcis {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 .recap {

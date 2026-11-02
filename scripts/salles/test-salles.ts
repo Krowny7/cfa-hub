@@ -618,7 +618,7 @@ async function main() {
   // -------------------------------------------------------------------------
   section("Cohérence migration_salles.sql ↔ TypeScript");
   {
-    const sql = lire("migration_salles.sql");
+    const sql = `${lire("migration_salles.sql")}\n${lire("migration_salles_mocks.sql")}`;
     ok("alphabet des codes identique", sql.includes(`c_alphabet CONSTANT text := '${SALLE_CODE_ALPHABET}'`));
     ok("contrainte de format du code (31 caractères sans ambiguïté)", sql.includes("'^[A-HJKMNP-Z2-9]{6}$'"));
     ok("décompte et pause identiques", sql.includes(`c_decompte CONSTANT int := ${SALLE_DECOMPTE_S}`) && sql.includes(`c_pause    CONSTANT int := ${SALLE_PAUSE_S}`));
@@ -632,10 +632,11 @@ async function main() {
     const enChaine = sql.match(/WHEN v_el ->> 'topic' IN \(([^)]*)\)/);
     ok("la liste des matières acceptées pour un calcul = SALLE_TOPIC_KEYS", !!enChaine && eq([...enChaine[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]), SALLE_TOPIC_KEYS));
 
-    const fonctions = [...sql.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g)].map((m) => m[1]);
+    // migration_salles_mocks.sql reprend _salle_params et lancer_session : chaque nom une fois
+    const fonctions = [...new Set([...sql.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g)].map((m) => m[1]))];
     const publiques = fonctions.filter((f) => !f.startsWith("_"));
     const internes = fonctions.filter((f) => f.startsWith("_") && f !== "_salle_moi_membre");
-    ok(`${fonctions.length} fonctions : ${publiques.length} publiques, ${internes.length + 1} internes`, publiques.length === 14 && internes.length === 12, `${publiques.length}/${internes.length}`);
+    ok(`${fonctions.length} fonctions : ${publiques.length} publiques, ${internes.length + 1} internes`, publiques.length === 15 && internes.length === 13, `${publiques.length}/${internes.length}`);
     ok("chaque RPC publique est accordée aux joueurs connectés", publiques.every((f) => new RegExp(`GRANT EXECUTE ON FUNCTION ${f}\\(`).test(sql)), publiques.filter((f) => !new RegExp(`GRANT EXECUTE ON FUNCTION ${f}\\(`).test(sql)).join(","));
     ok("chaque RPC publique est retirée à PUBLIC et anon", publiques.every((f) => new RegExp(`REVOKE ALL ON FUNCTION ${f}\\([^)]*\\) FROM PUBLIC, anon;`).test(sql)));
     ok("chaque outil interne est retiré à tout le monde", internes.every((f) => new RegExp(`REVOKE ALL ON FUNCTION ${f}\\([^)]*\\) FROM PUBLIC, anon, authenticated;`).test(sql)), internes.filter((f) => !new RegExp(`REVOKE ALL ON FUNCTION ${f}\\([^)]*\\) FROM PUBLIC, anon, authenticated;`).test(sql)).join(","));

@@ -1,0 +1,1082 @@
+[
+  {
+    "num": 1,
+    "topic": "ethics",
+    "prompt": "Which of the following is consistent with the Standards?\n\nStatement 1: An IPS should address the client's return requirements.\nStatement 2: Personal data such as age and occupation are required to provide investment advice.\nStatement 3: Clients are primarily responsible for determining if investments are suitable for them if they are in an advisory relationship with members.",
+    "choices": [
+      "Statement 1 only",
+      "Statement 1 and Statement 2 only",
+      "Statement 1, Statement 2, and Statement 3"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les affirmations 1 et 2 sont conformes aux Standards.\nL'affirmation 1 est conforme car, selon la Norme III(C), Adéquation (Suitability), ces informations doivent figurer dans une déclaration de politique d'investissement (IPS) écrite qui traite des exigences de rendement du client. L'affirmation 2 est conforme car, selon la Norme III(C), lorsqu'une relation de conseil existe, les membres et candidats doivent recueillir les informations sur le client dès le début de la relation. Ces informations comprennent la situation financière du client, ses données personnelles (comme l'âge et la profession) utiles aux décisions d'investissement, son attitude face au risque et ses objectifs d'investissement."
+  },
+  {
+    "num": 2,
+    "topic": "ethics",
+    "prompt": "Which of the following member actions is a violation of the Standard relating to market manipulation?\n\nAction 1: Selling large holdings of a small-cap stock with the intent to make a profit despite being aware that the transaction could significantly impact the stock price.\nAction 2: Securing a significant position in a futures contract with the intent to drive the price of the underlying asset downward.\nAction 3: Acquiring a large position in an asset in one market and shorting the same asset in another market with the intent to generate arbitrage profits.",
+    "choices": [
+      "Action 1.",
+      "Action 2.",
+      "Action 3."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : selon la Norme II(B), Manipulation de marché (Market Manipulation), la manipulation comprend notamment le fait de prendre une position dominante, de contrôle, sur un instrument financier afin d'exploiter et de manipuler le prix d'un dérivé lié et/ou de l'actif sous-jacent. L'action 2 constitue donc une violation de la Norme II(B)."
+  },
+  {
+    "num": 3,
+    "topic": "ethics",
+    "prompt": "Melissa Kon, CFA, is an equity analyst. She recently left her job at Hamm Capital (HC) to join Eagle Investments (EI). Kon obtains the express consent of HC to take one of her historical research reports with her. At EI, she diligently updates the report and publishes it. Afterwards, she re-creates supporting records from sources obtained at HC. Has Kon violated the Standards?",
+    "choices": [
+      "No",
+      "Yes, by publishing the updated research report",
+      "Yes, by re-creating the supporting records from sources obtained at Hamm Capital"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un membre ne doit pas reconstituer les pièces justificatives à partir de sources obtenues chez son ancien employeur. Selon la Norme V(C), Conservation des dossiers (Record Retention), le membre ou candidat ne peut pas utiliser les recommandations ou rapports de recherche historiques créés dans son ancienne société, car les pièces justificatives ne sont pas disponibles. Pour un usage futur, il doit reconstituer ces pièces dans sa nouvelle société à partir d'informations recueillies auprès de sources publiques ou directement auprès de la société suivie, et non de mémoire ni à partir de sources obtenues chez son ancien employeur."
+  },
+  {
+    "num": 4,
+    "topic": "ethics",
+    "prompt": "Elbie Botha, CFA, an equity research analyst at an investment bank, disagrees with her research team’s buy recommendation for a particular company’s rights issue. She acknowledges that the recommendation is based on a well-developed process and extensive research, but feels the valuation is overpriced based on her assumptions. Despite her contrarian view, her name is included on the research report to be distributed to all of the investment bank’s clients. To avoid violating any CFA Institute Standards, it would be least appropriate for Botha to undertake which of the following?",
+    "choices": [
+      "Leave her name on the report",
+      "Insist her name is removed from the report",
+      "Issue a new report based on her conclusions"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la Norme IV(A), Loyauté (Loyalty), exige des employés qu'ils soient loyaux envers leur employeur en ne lui causant pas de préjudice. Si Botha diffusait aux clients un rapport de recherche contenant une recommandation contraire, elle risquerait de semer la confusion parmi les clients et de mettre la société dans l'embarras."
+  },
+  {
+    "num": 5,
+    "topic": "ethics",
+    "prompt": "On a flight to Europe, Romy Haas, CFA, strikes up a conversation with a fellow passenger, Vincent Trujillo. When Trujillo learns that Haas is in the investment profession, he asks about the CFA designation. Haas tells him the following about the CFA designation:\n\nStatement 1: Individuals who have completed the CFA Program have the right to use the CFA designation immediately.\nStatement 2: The CFA designation is globally recognized, which is why I use it as part of my firm’s name.\nStatement 3: CFA charterholders must satisfy membership requirements to continue using the designation.\nIn explaining the use of the CFA designation, Haas least likely violated the Standards concerning which of the following statements?",
+    "choices": [
+      "Statement 1",
+      "Statement 2",
+      "Statement 3"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon la Norme VII(B), Référence au CFA Institute, au titre CFA et au programme CFA, l'affirmation 3 est une description exacte du titre CFA : les titulaires de la charte doivent satisfaire aux conditions d'adhésion pour continuer à utiliser le titre."
+  },
+  {
+    "num": 6,
+    "topic": "ethics",
+    "prompt": "Teresa Staal, CFA, is an investment officer in a bank trust department. She manages money for celebrities and public figures, including an influential local politician. She receives a request from the politician’s political party headquarters to disclose his stock holdings. The request indicates that local law requires the disclosure. What steps should Staal most likely take to ensure she does not violate any of the Standards?",
+    "choices": [
+      "Provide the information and inform her client",
+      "Send the requested documents and inform her supervisor",
+      "Check with her firm’s compliance department to determine her legal responsibilities."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : pour ne pas enfreindre la Norme III(E), Préservation de la confidentialité (Preservation of Confidentiality), Staal doit vérifier si la réglementation applicable exige la communication de ces informations avant de transmettre des informations confidentielles sur les placements de son client."
+  },
+  {
+    "num": 7,
+    "topic": "ethics",
+    "prompt": "According to the recommended procedures for compliance with the Standard relating to performance presentation, members should:",
+    "choices": [
+      "exclude terminated accounts from performance history.",
+      "consider the knowledge of the audience to whom a performance presentation is addressed.",
+      "use a representative account when presenting the performance of the weighted composite of similar portfolios."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : selon la Norme III(D), Présentation des performances (Performance Presentation), les membres peuvent satisfaire à cette obligation en tenant compte des connaissances et du degré de sophistication du public auquel s'adresse la présentation des performances."
+  },
+  {
+    "num": 8,
+    "topic": "ethics",
+    "prompt": "Which of the following is a recommended procedure for compliance with the Standard relating to fair dealing?",
+    "choices": [
+      "Establish systematic account reviews",
+      "Prioritize trades according to fees and service levels",
+      "Disclose to clients any inequitable trade allocation methods"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : l'une des procédures recommandées pour respecter la Norme III(B), Traitement équitable (Fair Dealing), consiste à mettre en place une revue systématique des comptes. Les superviseurs des membres et candidats doivent examiner régulièrement chaque compte pour s'assurer qu'aucun client ne bénéficie d'un traitement préférentiel et que les décisions d'investissement prises pour chaque compte conviennent aux objectifs de ce compte."
+  },
+  {
+    "num": 9,
+    "topic": "ethics",
+    "prompt": "Umi Grabbo, CFA, is a highly regarded portfolio manager for Atlantic Advisors, a mid-sized mutual fund firm investing in domestic securities. She has watched the hedge fund boom and on numerous occasions suggested that her firm create such a fund. Senior management has refused to commit resources to hedge funds. Attracted by potential higher fees associated with hedge funds, Grabbo and several other employees begin development of their own hedge fund to invest in international securities. Grabbo and her colleagues are careful to work on the fund development only on their own time. Because Atlantic management thinks hedge funds are a fad, she does not inform her supervisor about the hedge fund creation. According to the Standards of Practice Handbook, Grabbo should most likely address which of the Standards immediately?",
+    "choices": [
+      "Priority of transactions",
+      "Avoid or disclose conflicts",
+      "Additional compensation arrangements"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : selon la Norme VI(A), Éviter ou divulguer les conflits (Avoid or Disclose Conflicts), Grabbo doit informer son employeur de la création de ce hedge fund, car cette activité pourrait interférer avec ses responsabilités chez Atlantic. En montant un hedge fund, Grabbo n'agissait pas dans l'intérêt de son employeur. Elle aurait dû informer Atlantic de son souhait de créer ce fonds et convenir avec lui des modalités."
+  },
+  {
+    "num": 10,
+    "topic": "ethics",
+    "prompt": "Manpreet Grewal, CFA, is a wealth manager and also teaches underprivileged children at a school on holiday weekends. The school pays Grewal a nominal fee for his services. Grewal does not disclose this arrangement to his employer. Has Grewal violated the Standards?",
+    "choices": [
+      "No",
+      "Yes, the Standard relating to avoid or disclose conflicts",
+      "Yes, the Standard relating to additional compensation arrangements"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la Norme IV(B), Rémunérations complémentaires (Additional Compensation Arrangements), impose aux membres et candidats d'obtenir l'autorisation de leur employeur avant d'accepter d'un tiers une rémunération ou d'autres avantages pour des services rendus à l'employeur ou pour tout service susceptible de créer un conflit avec les intérêts de l'employeur. L'activité en question étant de l'enseignement, il n'y a aucun conflit avec l'employeur et donc aucune autorisation à obtenir ; de plus, l'enseignement a lieu les week-ends fériés et la rémunération est symbolique. Selon la Norme VI(A), Éviter ou divulguer les conflits (Avoid or Disclose Conflicts), les membres et candidats doivent communiquer de manière complète et loyale tout ce qui peut raisonnablement compromettre leur indépendance et leur objectivité ou interférer avec leurs obligations envers leurs clients, clients potentiels et employeur. Enseigner les week-ends fériés ne crée aucun conflit d'intérêts avec son employeur : aucune déclaration n'est donc nécessaire. Aucune des deux Normes n'est enfreinte."
+  },
+  {
+    "num": 11,
+    "topic": "ethics",
+    "prompt": "Colin Gifford, CFA, is finalizing a monthly newsletter to his clients, who are primarily individual investors. Many of the clients’ accounts hold the common stock of Capricorn Technologies. In the newsletter, Gifford writes, “Based upon the next six month’s earnings of $1.50 per share and a 10% increase in the dividend, the price of Capricorn’s stock will be $22 per share by the end of the year.” Regarding his stock analysis, the least appropriate action Gifford should take to avoid violating the Standards would be to:",
+    "choices": [
+      "separate fact from opinion.",
+      "include earnings estimates.",
+      "identify limitations of the analysis."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : inclure des estimations de bénéfices n'est pas exigé par les Standards. Même si l'analyse prévisionnelle (pro forma) est une pratique courante du secteur, la Norme V(B), Communication avec les clients (Communication with Clients), ne l'impose pas. Elle impose en revanche de distinguer les faits des opinions et d'indiquer les limites de l'analyse : les estimations de bénéfices sont des opinions et doivent être clairement présentées comme telles."
+  },
+  {
+    "num": 12,
+    "topic": "ethics",
+    "prompt": "Kam Bergeron, CFA, is an equity portfolio manager who often takes time off in the afternoon to play golf with important clients. Today, Bergeron is on the golf course when his game is interrupted by a phone call from his office. The call is from Bergeron’s assistant, who notifies him of a steep and accelerating market decline. Bergeron, eager to get back to his golf game, tells his assistant to raise cash by selling 15% of all clients’ holdings. Bergeron instructs his assistant to first sell the most liquid stocks in each client’s portfolio and then do the same for his personal account. Bergeron is least likely to be in violation of which of the Standards?",
+    "choices": [
+      "Suitability",
+      "Priority of transactions",
+      "Diligence and reasonable basis"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le gérant donne l'instruction de vendre ses titres personnels après ceux de ses clients ; rien n'indique donc une violation de la Norme VI(B), Priorité des transactions (Priority of Transactions)."
+  },
+  {
+    "num": 13,
+    "topic": "ethics",
+    "prompt": "Jennifer Ducumon, CFA, is a portfolio manager for high-net-worth individuals at Northeast Investment Bank. Northeast holds a large number of shares in Babyskin Care Inc., a manufacturer of baby care products. Northeast obtained the Babyskin shares when they underwrote the company’s recent IPO. Ducumon has been asked by the investment banking department to recommend Babyskin to her clients, who currently do not hold any shares in their portfolios. Although Ducumon has a favorable opinion of Babyskin, she does not consider the shares a buy at the IPO price nor at current price levels. According to the CFA Institute Code of Ethics and Standards of Professional Conduct the most appropriate action for Ducumon is to:",
+    "choices": [
+      "ignore the request.",
+      "recommend the shares after additional analysis.",
+      "follow the request as soon as the share price declines."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : il faut refuser de recommander les actions, car l'opinion de Ducumon sur les titres Babyskin ne doit pas être influencée par des pressions internes. Si Ducumon suivait la demande du département de banque d'investissement de sa société, elle enfreindrait la Norme I(B), Indépendance et objectivité (Independence and Objectivity). Elle doit refuser de recommander les actions Babyskin tant qu'elles ne constituent pas un achat intéressant au vu de l'analyse fondamentale et des prix de marché."
+  },
+  {
+    "num": 14,
+    "topic": "ethics",
+    "prompt": "According to the Standard relating to referral fees, a member is required to disclose which of the following considerations?",
+    "choices": [
+      "Soft dollars only",
+      "Considerations paid in kind only",
+      "Both soft dollars and considerations paid in kind"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon la Norme VI(C), Commissions d'apport (Referral Fees), le membre ou candidat doit indiquer la nature de la contrepartie ou de l'avantage (par exemple forfait ou pourcentage, avantage ponctuel ou récurrent, lié à la performance, fourniture de recherche ou autre avantage non monétaire), ainsi que sa valeur estimée en dollars. La contrepartie comprend toutes les rémunérations, qu'elles soient versées en espèces, en soft dollars ou en nature."
+  },
+  {
+    "num": 15,
+    "topic": "ethics",
+    "prompt": "According to the recommended procedures for compliance with the Standard relating to responsibilities of supervisors, a member in a supervisory position should:",
+    "choices": [
+      "incorporate a professional conduct evaluation as part of an employee’s performance review.",
+      "rely on an employee’s statement about the extent of a violation of the law if the employee gives written assurance that the wrongdoing will not reoccur.",
+      "implement the CFA Institute Code and Standards in her department if she cannot discharge supervisory responsibilities because of inadequate compliance system."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : selon les procédures recommandées pour respecter la Norme IV(C), Responsabilités des superviseurs (Responsibilities of Supervisors), une fois un programme de conformité en place, le superviseur doit intégrer une évaluation de la conduite professionnelle dans l'entretien d'évaluation de l'employé."
+  },
+  {
+    "num": 16,
+    "topic": "ethics",
+    "prompt": "Peter Levinson, CFA, declared personal bankruptcy due to unpaid medical bills. After losing his receipt for a business dinner, he uses his wife’s receipt for a smaller amount from the same restaurant to submit his expense claim. Has Levinson most likely violated the Standards?",
+    "choices": [
+      "No",
+      "Yes, by declaring personal bankruptcy",
+      "Yes, by using his wife’s receipt for his expense claim"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon la Norme I(D), Inconduite (Misconduct), les membres et candidats ne doivent adopter aucune conduite professionnelle impliquant malhonnêteté, fraude ou tromperie, ni commettre aucun acte qui nuise à leur réputation professionnelle, à leur intégrité ou à leur compétence. Utiliser le reçu de son épouse pour une note de frais est une conduite professionnelle malhonnête."
+  },
+  {
+    "num": 17,
+    "topic": "ethics",
+    "prompt": "Which of the following is not a requirement of the GIPS standards? Firms are required to:",
+    "choices": [
+      "have their performance records verified by an independent third party.",
+      "include all discretionary, fee-paying portfolios in at least one composite.",
+      "present a minimum of five years of annual investment performance compliant with GIPS standards."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : faire vérifier ses performances par un tiers indépendant est une recommandation, et non une obligation, pour se déclarer conforme aux normes GIPS."
+  },
+  {
+    "num": 18,
+    "topic": "ethics",
+    "prompt": "Agnes Chau posts on social media immediately after taking the CFA Level III exam. She strongly expresses her disagreement with CFA Institute on its computer-based exam procedures and mentions several topic areas not tested on the exam. Has Chau violated the Standards?",
+    "choices": [
+      "No",
+      "Yes, by mentioning broad topic areas not tested in the exam",
+      "Yes, by expressing her disagreement with CFA Institute on its computer-based exam procedures"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : selon la Norme VII(A), Conduite en tant que participant aux programmes du CFA Institute, tous les aspects de l'examen, y compris les questions, les grands thèmes et les formules, testés ou non, sont confidentiels jusqu'à ce que le CFA Institute décide de les rendre publics. Cette exigence de confidentialité permet au CFA Institute de préserver l'intégrité et la rigueur des examens pour les futurs candidats. Chau mentionne sur les réseaux sociaux les grands thèmes non testés : elle a donc enfreint cette Norme."
+  },
+  {
+    "num": 19,
+    "topic": "ethics",
+    "prompt": "Which of the following statements regarding the GIPS standards is most accurate?",
+    "choices": [
+      "Firms can claim compliance on a specific composite",
+      "Claiming compliance with the GIPS standards is voluntary for firms",
+      "Compliance with the GIPS standards is mandatory for asset owners that report to a regulatory authority"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : pour les sociétés, se conformer aux normes GIPS est volontaire."
+  },
+  {
+    "num": 20,
+    "topic": "ethics",
+    "prompt": "Darden Crux, CFA, a portfolio manager at SWIFT Asset Management Ltd. (SWIFT), calls a friend to join him for dinner. The friend, a financial analyst at Cyber Kinetics (CK), declines the invitation and explains she is performing due diligence on Orca Electronics, a company CK is about to acquire. After the phone call, Crux searches the internet for any news of the acquisition but finds nothing. What action should Crux most likely take to avoid violating any CFA Institute Standards of Professional Conduct?",
+    "choices": [
+      "Refuse to trade CK",
+      "Purchase the stock and call options for all clients",
+      "Trade only after analyzing the stock diligently and thoroughly"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : négocier sur la base de cette information enfreindrait la Norme II(A), Informations privilégiées (Material Nonpublic Information). Selon cette Norme, les membres et candidats qui détiennent une information significative non publique susceptible d'influer sur la valeur d'un investissement, comme le fait que CK s'apprête à acquérir Orca Electronics, ne doivent pas agir ni inciter d'autres personnes à agir sur la base de cette information."
+  },
+  {
+    "num": 21,
+    "topic": "ethics",
+    "prompt": "Bryan Barrett, CFA, runs an investment advisory service providing advice on gold and other commodities to several large retail banks. Barrett advertises his services in widely read publications to broaden his business to include retail clients. Because the client base for the institutions that Barrett serves is large, he is comfortable stating in the ads that thousands of his clients have benefited from his advice. Does Barrett's advertisement most likely violate any CFA Institute Standards of Professional Conduct?",
+    "choices": [
+      "No",
+      "Yes, the Standard relating to misrepresentation",
+      "Yes, the Standard relating to communication with clients"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la clientèle de Barrett se compose d'un petit nombre de grandes institutions ; affirmer dans la publicité qu'il a des milliers de clients est donc une déclaration trompeuse et une violation de la Norme I(C), Déclarations trompeuses (Misrepresentation)."
+  },
+  {
+    "num": 22,
+    "topic": "ethics",
+    "prompt": "Jacques Lagarde, CFA, is a sell-side analyst at Springhill Financial, a small investment bank. Springhill is the lead manager for the equity offering of Chorale Music. Lagarde is not part of the IPO team for this offering. While finalizing a research report on Chorale, Lagarde discovers inconsistencies that makes him believe the company may have concealed losses in its leasing division last quarter that would significantly reduce its earnings. Lagarde suspects that Springhill’s investment banking team is aware of these unreported losses. The prospectus for Chorale’s equity offering has already been approved by regulators and distributed to potential investors. According to the Standards, Lagarde should most likely:",
+    "choices": [
+      "report the issue to his supervisor.",
+      "issue a report showing the leasing division losses.",
+      "issue the report using data as reported in the prospectus."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : il est possible que Lagarde ait découvert des omissions significatives qui affecteraient l'introduction en bourse de Chorale ; selon la Norme I(A), Connaissance de la loi (Knowledge of the Law), la première mesure la plus appropriée est de signaler le problème à son supérieur. La question doit être examinée plus en profondeur. Si les pertes sont confirmées, Lagarde doit insister pour qu'elles soient rendues publiques."
+  },
+  {
+    "num": 23,
+    "topic": "ethics",
+    "prompt": "Lawrence Hall, CFA, and Nancy Bishop, CFA, began a joint research report on Stamper Corporation. Bishop visited Stamper’s corporate headquarters for several days and met with all company officers. Prior to the completion of the report, Bishop was reassigned to another project. Hall utilized his and Bishop’s research to write the report but did not include Bishop’s name on the report because he did not agree with and changed Bishop’s conclusion included in the final report. According to the CFA Institute Standards of Practice Handbook, did Hall most likely violate any CFA Institute Standards of Professional Conduct?",
+    "choices": [
+      "No",
+      "Yes, with respect to misrepresentation",
+      "Yes, with respect to diligence and reasonable basis"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : les membres respectent la Norme V(A), Diligence et fondement raisonnable (Diligence and Reasonable Basis), lorsqu'ils s'appuient sur les recherches d'une autre personne ayant fait preuve de diligence et de rigueur. Comme l'opinion de Bishop ne concordait pas avec le rapport final, retirer son nom du rapport est une façon de gérer ce désaccord entre les deux analystes."
+  },
+  {
+    "num": 24,
+    "topic": "ethics",
+    "prompt": "Regarding composite construction in the GIPS standards, the statement that is most likely accurate is that firms may:",
+    "choices": [
+      "include nondiscretionary portfolios in a composite.",
+      "include non-fee-paying, discretionary portfolios in a composite.",
+      "exclude portfolios from composites based solely on legal structure differences."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les normes GIPS prévoient que les portefeuilles discrétionnaires ne donnant pas lieu à des frais de gestion (non-fee-paying) peuvent être inclus dans un composite."
+  },
+  {
+    "num": 25,
+    "topic": "ethics",
+    "prompt": "Which of the following is most accurate? Firms that claim compliance with the GIPS standards must:",
+    "choices": [
+      "self-regulate their claim of compliance.",
+      "hire an independent third-party to verify compliance.",
+      "establish an internal audit team to perform verification on specific composites to maintain the firm's claim of compliance."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : selon les normes GIPS, les sociétés qui se déclarent conformes sont responsables de cette déclaration de conformité et de son maintien. Autrement dit, elles s'autorégulent quant à leur déclaration de conformité."
+  },
+  {
+    "num": 26,
+    "topic": "ethics",
+    "prompt": "The Standards are most likely designed to foster and reinforce a culture of:",
+    "choices": [
+      "service to the firm.",
+      "regulatory compliance.",
+      "responsibility and professionalism."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les Standards visent à favoriser et à renforcer une culture de responsabilité et de professionnalisme. Ils s'appliquent à tous les membres et candidats, quels que soient leur titre, leur poste, leur profession, leur localisation géographique ou leur situation particulière, et à toutes les activités professionnelles des professionnels de l'investissement."
+  },
+  {
+    "num": 27,
+    "topic": "ethics",
+    "prompt": "A portfolio manager is hired by an executive manager of a trust. The duty of loyalty is owed to the:",
+    "choices": [
+      "trustee.",
+      "executive manager.",
+      "beneficiaries of the trust."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon la Norme III(A), Loyauté, prudence et diligence (Loyalty, Prudence, and Care), lorsque le gérant est responsable des portefeuilles de régimes de retraite ou de trusts, le client n'est pas la personne ou l'entité qui l'engage, mais les bénéficiaires du régime ou du trust. Le devoir de loyauté est dû aux bénéficiaires finaux."
+  },
+  {
+    "num": 28,
+    "topic": "fsa",
+    "prompt": "An analyst concerned about the liquidity of a company’s inventory will most likely look in the notes to the financial statements to determine the:",
+    "choices": [
+      "cost formula or inventory valuation method used.",
+      "amount of inventory recognized as expense during the period.",
+      "breakdown of inventory between work in progress and finished goods."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la ventilation entre en-cours de production et produits finis renseigne sur la liquidité, car les produits finis sont prêts à être expédiés et donc plus liquides que les en-cours de production."
+  },
+  {
+    "num": 29,
+    "topic": "fsa",
+    "prompt": "All else being equal, a company that acquires a patent through external purchase rather than developing it internally is most likely to report:",
+    "choices": [
+      "lower amounts of assets.",
+      "higher investing cash outflows.",
+      "higher operating cash outflows."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le coût d'acquisition d'immobilisations incorporelles (dont les brevets) est classé en sorties de trésorerie d'investissement, alors que les coûts de développement interne sont classés en sorties de trésorerie opérationnelles. Une société qui acquiert ses immobilisations incorporelles à l'extérieur affiche donc des sorties de trésorerie d'investissement plus élevées qu'une société qui les développe en interne."
+  },
+  {
+    "num": 30,
+    "topic": "corporate",
+    "prompt": "In the capital allocation process, companies should:",
+    "choices": [
+      "assume no new competition in the marketplace.",
+      "incorporate sunk costs in the investment analysis.",
+      "ignore the impact of an investment on short-term accounting numbers."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les projets doivent être évalués à l'aide de la NPV (valeur actuelle nette) et non selon leur effet sur les chiffres comptables de court terme. Les sociétés sont parfois incitées à gonfler le BPA (EPS), le résultat net ou le ROE. Or de nombreux investissements, même avec une NPV élevée, n'augmentent pas ces chiffres comptables à court terme, voire les réduisent. Accorder trop d'attention aux chiffres comptables de court terme peut conduire une société à choisir des investissements contraires à l'intérêt économique de long terme de ses actionnaires."
+  },
+  {
+    "num": 31,
+    "topic": "corporate",
+    "prompt": "Ensuring that the composition of a board of directors is aligned with a company's governance principles is most likely a responsibility of the:",
+    "choices": [
+      "risk committee.",
+      "audit committee.",
+      "nominating committee."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le comité des nominations contribue à ce que la composition du conseil d'administration soit bien équilibrée et conforme aux principes de gouvernance de la société."
+  },
+  {
+    "num": 32,
+    "topic": "quant",
+    "prompt": "Which of the following functional forms of a simple linear regression is most appropriate to test the linear relationship between relative changes in the dependent variable and relative changes in the independent variable?",
+    "choices": [
+      "The lin-log model",
+      "The log-lin model",
+      "The log-log model"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le modèle log-log, dans lequel la variable dépendante et la variable indépendante sont toutes deux linéaires sous leur forme logarithmique, est aussi appelé modèle double-log. Il est utile pour calculer des élasticités, car le coefficient de pente représente la variation relative de la variable dépendante pour une variation relative de la variable indépendante."
+  },
+  {
+    "num": 33,
+    "topic": "fsa",
+    "prompt": "A significant increase in which of the following most likely indicates that a company's solvency has strengthened?",
+    "choices": [
+      "D/E ratio",
+      "Debt-to-EBITDA ratio",
+      "Fixed charge coverage ratio"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un ratio de couverture des charges fixes plus élevé traduit une solvabilité plus solide : il donne davantage d'assurance que la société peut assurer le service de sa dette (dette bancaire, obligations et autres titres de créance, contrats de location) grâce à ses résultats courants.\nRatio de couverture des charges fixes = (EBIT + paiements de location) / (paiements d'intérêts + paiements de location)."
+  },
+  {
+    "num": 34,
+    "topic": "quant",
+    "prompt": "An investor will receive $50,000 at the end of Year 10. If the discount rate is 5%, the present value of the cash flow at the end of Year 5 is closest to:",
+    "choices": [
+      "$30,696.",
+      "$37,311.",
+      "$39,176."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la fin de l'année 10 se situe cinq ans après la fin de l'année 5 ; la valeur actuelle à la fin de l'année 5 se calcule donc avec la formule :\nPV = FVN × (1 + r)^(−N) = $50,000 × (1.05)^(−5) = $39,176."
+  },
+  {
+    "num": 35,
+    "topic": "fsa",
+    "prompt": "A company acquires 100% of a target company for a purchase price of $4.5 million. The net identifiable assets of the target company have a fair value of $5 million. In the period the acquisition occurs, the acquiring company most likely reports:",
+    "choices": [
+      "goodwill of $0.5 million.",
+      "a pretax gain of $0.5 million in profit and loss.",
+      "a pretax gain of $0.5 million in other comprehensive income."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : lorsque la juste valeur des actifs nets identifiables dépasse le prix d'acquisition, il s'agit d'une acquisition à des conditions avantageuses (bargain purchase), comptabilisée en résultat (profit and loss) de la période où elle survient. On parle de bargain purchase lorsqu'une transaction porte sur des actifs nets identifiables d'une valeur supérieure au coût d'achat. Le gain qui en résulte, ici $5 million − $4.5 million = $0.5 million avant impôt, est comptabilisé en résultat de la période au cours de laquelle il apparaît."
+  },
+  {
+    "num": 36,
+    "topic": "fsa",
+    "prompt": "An analyst gathers the following information (in € millions) about a company:\n\nNet income\t108\nDepreciation expense\t20\nInterest expense\t20\nIncrease in working capital\t35\nCapital expenditures\t50\nNet borrowing\t14\nIf the income tax rate is 30%, FCFF is:",
+    "choices": [
+      "less than FCFE.",
+      "the same as FCFE.",
+      "greater than FCFE."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le flux de trésorerie disponible pour la firme (FCFF) se définit comme résultat net + charges non monétaires comme l'amortissement + intérêts × (1 − taux d'imposition) − investissement en fonds de roulement − dépenses d'investissement. Ainsi :\nFCFF = 108 + 20 + 20 × (1 − 0.3) − 35 − 50 = 108 + 20 + 14 − 35 − 50 = 57.\nLe flux de trésorerie disponible pour les actionnaires (FCFE) se définit comme résultat net + charges non monétaires − investissement en fonds de roulement − dépenses d'investissement + emprunt net. Ainsi :\nFCFE = 108 + 20 − 35 − 50 + 14 = 57.\nFCFF et FCFE valent tous deux 57 (€ millions)."
+  },
+  {
+    "num": 37,
+    "topic": "quant",
+    "prompt": "A fund initially has $50 million under management and earns 17% in Year 1. The fund receives additional investments of $125 million at the beginning of Year 2 and earns 12% in Year 2. The annualized money-weighted rate of return over the 2-year period is closest to:",
+    "choices": [
+      "13.2%.",
+      "14.5%.",
+      "15.5%."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le rendement pondéré par les capitaux (money-weighted return) se calcule comme un taux de rentabilité interne (IRR) ou un rendement à l'échéance. Comme pour l'IRR, les montants investis sont des sorties de trésorerie du point de vue de l'investisseur, tandis que les montants restitués ou retirés, ainsi que la valeur restante en fin de période, sont des entrées de trésorerie.\nValeur du fonds à la fin de l'année 2 = 50 × (1.17) × (1.12) + 125 × (1.12) = 205.52.\nAvec la calculatrice : CF0 = −50 ; CF1 = −125 ; CF2 = +205.52 ; IRR = 13.1785% ≈ 13.2%."
+  },
+  {
+    "num": 38,
+    "topic": "corporate",
+    "prompt": "Which of the following statements is the most accurate description concerning the internal rate of return (IRR) method? IRR:",
+    "choices": [
+      "is sensitive to changes in the firm’s WACC.",
+      "is the preferred method for evaluating mutually exclusive projects.",
+      "assumes that all cash flows from a project will be reinvested at the computed IRR."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : une propriété importante de l'IRR est qu'il n'est égal au taux de rendement (géométrique) obtenu par l'investisseur que si les flux intermédiaires sont réinvestis au taux de l'IRR ; si les taux de réinvestissement sont en réalité plus faibles, le rendement de l'investissement sera inférieur à l'IRR, et inversement. Le calcul de la NPV suppose au contraire que les flux intermédiaires sont réinvestis au taux r, le taux de rendement exigé, ce qui est souvent plus réaliste sur le plan économique."
+  },
+  {
+    "num": 39,
+    "topic": "corporate",
+    "prompt": "An analyst collects the following information about a company and its capital structure:\n\nProportion of debt\t40%\nProportion of equity\t50%\nProportion of preferred shares\t10%\nBefore-tax cost of debt\t8%\nCost of equity\t16%\nCost of preferred shares\t10%\nMarginal tax rate\t25%\nIf interest expense is tax deductible, the company's WACC is closest to:",
+    "choices": [
+      "11.2%.",
+      "11.4%.",
+      "12.2%."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le WACC se calcule ainsi :\nWACC = wd × rd × (1 − t) + wp × rp + we × re = 0.4 × 0.08 × (1 − 0.25) + 0.1 × 0.1 + 0.5 × 0.16 = 0.1140 = 11.4%."
+  },
+  {
+    "num": 40,
+    "topic": "economics",
+    "prompt": "Which of the following fiscal policy tools is an automatic stabilizer?",
+    "choices": [
+      "Capital expenditures",
+      "Social benefits through transfer payments",
+      "Current government spending on goods and services"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les stabilisateurs automatiques font varier le déficit budgétaire indépendamment de toute modification de la politique budgétaire. Les stabilisateurs automatiques, comme l'impôt sur le revenu, la TVA et les prestations sociales, sont importants : lorsque la production et l'emploi reculent, les recettes fiscales baissent et les recettes fiscales nettes diminuent aussi, car les allocations chômage augmentent. Cela agit comme une relance budgétaire et réduit la taille du multiplicateur, en amortissant la réaction de la production à ce qui a provoqué sa baisse. Les transferts sont des prestations sociales versées par le système de sécurité sociale ; selon les pays, ils comprennent les retraites publiques, les aides au logement, les crédits d'impôt et les aides au revenu des familles modestes, les allocations familiales, les allocations chômage et les aides à la recherche d'emploi."
+  },
+  {
+    "num": 41,
+    "topic": "fsa",
+    "prompt": "An analyst gathers the following information about a company:\n\nTax burden\t0.4\nInterest burden\t0.75\nPretax margin\t10.0%\nTotal asset turnover\t1.5\nFinancial leverage\t1.2\nROE is:",
+    "choices": [
+      "5.4%.",
+      "6.0%.",
+      "7.2%."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon l'analyse DuPont, le ROE se décompose en charge fiscale (tax burden) × charge d'intérêts (interest burden) × marge d'EBIT × rotation de l'actif total × levier financier. Comme charge d'intérêts × marge d'EBIT = marge avant impôt, on peut aussi écrire ROE = charge fiscale × marge avant impôt × rotation de l'actif total × levier financier.\nROE = 0.4 × 10% × 1.5 × 1.2 = 7.2%."
+  },
+  {
+    "num": 42,
+    "topic": "economics",
+    "prompt": "Which of the following monetary policy regimes most likely imports the inflation of a foreign economy?",
+    "choices": [
+      "Inflation targeting",
+      "Interest rate targeting",
+      "Exchange rate targeting"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le ciblage du taux de change consiste à fixer un niveau ou une bande de fluctuation du taux de change par rapport à une grande devise, la banque centrale défendant cet objectif en achetant et en vendant la monnaie nationale sur le marché des changes. En liant sa monnaie à celle d'une économie dont la politique de faible inflation est crédible, l'économie domestique importe de fait l'inflation de cette économie à faible inflation."
+  },
+  {
+    "num": 43,
+    "topic": "economics",
+    "prompt": "One of the key roles played by central banks is:",
+    "choices": [
+      "regulating the payments system.",
+      "controlling aggregate demand with changes in tax rates.",
+      "allocating resources between different sectors of the economy."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : les banques centrales jouent plusieurs rôles clés dans les économies modernes. En général, une banque centrale est le fournisseur exclusif de la monnaie, la banque de l'État et la banque des banques, le prêteur en dernier ressort, ainsi que le régulateur et le superviseur du système de paiement."
+  },
+  {
+    "num": 44,
+    "topic": "fsa",
+    "prompt": "Under US GAAP, for a long-term operating lease, the lessee reports:",
+    "choices": [
+      "after inception, the lease payment split between financing and operating outflows on the statement of cash flows.",
+      "at inception, a right-of use asset and a lease liability calculated as the undiscounted value of its fixed lease payments.",
+      "after inception, a single lease expense each year, which is a straight-line allocation of the cost of the lease over its term."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon les US GAAP, il existe deux modèles de comptabilisation pour le preneur : l'un pour les contrats de location-financement (finance leases), l'autre pour les contrats de location simple (operating leases). Le modèle de location-financement est identique au modèle IFRS du preneur ; celui de location simple est différent. La différence clé porte sur le calcul de l'amortissement de l'actif au titre du droit d'utilisation (ROU asset) : pour une location simple, la charge d'amortissement de l'actif ROU est égale au paiement de location moins la charge d'intérêts. Par conséquent, la charge totale inscrite au compte de résultat (intérêts plus amortissement) est égale au paiement de location : le preneur comptabilise chaque année une charge de location unique, répartie de façon linéaire sur la durée du contrat."
+  },
+  {
+    "num": 45,
+    "topic": "economics",
+    "prompt": "Which type of market structure best describes many firms supplying differentiated products?",
+    "choices": [
+      "An oligopoly",
+      "Perfect competition",
+      "Monopolistic competition"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : en concurrence monopolistique, de nombreuses entreprises approvisionnent le marché et le produit de chacune est différencié d'une manière ou d'une autre."
+  },
+  {
+    "num": 46,
+    "topic": "quant",
+    "prompt": "An analyst gathers the following quarterly returns for an investment fund:\n\nQuarter\tReturn\nQ1\t2%\nQ2\t6%\nQ3\t–4%\nQ4\t8%\nIf the target return is 5%, the target downside deviation is closest to:",
+    "choices": [
+      "4.7%.",
+      "5.3%.",
+      "5.5%."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l'écart à la baisse par rapport à une cible (target downside deviation, ou semi-écart-type cible) mesure la dispersion des observations (ici, des rendements) situées sous la cible. Seuls les rendements inférieurs ou égaux à la cible B = 5% (Q1 et Q3) sont retenus :\nsTarget = [Σ(Xi ≤ B) (Xi − B)² / (n − 1)]^0.5 = {[(2 − 5)² + (−4 − 5)²] / (4 − 1)}^0.5 = (90/3)^0.5 = 5.477, soit 5.5%."
+  },
+  {
+    "num": 47,
+    "topic": "quant",
+    "prompt": "Which of the following best represents the difference between the observed value of a statistic and the quantity it is intended to estimate as a result of using subsets of the population?",
+    "choices": [
+      "Variance",
+      "Standard error",
+      "Sampling error"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l'erreur d'échantillonnage est l'écart entre la valeur observée d'une statistique et la grandeur qu'elle est censée estimer, qui résulte de l'utilisation de sous-ensembles de la population."
+  },
+  {
+    "num": 48,
+    "topic": "quant",
+    "prompt": "The use of neural networks to identify patterns through multistage, non-linear data processing best describes:",
+    "choices": [
+      "deep learning.",
+      "supervised learning.",
+      "unsupervised learning."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : dans l'apprentissage profond (deep learning, ou réseaux d'apprentissage profond), les ordinateurs utilisent des réseaux de neurones, souvent dotés de nombreuses couches cachées, pour traiter les données de façon non linéaire et en plusieurs étapes afin d'identifier des structures (patterns). Le deep learning peut recourir à l'apprentissage supervisé ou non supervisé. Grâce à cette approche en couches, il construit une compréhension de concepts simples qui alimente l'analyse de concepts plus complexes."
+  },
+  {
+    "num": 49,
+    "topic": "fsa",
+    "prompt": "Which of the following most likely increases a manufacturing company's operating income? A decrease in:",
+    "choices": [
+      "income taxes",
+      "interest charges",
+      "administrative costs"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le résultat d'exploitation se calcule comme le bénéfice brut moins les charges d'exploitation. Une marge d'exploitation qui progresse plus vite que la marge brute peut donc traduire une meilleure maîtrise des charges d'exploitation, comme les frais généraux administratifs. Une baisse des frais administratifs augmente donc le résultat d'exploitation de la société."
+  },
+  {
+    "num": 50,
+    "topic": "quant",
+    "prompt": "A contingency table based on two classifications has r rows and c columns. The number of degrees of freedom for a hypothesis test of the independence of these two classifications is given by:",
+    "choices": [
+      "rc.",
+      "rc − 1.",
+      "(r − 1)(c − 1)."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : on utilise une statistique de test qui suit une loi du khi-deux pour tester l'indépendance de deux variables catégorielles. Ce test non paramétrique compare les effectifs observés à ceux attendus sous l'hypothèse d'indépendance. Cette statistique a (r − 1)(c − 1) degrés de liberté, où r est le nombre de catégories de la première variable et c celui de la seconde."
+  },
+  {
+    "num": 51,
+    "topic": "quant",
+    "prompt": "An annuity pays €10,000 per year for five years, with the first payment occurring two years from today. If the annual discount rate is 4%, the present value of the annuity today is closest to:",
+    "choices": [
+      "€41,160.",
+      "€42,806.",
+      "€44,518."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : on calcule d'abord la valeur actuelle, dans un an (en t = 1), d'une rente ordinaire de €10,000 sur cinq ans :\nPV1 = PMT × [1 − 1/(1 + r)^N] / r = €10,000 × [1 − 1/(1.04)^5] / 0.04 = €44,518.22.\nOn actualise ensuite cette valeur d'un an pour obtenir la valeur actuelle en t = 0 :\nPV0 = PV1 / (1 + r) = €44,518.22 / 1.04 = €42,805.98 ≈ €42,806.\nAvec la calculatrice :\nÉtape 1) PMT = 10,000 ; I = 4 ; N = 5 ; calculer PV = 44,518.22.\nÉtape 2) FV = 44,518.22 ; I = 4 ; N = 1 ; calculer PV = 42,805.98 ≈ 42,806."
+  },
+  {
+    "num": 52,
+    "topic": "fsa",
+    "prompt": "An intangible asset with an indefinite useful life is:",
+    "choices": [
+      "not subjected to impairment testing.",
+      "tested at least annually for impairment.",
+      "only tested for impairment if there is an indication of impairment."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une immobilisation incorporelle à durée d'utilité indéterminée n'est pas amortie. À la place, on vérifie au moins une fois par an que l'hypothèse d'une durée d'utilité indéterminée reste raisonnable, et l'actif fait l'objet d'un test de dépréciation. Ces actifs restent inscrits au bilan à leur coût historique mais sont soumis au moins une fois par an à un test de dépréciation. Il y a dépréciation lorsque la valeur comptable dépasse la juste valeur."
+  },
+  {
+    "num": 53,
+    "topic": "quant",
+    "prompt": "Which of the following relationships must always hold for two positive numbers?",
+    "choices": [
+      "(Arithmetic mean)2 = Harmonic mean × Geometric mean",
+      "(Geometric mean)2 = Arithmetic mean × Harmonic mean",
+      "(Harmonic mean)2 = Geometric mean × Arithmetic mean"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : moyenne arithmétique × moyenne harmonique = (moyenne géométrique)².\nPar exemple, si a = 1 et b = 9 :\nAM = (a + b)/2 = (1 + 9)/2 = 5\nHM = 2/(1/a + 1/b) = 2/(1/1 + 1/9) = 9/5 = 1.8\nGM = √(ab) = √(1 × 9) = 3\nGM² = 3² = 9, ce qui est bien égal à AM × HM = 5 × 1.8 = 9."
+  },
+  {
+    "num": 54,
+    "topic": "quant",
+    "prompt": "A discrete random variable X has the following probability function:\n\nX\tProbability\n0\t0.50\n1\t0.50\nThe variance of X is closest to:",
+    "choices": [
+      "0.25.",
+      "0.50.",
+      "1.00."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la variance d'une variable aléatoire est l'espérance (la moyenne pondérée par les probabilités) des carrés des écarts à son espérance.\nE(X) = 0 × 0.5 + 1 × 0.5 = 0.5\nVar(X) = P(0) × (0 − 0.5)² + P(1) × (1 − 0.5)² = 0.5 × 0.5² + 0.5 × 0.5² = 0.25."
+  },
+  {
+    "num": 55,
+    "topic": "economics",
+    "prompt": "An analyst gathers the following exchange rate quotes:\n\nCAD/EUR\t1.0718\nEUR/GBP\t0.9463\nCAD/EUR is the amount of CAD per 1 EUR.\nEUR/GBP is the amount of EUR per 1 GBP.\n\nThe GBP/CAD (amount of GBP per 1 CAD) cross-rate is closest to:",
+    "choices": [
+      "0.8829.",
+      "0.9860.",
+      "1.0142."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le cours croisé GBP/CAD se calcule ainsi :\nGBP/CAD = (CAD/EUR)^(−1) × (EUR/GBP)^(−1) = (1.0718)^(−1) × (0.9463)^(−1) ≈ 0.9860."
+  },
+  {
+    "num": 56,
+    "topic": "economics",
+    "prompt": "Which of the following market structures is characterized by high barriers to entry and products with close substitutes within the market?",
+    "choices": [
+      "Oligopoly",
+      "Monopoly",
+      "Monopolistic competition"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : l'entrée sur un marché oligopolistique est difficile, avec des coûts assez élevés et d'importantes barrières à la concurrence. Les produits de chaque vendeur sont de proches substituts de ceux des autres entreprises et sont fortement différenciés par le marketing, les caractéristiques et d'autres stratégies hors prix."
+  },
+  {
+    "num": 57,
+    "topic": "economics",
+    "prompt": "If the average weekly hours worked in manufacturing decrease and unit labor costs remain the same, this most likely indicates future economic:",
+    "choices": [
+      "decline.",
+      "stability.",
+      "growth."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la durée hebdomadaire moyenne du travail dans l'industrie manufacturière est un indicateur avancé, qui évolue avant l'économie dans son ensemble ; sa baisse annonce donc un recul (une récession) de l'économie. La variation des coûts unitaires de main-d'œuvre est un indicateur retardé, et leur stabilité n'indique rien, ni en bien ni en mal, sur l'orientation future de l'économie. Ensemble, ces deux indicateurs suggèrent donc plutôt un recul, ou un affaiblissement, de l'activité économique."
+  },
+  {
+    "num": 58,
+    "topic": "fsa",
+    "prompt": "Which of the following most likely provides an opportunity for a company's management to issue low-quality financial reports?",
+    "choices": [
+      "Ineffective board of directors",
+      "Concern about future career opportunities",
+      "Incentive compensation based on earnings"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : trois conditions sont généralement réunies lorsque des rapports financiers de faible qualité sont publiés : l'opportunité, la motivation et la rationalisation. L'opportunité peut résulter de conditions internes, comme un contrôle interne défaillant ou un conseil d'administration inefficace."
+  },
+  {
+    "num": 59,
+    "topic": "economics",
+    "prompt": "For a non-colluding oligopoly with a price leader, the optimal market price is determined by the:",
+    "choices": [
+      "dominant firm's demand schedule.",
+      "market's aggregate demand curve.",
+      "market's marginal revenue and marginal cost."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : dans le cas d'une firme dominante, les autres entreprises suivant le prix fixé par ce leader, le prix optimal est déterminé au niveau de production (de la firme dominante) où MR = MC (recette marginale = coût marginal). Le prix qui maximise le profit est alors donné par le segment de la courbe de demande auquel fait face la firme dominante. Le prix optimal est donc déterminé par la part de la demande totale revenant à la firme dominante, et non par la courbe de demande agrégée du marché."
+  },
+  {
+    "num": 60,
+    "topic": "economics",
+    "prompt": "An analyst gathers the following information:\n\nCHF/USD spot exchange rate\t1.0072\n270-day CHF risk-free interest rate (annualized)\t0.63%\n270-day USD risk-free interest rate (annualized)\t0.75%\nCHF/USD is the amount of CHF per 1 USD.\n\nThe number of forward points for the 270-day CHF/USD forward rate is closest to:",
+    "choices": [
+      "–12.0.",
+      "–9.0.",
+      "0.5."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le cours à terme se calcule ainsi :\nCHF/USD à terme = CHF/USD au comptant × [1 + (taux CHF × 270/360)] / [1 + (taux USD × 270/360)] = 1.0072 × 1.004725 / 1.005625 = 1.0072 × 0.999105 = 1.0063.\nLes points de terme valent 1.0063 − 1.0072 = −0.00090, soit −9.0 points (en multipliant par 10,000)."
+  },
+  {
+    "num": 61,
+    "topic": "corporate",
+    "prompt": "Which of the following members of a corporate board is most likely considered independent?",
+    "choices": [
+      "Former chief executive officer of the corporation",
+      "University professor who also is a consultant to the corporation",
+      "Current senior executive from a corporation in a different industry"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un administrateur indépendant est un type particulier d'administrateur non exécutif qui n'a aucune relation significative avec la société en matière d'emploi, de détention du capital ou de rémunération. C'est le cas d'un dirigeant en poste dans une société d'un autre secteur, contrairement à un ancien directeur général (CEO) de la société ou à un consultant qu'elle rémunère."
+  },
+  {
+    "num": 62,
+    "topic": "corporate",
+    "prompt": "Which of the following stakeholder groups is most likely to have the greatest concern about the cash flow generation of the company?",
+    "choices": [
+      "Suppliers",
+      "Customers",
+      "Regulators"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : dans une société type, les fournisseurs procurent les matières premières ainsi que les biens et services qui ne peuvent pas être produits efficacement en interne, y compris les fonctions externalisées. Les fournisseurs sont généralement des créanciers à court terme dont l'intérêt principal est d'être payés à temps, comme prévu au contrat, pour les produits ou services livrés. Le conflit entre actionnaires et créanciers (prêteurs) reflète leurs positions différentes dans la structure du capital et leurs profils de risque et de rendement différents. Les prêteurs ont, sur les flux de trésorerie et les actifs de l'entreprise, un droit contractuel et prioritaire par rapport aux actionnaires. Pour un porteur de dette jusqu'à l'échéance, le rendement (le potentiel de hausse) est fixé et limité, alors que le risque de perte ne l'est pas : son profil risque-rendement est très asymétrique. C'est pourquoi les prêteurs, créanciers et fournisseurs s'intéressent avant tout à la capacité de la société à générer des flux de trésorerie suffisants pour honorer ses obligations financières."
+  },
+  {
+    "num": 63,
+    "topic": "fsa",
+    "prompt": "All else being equal, an increase in the inventory valuation allowance account in the current reporting period most likely increases the:",
+    "choices": [
+      "interest coverage ratio.",
+      "working capital turnover ratio.",
+      "days of inventory on hand ratio."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : selon les IFRS, les stocks sont évalués (et inscrits au bilan) au plus bas du coût et de la valeur nette de réalisation. Si la valeur des stocks tombe sous leur valeur comptable au bilan, celle-ci doit être ramenée à la valeur nette de réalisation et la perte comptabilisée en charge au compte de résultat, dans le coût des ventes ou séparément. Souvent, plutôt que de déprécier directement les stocks, on utilise un compte de provision pour dépréciation des stocks (inventory valuation allowance), porté en déduction des stocks pour obtenir la valeur comptable inscrite au bilan. Comme le chiffre d'affaires n'est pas touché par la dépréciation, une hausse de cette provision sur la période augmente le ratio de rotation du fonds de roulement (chiffre d'affaires / fonds de roulement moyen) : le dénominateur diminue, car les stocks font partie du fonds de roulement."
+  },
+  {
+    "num": 64,
+    "topic": "fsa",
+    "prompt": "Under the revaluation model, an initial revaluation that increases the carrying value of an asset most likely results in a:",
+    "choices": [
+      "higher net profit margin.",
+      "lower financial leverage ratio.",
+      "higher total asset turnover ratio."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une hausse de la valeur comptable d'actifs à long terme amortissables augmente le total de l'actif et les capitaux propres ; les réévaluations qui augmentent la valeur comptable d'un actif peuvent donc servir à réduire le levier affiché. Si l'on définit le levier financier comme l'actif total moyen divisé par les capitaux propres moyens, augmenter du même montant le numérateur (l'actif) et le dénominateur (les capitaux propres) fait baisser le ratio. (Mathématiquement, lorsqu'un ratio est supérieur à un, comme ici, augmenter du même montant son numérateur et son dénominateur le fait baisser.)"
+  },
+  {
+    "num": 65,
+    "topic": "fsa",
+    "prompt": "Under the indirect method, a US GAAP-compliant company reported the following financial data:\n\nTotal revenue\t$359 million\nNet income\t$35 million\nDecrease in income tax payable\t$16 million\nIncrease in interest expense payable\t$22 million\nBased on this information, converting to the direct method would result in total cash operating expenses of:",
+    "choices": [
+      "$318 million.",
+      "$330 million.",
+      "$353 million."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le passage de la méthode indirecte à la méthode directe se fait en trois étapes.\nÉtape 1 : total des charges d'exploitation = chiffre d'affaires total − résultat net = $359 million − $35 million = $324 million.\nÉtape 2 : il n'y a ni charges ni produits non monétaires ; le total des charges vaut donc $324 million et le total des encaissements liés au chiffre d'affaires $359 million.\nÉtape 3 : total des décaissements d'exploitation = total des charges d'exploitation + baisse de l'impôt sur le résultat à payer − hausse des intérêts à payer = $324 million + $16 million − $22 million = $318 million."
+  },
+  {
+    "num": 66,
+    "topic": "quant",
+    "prompt": "When estimating the average return of an investment over multiple consecutive periods, it is most appropriate to use the:",
+    "choices": [
+      "harmonic mean.",
+      "arithmetic mean.",
+      "geometric mean."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : pour estimer le rendement moyen sur plusieurs périodes, il faut utiliser la moyenne géométrique des rendements, car elle rend compte de l'enchaînement des rendements dans le temps."
+  },
+  {
+    "num": 67,
+    "topic": "corporate",
+    "prompt": "Under the Modigliani–Miller propositions without corporate taxes, if a company's D/E ratio increases, its cost of equity:",
+    "choices": [
+      "decreases.",
+      "remains unchanged.",
+      "increases."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon la proposition I de Modigliani-Miller (MM), la valeur de la société reste inchangée lorsque sa structure du capital change. Le coût moyen pondéré du capital (WACC) doit donc lui aussi rester constant. Comme le coût de la dette est inférieur à celui des fonds propres (les créanciers étant prioritaires), plus la société s'endette, plus le risque supporté par les actionnaires augmente, et le coût des fonds propres doit donc augmenter."
+  },
+  {
+    "num": 68,
+    "topic": "economics",
+    "prompt": "The USD/EUR exchange rate (amount of USD per 1 EUR) changes from 1.1000 to 1.2000. This implies that the US dollar has:",
+    "choices": [
+      "depreciated against the euro by 8.33%.",
+      "appreciated against the euro by 8.33%.",
+      "appreciated against the euro by 9.09%."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : pour calculer l'appréciation ou la dépréciation du dollar américain face à l'euro, il faut une cotation où le dollar est la devise de base (c'est-à-dire de la forme EUR/USD). Le cours EUR/USD (nombre d'EUR pour 1 USD) est passé de 1/1.1000 = 0.9091 à 1/1.2000 = 0.8333, soit une variation du dollar de (0.8333 − 0.9091)/0.9091 = −8.33%.\nQuelle que soit la convention de cotation, la variation d'un taux de change peut s'exprimer comme l'appréciation en pourcentage d'une devise par rapport à l'autre : il faut simplement bien identifier la devise de cotation (price currency) et la devise de base (base currency). On peut aussi raisonner ainsi : comme il faut davantage d'USD pour acheter 1 EUR, l'USD s'est déprécié face à l'EUR."
+  },
+  {
+    "num": 69,
+    "topic": "fsa",
+    "prompt": "The tendency to classify information based on past experiences and known classifications best defines:",
+    "choices": [
+      "confirmation bias.",
+      "conservatism bias.",
+      "representativeness bias."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le biais de représentativité désigne la tendance à classer les informations en fonction d'expériences passées et de catégories connues."
+  },
+  {
+    "num": 70,
+    "topic": "economics",
+    "prompt": "Which of the following is most likely a benefit of globalization?",
+    "choices": [
+      "Increased profits",
+      "Interdependence",
+      "Stronger environmental, social, and governance standards"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la perspective de profits plus élevés peut inciter les entreprises à se mondialiser. Le premier moyen d'accroître les profits est d'augmenter les ventes : les entreprises peuvent se mondialiser pour accéder à de nouveaux clients pour leurs biens et services. L'autre moyen est de réduire les coûts : la mondialisation leur permet d'accéder à des environnements fiscaux plus légers, de réduire leurs coûts de main-d'œuvre ou de gagner en efficacité sur leur chaîne d'approvisionnement."
+  },
+  {
+    "num": 71,
+    "topic": "fsa",
+    "prompt": "An analyst gathers the following data (in USD millions) about a company:\nWorking capital\t$60 \nNon-current assets\t$235 \nEquity\t$170 \nCurrent ratio\t1.75\nThe company’s financial leverage is closest to:",
+    "choices": [
+      "1.2.",
+      "1.7.",
+      "2.2."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : pour calculer le levier financier, il faut d'abord déterminer l'actif courant, avec CA = actif courant, CL = passif courant, WC = fonds de roulement et CR = ratio de liquidité générale (current ratio).\nCR = CA/CL = 1.75\nCL = CA/1.75\nWC = CA − CL\n60 = CA − CA/1.75\n60 = 0.75/1.75 × CA\nCA = 140\nOn calcule ensuite l'actif total, puis le levier financier :\nActif courant : $140\nActif non courant : + $235\nActif total : $375\nCapitaux propres : $170\nLevier financier = actif total / capitaux propres = 375/170 ≈ 2.2"
+  },
+  {
+    "num": 72,
+    "topic": "economics",
+    "prompt": "The money supply most likely increases when a central bank:",
+    "choices": [
+      "purchases bonds.",
+      "increases the policy rate.",
+      "raises the reserve requirement."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : si la banque centrale souhaite augmenter la masse monétaire, elle peut acheter des obligations (généralement d'État) aux banques, en s'engageant à les leur revendre à une date future. Cette opération s'appelle une prise en pension (repurchase agreement, ou repo)."
+  },
+  {
+    "num": 73,
+    "topic": "fsa",
+    "prompt": "Taxes payable are calculated based on:",
+    "choices": [
+      "EBIT.",
+      "taxable income.",
+      "accounting profit."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le résultat imposable (taxable income) d'une société est la base de son impôt sur le résultat à payer (un passif) ou à recevoir (un actif), calculé à partir du taux d'imposition de la société et inscrit à son bilan."
+  },
+  {
+    "num": 74,
+    "topic": "fsa",
+    "prompt": "An analyst gathers the following information about a company for the fiscal year ended 31 December:\n\nNet income\t$3,100,000\nCash dividends paid on common stock\t$775,000\nCash dividends paid on preferred stock\t$500,000\nCommon shares outstanding on 1 January\t1,000,000\nIf a 2-for-1 stock split occurred on 1 July, basic earnings per share for the fiscal year is closest to:",
+    "choices": [
+      "$0.91.",
+      "$1.30.",
+      "$1.73."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le BPA de base (basic EPS) se calcule ainsi : (résultat net − dividendes privilégiés) / nombre moyen pondéré d'actions en circulation. Lorsque le nombre d'actions ordinaires augmente du fait d'un dividende en actions ou d'une division d'actions (stock split), le calcul du BPA en tient compte rétroactivement depuis le début de la période. Le nombre d'actions en circulation retenu est donc 1,000,000 × 2 = 2,000,000.\nBPA de base = ($3,100,000 − $500,000) / 2,000,000 = $1.30."
+  },
+  {
+    "num": 75,
+    "topic": "fsa",
+    "prompt": "Inherent risks in an investment are most appropriately evaluated in which step of the financial statement analysis framework?",
+    "choices": [
+      "Process data",
+      "Articulate the purpose and context of analysis",
+      "Develop and communicate conclusions/recommendations"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l'examen et la présentation des risques inhérents à un investissement relèvent de l'étape « élaborer et communiquer les conclusions/recommandations »."
+  },
+  {
+    "num": 76,
+    "topic": "fsa",
+    "prompt": "An analyst gathers the following information (in £ thousands) about a company’s 4-year construction contract to build a property:\n\nTotal sales price\t5,000\nCash received in Year 1\t1,000\nEstimated total costs\t4,000\nCosts incurred in Year 1\t1,200\nCosts incurred provide an appropriate measure of progress towards completing the contract and that performance obligations are satisfied over time. Assuming it is highly probable that revenue will not be subsequently reversed, the amount of revenue (in £ thousands) recognized in Year 1 is most likely:",
+    "choices": [
+      "300.",
+      "1,000.",
+      "1,500."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon IFRS 15, pour les obligations de prestation remplies progressivement (par exemple dans un contrat à long terme), le chiffre d'affaires est comptabilisé au fil du temps en mesurant l'avancement vers l'exécution de l'obligation. Il n'est comptabilisé que s'il est hautement probable qu'il ne fera pas l'objet d'une reprise ultérieure. À la fin de la première année, la société a engagé £1,200, soit 30% (£1,200 / £4,000) du total estimé des coûts du contrat. Elle comptabilise donc en année 1 30% du prix total : 30% × £5,000 = £1,500."
+  },
+  {
+    "num": 77,
+    "topic": "quant",
+    "prompt": "If the threshold level for the portfolio return is greater than the risk-free rate, the portfolio's safety-first ratio is:",
+    "choices": [
+      "less than its Sharpe ratio.",
+      "equal to its Sharpe ratio.",
+      "greater than its Sharpe ratio."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le ratio safety-first vaut SFRatio = [E(RP) − RL]/σP. Si l'on remplace le seuil critique RL par le taux sans risque RF, le SFRatio devient le ratio de Sharpe : SR = [E(RP) − RF]/σP. Si RL > RF, toutes choses égales par ailleurs, alors E(RP) − RL < E(RP) − RF, donc SFRatio < SR."
+  },
+  {
+    "num": 78,
+    "topic": "corporate",
+    "prompt": "An analyst gathers the following information about a company:\n\nSource of Capital\tTarget Weight\tMarginal Cost of Capital\nDebt\t30%\t4%\nEquity\t70%\t8%\nIf interest expense is tax deductible and the company's marginal tax rate is 25%, the company's WACC is:",
+    "choices": [
+      "5.9%.",
+      "6.5%.",
+      "6.8%."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le WACC se calcule ainsi : WACC = wd × rd × (1 − t) + wp × rp + we × re ; en l'absence d'actions privilégiées, la formule se réduit à WACC = wd × rd × (1 − t) + we × re, où :\nwd = poids cible de la dette,\nrd = coût marginal de la dette avant impôt,\nt = taux d'imposition marginal de la société,\nwe = poids cible des fonds propres,\nre = coût des fonds propres.\nAvec les données : WACC = 30% × 4% × (1 − 25%) + 70% × 8% = 0.9% + 5.6% = 6.5%."
+  },
+  {
+    "num": 79,
+    "topic": "quant",
+    "prompt": "The standard error of the slope coefficient for a simple linear regression model is the ratio of the model's standard error of the estimate to the square root of the:",
+    "choices": [
+      "sum of squares regression.",
+      "standard error of the forecast.",
+      "variation of the independent variable."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l'erreur type du coefficient de pente d'une régression linéaire simple est le rapport entre l'erreur type d'estimation du modèle (se) et la racine carrée de la variation de la variable indépendante :\nsb1 = se / √[Σ(Xi − X̄)²]."
+  },
+  {
+    "num": 80,
+    "topic": "corporate",
+    "prompt": "Which of the following is most likely a primary source of liquidity?",
+    "choices": [
+      "Regular credit lines",
+      "Sale of operating assets",
+      "Renegotiation of supplier contracts"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : les sources primaires de liquidité comprennent les fonds à court terme, comme le crédit fournisseur, les lignes de crédit bancaires et les portefeuilles de placements à court terme."
+  },
+  {
+    "num": 81,
+    "topic": "economics",
+    "prompt": "Using market levels as signals to measure the likelihood of a geopolitical risk best describes:",
+    "choices": [
+      "signposting.",
+      "scenario analysis.",
+      "geopolitical risk translation into investment action."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : un signpost (signal d'alerte) est un indicateur, un niveau de marché, une donnée ou un événement qui signale qu'un risque devient plus ou moins probable."
+  },
+  {
+    "num": 82,
+    "topic": "corporate",
+    "prompt": "According to the pecking order theory of capital structure, managers prefer:",
+    "choices": [
+      "public debt over private debt.",
+      "public equity over public debt.",
+      "internal financing over private debt."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon la théorie du financement hiérarchique (pecking order), les dirigeants préfèrent le financement interne ; s'ils ont besoin d'un financement externe, ils préfèrent la dette privée à la dette émise sur le marché (public debt), et l'émission d'actions vient en tout dernier."
+  },
+  {
+    "num": 83,
+    "topic": "fsa",
+    "prompt": "The following information (in $ thousands) is available for a company:\n \t2016\t2015\nRevenue\t54,400\t---\nTotal expenses\t36,600\t---\nNet income\t17,800\t---\n \nAccounts receivable\t20,500\t28,600\nThe total cash the company collected from customers (in thousands) is closest to:",
+    "choices": [
+      "$25,900.",
+      "$46,300.",
+      "$62,500."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les encaissements clients sont égaux au chiffre d'affaires diminué de la hausse des créances clients (ou augmenté de leur baisse).\nChiffre d'affaires : 54,400\nBaisse des créances clients : $28,600 − $20,500 = 8,100\nEncaissements clients : 54,400 + 8,100 = 62,500 ($ milliers)"
+  },
+  {
+    "num": 84,
+    "topic": "fsa",
+    "prompt": "The correction of a material error for a prior period is handled by:",
+    "choices": [
+      "adding a note disclosure regarding the error in the current financial statements only.",
+      "restating the financial statements for the prior periods presented in the current financial statements only.",
+      "both adding a note disclosure regarding the error in the current financial statements and restating the financial statements for the prior periods presented in the current financial statements."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la correction d'une erreur relative à une période antérieure (par exemple dans des états financiers publiés pour un exercice précédent) ne peut pas être traitée par un simple ajustement du compte de résultat de la période en cours. Elle se fait en retraitant les états financiers (y compris le bilan, le tableau de variation des capitaux propres et le tableau des flux de trésorerie) des périodes antérieures présentées dans les états financiers de la période (IAS 8, Méthodes comptables, changements d'estimations comptables et erreurs ; FASB ASC Topic 250, Accounting Changes and Error Corrections). Des informations sur l'erreur doivent en outre être fournies dans les notes annexes."
+  },
+  {
+    "num": 85,
+    "topic": "corporate",
+    "prompt": "In which stage of the life cycle is a company most likely to be first offered secured borrowing options?",
+    "choices": [
+      "Mature",
+      "Growth",
+      "Start-up"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : à mesure que l'entreprise avance dans sa phase de croissance, les risques d'exécution et les risques concurrentiels diminuent. Selon le modèle économique, elle peut aussi disposer d'actifs pouvant servir de garantie à un emprunt, comme des créances clients, des stocks ou des immobilisations corporelles."
+  },
+  {
+    "num": 86,
+    "topic": "economics",
+    "prompt": "Substantial government borrowing is less likely to be of concern when:",
+    "choices": [
+      "the private sector decreases savings to offset the debt.",
+      "most of the borrowing is owed internally to local citizens.",
+      "the private sector is crowded out to make room for the debt."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le problème d'une dette publique importante peut être exagéré lorsque cette dette est détenue en interne, c'est-à-dire due aux propres citoyens du pays."
+  },
+  {
+    "num": 87,
+    "topic": "corporate",
+    "prompt": "A process to take a private company public without the use of an underwriter is a(n):",
+    "choices": [
+      "IPO.",
+      "direct listing.",
+      "acquisition by a special purpose acquisition company."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une cotation directe (direct listing, DL) ne fait pas appel à une banque garante (underwriter) et ne lève pas de capitaux nouveaux. La société est simplement admise à la cote d'une bourse, et les actions sont vendues par les actionnaires existants."
+  },
+  {
+    "num": 88,
+    "topic": "quant",
+    "prompt": "With respect to hypothesis testing, a test statistic is used to:",
+    "choices": [
+      "make a statistical decision.",
+      "estimate a population parameter.",
+      "calculate the level of significance."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : une statistique de test est une grandeur calculée à partir d'un échantillon, dont la valeur sert de base pour décider de rejeter ou non l'hypothèse nulle. La décision statistique repose avant tout sur la valeur de la statistique de test."
+  },
+  {
+    "num": 89,
+    "topic": "fsa",
+    "prompt": "Which of the following ratios will most likely increase as a result of an inventory write-down?",
+    "choices": [
+      "Gross profit margin",
+      "Total asset turnover",
+      "Days of inventory on hand"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la rotation de l'actif total augmente à la suite d'une dépréciation des stocks. Les ratios d'activité (par exemple la rotation des stocks et la rotation de l'actif total) sont favorablement affectés par une dépréciation, car la base d'actifs (le dénominateur) diminue. Rotation de l'actif total = chiffre d'affaires / actif total. Le chiffre d'affaires n'est pas touché par la dépréciation des stocks, mais l'actif total baisse avec la réduction des stocks (un actif). La baisse du dénominateur fait augmenter le ratio."
+  },
+  {
+    "num": 90,
+    "topic": "corporate",
+    "prompt": "Which best describes business growth that attracts more customers and merchants, contributing to further growth in the business?",
+    "choices": [
+      "Crowdsourcing",
+      "A one-sided network",
+      "A multi-sided network"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : à mesure que les réseaux multifaces (bifaces) se développent (plus d'utilisateurs rejoignent le service, ce qui attire davantage de marchands, qui à leur tour attirent davantage d'utilisateurs), ces entreprises peuvent connaître une croissance exponentielle."
+  }
+]

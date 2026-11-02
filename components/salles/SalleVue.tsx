@@ -10,7 +10,7 @@ import { SalonView, type ActionsSalon } from "@/components/salles/SalonView";
 import { Stage } from "@/components/salles/Stage";
 import { useEtatSalle } from "@/components/salles/useEtatSalle";
 import { lancerPartie } from "@/app/salles/actions";
-import { arreterSession, getQuestionsDisponibles, messageErreurSalle, modifierSalle, quitterSalle, supprimerSalle } from "@/lib/salles/api";
+import { arreterSession, getMocksDisponibles, getQuestionsDisponibles, messageErreurSalle, modifierSalle, quitterSalle, supprimerSalle } from "@/lib/salles/api";
 import { finRecente, paramsPourRejouer } from "@/lib/salles/partie";
 import type { EtatSalle, SalleParams, SalleSource } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
@@ -49,6 +49,10 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
     },
     [sb],
   );
+  const chargerMocks = useCallback(async () => {
+    const r = await getMocksDisponibles(sb());
+    return r.ok ? r.data : null;
+  }, [sb]);
 
   const onLancer = useCallback(
     async (params: SalleParams): Promise<RetourLancement> => {
@@ -135,7 +139,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
       donnees={etat}
       hors={suivi.hors}
       actions={actions}
-      reglages={etat.moi.estAdmin ? <Reglages initial={session ? session.params : null} chargerDispos={chargerDispos} onLancer={onLancer} desactive={active} /> : null}
+      reglages={etat.moi.estAdmin ? <Reglages initial={session ? session.params : null} chargerDispos={chargerDispos} chargerMocks={chargerMocks} onLancer={onLancer} desactive={active} /> : null}
       partie={
         partieAffichee && session ? (
           <PartieSalle
