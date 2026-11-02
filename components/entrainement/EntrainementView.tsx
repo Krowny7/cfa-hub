@@ -524,7 +524,7 @@ function Autres() {
   return (
     <div className={s.bas}>
       <div className={s.lieu} aria-hidden>
-        <Illustration nom="accueil-trente-du-jour" position="50% 34%" decorative className={s.fond} />
+        <Illustration nom="practice-studiolo" position="50% 50%" decorative className={s.fond} />
       </div>
       <nav className={s.aside} aria-label={ENTRAINER.autres} data-leonard="autres">
         <Petite href="/qcm" illu="qcm-bibliotheque" position="50% 50%" titre={ENTRAINER.qcmTitre} texte={ENTRAINER.qcmTexte} />
