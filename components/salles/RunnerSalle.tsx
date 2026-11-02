@@ -136,8 +136,8 @@ export function RunnerSalle({
   const titre = session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : SALLES.partieTitre(session.numero);
 
   return (
-    // le papier du site au milieu de la salle sombre : l'écran des 30 du jour tel quel, thème nuit compris
-    <div className="grid gap-6 rounded-[22px] p-3 md:gap-8 md:p-6" style={{ background: "var(--paper)", color: "var(--ink)" }}>
+    // la salle passe en mode sobre (SalonView) : le papier du site, l'encre du site, thème nuit compris
+    <div className="grid gap-6 md:gap-8" style={{ color: "var(--ink)" }}>
       <header className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-4 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 md:gap-5">
           <div className="min-w-0">
@@ -156,20 +156,16 @@ export function RunnerSalle({
           </div>
         </div>
         <Ticks className="mt-3" marks={coches} label={DEFI.avancement} onPick={aller} canPick={() => true} />
-        {autres.length > 0 && (
-          <p className="t-micro m-0 mt-2 truncate">
-            {autres.map((j) => RUNNER_SALLE.joueur(j.username?.trim() || "Un joueur", j.n, nb, j.rendu)).join("   ·   ")}
-          </p>
-        )}
       </header>
 
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
       {rendue ? (
-        <section className="card rl-in mx-auto grid w-full max-w-[820px] place-items-center gap-2 p-8 text-center">
+        <section className="card rl-in grid w-full place-items-center gap-2 p-8 text-center">
           <h2 className="t-h2 m-0">{RUNNER_SALLE.rendueTitre}</h2>
           <p className="t-small m-0">{RUNNER_SALLE.rendueTexte}</p>
         </section>
       ) : !q || !q.choix ? null : (
-        <div className="mx-auto grid w-full max-w-[820px] gap-[22px]">
+        <div className="grid w-full min-w-0 gap-[22px]">
           <p className="kicker m-0">{DEFI.question(q.position + 1, nb, duelTopicLabel(q.topic))}</p>
 
           <section className="card flex min-w-0 flex-col gap-6 p-5 md:p-7">
@@ -258,6 +254,59 @@ export function RunnerSalle({
           </div>
         </div>
       )}
+
+      {/* à droite : toutes les cases (aller à n'importe quelle question) et l'avancement des autres */}
+      <aside className="grid gap-4 lg:sticky lg:top-[180px]">
+        <section className="card-quiet grid gap-3 p-4" aria-label={RUNNER_SALLE.cases}>
+          <p className="t-micro m-0">{RUNNER_SALLE.cases}</p>
+          <ol className="m-0 grid max-h-[320px] list-none grid-cols-[repeat(auto-fill,minmax(36px,1fr))] gap-1.5 overflow-y-auto p-0">
+            {Array.from({ length: nb }, (_, i) => {
+              const fait = retenues.has(i);
+              const ici = i === courante && !rendue;
+              return (
+                <li key={i}>
+                  <button
+                    type="button"
+                    onClick={() => aller(i)}
+                    aria-current={ici ? "true" : undefined}
+                    aria-label={RUNNER_SALLE.caseAria(i + 1, fait)}
+                    className={
+                      "h-[34px] w-full rounded-[8px] font-mono text-[12px] tabular-nums transition-colors " +
+                      (fait ? "bg-[var(--ink)] text-[var(--paper)] " : "bg-surface-2 text-muted hover:text-[var(--ink)] ") +
+                      (ici ? "ring-2 ring-[var(--pen)] ring-offset-1 ring-offset-[var(--paper)]" : "")
+                    }
+                  >
+                    {i + 1}
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="t-micro m-0">{RUNNER_SALLE.casesLegende}</p>
+        </section>
+        {autres.length > 0 && (
+          <section className="card-quiet grid gap-3 p-4" aria-label={RUNNER_SALLE.joueursTitre}>
+            <p className="t-micro m-0">{RUNNER_SALLE.joueursTitre}</p>
+            <ul className="m-0 grid list-none gap-2.5 p-0">
+              {autres.map((j) => (
+                <li key={j.userId} className="grid gap-1">
+                  <div className="flex items-baseline justify-between gap-2 text-[13px]">
+                    <span className="min-w-0 truncate font-semibold">{j.username?.trim() || "Un joueur"}</span>
+                    <span className="shrink-0 font-mono tabular-nums text-muted">
+                      {j.rendu ? RUNNER_SALLE.copieRendue + " · " : ""}
+                      {j.n}/{nb}
+                    </span>
+                  </div>
+                  <span className="block h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
+                    <span className="block h-full rounded-full bg-[var(--ink)]" style={{ width: `${Math.round((100 * j.n) / Math.max(1, nb))}%` }} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </aside>
+      </div>
     </div>
   );
 }

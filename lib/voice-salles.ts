@@ -358,6 +358,12 @@ export const EXAMEN = {
 /** L'écran de jeu du chrono global, calqué sur les 30 du jour (components/salles/RunnerSalle.tsx). */
 export const RUNNER_SALLE = {
   precedente: "Question précédente",
+  cases: "Toutes les questions",
+  code: "Code de la salle",
+  caseAria: (n: number, repondue: boolean) => `Question ${n}${repondue ? ", répondue" : ", à répondre"}`,
+  casesLegende: "Case pleine : répondue · cerclée : la question ouverte",
+  joueursTitre: "Où en sont les joueurs",
+  copieRendue: "copie rendue",
   modifiable: "Tu peux revenir sur une question et changer ta réponse jusqu'à la remise de ta copie.",
   toutRepondu: "Tout est répondu. Relis si tu veux, puis rends ta copie.",
   changer: "Changer ma réponse",

@@ -108,6 +108,7 @@ function Entree({
   titre,
   href,
   action,
+  bas = false,
   children,
 }: {
   id: string;
@@ -117,11 +118,13 @@ function Entree({
   titre: string;
   href: string;
   action: string;
+  /** le sujet de la peinture est bas dans l'image : on l'agrandit depuis le bas */
+  bas?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <article className={s.moitie} aria-labelledby={id}>
-      <Illustration nom={illu} position={position} decorative eager className={s.fond} />
+      <Illustration nom={illu} position={position} decorative eager className={bas ? s.fond + " " + s.fondBas : s.fond} />
       <div className={s.corps}>
         <h2 id={id} className={"font-brand " + s.titre}>
           <span className={s.sceau + " " + s.sceauNoir} aria-hidden>
@@ -229,7 +232,8 @@ function Diptyque() {
       <Entree
         id="ent-cible"
         illu="practice-studiolo"
-        position="50% 40%"
+        position="50% 50%"
+        bas
         sceau={<Icone nom="entrainer" size={22} />}
         titre={ENTRAINER.cibleTitre}
         href="/practice"

@@ -248,6 +248,12 @@
   position: absolute;
   inset: 0;
   z-index: -2;
+  overflow: hidden;
+}
+/* le duel est bas dans la peinture du désert : agrandie depuis le bas, les deux silhouettes passent au-dessus du titre */
+.fondDuel img {
+  transform: scale(1.6);
+  transform-origin: 50% 100%;
 }
 .carteDuelBas::after {
   content: "";

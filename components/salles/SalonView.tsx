@@ -7,8 +7,9 @@ import { CodePartage } from "@/components/salles/CodePartage";
 import { Membres } from "@/components/salles/Membres";
 import { ReglagesLecture } from "@/components/salles/Reglages";
 import { Stage, TetePanneau } from "@/components/salles/Stage";
+import { estChronoGlobal } from "@/lib/salles/examen";
 import type { EtatSalle, SalleParams } from "@/lib/salles/types";
-import { REGLAGES, SALLES } from "@/lib/voice-salles";
+import { REGLAGES, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 
 // Le salon d'une salle (la salle d'attente), sur la carte d'encre noire du
@@ -61,10 +62,22 @@ export function SalonView({
   }
 
   const dernieresParams: SalleParams | null = session ? session.params : null;
+  // une partie en chrono global : la salle se fait sobre (pas de carte noire), l'écran des 30 du jour prend la place
+  const sobre = !!partie && estChronoGlobal(session);
   const quitterMsg = nbMembres <= 1 ? SALLES.quitterDernier : moi.estAdmin ? SALLES.quitterAdminConfirme : SALLES.quitterConfirme;
 
   return (
-    <Stage salon={partie ? "partie" : "attente"}>
+    <Stage salon={partie ? "partie" : "attente"} sobre={sobre}>
+      {sobre ? (
+        <p className="m-0 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[13px]" style={{ color: "var(--ink)" }}>
+          <span>
+            <b className="font-semibold">{salle.nom}</b> <span className="text-muted">· {SALLES.salonKicker}</span>
+          </span>
+          <span className="text-muted">
+            {RUNNER_SALLE.code} <b className="font-mono font-semibold tracking-[0.12em] text-[var(--ink)]">{salle.code}</b>
+          </span>
+        </p>
+      ) : (
       <header className={s.entete}>
         <div>
           <p className={s.surtitre}>{SALLES.salonKicker}</p>
@@ -90,6 +103,7 @@ export function SalonView({
         </div>
         <CodePartage code={salle.code} />
       </header>
+      )}
 
       {partie ? (
         partie
@@ -150,6 +164,7 @@ export function SalonView({
         </div>
       )}
 
+      {!sobre && (
       <footer className={s.pied}>
         <div className={s.piedActions}>
           <button
@@ -181,6 +196,7 @@ export function SalonView({
           )}
         </div>
       </footer>
+      )}
     </Stage>
   );
 }

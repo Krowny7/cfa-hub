@@ -6,10 +6,11 @@ import s from "./Salles.module.css";
 // les boutons et les sceaux y aient leur palette) et l'en-tête d'un panneau (le
 // sceau d'encre, le titre en Dela Gothic One, un compteur ou une action à droite).
 
-export function Stage({ children, salon }: { children: React.ReactNode; salon?: "attente" | "partie" }) {
+// sobre : une partie en chrono global, posée sur le papier du site, sans la carte d'encre noire
+export function Stage({ children, salon, sobre = false }: { children: React.ReactNode; salon?: "attente" | "partie"; sobre?: boolean }) {
   return (
     <PorteeEncre>
-      <div className={[s.jetons, s.racine].join(" ")} data-salon={salon}>
+      <div className={[s.jetons, s.racine].join(" ")} data-salon={salon} data-sobre={sobre ? "1" : undefined}>
         {children}
       </div>
     </PorteeEncre>

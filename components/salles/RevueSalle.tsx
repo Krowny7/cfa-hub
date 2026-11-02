@@ -42,7 +42,7 @@ export function RevueSalle({ revue, numero, titre }: { revue: DailyReviewItem[];
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[880px] gap-7 rounded-[22px] p-4 md:gap-9 md:p-7" style={{ background: "var(--paper)", color: "var(--ink)" }}>
+    <div className="mx-auto grid w-full max-w-[880px] gap-7 md:gap-9" style={{ color: "var(--ink)" }}>
       <div className="grid gap-2">
         <p className="kicker m-0">{RUNNER_SALLE.revueKicker(numero)}</p>
         <h2 className="t-h1 m-0">{RUNNER_SALLE.revueTitre}</h2>

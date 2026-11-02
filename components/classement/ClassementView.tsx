@@ -159,7 +159,7 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
               </div>
               <div className={s.carteDuelBas}>
                 <div className={s.fondDuel} aria-hidden>
-                  <Illustration nom="classement-duels" position="50% 30%" decorative eager />
+                  <Illustration nom="classement-duels" position="50% 50%" decorative eager />
                 </div>
                 <div className={s.duelTitre}>
                   <span className={s.sceauNoir} aria-hidden>

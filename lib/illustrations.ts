@@ -65,9 +65,9 @@ export const ILLUSTRATIONS = {
   },
   "classement-duels": {
     src: "/illustrations/classement-duels.webp",
-    alt: "Un cavalier de San Romano",
-    credit: "Paolo Uccello, La Bataille de San Romano (panneau de Londres, détail). Domaine public (commons.wikimedia.org, San_Romano_Battle_(Paolo_Uccello,_London)_02).",
-    emplacement: "Classement : médaillon rond de 52 px dans la tuile « Duels en cours » (livrer en 512×512 px).",
+    alt: "Un désert de sable, des rochers en équilibre et un crâne géant, deux samouraïs en duel",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-02), choisie par Théo pour la carte Duels.",
+    emplacement: "S'affronter : fond de la carte Duels (sous le rang), agrandie depuis le bas (.fondDuel img) car le duel est vers 70 % de la hauteur.",
     prompt:
       STYLE +
       "Sujet : un heaume de joute de la Renaissance posé de trois quarts sur une table de bois, panache rouge, deux lances croisées derrière ; gros plan, silhouette très lisible même à 50 px. Sans personnage. Lumière dorée de fin de journée venant de la gauche, palette chaude : ocre, terre de Sienne brûlée, brun Van Dyck, vieil or, accent vermillon. Aucun texte, aucun logo, aucun cadre. Format carré 1:1 (1024×1024 px), sujet centré qui tient dans un cercle inscrit, fond simple et sombre-chaud.",
@@ -227,9 +227,9 @@ export const ILLUSTRATIONS = {
   },
   "practice-studiolo": {
     src: "/illustrations/practice-studiolo.webp",
-    alt: "Saint Jérôme dans son cabinet : un studiolo peint",
-    credit: "Antonello da Messina, Saint Jérôme dans son cabinet, v. 1475, National Gallery, domaine public, https://commons.wikimedia.org/wiki/File:Antonello_da_Messina_-_St_Jerome_in_his_study_-_National_Gallery_London.jpg.",
-    emplacement: "/practice : carte « lieu » Le Studiolo, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone. /entrainement : moitié droite du diptyque (Entraînement ciblé), plein cadre.",
+    alt: "Une mer de glace entre des arches d'iceberg, deux samouraïs en duel sur un radeau de glace",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-02), choisie par Théo pour l'Entraînement ciblé.",
+    emplacement: "/practice : carte « lieu » Le Studiolo, 16:10 sur ordinateur, vignette portrait 88×110 px sur téléphone. /entrainement : moitié droite du diptyque (Entraînement ciblé), agrandie depuis le bas (.fondBas) car le duel est vers 68 % de la hauteur.",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : le studiolo d'un savant florentin vers 1500, dans l'univers de Léonard de Vinci. Un pupitre incliné porte une copie vierge et une plume dans son encrier, un sablier en verre et bois tourné est posé à côté, des traités reliés sont empilés, un mécanisme à engrenages trône sur une étagère. Une fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, terre de Sienne, brun, ivoire, touches de vert sauge). Vue de trois quarts, le pupitre et le sablier au centre, le haut de l'image calme. Sans personnage, sans texte lisible, sans cadre. Format paysage 16:10, 1600×1000.",
   },
   "practice-corrige": {
