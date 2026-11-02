@@ -141,7 +141,7 @@ export function CalcHub({ subjects, progress: server, db, owner }: { subjects: C
                 label={ABAQUE.nom}
                 ratio="16 / 10"
                 visuel={<Illustration nom="calculs-abaque" position="50% 55%" />}
-                vignette={<Illustration nom="calculs-abaque" position="50% 55%" decorative />}
+                vignette={<Illustration nom="calculs-abaque" position="78% 62%" decorative />}
                 marque={
                   <Sceau>
                     <Calculator size={20} aria-hidden />

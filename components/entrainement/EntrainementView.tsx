@@ -206,7 +206,7 @@ function Diptyque() {
       <Entree
         id="ent-calculs"
         illu="calculs-abaque"
-        position="50% 40%"
+        position="30% 50%"
         sceau={<Glyphe nom="calculs" size={22} />}
         titre={ENTRAINER.calculsTitre}
         href="/calculs"

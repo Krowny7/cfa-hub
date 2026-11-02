@@ -206,9 +206,9 @@ export const ILLUSTRATIONS = {
   },
   "calculs-abaque": {
     src: "/illustrations/calculs-abaque.webp",
-    alt: "La table de calcul d'une école d'abaque florentine",
-    credit: "Jacopo de' Barbari (attribué), Portrait de Luca Pacioli avec un élève, 1495, Capodimonte, domaine public, https://commons.wikimedia.org/wiki/File:Jacopo_de%27_Barbari_(attributed_to)_Portrait_of_Luca_Pacioli_(1445_1517)_with_a_student_(Guidobaldo_da_Montefeltro)_(2).jpg recadré sur la table. Domaine public.",
-    emplacement: "/calculs : carte « lieu » L'Abaque, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone ; /calculs/[matiere] la reprend en médaillon de bande. /entrainement : moitié gauche du diptyque (Calculs), plein cadre.",
+    alt: "Une sphère armillaire de bronze en ruine sur un plateau de montagne, la nuit ; deux samouraïs assis regardent les étoiles",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-02), « L'observatoire des étoiles », choisie par Théo pour les Calculs.",
+    emplacement: "/calculs : carte « lieu » L'Abaque, 16:10 sur ordinateur, vignette portrait 88×110 px sur téléphone (cadrée sur les deux samouraïs, vers 74 % de la largeur) ; /calculs/[matiere] la reprend en médaillon de bande. /entrainement : moitié gauche du diptyque (Calculs), cadrée 30% 50% pour que les samouraïs restent à droite du texte.",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : la table de travail d'une école d'abaque florentine vers 1500, dans l'univers de Léonard de Vinci. Un abaque à jetons de laiton, des tablettes de cire, un compas, des feuillets couverts de colonnes de chiffres, et à côté un mécanisme de calcul en bois à roues dentées inspiré du Codex Madrid. Une fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, terre de Sienne, brun, ivoire, reflets de laiton, touches de vert sauge). Vue en légère plongée, sujet au centre, haut de l'image plus calme. Sans personnage, sans texte ni chiffres lisibles, sans cadre. Format paysage 16:10, 1600×1000.",
   },
   "calculs-poulies": {
