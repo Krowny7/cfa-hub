@@ -85,7 +85,9 @@ type Film = {
   mot: [number, number, number];
 };
 const FILMS: Record<"land" | "port", Film> = {
-  land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [960, 540, 1300, 560], mot: [1154.5, 696, 900] },
+  // mot : le bord gauche (764) est celui des jambages du R et du L peints (mesuré sur la
+  // dernière image), le bord droit celui de la zone utile (1610)
+  land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [960, 540, 1300, 560], mot: [1187, 696, 846] },
   port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 482.4, 626.1], content: [540, 1044, 760, 992], mot: [540, 1362, 1000] },
 };
 const MASK_MARGIN = 24;
@@ -139,8 +141,8 @@ function placeFilm(f: Film) {
   return { s, left, top, dw, dh, covers: dw >= W - 0.5 && dh >= H - 0.5 };
 }
 
-// Les phrases suivent le film : boîte calée sur la largeur de « RANKED LOBBY » (texte aligné à gauche,
-// sur le bord gauche du nom, demande de l'utilisateur), taille de
+// Les phrases suivent le film : en paysage, texte aligné à gauche sur le bord gauche du nom
+// (demande de l'utilisateur) ; en portrait, où le nom est centré, phrase centrée sous lui ; taille de
 // lecture (≈ 15 à 18 px en paysage, 13 à 15 px en portrait selon la largeur), sur une
 // seule ligne en italique (demande de l'utilisateur), réduite si besoin pour rester dans la zone utile.
 function placeMot(el: HTMLElement, f: Film, g: ReturnType<typeof placeFilm>) {
@@ -157,6 +159,7 @@ function placeMot(el: HTMLElement, f: Film, g: ReturnType<typeof placeFilm>) {
     top: `${g.top + top * g.s}px`,
     width: `${width}px`,
     fontSize: `${size.toFixed(1)}px`,
+    textAlign: f.ow > f.oh ? "left" : "center",
   });
 }
 
