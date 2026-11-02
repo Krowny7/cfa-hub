@@ -226,7 +226,7 @@ console.log("# logique pure");
 console.log("# le décompte");
 {
   const html = rendreExamen("decompte");
-  check("le décompte : « L'examen démarre », le 3 du décompte, la règle (définitive, correction à la fin, 1 000 points)", html.includes("L'examen démarre") && /class="decompteChiffre" data-fin="1"[^>]*>3</.test(html) && html.includes("définitive") && html.includes("1 000 points"));
+  check("le décompte : « L'examen démarre », le 3 du décompte, la règle (réponse modifiable jusqu'à la remise, correction à la fin, 1 000 points)", html.includes("L'examen démarre") && /class="decompteChiffre" data-fin="1"[^>]*>3</.test(html) && html.includes("change une réponse tant que ta copie") && html.includes("1 000 points"));
   check("le décompte : les réglages disent « chrono global 7 min 30 s »", html.includes("chrono global 7 min 30 s"));
   check("le décompte : pas encore de question", !html.includes("examen-question") && !html.includes('role="radio"'));
 }

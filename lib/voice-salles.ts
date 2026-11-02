@@ -279,7 +279,7 @@ export const EXAMEN = {
   kicker: "Chrono global",
   /** le décompte */
   decompteTitre: "L'examen démarre",
-  decompteRegle: "Un seul chrono pour toute la partie. Réponds dans l'ordre que tu veux : chaque réponse est définitive. Pas de correction en route : elle arrive à la fin, avec le classement. 1 000 points par bonne réponse, le temps départage.",
+  decompteRegle: "Un seul chrono pour toute la partie. Réponds dans l'ordre que tu veux, et change une réponse tant que ta copie n'est pas rendue. Pas de correction en route : elle arrive à la fin, avec le classement. 1 000 points par bonne réponse, le temps départage.",
   /** la tête : chrono, progression, numéros */
   tempsRestant: "Temps restant",
   tempsRestantAria: (texte: string) => `Temps restant : ${texte}`,
@@ -353,4 +353,23 @@ export const EXAMEN = {
   explication: "Explication",
   voirExplication: "Voir l'explication",
   etapes: "Le calcul pas à pas",
+} as const;
+
+/** L'écran de jeu du chrono global, calqué sur les 30 du jour (components/salles/RunnerSalle.tsx). */
+export const RUNNER_SALLE = {
+  precedente: "Question précédente",
+  modifiable: "Tu peux revenir sur une question et changer ta réponse jusqu'à la remise de ta copie.",
+  toutRepondu: "Tout est répondu. Relis si tu veux, puis rends ta copie.",
+  changer: "Changer ma réponse",
+  dejaRepondue: (lettre: string) => `Ta réponse : ${lettre}. Choisis-en une autre pour la changer.`,
+  confirmRendre: (blanches: number) =>
+    blanches > 0
+      ? `Rendre ta copie ? ${blanches} question${blanches > 1 ? "s" : ""} sans réponse. Tu ne pourras plus rien changer.`
+      : "Rendre ta copie ? Tu ne pourras plus rien changer.",
+  rendueTitre: "Copie rendue.",
+  rendueTexte: "La correction arrive quand tout le monde a rendu sa copie, ou à la fin du chrono.",
+  joueur: (nom: string, n: number, total: number, rendu: boolean) => `${nom} · ${n}/${total}${rendu ? " · copie rendue" : ""}`,
+  /** le débrief */
+  revueKicker: (numero: number) => `Partie ${numero} · correction`,
+  revueTitre: "Ta copie corrigée",
 } as const;

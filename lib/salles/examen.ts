@@ -15,8 +15,59 @@
 // repondre_salle, etat_salle). Les champs `chrono` et `avancement` de la partie
 // sont lus défensivement : ils viennent d'etat_salle et peuvent manquer.
 
+import { corpsExportIA, type DailyAiScope, type DailyReviewItem } from "@/lib/daily";
 import type { ReponseOk } from "./partie";
 import type { SalleCorrection, SalleItem, SalleMaReponse, SalleMembre, SalleSession } from "./types";
+
+/**
+ * La copie corrigée d'une partie en chrono global, au format de la revue des 30
+ * du jour (DefiReview, ReviewCard, « Copier pour l'IA ») : QCM seulement, sans
+ * réussite des joueurs. null tant qu'une correction manque.
+ */
+export function revueSalle(items: SalleItem[], corrections: SalleCorrection[], mes: SalleMaReponse[]): DailyReviewItem[] | null {
+  const corr = new Map(corrections.map((c) => [c.position, c]));
+  const mesPar = new Map(mes.map((m) => [m.position, m]));
+  const revue: DailyReviewItem[] = [];
+  for (const it of [...items].sort((a, b) => a.position - b.position)) {
+    const c = corr.get(it.position);
+    if (!c || !it.choix) return null;
+    const m = mesPar.get(it.position);
+    const choix = m?.choix ?? null;
+    revue.push({
+      position: it.position,
+      questionId: "",
+      prompt: it.enonce,
+      choices: it.choix,
+      correctIndex: c.bonneIndex ?? -1,
+      explanation: c.explication,
+      topic: it.topic,
+      selectedIndex: choix,
+      isCorrect: choix !== null && choix === c.bonneIndex,
+      players: 0,
+      successCount: 0,
+      successRate: null,
+    });
+  }
+  return revue;
+}
+
+/** « Copier pour l'IA » d'une partie de Salle (mock officiel ou QCM) : même corps que les 30 du jour. */
+export function exportIASalle(revue: DailyReviewItem[], ctx: { scope: DailyAiScope; titre: string; score: number; total: number }): string {
+  const items = ctx.scope === "errors" ? revue.filter((q) => !q.isCorrect) : revue;
+  const pct = ctx.total > 0 ? Math.round((ctx.score / ctx.total) * 100) : 0;
+  const contexte = `Contexte : ${ctx.titre}, partie chronométrée de ${ctx.total} questions type examen CFA Level I, score ${ctx.score}/${ctx.total}.\n`;
+  const entete =
+    ctx.scope === "errors"
+      ? `EXAMEN CFA — MES ERREURS (${items.length} question${items.length > 1 ? "s" : ""}) — ${ctx.score}/${ctx.total} (${pct}%)\n` +
+        contexte +
+        `Voici les questions que j'ai ratées. Pour chaque question : l'énoncé, les choix, ma réponse, la bonne réponse et l'explication officielle. ` +
+        `Peux-tu me faire un bilan de mes points faibles par matière, et m'expliquer plus en détail chacune de ces erreurs ?\n\n`
+      : `EXAMEN CFA — ${ctx.score}/${ctx.total} (${pct}%)\n` +
+        contexte +
+        `Voici ma copie. Pour chaque question : l'énoncé, les choix, ma réponse, la bonne réponse et l'explication officielle. ` +
+        `Peux-tu me faire un bilan de mes points faibles par matière, et m'expliquer plus en détail les questions où je me suis trompé ?\n\n`;
+  return entete + corpsExportIA(items);
+}
 
 // ---------------------------------------------------------------------------
 // Le mode de la partie

@@ -111,6 +111,50 @@ export function BackLink({ href, children }: { href: string; children: React.Rea
 // `entoure` : une coche entourée au stylo rouge (la question décisive d'un
 // duel : la main du correcteur, règle 3).
 
+/** Le filtre par matière d'une revue : « Toutes les matières », puis une puce par matière présente (avec son compte). */
+export function FiltreMatieres({
+  matieres,
+  valeur,
+  onChange,
+  libelle,
+  toutes,
+}: {
+  matieres: { cle: string; nom: string; n: number }[];
+  valeur: string | null;
+  onChange: (cle: string | null) => void;
+  libelle: string;
+  toutes: string;
+}) {
+  if (matieres.length < 2) return null;
+  const puce = (on: boolean) =>
+    "inline-flex items-center gap-1.5 rounded-[9px] px-2.5 py-1 text-[13px] font-semibold transition-colors " +
+    (on ? "bg-white text-black" : "bg-surface-2 text-muted hover:text-white");
+  return (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label={libelle}>
+      <button type="button" aria-pressed={valeur === null} onClick={() => onChange(null)} className={puce(valeur === null)}>
+        {toutes}
+      </button>
+      {matieres.map((m) => (
+        <button key={m.cle} type="button" aria-pressed={valeur === m.cle} onClick={() => onChange(valeur === m.cle ? null : m.cle)} className={puce(valeur === m.cle)}>
+          {m.nom} <span className="font-mono text-[12px] tabular-nums opacity-70">{m.n}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Les matières présentes dans une liste de questions, dans l'ordre d'apparition, avec leur compte. */
+export function matieresDe(liste: { topic: string | null }[], nom: (cle: string | null) => string): { cle: string; nom: string; n: number }[] {
+  const parCle = new Map<string, { cle: string; nom: string; n: number }>();
+  for (const q of liste) {
+    const cle = q.topic ?? "autre";
+    const m = parCle.get(cle) ?? { cle, nom: nom(q.topic), n: 0 };
+    m.n += 1;
+    parCle.set(cle, m);
+  }
+  return [...parCle.values()];
+}
+
 export type TickMark = "ok" | "ko" | "none" | "done" | "current" | "todo";
 
 const MARK_TEXT: Record<TickMark, string> = {

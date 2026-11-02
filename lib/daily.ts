@@ -565,7 +565,12 @@ export function buildDailyAiExport(
         `Contexte : ${context}\n` +
         `Voici mes réponses au défi du jour CFA Level I. Pour chaque question : mon énoncé, mes choix, ma réponse, la bonne réponse et l'explication officielle. ` +
         `Peux-tu me faire un bilan de mes points faibles par thème, et m'expliquer plus en détail les questions où je me suis trompé ?\n\n`;
-  const body = items
+  return header + corpsExportIA(items);
+}
+
+/** Le corps de « Copier pour l'IA » : chaque question, mes choix, ma réponse, la bonne, l'explication (sert aussi aux Salles). */
+export function corpsExportIA(items: DailyReviewItem[]) {
+  return items
     .map((q) => {
       const letter = (i: number) => AI_LETTERS[i] ?? String(i + 1);
       const choicesText = q.choices.map((c, ci) => `${letter(ci)}) ${c}`).join("\n");
@@ -580,5 +585,4 @@ export function buildDailyAiExport(
       );
     })
     .join("\n");
-  return header + body;
 }

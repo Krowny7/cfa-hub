@@ -5,7 +5,7 @@ import { ArrowRight, Check, Minus, X } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { segThumbStyle } from "@/components/classement/Seg";
 import { DefiAiCopy } from "@/components/defi/DefiAiCopy";
-import { BackLink, Filigrane, Ticks, reviewMarks } from "@/components/defi/parts";
+import { BackLink, Filigrane, FiltreMatieres, Ticks, matieresDe, reviewMarks } from "@/components/defi/parts";
 import { clock, duelTopicLabel } from "@/lib/duels";
 import { FORMATS, dayHref, dayLabel, rankLine, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
 import { DEFI, verdictCopie, voixDefi } from "@/lib/voice-z2c";
@@ -39,7 +39,12 @@ export function DefiReview({ info, review, initialFilter }: Props) {
   const score = me?.score ?? review.filter((r) => r.isCorrect).length;
   const errors = review.filter((r) => !r.isCorrect);
   const [filter, setFilter] = useState<Filter>(initialFilter ?? (errors.length > 0 ? "errors" : "all"));
-  const items = filter === "all" ? review : errors;
+  const [matiere, setMatiere] = useState<string | null>(null);
+  const base = filter === "all" ? review : errors;
+  const matieres = matieresDe(base, duelTopicLabel);
+  // une matière absente du filtre courant (ex. sans erreur) revient à « Toutes »
+  const actif = matieres.some((m) => m.cle === matiere) ? matiere : null;
+  const items = actif ? base.filter((q) => (q.topic ?? "autre") === actif) : base;
   const players = review[0]?.players ?? info.players;
   const showRates = players >= MIN_PLAYERS_FOR_RATE;
   const hardest = showRates
@@ -53,6 +58,7 @@ export function DefiReview({ info, review, initialFilter }: Props) {
     const target = review.find((r) => r.position === position);
     if (!target) return;
     if (filter === "errors" && target.isCorrect) setFilter("all");
+    if (matiere && (target.topic ?? "autre") !== matiere) setMatiere(null);
     requestAnimationFrame(() => {
       document.getElementById(`q-${position + 1}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -166,6 +172,7 @@ export function DefiReview({ info, review, initialFilter }: Props) {
           </div>
           {showRates && <p className="t-micro m-0">{DEFI.copiesCeJour(players)}</p>}
         </div>
+        <FiltreMatieres matieres={matieres} valeur={actif} onChange={setMatiere} libelle={DEFI.filtreMatieres} toutes={DEFI.toutesMatieres} />
 
         {items.length === 0 ? (
           <div className="card-quiet grid gap-1 p-6 text-center">
@@ -206,7 +213,7 @@ function Tag({ tone, children }: { tone: "ink" | "pen"; children: React.ReactNod
 }
 
 /** Une question corrigée : ma réponse, la bonne, l'explication, la réussite des joueurs. */
-function ReviewCard({ q, total, showRate }: { q: DailyReviewItem; total: number; showRate: boolean }) {
+export function ReviewCard({ q, total, showRate }: { q: DailyReviewItem; total: number; showRate: boolean }) {
   const mine = q.isCorrect ? "ok" : q.selectedIndex !== null ? "ko" : "none";
   return (
     <article id={`q-${q.position + 1}`} className="card rl-in min-w-0 scroll-mt-28 p-5 md:p-7" aria-label={`Question ${q.position + 1} sur ${total}`}>
@@ -216,7 +223,7 @@ function ReviewCard({ q, total, showRate }: { q: DailyReviewItem; total: number;
           <span className="font-sans"> · {duelTopicLabel(q.topic)}</span>
         </p>
         <div className="flex shrink-0 items-center gap-1.5">
-          <MarqueQuestion questionId={q.questionId} source="defi" />
+          {q.questionId && <MarqueQuestion questionId={q.questionId} source="defi" />}
           <span
             className={
               "inline-flex items-center gap-1 rounded-[8px] px-2 py-0.5 text-[12px] font-semibold " +

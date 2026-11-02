@@ -17,6 +17,8 @@ type Props = {
    * copie s'il n'y en a pas).
    */
   layout?: "block" | "buttons" | "single";
+  /** un autre texte que celui du défi du jour (ex. une partie de Salle) */
+  exporter?: (scope: DailyAiScope) => string;
 };
 
 /** Copie un texte : presse-papiers moderne, puis repli execCommand. */
@@ -50,7 +52,7 @@ async function copyText(text: string): Promise<boolean> {
 // « Copier pour l'IA » du défi du jour : mes erreurs, ou toute la copie, au
 // format des sessions (voir buildDailyAiExport). Si le navigateur refuse la
 // copie, le texte s'affiche dans un champ à copier à la main.
-export function DefiAiCopy({ review, ctx, layout = "buttons" }: Props) {
+export function DefiAiCopy({ review, ctx, layout = "buttons", exporter }: Props) {
   const [copied, setCopied] = useState<DailyAiScope | null>(null);
   const [manual, setManual] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,7 +69,7 @@ export function DefiAiCopy({ review, ctx, layout = "buttons" }: Props) {
   if (review.length === 0) return null;
 
   async function copy(scope: DailyAiScope) {
-    const text = buildDailyAiExport(review, { scope, ...ctx });
+    const text = exporter ? exporter(scope) : buildDailyAiExport(review, { scope, ...ctx });
     setManual(null);
     if (await copyText(text)) {
       setCopied(scope);

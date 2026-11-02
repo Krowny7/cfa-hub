@@ -6,6 +6,8 @@ import { Avatar } from "@/components/classement/Avatar";
 import { BoutonEnvoi } from "@/components/classement/Encre";
 import { etiquettesDe, type Repondre } from "@/components/salles/CarteQuestion";
 import { DebriefExamen } from "@/components/salles/DebriefExamen";
+import { RevueSalle } from "@/components/salles/RevueSalle";
+import { RunnerSalle } from "@/components/salles/RunnerSalle";
 import { Enonce } from "@/components/salles/Enonce";
 import { FinPartie } from "@/components/salles/FinPartie";
 import { flechesRadios } from "@/components/salles/radios";
@@ -26,6 +28,7 @@ import {
   prochaineNonRepondue,
   refusCopieRendue,
   reponsesRetenues,
+  revueSalle,
   type ReponseRetenue,
 } from "@/lib/salles/examen";
 import { libelleDuree, libelleParams } from "@/lib/salles/logique";
@@ -138,6 +141,8 @@ export function PartieExamen(props: PropsPartieExamen) {
     // la fin tombe à l'horloge avant que le serveur ne la confirme : l'état lu est encore celui
     // de la partie (classement à 0, justesse masquée) ; on attend la lecture qui révèle tout
     if (!finRevelee(session, mesReponses)) return <FinEnAttente session={session} />;
+    // QCM seulement : la revue des 30 du jour (filtres, matières, « Copier pour l'IA ») ; sinon l'ancien débrief
+    const revue = session.params.type === "questions" ? revueSalle(items, corrections, mesReponses) : null;
     return (
       <div className={p.ecran}>
         <FinPartie
@@ -153,11 +158,17 @@ export function PartieExamen(props: PropsPartieExamen) {
           onRetour={onRetour}
           revue={false}
         />
-        <DebriefExamen nb={session.nb} items={items} corrections={corrections} mesReponses={mesReponses} />
+        {revue ? (
+          <RevueSalle revue={revue} numero={session.numero} titre={session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : SALLES.partieTitre(session.numero)} />
+        ) : (
+          <DebriefExamen nb={session.nb} items={items} corrections={corrections} mesReponses={mesReponses} />
+        )}
       </div>
     );
   }
   if (h.phase === "decompte") return <DecompteExamen session={session} avantMs={h.avantDebutMs} onArreter={onArreter} />;
+  // QCM seulement (un mock officiel) : l'écran des 30 du jour, réponses modifiables jusqu'à la remise
+  if (session.params.type === "questions") return <RunnerSalle {...props} restantMs={h.restantMs} totalMs={h.totalMs} />;
   return <JeuExamen {...props} restantMs={h.restantMs} totalMs={h.totalMs} />;
 }
 

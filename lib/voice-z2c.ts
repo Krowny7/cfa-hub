@@ -143,6 +143,9 @@ export const DEFI = {
   /** filtres de la revue */
   mesRatures: IA.mesRatures,
   tout: IA.tout,
+  /** le filtre par matière de la revue */
+  filtreMatieres: "Filtrer par matière",
+  toutesMatieres: "Toutes les matières",
   pagePropre: LEXIQUE.pagePropre,
   pagePropreTexte: "Aucune rature dans ta copie. Tu peux tout relire dans « Toute la copie ».",
   /** marque d'une question corrigée */
