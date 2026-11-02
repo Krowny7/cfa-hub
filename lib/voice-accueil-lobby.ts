@@ -121,6 +121,10 @@ export const LOBBY = {
     sceau: "TENU",
     sceauAria: (objectif: number) => `Sceau TENU : pas encore, il se pose à ${nombre(objectif)} traits`,
     sceauTitre: (objectif: number) => `Le sceau se pose à ${nombre(objectif)} traits`,
+    /** l'infobulle de l'anneau : « 7 questions · 2 calculs » */
+    detail: (questions: number, calculs: number) => `${nombre(questions)}${NBSP}${questions > 1 ? "questions" : "question"} · ${nombre(calculs)}${NBSP}${calculs > 1 ? "calculs" : "calcul"}`,
+    detailAria: (traits: number, objectif: number, questions: number, calculs: number) =>
+      `Anneau du jour : ${nombre(traits)} ${traits > 1 ? "traits" : "trait"} sur ${nombre(objectif)}, dont ${nombre(questions)} ${questions > 1 ? "questions" : "question"} et ${nombre(calculs)} ${calculs > 1 ? "calculs" : "calcul"}`,
     serie: "Série d'encre",
     jours: (n: number) => `${nombre(n)}${NBSP}${n > 1 ? "jours" : "jour"}`,
     joker: "Joker de la semaine",

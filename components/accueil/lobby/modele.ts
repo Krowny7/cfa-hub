@@ -251,6 +251,8 @@ export function titreDesTraits(o: { repondues: number; objectif: number; heure: 
 
 export function carteTraits(o: {
   repondues: number;
+  /** parmi les réponses du jour, les calculs (le reste : des questions) */
+  calculs?: number;
   objectif: number;
   jour: string;
   heure: number;
@@ -271,10 +273,12 @@ export function carteTraits(o: {
   const phrase: Segment[] = tenu ? [T.phraseTenue] : suite.length ? [...T.phraseAFaire(), " ", ...suite] : T.phraseAFaire();
   const soir = o.dayState === "sec" && o.streak > 0;
   const libelle = soir && o.reste !== null ? ENCRE.pourGarder(o.reste) : T.gagner;
+  const calculs = Math.max(0, Math.min(o.repondues, o.calculs ?? 0));
   return {
     repondues: o.repondues,
     objectif: o.objectif,
     tenu,
+    detail: { questions: o.repondues - calculs, calculs, texte: T.detail(o.repondues - calculs, calculs), aria: T.detailAria(o.repondues, o.objectif, o.repondues - calculs, calculs) },
     jour: o.jour,
     titre: titreDesTraits({ repondues: o.repondues, objectif: o.objectif, heure: o.heure, serie: o.streak }),
     phrase,
@@ -365,6 +369,8 @@ export type EntreesLobby = {
   boardHier: DailyBoard | null;
   /** les questions du jour, recalées sur la copie ouverte (withLiveDaily) */
   repondues: number;
+  /** parmi elles, les calculs (l'infobulle de l'anneau) */
+  calculs?: number;
   objectif: number;
   serie: SerieEncre | null;
   streak: number;
@@ -405,6 +411,7 @@ export function construireLobby(e: EntreesLobby): Lobby {
     calme,
     traits: carteTraits({
       repondues: e.repondues,
+      calculs: e.calculs,
       objectif: e.objectif,
       jour: e.jour,
       heure: e.heure,

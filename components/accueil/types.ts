@@ -5,7 +5,8 @@
 
 export type WeekDay = { key: string; label: string; count: number; correct: number; isToday: boolean; future: boolean };
 /** `activeDays` : jours (Paris) avec au moins une réponse, sur les 8 derniers jours au moins (série). */
-export type ActivityWeek = { today: number; days: WeekDay[]; activeDays?: string[] };
+/** `todayCalc` : parmi les réponses du jour (`today`), les calculs (calc_attempts et re-tests de calcul des Ateliers) */
+export type ActivityWeek = { today: number; todayCalc?: number; days: WeekDay[]; activeDays?: string[] };
 
 export type MockExamCard = {
   id: string;

@@ -25,7 +25,7 @@ function shiftDay(key: string, days: number) {
 // ---------------------------------------------------------------------------
 // Activité : questions répondues par jour (semaine en cours, lundi → dimanche)
 
-type DatedCount = { at: string; n: number; correct: number };
+type DatedCount = { at: string; n: number; correct: number; calc?: boolean };
 
 async function safeRows<T>(run: () => PromiseLike<{ data: unknown; error: unknown }>): Promise<T[]> {
   try {
@@ -42,9 +42,11 @@ async function safeRows<T>(run: () => PromiseLike<{ data: unknown; error: unknow
  * confondues : quiz des fiches (une ligne par réponse), sessions QCM,
  * sessions d'entraînement ciblé, examens blancs et leurs reprises, duels
  * réglés, copies rendues du défi du jour (daily_attempts) et séries éclair
- * (eclair_series), et les questions des Ateliers (ateliers ; les calculs
- * sont dans calc_attempts), si leurs migrations sont appliquées ; sinon la lecture
- * échoue et ne compte rien.
+ * (eclair_series), les questions des Ateliers (ateliers) et les calculs
+ * (calc_attempts, plus les re-tests de calcul des Ateliers), comme le logo
+ * vivant de la barre du haut (components/adn/AnneauDuJourData.ts), si leurs
+ * migrations sont appliquées ; sinon la lecture échoue et ne compte rien.
+ * `todayCalc` : la part des calculs dans `today` (l'infobulle de l'anneau).
  * Lit aussi les 8 derniers jours (série) : `activeDays`.
  */
 export async function loadActivity(supabase: Client, userId: string, now = new Date()): Promise<ActivityWeek> {
@@ -66,7 +68,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     finished_at: string | null;
   };
 
-  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, eclair, ateliers] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, eclair, ateliers, calc] = await Promise.all([
     safeRows<{ answered_at: string; is_correct: boolean }>(() =>
       supabase.from("quiz_answer_log").select("answered_at,is_correct").eq("user_id", userId).gte("answered_at", since).limit(5000),
     ),
@@ -107,8 +109,12 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
       supabase.from("eclair_series").select("finished_at,score,total").eq("user_id", userId).gte("finished_at", since).limit(500),
     ),
     // Ateliers : une ligne par Atelier, ses réponses dedans (table absente avant la migration : rien).
-    safeRows<{ reponses: { k?: string; ok?: boolean; at?: string }[] | null }>(() =>
+    safeRows<{ reponses: { k?: string; ok?: boolean; r?: boolean; at?: string }[] | null }>(() =>
       supabase.from("ateliers").select("reponses").eq("user_id", userId).gte("vu_at", since).limit(100),
+    ),
+    // Exercices de calcul : une ligne par réponse (table absente avant la migration : rien).
+    safeRows<{ answered_at: string; correct: boolean }>(() =>
+      supabase.from("calc_attempts").select("answered_at,correct").eq("user_id", userId).gte("answered_at", since).limit(5000),
     ),
   ]);
 
@@ -129,15 +135,19 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     ...quizzes.map((r) => ({ at: r.created_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
     ...eclair.map((r) => ({ at: r.finished_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
     ...ateliers.flatMap((r) => (Array.isArray(r.reponses) ? r.reponses : []).filter((x) => x.k !== "calc" && x.at).map((x) => ({ at: x.at as string, n: 1, correct: x.ok ? 1 : 0 }))),
+    // les calculs : calc_attempts, et les re-tests de calcul des Ateliers (le premier passage est dans calc_attempts)
+    ...calc.map((r) => ({ at: r.answered_at, n: 1, correct: r.correct ? 1 : 0, calc: true })),
+    ...ateliers.flatMap((r) => (Array.isArray(r.reponses) ? r.reponses : []).filter((x) => x.k === "calc" && x.r === true && x.at).map((x) => ({ at: x.at as string, n: 1, correct: x.ok ? 1 : 0, calc: true }))),
   ];
 
-  const byDay = new Map<string, { n: number; correct: number }>();
+  const byDay = new Map<string, { n: number; correct: number; calc: number }>();
   for (const r of all) {
     if (!r.at || r.n <= 0) continue;
     const key = parisDay(new Date(r.at));
-    const a = byDay.get(key) ?? { n: 0, correct: 0 };
+    const a = byDay.get(key) ?? { n: 0, correct: 0, calc: 0 };
     a.n += r.n;
     a.correct += r.correct;
+    if (r.calc) a.calc += r.n;
     byDay.set(key, a);
   }
 
@@ -150,7 +160,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     .filter(([, a]) => a.n > 0)
     .map(([k]) => k)
     .sort();
-  return { today: byDay.get(today)?.n ?? 0, days, activeDays };
+  return { today: byDay.get(today)?.n ?? 0, todayCalc: byDay.get(today)?.calc ?? 0, days, activeDays };
 }
 
 /**
@@ -173,7 +183,7 @@ export function withLiveDaily(activity: ActivityWeek, daily: { status: string; a
   const days = activity.days.map((x) => (x.isToday ? { ...x, count: x.count + n } : x));
   const todayKey = activity.days.find((x) => x.isToday)?.key;
   const activeDays = todayKey && !(activity.activeDays ?? []).includes(todayKey) ? [...(activity.activeDays ?? []), todayKey] : activity.activeDays;
-  return { today: activity.today + n, days, activeDays };
+  return { today: activity.today + n, todayCalc: activity.todayCalc, days, activeDays };
 }
 
 /** Heure de Paris (0–23). */

@@ -175,6 +175,7 @@ export async function lireLobby(ctx: CtxLecture): Promise<AccueilLu> {
     boardAuj,
     boardHier,
     repondues,
+    calculs: activity?.todayCalc ?? 0,
     objectif: etat ? objectifDe(etat) : OBJECTIF_DU_JOUR,
     serie,
     streak,

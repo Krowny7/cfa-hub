@@ -101,6 +101,8 @@ export type CarteTraitsLobby = {
   repondues: number;
   objectif: number;
   tenu: boolean;
+  /** l'infobulle de l'anneau : les questions et les calculs du jour (« 7 questions · 2 calculs ») et sa version lue */
+  detail: { questions: number; calculs: number; texte: string; aria: string };
   /** le jour de Paris (le sceau « TENU » ne joue son coup de tampon qu'une fois par jour) */
   jour: string;
   /** « Encore 14 traits », « Journée tenue » (sans prénom : l'en-tête le dit déjà) */

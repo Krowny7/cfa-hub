@@ -20,11 +20,15 @@ import s from "./Lobby.module.css";
 
 const ID = "lobby-traits";
 
+/** L'anneau et, au survol ou au focus (clavier, toucher), une bulle : les questions et les calculs du jour (demande de l'utilisateur). */
 function Anneau({ t, taille }: { t: CarteTraitsLobby; taille: number }) {
   return (
-    <div data-leonard="anneau" className="self-center">
+    <div data-leonard="anneau" className={"self-center " + s.anneauInfo} tabIndex={0} role="img" aria-label={t.detail.aria}>
       {/* le sceau, lui, est posé dans l'en-tête de la carte : l'ouverture de l'anneau reste vide */}
       <AnneauDuJour repondues={t.repondues} objectif={t.objectif} size={taille} sceau={t.tenu ? <span aria-hidden /> : undefined} />
+      <span className={s.bulle} aria-hidden>
+        {t.detail.texte}
+      </span>
     </div>
   );
 }
