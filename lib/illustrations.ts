@@ -49,8 +49,8 @@ export const ILLUSTRATIONS = {
   },
   "classement-grande-salle": {
     src: "/illustrations/classement-grande-salle.webp",
-    alt: "La Grande Salle : les portes de bronze fermées, la lumière filtre entre les battants, deux braseros",
-    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-10-11), d'après le prompt ci-dessous.",
+    alt: "La Grande Salle : une forteresse au-dessus des nuages, ses portes de bronze fermées, deux braseros ; sur le pont blanc, deux samouraïs de dos se tapent du poing",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-02), choisie par Théo ; le prompt ci-dessous est celui de l'ancienne image (Panthéon). Effets recalés dans EffetsGrandeSalle.tsx.",
     emplacement: "Classement : carte « lieu » La Grande Salle (examen classé), image 16:10 en tête de carte sur ordinateur (environ 365 px de large) ; sur téléphone, la même image en vignette portrait 88×110 px à droite du titre.",
     prompt:
       "Peinture à l'huile au couteau, empâtements épais, touches de matière bien visibles. Palette inspirée de La Bataille de San Romano de Paolo Uccello : terre d'ombre brûlée, brun Van Dyck, ocre pâle, blanc d'os, accents vermillon, noirs profonds, bronze patiné. Pas de bleu, pas de couleurs saturées modernes. Scène simple, dans le style du Panthéon de Rome : vue de face, sous le portique, les immenses portes antiques à deux battants en bronze patiné, à caissons et gros clous, fermées, encadrées d'un chambranle de marbre clair et de colossales colonnes corinthiennes en granit sombre. Entre les battants et sous la porte filtre une lumière dorée intense. Deux braseros de bronze sur pied, aux flammes hautes, encadrent la porte. Sol de dalles de marbre usées où se reflète la lumière. Pas d'oculus, aucun faisceau venant du haut. Aucun personnage, aucun texte, aucun cadre. Format 16:10, porte au centre, lisible recadrée en 4:5.",
