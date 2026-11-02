@@ -196,7 +196,8 @@
   display: grid;
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   gap: 4px;
-  min-height: 500px;
+  /* 440 px, comme le diptyque de S'entraîner : il finit en bas de l'écran */
+  min-height: 440px;
   border: 1px solid var(--pencil-2);
   border-radius: 20px;
   background: var(--paper);
@@ -238,7 +239,7 @@
   align-items: flex-start;
   justify-content: flex-end;
   gap: 10px;
-  min-height: 300px;
+  min-height: 240px;
   padding: 24px 30px 30px;
   isolation: isolate;
   border-top: 1px solid var(--pencil-2);
@@ -306,8 +307,8 @@
   justify-content: flex-end;
   gap: 10px;
   min-width: 0;
-  min-height: 520px;
-  padding: 0 44px 44px;
+  min-height: 440px;
+  padding: 0 44px 36px;
   isolation: isolate;
   overflow: hidden;
   border-radius: 19px 0 0 19px;
