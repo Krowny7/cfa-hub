@@ -215,7 +215,7 @@
 }
 /* une peinture dont le duel est bas dans l'image (la glace) : agrandie depuis le bas, les deux silhouettes passent au-dessus du texte */
 .fondBas {
-  transform: scale(1.4);
+  transform: scale(1.15);
   transform-origin: 50% 100%;
 }
 /* le voile sombre : le texte clair reste lisible sur toute la peinture */
