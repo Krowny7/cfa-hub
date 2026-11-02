@@ -379,7 +379,10 @@ const CARNET: CarnetLobby = { jours: JOURS, aujourdhui: AUJ, serie: 9, record: 1
   check("journée tenue : « journée tenue » dans l'infobulle", carnetVue(CARNET, { traits: 42, objectif: 40 }).cases[362].titre === "aujourd'hui · 42 traits sur 40, journée tenue");
   check("les traits répondus à l'instant priment sur la grille (niveau 4 à 40 traits)", carnetVue({ ...CARNET, jours: [] }, { traits: 40, objectif: 40 }).cases[362].niveau === 4);
   const avecN = v.cases.find((c) => c.jour === jourEncre(2));
-  check("une case qui a des traits porte son infobulle (« 30 oct. · 3 traits »), une case vide non", avecN?.titre === "30 oct. · 3 traits" && v.cases[0].titre === null);
+  check("une case à 3 traits : « jeudi 30 oct. · 3 traits (jour d'encre dès 10) »", avecN?.titre === "jeudi 30 oct. · 3 traits (jour d'encre dès 10)", String(avecN?.titre));
+  const encre = v.cases.find((c) => c.jour === jourEncre(1));
+  check("un jour d'encre : « … · 10 traits · jour d'encre » ; une case vide : « … · rien tracé » ; à venir : pas d'infobulle", /^[a-z]+ \d+ [a-zéû.]+ · \d+ traits · jour d'encre$/.test(encre?.titre ?? "") && / · rien tracé$/.test(v.cases[0].titre ?? "") && v.cases[363].titre === null, `${encre?.titre} | ${v.cases[0].titre}`);
+  check("sans série d'encre (seuil null) : les traits seuls", carnetVue({ ...CARNET, seuil: null }, null).cases.find((c) => c.jour === jourEncre(2))?.titre === "jeudi 30 oct. · 3 traits");
   check("les 34 semaines les plus anciennes sont masquées au téléphone (et leurs mois)", SEMAINES_ANCIENNES === 34 && v.cases.filter((c) => c.ancien).length === 34 * 7 && v.mois.filter((m) => m.ancien).length === 34 && v.cases[34 * 7 - 1].ancien && !v.cases[34 * 7].ancien);
   const mois = moisCarnet(AUJ);
   const noms = mois.filter((m) => m.texte).map((m) => m.texte);

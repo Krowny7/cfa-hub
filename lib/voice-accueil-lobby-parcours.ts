@@ -152,8 +152,16 @@ export const PARC = {
     /** lu à voix haute, sur la grille */
     aria: (an: number, serie: number, record: number) =>
       `${pluriel(an, "jour d'encre", "jours d'encre")} sur 52 semaines ; série en cours de ${pluriel(serie, "jour", "jours")}, record de ${pluriel(record, "jour", "jours")}`,
-    /** l'infobulle d'une case qui a des traits : « 3 oct. · 42 traits » */
-    case: (quand: string, traits: number) => `${quand} · ${pluriel(traits, "trait", "traits")}`,
+    /**
+     * l'infobulle d'une case passée : « jeudi 30 oct. · 42 traits · jour d'encre », « … · 3 traits (jour d'encre dès 10) »,
+     * « … · rien tracé » ; `seuil` null (ancien calcul de série) : les traits seuls
+     */
+    case: (quand: string, traits: number, seuil: number | null) =>
+      traits <= 0
+        ? `${quand} · rien tracé`
+        : `${quand} · ${pluriel(traits, "trait", "traits")}${seuil === null ? "" : traits >= seuil ? " · jour d'encre" : ` (jour d'encre dès ${nombre(seuil)})`}`,
+    /** le jour de la semaine devant la date de l'infobulle (getUTCDay : dimanche d'abord) */
+    semaine: ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"] as readonly string[],
     /** la case du jour : « aujourd'hui · 26 traits sur 40, pas encore tenue » */
     aujourdhuiCase: (traits: number, objectif: number, tenu: boolean) => `aujourd'hui · ${pluriel(traits, "trait", "traits")} sur ${nombre(objectif)}${tenu ? ", journée tenue" : ", pas encore tenue"}`,
     /** sous la grille : « La case cerclée, c'est aujourd'hui : 26 traits sur 40, pas encore tenue. » */

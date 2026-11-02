@@ -389,13 +389,12 @@ export function carnetVue(c: CarnetLobby, auj: AujourdhuiCarnet | null): CarnetV
     const estAuj = x.jour === c.aujourdhui;
     // le jour en cours : les traits répondus à l'instant priment sur ce que la grille a lu
     const n = estAuj && auj ? Math.max(x.n, auj.traits) : x.n;
+    // l'infobulle (au survol) : chaque jour passé, même vide, avec le jour de la semaine et s'il est un jour d'encre
     const titre = x.avenir
       ? null
       : estAuj && auj
         ? PARC.carnet.aujourdhuiCase(auj.traits, auj.objectif, auj.traits >= auj.objectif)
-        : n > 0
-          ? PARC.carnet.case(dateCourte(x.jour), n)
-          : null;
+        : PARC.carnet.case(`${PARC.carnet.semaine[new Date(x.jour + "T12:00:00Z").getUTCDay()]} ${dateCourte(x.jour)}`, n, c.seuil);
     return { jour: x.jour, niveau: niveau(n), avenir: x.avenir, auj: estAuj, ancien: Math.floor(i / 7) < SEMAINES_ANCIENNES, titre };
   });
   return { cases: jours, mois: moisCarnet(c.aujourdhui), joursEncre: joursDEncre(cases, c.seuil ?? 1), serie: c.serie, record: c.record };

@@ -80,7 +80,7 @@ export function CarnetJours({ carnet, aujourdhui, className }: { carnet: CarnetL
         </div>
         <div className={k.cases} role="img" aria-label={PARC.carnet.aria(v.joursEncre, v.serie, v.record)}>
           {v.cases.map((c) => (
-            <i key={c.jour} data-n={c.niveau} data-f={c.avenir ? "" : undefined} data-auj={c.auj ? "" : undefined} data-ancien={c.ancien ? "" : undefined} title={c.titre ?? undefined} />
+            <i key={c.jour} data-n={c.niveau} data-f={c.avenir ? "" : undefined} data-auj={c.auj ? "" : undefined} data-ancien={c.ancien ? "" : undefined} data-t={c.titre ?? undefined} />
           ))}
         </div>
       </div>

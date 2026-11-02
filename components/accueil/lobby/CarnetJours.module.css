@@ -160,6 +160,44 @@
 .cases > [data-auj] {
   box-shadow: inset 0 0 0 2px var(--ocre, #d8a186);
 }
+/* l'infobulle d'une case (demande de l'utilisateur) : au survol, tout de suite, au-dessus de la case,
+   « jeudi 30 oct. · 42 traits · jour d'encre » ; un pseudo-élément, aucun nœud de plus dans les 364 cases */
+.cases > [data-t] {
+  position: relative;
+}
+.cases > [data-t]:hover {
+  outline: 1.5px solid #ededf0;
+  outline-offset: 1px;
+}
+.cases > [data-t]:hover::after {
+  content: attr(data-t);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  z-index: 3;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: #ededf0;
+  color: #161618;
+  font-size: 12px;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transform: translateX(-50%);
+}
+/* les six premières et les six dernières semaines : la bulle s'appuie sur le bord, pour ne pas sortir de la carte */
+.cases > [data-t]:nth-child(-n + 42):hover::after {
+  left: -4px;
+  transform: none;
+}
+.cases > [data-t]:nth-last-child(-n + 42):hover::after {
+  right: -4px;
+  left: auto;
+  transform: none;
+}
 
 /* le pied : la phrase sur la case du jour, la légende des niveaux */
 .pied {
