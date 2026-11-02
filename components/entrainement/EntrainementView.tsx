@@ -118,7 +118,7 @@ function Entree({
   titre: string;
   href: string;
   action: string;
-  /** le sujet de la peinture est bas dans l'image : on l'agrandit depuis le bas */
+  /** le sujet de la peinture est bas dans l'image : on l'agrandit un peu depuis le bas, et le titre passe sur deux lignes pour que le duel se tienne à sa droite */
   bas?: boolean;
   children: React.ReactNode;
 }) {
@@ -130,7 +130,7 @@ function Entree({
           <span className={s.sceau + " " + s.sceauNoir} aria-hidden>
             {sceau}
           </span>
-          {titre}
+          {bas ? <span className={s.titreEtroit}>{titre}</span> : titre}
         </h2>
         {children}
         <Link href={href} className={encre(s.bouton)} data-palette={PAL.key}>

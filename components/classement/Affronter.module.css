@@ -253,7 +253,7 @@
 /* le duel est bas dans la peinture du désert : agrandie depuis le bas, les deux silhouettes passent au-dessus du titre */
 .fondDuel img {
   transform: scale(1.15);
-  transform-origin: 50% 100%;
+  transform-origin: 0% 100%;
 }
 .carteDuelBas::after {
   content: "";
@@ -267,16 +267,17 @@
 .duelTitre {
   display: grid;
   justify-items: start;
-  gap: 12px;
+  gap: 10px;
   color: var(--sur-nuit);
-  font-size: 34px;
+  font-size: 28px;
   line-height: 1.05;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
+/* phrase étroite : le duel peint passe à sa droite */
 .duelSous {
-  max-width: 360px;
+  max-width: 250px;
   color: var(--sur-nuit);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.45;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
