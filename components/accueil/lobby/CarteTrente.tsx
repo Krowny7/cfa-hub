@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clock, FileText, PenLine, Play, Zap } from "lucide-react";
 import { ClassementTrente } from "@/components/accueil/lobby/ClassementTrente";
+import { FilmTrente } from "@/components/accueil/lobby/FilmTrente";
 import { Bouton, SceauUni } from "@/components/accueil/lobby/Encre";
 import type { CarteDefi, ClassementLobby } from "@/components/accueil/lobby/types";
 import { Illustration } from "@/components/ui/Illustration";
@@ -15,7 +16,8 @@ import s from "./Lobby.module.css";
 // Trois états : à rendre, en cours (la copie en trente coches), rendue (le
 // bouton passe à contour : l'encre est pour l'action qui reste à faire).
 // `data-leonard="defi"` : le repère des répliques de Léonard. Composant serveur ;
-// seul le classement est un îlot client.
+// seuls le classement et le film du fond (FilmTrente, « Duel à l'encre ») sont
+// des îlots client.
 
 const ID = "lobby-defi";
 
@@ -27,7 +29,7 @@ export function CarteTrente({ d, classement, className }: { d: CarteDefi; classe
     <section data-leonard="defi" aria-labelledby={ID} className={[s.carte, s.heros, !classement && s.herosSeul, className].filter(Boolean).join(" ")}>
       <div className={s.peint + " " + s.herosPeint}>
         <span className={s.fond} aria-hidden>
-          {cinq ? <Illustration nom="accueil-bandeau" position="50% 50%" decorative eager /> : <Illustration nom="accueil-trente-du-jour" position="50% 40%" decorative eager />}
+          {cinq ? <Illustration nom="accueil-bandeau" position="50% 50%" decorative eager /> : <FilmTrente />}
         </span>
         <div className={s.herosHaut}>
           <p className={s.eyebrow + " " + s.eyebrowC}>

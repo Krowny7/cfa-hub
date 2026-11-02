@@ -1,0 +1,29 @@
+/* Le film « Duel à l'encre » au fond de la carte des 30 : il couvre le cadre de
+   .fond, l'affiche dessous, la vidéo par-dessus, invisible jusqu'à `playing`
+   (jamais de bouton de lecture ni d'image noire). */
+.film {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.affiche,
+.video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.video {
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+  pointer-events: none;
+}
+.video.joue {
+  opacity: 1;
+}
+/* la nuit, un peu assombri, comme les illustrations peintes */
+:global([data-theme="nuit"]) .film {
+  filter: brightness(0.82);
+}

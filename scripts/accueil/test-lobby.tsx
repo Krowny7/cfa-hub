@@ -263,7 +263,9 @@ titre("# Léonard, la palette et l'inventaire des liquides");
   check("un liquide au plus par carte, sauf la carte des 30 (son bouton et l'option active du classement)", parCarte.every((n, i) => n <= 1 || (i === 0 && n === 2)), parCarte.join());
   check("la carte du jour, panneau fermé : aucun liquide (« Enregistrer » n'existe qu'ouvert) ; la Grande Salle et l'affiche non plus", !/data-matiere="fsa"(?:(?!<\/section>).)*rl-encre-vif/s.test(html) && !/<figure(?:(?!<\/figure>).)*rl-encre/s.test(html));
   check("aucune image de la maquette, aucun /_blob/", !html.includes("/_blob/"));
-  check("les images sont celles de public/illustrations", html.includes("/illustrations/accueil-trente-du-jour.webp") && html.includes("/illustrations/accueil-bandeau.webp"));
+  check("les images sont celles du site : l'affiche du film des 30 (public/films, cadrage port avant la mesure) et le bandeau des 5 (public/illustrations)", html.includes("/films/trente-duel-port.webp") && html.includes("/illustrations/accueil-bandeau.webp"));
+  const film = ["land", "port"].flatMap((c) => ["webp", "webm", "mp4"].map((x) => `public/films/trente-duel-${c}.${x}`));
+  check("le film des 30 : ses six fichiers sont là (land et port, en webp, webm et mp4), et pas de <video> au rendu serveur (montée après l'hydratation)", film.every((f) => existsSync(f)) && !html.includes("<video"), film.filter((f) => !existsSync(f)).join());
   check("aucun antislash ni chemin de travail dans la page", !html.includes(String.fromCharCode(92)) && !/scratchpad|AppData|Temp[/]|C:[/]/.test(html));
   check("la page reste légère (piège d'hydratation #418 : pas de tracés recopiés)", html.length < 160_000, String(html.length));
   check("un seul anneau du jour dans la page (un masque d'anneau, id fixe)", compte(html, /id="adn-anneau-/g) === 1, String(compte(html, /id="adn-anneau-/g)));
@@ -613,7 +615,7 @@ titre("# les fichiers : îlots clients et garde-fous (tout le dossier du lobby)"
   const sources = fichiers.map((f) => [f, readFileSync(join(dossier, f), "utf8")] as const);
   const clients = sources.filter(([, c]) => /^["']use client["']/.test(c.trimStart()));
   check("les îlots clients du dossier : aucun Intl, aucun toLocaleString", clients.every(([, c]) => !/\bIntl\b|toLocaleString|toLocaleDateString|toLocaleTimeString/.test(c)), clients.map(([f]) => f).join());
-  check("les îlots clients attendus : le classement, la relance, la carte du jour (et rien d'autre)", JSON.stringify(clients.map(([f]) => f).sort()) === JSON.stringify(["BoutonRelance.tsx", "CarteDuJourIle.tsx", "ClassementTrente.tsx"]), clients.map(([f]) => f).join());
+  check("les îlots clients attendus : le classement, la relance, la carte du jour, le film des 30 (et rien d'autre)", JSON.stringify(clients.map(([f]) => f).sort()) === JSON.stringify(["BoutonRelance.tsx", "CarteDuJourIle.tsx", "ClassementTrente.tsx", "FilmTrente.tsx"]), clients.map(([f]) => f).join());
   const lectures = sources.filter(([f]) => /^(lecture-|donnees|actions-)/.test(f) && f.endsWith(".ts"));
   check("les lectures ne sont jamais importées par un îlot client (seules ses actions serveur le sont)", clients.every(([, c]) => !/from "(\.\/|@\/components\/accueil\/lobby\/)(lecture-|donnees)/.test(c)) && lectures.length >= 5);
   const autres = [...fichiers.map((f) => join(dossier, f)), ...readdirSync(join(process.cwd(), "lib")).filter((f) => f.startsWith("voice-accueil-lobby")).map((f) => join(process.cwd(), "lib", f)), join(process.cwd(), "scripts/accueil/lobby-exemple.ts"), join(process.cwd(), "app/dashboard/page.tsx"), join(process.cwd(), "app/dashboard/loading.tsx"), join(process.cwd(), "migration_accueil.sql")];
@@ -625,7 +627,7 @@ titre("# les fichiers : îlots clients et garde-fous (tout le dossier du lobby)"
   check("aucun chemin à antislash (une lettre de lecteur suivie d'un antislash) dans les fichiers de l'accueil", antislash.length === 0, antislash.join());
   // une fonction passée du serveur à un îlot ne se sérialise pas : seules des données ou des nœuds rendus au serveur
   const serveur = sources.filter(([f, c]) => f.endsWith(".tsx") && !/^["']use client["']/.test(c.trimStart()));
-  const ilots = ["ClassementTrente", "BoutonRelance", "CarteDuJourIle"];
+  const ilots = ["ClassementTrente", "BoutonRelance", "CarteDuJourIle", "FilmTrente"];
   const fautive = serveur.filter(([, c]) => ilots.some((n) => new RegExp(`<${n}\\b[^>]*(\\bon[A-Z]\\w*=|=\\{\\s*\\(\\)|=\\{\\s*function|=\\{\\s*async)`).test(c)));
   check("aucune fonction n'est passée du serveur à un îlot client (des données, des nœuds rendus au serveur)", fautive.length === 0, fautive.map(([f]) => f).join());
   check("aucun tracé SVG recopié dans les composants (icônes lucide seulement : pas de page à 600 Ko, pas de #418)", sources.every(([f, c]) => f.endsWith(".css") || !/<path\s/.test(c)));
