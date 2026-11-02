@@ -113,15 +113,17 @@
    sont de simples disques noirs, .sceauNoir). .encre : un bouton ou un sceau
    remplis de cette encre, texte blanc ; son fond propre (brun sombre) sert de
    repli le temps que l'image arrive (en mode discret : voir en bas). Voile
-   plus dense que dans l'onglet : le texte blanc reste AA (4,5:1) jusque sur les
-   traînées claires. */
+   léger pour laisser voir l'encre claire de la glace ; l'ombre portée du texte
+   blanc le détache des traînées claires. */
 .encre {
   position: relative;
   color: var(--sur-nuit);
   background: var(--noyer-fonce);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-  --pal-voile-haut: 0.5;
-  --pal-voile-bas: 0.68;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.7),
+    0 0 8px rgba(8, 18, 36, 0.55);
+  --pal-voile-haut: 0.26;
+  --pal-voile-bas: 0.46;
 }
 .bouton {
   display: inline-flex;
@@ -156,8 +158,8 @@
   box-shadow:
     0 0 0 1.5px color-mix(in srgb, var(--pal-4) 75%, transparent),
     0 0 0 5px color-mix(in srgb, var(--pal-4) 20%, transparent);
-  --pal-voile-haut: 0.4;
-  --pal-voile-bas: 0.6;
+  --pal-voile-haut: 0.2;
+  --pal-voile-bas: 0.4;
 }
 /* les sceaux du diptyque : un simple disque noir, l'icône en blanc, l'anneau fin gardé */
 .sceauNoir {

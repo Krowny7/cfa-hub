@@ -95,7 +95,9 @@ def main():
     t = niveaux(sans_couture(src))
     os.makedirs(SORTIE, exist_ok=True)
     for p in palettes:
-        rgb = carte_de_degrade(t, p["couleurs"])
+        # une palette peut fixer son encre (champ liquide, plus clair que ses couleurs)
+        tons = [{"hex": h} for h in p["liquide"]] if "liquide" in p else p["couleurs"]
+        rgb = carte_de_degrade(t, tons)
         img = Image.fromarray(np.clip(rgb + 0.5, 0, 255).astype("uint8"))
         chemin = os.path.join(SORTIE, p["key"] + ".webp")
         for q in (86, 82, 78, 74, 70, 64, 58):

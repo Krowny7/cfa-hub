@@ -72,7 +72,8 @@ export const PALETTES: Record<PaletteCle, Palette> = Object.fromEntries(
         inspiration: p.inspiration,
         couleurs,
         encre: `/encres/${p.key}.webp`,
-        liquide: quatreTons(couleurs),
+        // une palette peut fixer son encre (plus claire que ses couleurs de texte et de fond, comme la glace)
+        liquide: "liquide" in p ? (p.liquide as [string, string, string, string]) : quatreTons(couleurs),
         voile: p.voile as [number, number],
       },
     ];
