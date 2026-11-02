@@ -4,12 +4,10 @@ import { EncreVive } from "@/components/nav/EncreVive";
 import { Icone } from "@/components/adn/icons";
 import { Glyphe } from "@/components/entrainement/Glyphes";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
-import { subjectByKey } from "@/components/reviser/catalog";
 import { Illustration } from "@/components/ui/Illustration";
 import { CartesMetaux } from "@/components/profil/blocs/Trophees";
 import type { IllustrationNom } from "@/lib/illustrations";
 import { PALETTES, styleDePalette } from "@/lib/palettes";
-import { TOPICS } from "@/lib/practiceTopics";
 import { MIN_REPONSES, type PointsFaiblesData } from "@/lib/points-faibles";
 import type { CalculsFaibles } from "@/lib/calc/faibles";
 import { ECLAIR_HREF } from "@/lib/eclair";
@@ -24,8 +22,7 @@ import s from "./Entrainer.module.css";
 // cartes en papier et en encre, la palette de l'onglet (« glace »). Dans
 // l'ordre : le diptyque, un grand bandeau coupé en deux moitiés peintes à
 // égalité, « Calculs » (le titre, trois pastilles de niveau, le bouton d'encre)
-// et « Entraînement ciblé » (le titre, une échelle du poids de chaque matière à
-// l'examen, le bouton d'encre) ; puis la rangée « Séries
+// et « Entraînement ciblé » (le titre, une phrase, le bouton d'encre) ; puis la rangée « Séries
 // éclair » (la peinture à gauche ; dessous, la petite carte « Tes trophées »,
 // les quatre paliers) et « Tes points faibles » (deux volets côte
 // à côte, « Questions » et « Calculs » : un compteur, puis des barres épaisses
@@ -37,8 +34,7 @@ import s from "./Entrainer.module.css";
 // colonne, les deux entrées principales d'abord.
 // Sans requête : app/entrainement charge les données, l'aperçu en fournit.
 // Les chiffres sont ceux de la base ; sans eux, la ligne disparaît (jamais de
-// valeur inventée). Le diptyque n'en lit aucun : les poids de l'échelle sont
-// ceux du programme (lib/practiceTopics).
+// valeur inventée). Le diptyque n'en lit aucun.
 // Repères de Léonard (data-leonard) : session (le diptyque), eclair,
 // points-faibles, autres (les entrées secondaires).
 // Couleurs : celles de l'onglet « S'entraîner » (palette glace, tirée de la
@@ -142,62 +138,6 @@ function Entree({
   );
 }
 
-/** Une matière sur l'échelle de l'examen : sa largeur (le milieu de la fourchette de son poids), sa teinte (1 la plus lourde, 3 les autres) et son libellé. */
-export type SegmentExamen = { cle: string; nom: string; poids: number; ton: 1 | 2 | 3; libelle: string };
-
-/** Les dix matières dans l'ordre du programme, avec le poids de lib/practiceTopics. */
-export function segmentsExamen(): SegmentExamen[] {
-  return TOPICS.map((t) => {
-    const nom = subjectByKey(t.key)?.short ?? t.key;
-    return {
-      cle: t.key,
-      nom,
-      poids: t.weight,
-      ton: t.weight >= 15 ? 1 : t.weight >= 11 ? 2 : 3,
-      libelle: ENTRAINER.echelleSegment(nom, ENTRAINER.echelleFourchettes[t.key] ?? String(t.weight)),
-    };
-  });
-}
-
-/** La légende de l'échelle : une entrée par teinte (les matières les plus lourdes nommées avec leur fourchette, les autres en bloc). */
-function legendeExamen(segments: SegmentExamen[]) {
-  const nommees = ([1, 2] as const).flatMap((ton) => {
-    const du = segments.filter((x) => x.ton === ton);
-    if (du.length === 0) return [];
-    const noms = du.map((x) => x.nom).join(", ");
-    const fourchette = ENTRAINER.echelleFourchettes[du[0].cle];
-    return [{ ton, texte: fourchette ? ENTRAINER.echelleSegment(noms, fourchette) : noms }];
-  });
-  return segments.some((x) => x.ton === 3) ? [...nommees, { ton: 3 as const, texte: ENTRAINER.echelleAutres }] : nommees;
-}
-
-const TONS_ECHELLE = { 1: s.ton1, 2: s.ton2, 3: s.ton3 } as const;
-
-/** L'échelle de l'examen : une barre en dix segments, un par matière, de largeur proportionnelle à son poids. */
-function EchelleExamen() {
-  const segments = segmentsExamen();
-  return (
-    <div className={s.echelle}>
-      <p className={s.echelleTitre}>{ENTRAINER.echelleTitre}</p>
-      <ul className={s.barre} aria-label={ENTRAINER.echelleLibelle}>
-        {segments.map((x) => (
-          <li key={x.cle} className={TONS_ECHELLE[x.ton]} style={{ flexGrow: x.poids }} title={x.libelle}>
-            <span className="sr-only">{x.libelle}</span>
-          </li>
-        ))}
-      </ul>
-      <ul className={s.legendeEchelle} aria-hidden>
-        {legendeExamen(segments).map((l) => (
-          <li key={l.ton}>
-            <i className={TONS_ECHELLE[l.ton]} />
-            {l.texte}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 const NIVEAUX = [s.niveau1, s.niveau2, s.niveau3] as const;
 
 function Diptyque() {
@@ -235,7 +175,7 @@ function Diptyque() {
         href="/practice"
         action={ENTRAINER.cibleAction}
       >
-        <EchelleExamen />
+        <p className={s.phrase}>{ENTRAINER.ciblePhrase}</p>
       </Entree>
     </section>
   );

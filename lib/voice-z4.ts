@@ -122,30 +122,13 @@ export const ENTRAINER = {
   /** les deux entrées principales, à égalité */
   calculsTitre: "Calculs",
   calculsAction: "Ouvrir les calculs",
-  /** le petit lien du diptyque vers la session ciblée de calculs (/calculs/session) */
   /** les trois pastilles de niveau (du plus simple au plus dur) et leur libellé accessible */
   calculsNiveaux: ["Facile", "Moyen", "Difficile"] as const,
   calculsNiveauxLibelle: "Trois niveaux par calcul, de facile à difficile",
   cibleTitre: "Entraînement ciblé",
   cibleAction: "Lancer une session",
-  /** l'échelle du poids de chaque matière à l'examen (CFA niveau I) : légende visible, libellé de la barre, un segment, le reste des matières */
-  echelleTitre: "Répartition de l'examen par matière",
-  echelleLibelle: "Poids de chaque matière à l'examen",
-  echelleSegment: (nom: string, fourchette: string) => `${nom} · ${fourchette} %`,
-  echelleAutres: "autres matières",
-  /** fourchette officielle du poids de chaque matière (les largeurs viennent des milieux, lib/practiceTopics) */
-  echelleFourchettes: {
-    ethics: "15–20",
-    quant: "6–9",
-    economics: "6–9",
-    fsa: "11–14",
-    corporate: "6–9",
-    equity: "11–14",
-    fixed_income: "11–14",
-    derivatives: "5–8",
-    alternatives: "7–10",
-    portfolio: "8–12",
-  } as Record<string, string>,
+  /** la phrase sous le titre */
+  ciblePhrase: "Choisis tes matières",
   /** séries éclair */
   eclairPhrase: "Des séries de 5 questions de cours, sans calcul, à volonté.",
   eclairUnite: (n: number) => (n > 1 ? "séries aujourd'hui" : "série aujourd'hui"),
