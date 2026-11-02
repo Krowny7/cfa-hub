@@ -2403,6 +2403,24 @@ html[data-discreet="1"] .t-num {
 html[data-discreet="1"] .rl-deco {
   display: none !important;
 }
+
+/* Le grand anneau du logo en fond de toutes les pages (app/layout.tsx), à
+   gauche de la colonne large (.rl-wide), derrière le titre : z-index -1, il
+   passe sous tout le contenu (le fond papier est celui du canevas). Masqué
+   au téléphone, coupé en mode discret (.rl-deco). */
+.rl-enso-fond {
+  position: absolute;
+  z-index: -1;
+  top: -68px;
+  left: calc(50% - min(620px, 50% - 1rem) - 64px);
+  display: none;
+}
+@media (min-width: 768px) {
+  .rl-enso-fond {
+    display: block;
+    left: calc(50% - min(620px, 50% - 1.75rem) - 64px);
+  }
+}
 html[data-discreet="1"] .card-ink {
   background-image: linear-gradient(180deg, #1b1b1d 0%, #101011 100%);
 }

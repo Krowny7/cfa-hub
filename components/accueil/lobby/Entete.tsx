@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { EnteteLobby } from "@/components/accueil/lobby/types";
-import { Enso } from "@/components/ui/InkRings";
 import { LOBBY } from "@/lib/voice-accueil-lobby";
 import s from "./Lobby.module.css";
 
@@ -10,15 +9,13 @@ import s from "./Lobby.module.css";
 // droite, et RIEN d'autre en haut (ni l'heure du gel, ni la date du jour, ni
 // sur-titre). Le salut est l'unique h1 de la page : les cartes sont en h2.
 // Sans date d'examen, la droite propose de la fixer ; une fois l'examen passé,
-// elle le dit. Derrière le salut, le grand anneau du logo presque transparent
-// (Enso, comme l'ancien PageHero), masqué au téléphone et en mode discret.
-// Composant serveur, aucun hook (l'Enso est un îlot client de components/ui).
+// elle le dit. Le grand anneau du logo derrière le salut est celui de toutes
+// les pages (app/layout.tsx, .rl-enso-fond). Composant serveur, aucun hook.
 
 export function Entete({ e }: { e: EnteteLobby }) {
   const E = LOBBY.entete;
   return (
     <header className={s.entete}>
-      <Enso size={360} opacity={0.045} className={s.enso} />
       <h1 className={s.salut}>{e.salut}</h1>
       {e.jn !== null && e.dateExamen ? (
         <p className={s.examen}>

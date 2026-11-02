@@ -16,14 +16,16 @@ export function BrushUnderline({ width = 170, height = 16, className = "" }: { w
 
 /**
  * En-tête de page : petite ligne d'info (date, espace…), grand titre (.t-hero),
- * trait de pinceau dessous et, en fond, un enso presque transparent.
+ * trait de pinceau dessous. Le grand anneau de fond est désormais celui de
+ * toutes les pages (app/layout.tsx, .rl-enso-fond) : `enso` n'en ajoute un
+ * second ici que si on le demande.
  * `children` se place sous le titre (pastilles, boutons).
  */
 export function PageHero({
   kicker,
   title,
   children,
-  enso = true,
+  enso = false,
   className = "",
 }: {
   kicker?: React.ReactNode;

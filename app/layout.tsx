@@ -5,6 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Splash } from "@/components/Splash";
 import { InkDefs } from "@/components/ui/InkDefs";
+import { Enso } from "@/components/ui/InkRings";
 import { LeonardHote } from "@/components/leonard/LeonardHote";
 import { DevoileProvider } from "@/components/nav/DevoileContext";
 import { etatNavCodex } from "@/lib/codex/nav-serveur";
@@ -62,8 +63,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <TopBar />
 
           {/* Conteneur par défaut : colonne de lecture (max-w-4xl). Les pages
-              V2 (accueil, espaces) s'élargissent à 1240 px avec .rl-wide. */}
-          <main className="min-w-0 overflow-x-clip px-4 pb-28 pt-7 md:px-7 md:pb-14 max-md:[body:has([data-bande-seance])_&]:pb-[168px]">
+              V2 (accueil, espaces) s'élargissent à 1240 px avec .rl-wide.
+              En fond de toutes les pages, le grand anneau du logo presque
+              transparent (.rl-enso-fond, globals.css), sous tout le contenu. */}
+          <main className="relative min-w-0 overflow-x-clip px-4 pb-28 pt-7 md:px-7 md:pb-14 max-md:[body:has([data-bande-seance])_&]:pb-[168px]">
+            <Enso size={360} opacity={0.045} className="rl-enso-fond" />
             <div className="mx-auto max-w-4xl">{children}</div>
           </main>
 
