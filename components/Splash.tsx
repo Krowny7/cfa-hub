@@ -31,9 +31,14 @@ import { OUVERTURE } from "@/lib/voice";
  * vidéo ne démarre pas à temps (réseau lent, lecture automatique refusée), et
  * sert aussi d'image fixe quand l'utilisateur préfère réduire les animations.
  *
- * Sous « RANKED LOBBY », deux phrases en anglais (lib/voice.ts, OUVERTURE)
- * apparaissent en fondu EN MÊME TEMPS que le nom (demande de l'utilisateur) ;
- * l'envol de l'anneau attend ensuite HOLD_MS pour laisser le temps de lire (le film reste figé sur sa
+ * Sous « RANKED LOBBY », deux phrases en anglais (lib/voice.ts, OUVERTURE).
+ * Dans le film, elles sont PEINTES (depuis le 2026-11-02, demande de
+ * l'utilisateur : « le même effet d'apparition que le grand, tout pareil ») :
+ * un troisième geste de pinceau, juste après LOBBY, rendu par le même moteur
+ * (atelier hors dépôt ranked-lobby-intro-film). Changer le texte demande donc
+ * de recalculer les deux films. Dans la version dessinée, elles restent en
+ * HTML et apparaissent en fondu avec le nom. L'envol de l'anneau attend
+ * ensuite HOLD_MS pour laisser le temps de lire (le film reste figé sur sa
  * dernière image). Avec le mouvement réduit, elles sont déjà là, sans fondu.
  *
  * Un clic, une touche ou « Passer » saute à l'envol de l'anneau.
@@ -53,7 +58,7 @@ const T = {
   ranked: 2.45,
   lobby: 2.7,
   handoff: 3.8, // durée du film : la version dessinée s'aligne dessus
-  // Les deux phrases : en même temps que « RANKED LOBBY », qui se peint à T.ranked
+  // Les deux phrases de la version dessinée : en même temps que « RANKED LOBBY »
   mot1: 2.45,
   mot2: 2.45,
 };
@@ -64,17 +69,13 @@ const FADE_MS = 520;
 const HOLD_MS = 1300;
 // Mouvement réduit : tout est déjà posé, l'anneau part après ce temps de lecture
 const REDUCE_MS = 2800;
-// Mise en page des phrases (une seule ligne, en italique) : interligne en em ; la hauteur réservée
-// compte deux lignes, au cas où un téléphone étroit coupe la phrase en deux
+// Interligne des phrases de la version dessinée (en italique)
 const MOT_LH = 1.3;
-const MOT_GAP = 0.3;
-const MOT_EM = 2 * MOT_LH + MOT_GAP;
 
 // Films : boîte du masque de l'anneau en pixels vidéo (x, y, côté — le logo
 // 240 × 240 plus 24 unités de marge de chaque côté), zone utile à garder
-// entièrement visible (centre x, centre y, largeur, hauteur) et emplacement
-// des phrases, sous « LOBBY » (centre x, haut, largeur de la boîte). La zone
-// utile englobe les phrases : elle descend jusqu'à leur dernière ligne.
+// entièrement visible (centre x, centre y, largeur, hauteur). La zone utile
+// englobe les phrases peintes sous « LOBBY ».
 type Film = {
   src: string;
   mask: string;
@@ -82,13 +83,10 @@ type Film = {
   oh: number;
   box: [number, number, number];
   content: [number, number, number, number];
-  mot: [number, number, number];
 };
 const FILMS: Record<"land" | "port", Film> = {
-  // mot : le bord gauche (764) est celui des jambages du R et du L peints (mesuré sur la
-  // dernière image), le bord droit celui de la zone utile (1610)
-  land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [960, 540, 1300, 560], mot: [1187, 696, 846] },
-  port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 482.4, 626.1], content: [540, 1044, 760, 992], mot: [540, 1362, 1000] },
+  land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [960, 540, 1300, 560] },
+  port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 482.4, 626.1], content: [540, 1044, 760, 992] },
 };
 const MASK_MARGIN = 24;
 const START_TIMEOUT_MS = 1700;
@@ -139,28 +137,6 @@ function placeFilm(f: Film) {
   if (dw >= W) left = Math.min(0, Math.max(W - dw, left));
   if (dh >= H) top = Math.min(0, Math.max(H - dh, top));
   return { s, left, top, dw, dh, covers: dw >= W - 0.5 && dh >= H - 0.5 };
-}
-
-// Les phrases suivent le film : en paysage, texte aligné à gauche sur le bord gauche du nom
-// (demande de l'utilisateur) ; en portrait, où le nom est centré, phrase centrée sous lui ; taille de
-// lecture (≈ 15 à 18 px en paysage, 13 à 15 px en portrait selon la largeur), sur une
-// seule ligne en italique (demande de l'utilisateur), réduite si besoin pour rester dans la zone utile.
-function placeMot(el: HTMLElement, f: Film, g: ReturnType<typeof placeFilm>) {
-  const W = window.innerWidth;
-  const t = (x: number, a: number, b: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));
-  const base = f.ow > f.oh ? 15 + 3 * t(W, 1024, 1920) : 13 + 2 * t(W, 340, 768);
-  const [cx, top, w] = f.mot;
-  const [, zy, , zh] = f.content;
-  const room = (zy + zh / 2 - top) * g.s;
-  const size = Math.max(13, Math.min(base, room / MOT_EM));
-  const width = Math.min(w * g.s, W - 32);
-  Object.assign(el.style, {
-    left: `${g.left + cx * g.s - width / 2}px`,
-    top: `${g.top + top * g.s}px`,
-    width: `${width}px`,
-    fontSize: `${size.toFixed(1)}px`,
-    textAlign: f.ow > f.oh ? "left" : "center",
-  });
 }
 
 function dropCover() {
@@ -300,9 +276,6 @@ const CSS = `
 @media (prefers-reduced-motion:reduce){.rli *{animation:none!important}}
 .rli-v .rli-bg{background-image:none}
 .rli-v .rli-bg::after{display:none}
-.rli-v .rli-mot{position:absolute}
-.rli-v .rli-mot span{opacity:0;transform:translateY(4px);transition:opacity .6s ease,transform .6s ease}
-.rli-v .rli-mot span.is-on{opacity:1;transform:none}
 .rli-film{position:absolute;inset:0;overflow:hidden}
 .rli-film video{position:absolute;max-width:none;opacity:0;transition:opacity .25s ease}
 .rli-film video.is-on{opacity:1}
@@ -342,7 +315,6 @@ export function Splash() {
   const ringRef = useRef<SVGSVGElement | null>(null);
   const filmBoxRef = useRef<HTMLDivElement | null>(null);
   const filmRingRef = useRef<HTMLDivElement | null>(null);
-  const filmMotRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const modeRef = useRef<"film" | "svg">("film");
   const timers = useRef<number[]>([]);
@@ -464,8 +436,7 @@ export function Splash() {
     if (phase !== "on" || mode !== "film") return;
     const box = filmBoxRef.current;
     const ringEl = filmRingRef.current;
-    const motEl = filmMotRef.current;
-    if (!box || !ringEl || !motEl) return;
+    if (!box || !ringEl) return;
     const video = window.__rlIntro ?? makeIntroVideo();
     window.__rlIntro = undefined;
     videoRef.current = video;
@@ -479,27 +450,9 @@ export function Splash() {
       video.classList.toggle("rli-feather", !g.covers);
       const [bx, by, bs] = film.box;
       Object.assign(ringEl.style, { left: `${g.left + bx * g.s}px`, top: `${g.top + by * g.s}px`, width: `${bs * g.s}px`, height: `${bs * g.s}px` });
-      placeMot(motEl, film, g);
     };
     place();
     window.addEventListener("resize", place);
-
-    // Les phrases suivent l'horloge du film (et non celle de la page) : elles
-    // arrivent aux mêmes images même si la lecture démarre tard ou saccade.
-    const lignes = Array.from(motEl.children) as HTMLElement[];
-    const dates = [T.mot1, T.mot2];
-    let raf = 0;
-    const showMot = (all?: boolean) => {
-      const t = all ? Infinity : video.currentTime;
-      lignes.forEach((el, i) => {
-        if (t >= dates[i]) el.classList.add("is-on");
-      });
-    };
-    const watchMot = () => {
-      showMot();
-      if (!lignes.every((el) => el.classList.contains("is-on"))) raf = window.requestAnimationFrame(watchMot);
-    };
-    watchMot();
 
     let started = false;
     let stall = 0;
@@ -544,10 +497,9 @@ export function Splash() {
       stall = window.setTimeout(leave, STALL_MS);
     };
     // Fin du film : il reste figé sur sa dernière image le temps de lire les
-    // phrases, puis l'anneau s'envole.
+    // phrases peintes, puis l'anneau s'envole.
     const onEnded = () => {
       window.clearTimeout(stall);
-      showMot(true);
       window.clearTimeout(hold);
       hold = window.setTimeout(leave, HOLD_MS);
     };
@@ -570,7 +522,6 @@ export function Splash() {
     else if (ready()) start();
     return () => {
       window.removeEventListener("resize", place);
-      window.cancelAnimationFrame(raf);
       events.forEach(([e, f]) => video.removeEventListener(e, f));
       window.clearTimeout(startTimer);
       window.clearTimeout(stall);
@@ -601,11 +552,6 @@ export function Splash() {
         <>
           <div ref={filmBoxRef} className="rli-film" />
           <div ref={filmRingRef} className="rli-ring-film" aria-hidden />
-          {/* Les deux phrases : incrustation HTML posée sous « LOBBY », révélée par l'horloge du film */}
-          <div ref={filmMotRef} className="rli-mot" aria-hidden>
-            <span>{OUVERTURE.constat}</span>
-            <span>{OUVERTURE.promesse}</span>
-          </div>
         </>
       ) : (
         <div className="rli-stage">
