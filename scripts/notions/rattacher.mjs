@@ -19,9 +19,11 @@
 //      lui donne ARBITRAGES (referentiel.mjs), sinon celui de ses voisines
 //      quand elles sont entourées du même (les seeds rangent les questions
 //      reading par reading).
-//   3. Examens blancs : seulement les énoncés retrouvés tels quels dans la
-//      banque ; les autres restent au niveau de la matière (inscrits dans le
-//      fichier avec [null, null] : sans notion, et c'est voulu).
+//   3. Examens blancs : les énoncés retrouvés tels quels dans la banque ;
+//      sinon, pour les mocks officiels, le classement relu à la main de
+//      scripts/notions/mocks.json (empreinte → [notion, concept], même forme
+//      que rattachement.json) ; les autres restent au niveau de la matière
+//      (inscrits dans le fichier avec [null, null] : sans notion, et c'est voulu).
 // Concept des questions d'Ethics « Guidance for Standards » : leur sous-partie
 // de la banque, sauf R91.1, fourre-tout, où il se lit dans l'explication de
 // la banque (voir conceptDeQuestion dans commun.mjs).
@@ -48,6 +50,8 @@ const MOCKS = "Mocks Officiels (Système)";
 // matière, ils figurent dans le fichier avec [null, null], pour que les seeds
 // et synchroniser.mjs ne les comptent pas parmi les questions inconnues.
 const EXAMEN_BLANC = "examen blanc";
+// Mocks officiels classés à la main (notion et concept relus), par empreinte de l'énoncé.
+const MOCKS_CLASSES = new Map(Object.entries(JSON.parse(fs.readFileSync("scripts/notions/mocks.json", "utf8"))));
 // libellés des matières dans les titres des examens blancs (lib/practiceTopics.ts)
 const MATIERE_DU_MOCK = {
   "Éthique et Standards Professionnels": "ethics",
@@ -155,7 +159,10 @@ for (const s of sets) {
     for (const q of qs) {
       const lu = readingDe(q.prompt, textes, candidats);
       if (lu.reading) poser(q, notionDeReading(lu.reading).id, conceptDeQuestion(q.prompt, lu.reading, textes), "examen blanc : énoncé retrouvé dans la banque");
-      else poser(q, null, null, EXAMEN_BLANC);
+      else if (MOCKS_CLASSES.has(empreinte(q.prompt))) {
+        const [notion, concept] = MOCKS_CLASSES.get(empreinte(q.prompt));
+        poser(q, notion, concept, "examen blanc : classé à la main (mocks.json)");
+      } else poser(q, null, null, EXAMEN_BLANC);
     }
   } else if (plage.length) {
     genre = "QCM de la banque";
