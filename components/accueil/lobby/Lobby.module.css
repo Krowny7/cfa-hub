@@ -1317,6 +1317,13 @@
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+  /* la peinture des 30 (une vallée, deux samouraïs minuscules) : ici la zone peinte est en
+     portrait et le texte en couvre les deux tiers bas ; un zoom ancré en bas à gauche remonte
+     les deux duellistes à droite du titre, sur la falaise claire (demande de l'utilisateur) */
+  .cadreTrente {
+    transform: scale(1.45);
+    transform-origin: 0 100%;
+  }
 }
 
 /* ——————————————————————————————————————————————————————————————

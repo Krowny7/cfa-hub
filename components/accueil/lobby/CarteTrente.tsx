@@ -27,7 +27,7 @@ export function CarteTrente({ d, classement, className }: { d: CarteDefi; classe
     <section data-leonard="defi" aria-labelledby={ID} className={[s.carte, s.heros, !classement && s.herosSeul, className].filter(Boolean).join(" ")}>
       <div className={s.peint + " " + s.herosPeint}>
         <span className={s.fond} aria-hidden>
-          {cinq ? <Illustration nom="accueil-bandeau" position="50% 50%" decorative eager /> : <Illustration nom="accueil-trente-du-jour" position="50% 40%" decorative eager />}
+          {cinq ? <Illustration nom="accueil-bandeau" position="50% 50%" decorative eager /> : <Illustration nom="accueil-trente-du-jour" position="50% 40%" decorative eager className={s.cadreTrente} />}
         </span>
         <div className={s.herosHaut}>
           <p className={s.eyebrow + " " + s.eyebrowC}>
