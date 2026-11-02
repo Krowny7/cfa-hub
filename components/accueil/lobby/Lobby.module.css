@@ -1340,10 +1340,11 @@
    cale sur le max-height. Si le classement est plus haut que la place, ses lignes défilent
    dans la carte plutôt que d'être coupées. */
 @container (min-width: 1081px) {
-  /* plancher de 548 px : la rangée finit à la même hauteur que le diptyque de S'entraîner (440 px sous son titre) */
+  /* plancher de 528 px : la rangée (qui commence à 139 px) finit à 667 px du haut de la page, comme les diptyques de
+     S'entraîner et de S'affronter (440 px à partir de 227 px) : même marge sous le premier bloc sur les trois pages */
   .rangeeHeros {
     grid-template-rows: minmax(0, 1fr);
-    min-height: 548px;
+    min-height: 528px;
     max-height: max(600px, calc(100svh - 170px));
   }
   .rangeeHeros > .heros {
