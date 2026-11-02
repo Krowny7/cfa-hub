@@ -228,13 +228,16 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  /* léger, dans le bleu de nuit de la palette : la peinture reste claire, l'ombre portée du texte fait le reste */
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    color-mix(in srgb, var(--pal-1) 8%, transparent) 40%,
-    color-mix(in srgb, var(--pal-1) 58%, transparent) 100%
-  );
+  /* dans le bleu de nuit de la palette : une bande dense sous les boutons (elle s'arrête à leur haut, 84 px), puis un voile très léger ;
+     la peinture reste claire, l'ombre portée du texte fait le reste */
+  background:
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--pal-1) 88%, transparent) 0,
+      color-mix(in srgb, var(--pal-1) 62%, transparent) 44px,
+      transparent 84px
+    ),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--pal-1) 8%, transparent) 40%, color-mix(in srgb, var(--pal-1) 40%, transparent) 100%);
 }
 .corps {
   display: flex;
