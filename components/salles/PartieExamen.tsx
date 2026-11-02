@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCheck, Hourglass, Lock, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCheck, FileCheck, Hourglass, Lock, Users } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
 import { BoutonEnvoi } from "@/components/classement/Encre";
 import { etiquettesDe, type Repondre } from "@/components/salles/CarteQuestion";
@@ -17,17 +17,20 @@ import { messageErreurSalle } from "@/lib/salles/api";
 import {
   avancementJoueurs,
   chronoBas,
+  clicTropTot,
+  copieRendue,
   finRevelee,
   horlogeExamen,
   libelleChrono,
   positionDeDepart,
   prochaineNonRepondue,
+  refusCopieRendue,
   reponsesRetenues,
   type ReponseRetenue,
 } from "@/lib/salles/examen";
 import { libelleDuree, libelleParams } from "@/lib/salles/logique";
 import { chiffreDecompte, fractionTemps, secondesAffichees, type MoiPourClassement, type ReponseOk } from "@/lib/salles/partie";
-import type { SalleClassementLigne, SalleCorrection, SalleItem, SalleMaReponse, SalleMembre, SalleSession } from "@/lib/salles/types";
+import type { CopieRendue, SalleClassementLigne, SalleCorrection, SalleItem, SalleMaReponse, SalleMembre, SalleSession } from "@/lib/salles/types";
 import { EXAMEN, PARTIE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 import p from "./Partie.module.css";
@@ -41,9 +44,14 @@ import x from "./Examen.module.css";
 //    seulement). Choisir puis valider : la réponse est définitive, le serveur
 //    la garde sans rien dire de sa justesse ; on passe tout seul à la
 //    prochaine question sans réponse ;
+//  - « Rendre ma copie », au-dessus de la question : confirmation dans la
+//    page, puis mes réponses se verrouillent (la relecture reste possible) ;
+//    la correction arrive quand tout le monde a rendu sa copie, ou à la fin
+//    du chrono. Tout répondu, le bloc passe en avant pour finir plus tôt ;
 //  - à la fin : le podium et le bilan (FinPartie), puis le débrief question
 //    par question (DebriefExamen).
-// Présentation pure : PartieSalle fournit l'heure `t`, l'état et `repondre`.
+// Présentation pure : PartieSalle fournit l'heure `t`, l'état, `repondre` et
+// `rendreCopie`.
 // Au clavier : A à D (ou 1 à 4) choisissent, Entrée valide, ← → changent de
 // question (dans la grille aussi, avec Début / Fin).
 
@@ -67,6 +75,8 @@ export type PropsPartieExamen = {
   /** l'heure du serveur, en ms */
   t: number;
   repondre: (position: number, rep: Parameters<Repondre>[0]) => ReturnType<Repondre>;
+  /** rend ma copie (rendre_copie) ; PartieSalle relit l'état juste après, pour passer au débrief si j'étais le dernier */
+  rendreCopie: () => Promise<CopieRendue>;
   onArreter?: () => Promise<void>;
   onRejouer?: () => Promise<{ ok: boolean; erreur?: string }>;
   onRetour?: () => void;
@@ -159,6 +169,7 @@ function JeuExamen({
   membres,
   moi,
   repondre,
+  rendreCopie,
   onArreter,
   restantMs,
   totalMs,
@@ -167,15 +178,17 @@ function JeuExamen({
   const retenues = useMemo(() => reponsesRetenues(nb, locales, mesReponses), [nb, locales, mesReponses]);
   const [courante, setCourante] = useState(() => positionDeDepart(nb, retenues));
   const [annonce, setAnnonce] = useState<string | null>(null);
+  // la partie dont je viens de rendre la copie (avant que la lecture suivante ne le confirme)
+  const [rendueIci, setRendueIci] = useState<string | null>(null);
+  const rendue = rendueIci === session.id || copieRendue(session, moi.userId);
   const grilleRef = useRef<HTMLOListElement | null>(null);
   const focusGrille = useRef(false);
 
   const nbRepondues = retenues.size;
-  const toutRepondu = nb > 0 && nbRepondues >= nb;
   const item = items.find((i) => i.position === courante) ?? null;
   const retenue = retenues.get(courante) ?? null;
   const bas = chronoBas(restantMs, totalMs);
-  const joueurs = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: nbRepondues });
+  const joueurs = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: nbRepondues, moiRendu: rendue });
   const autres = joueurs.length > 1;
   const visibles = joueurs.slice(0, MAX_AVANCEMENT);
   if (!visibles.some((j) => j.moi)) {
@@ -235,6 +248,26 @@ function JeuExamen({
     deja.add(position);
     const suivante = prochaineNonRepondue(nb, deja, position);
     if (suivante !== null) aller(suivante);
+  }
+
+  // le bloc « Copie rendue » (role status, qui prend le focus) l'annonce lui-même
+  async function rendreMaCopie() {
+    await rendreCopie();
+    setRendueIci(session.id);
+  }
+
+  // le serveur refuse la réponse parce que la copie est rendue (depuis un autre onglet) :
+  // on verrouille ici aussi tout de suite, sans attendre la lecture suivante
+  async function repondreIci(position: number, rep: Parameters<Repondre>[0]) {
+    try {
+      return await repondre(position, rep);
+    } catch (e) {
+      if (refusCopieRendue(e)) {
+        setRendueIci(session.id);
+        setAnnonce(EXAMEN.copieRendueVerrou);
+      }
+      throw e;
+    }
   }
 
   return (
@@ -302,15 +335,7 @@ function JeuExamen({
 
       <div className={p.grille}>
         <div className={p.principal}>
-          {toutRepondu && (
-            <div className={x.toutRepondu} role="status">
-              <CheckCheck size={22} aria-hidden />
-              <div>
-                <p className={x.toutReponduTitre}>{EXAMEN.toutRepondu}</p>
-                <p className={x.toutReponduSous}>{EXAMEN.toutReponduSous}</p>
-              </div>
-            </div>
-          )}
+          <RendreCopie nb={nb} nbRepondues={nbRepondues} rendue={rendue} onRendre={rendreMaCopie} />
           <section className={s.panneau} aria-labelledby="examen-question">
             <div className={p.tete}>
               <div>
@@ -329,11 +354,18 @@ function JeuExamen({
               </div>
               <span className={x.statut} data-etat={retenue ? "repondue" : "libre"}>
                 {retenue && <Lock size={13} aria-hidden />}
-                {retenue ? EXAMEN.statutRepondue : EXAMEN.statutARepondre}
+                {retenue ? EXAMEN.statutRepondue : rendue ? EXAMEN.statutSansReponse : EXAMEN.statutARepondre}
               </span>
             </div>
 
-            <QuestionExamen key={courante} item={item} retenue={retenue} repondre={(rep) => repondre(courante, rep)} onEnregistree={(r) => apresReponse(courante, r)} />
+            <QuestionExamen
+              key={courante}
+              item={item}
+              retenue={retenue}
+              verrouillee={rendue}
+              repondre={(rep) => repondreIci(courante, rep)}
+              onEnregistree={(r) => apresReponse(courante, r)}
+            />
 
             <div className={p.pied}>
               <div className={x.navigation}>
@@ -356,13 +388,20 @@ function JeuExamen({
             </TetePanneau>
             <ul className={x.avancement}>
               {visibles.map((j) => (
-                <li key={j.userId} className={x.joueur} data-moi={j.moi ? "1" : "0"}>
+                <li key={j.userId} className={x.joueur} data-moi={j.moi ? "1" : "0"} data-rendu={j.rendu ? "1" : "0"}>
                   <Avatar src={j.avatarUrl} name={nomDe(j)} size={26} />
                   <span className={x.joueurNom} title={nomDe(j)}>
                     {nomDe(j)}
                     {j.moi ? ` · ${SALLES.vous}` : ""}
                   </span>
-                  <span className={x.joueurCompte}>{EXAMEN.avancementLigne(j.n, nb)}</span>
+                  <span className={x.joueurCompte}>
+                    {j.rendu && (
+                      <span className={x.joueurRendu}>
+                        <Lock size={11} aria-hidden /> {EXAMEN.repereRendu}
+                      </span>
+                    )}
+                    {EXAMEN.avancementLigne(j.n, nb)}
+                  </span>
                   <span className={x.joueurPiste} aria-hidden>
                     <i style={{ transform: `scaleX(${nb > 0 ? Math.min(1, j.n / nb) : 0})` }} />
                   </span>
@@ -379,18 +418,177 @@ function JeuExamen({
 }
 
 /**
+ * « Rendre ma copie », au-dessus de la question, tant que la partie court :
+ *  - en jeu : une invite discrète et le bouton (contour fin, pas d'encre) ;
+ *  - tout répondu : le bloc passe en avant (bouton en os) pour finir plus tôt ;
+ *  - au clic : la confirmation, dans la page (jamais de fenêtre du
+ *    navigateur), avec le nombre de questions sans réponse ; Échap ou
+ *    « Continuer » la referment. Un double clic sur « Rendre ma copie »
+ *    l'ouvre sans la confirmer (clicTropTot), et la remise ne part qu'une fois ;
+ *  - copie rendue : plus de bouton, le bloc dit quand la correction arrive.
+ * `ouverte` : la confirmation ouverte d'emblée (test de rendu, aperçus).
+ */
+export function RendreCopie({
+  nb,
+  nbRepondues,
+  rendue,
+  onRendre,
+  ouverte = false,
+}: {
+  nb: number;
+  nbRepondues: number;
+  rendue: boolean;
+  /** rend la copie ; lève une erreur au message lisible en cas d'échec */
+  onRendre: () => Promise<void>;
+  ouverte?: boolean;
+}) {
+  const [confirmation, setConfirmation] = useState(ouverte);
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+  // garde synchrone : deux clics dans le même instant n'envoient qu'une remise
+  const envoiRef = useRef(false);
+  // l'heure (timeStamp du clic) où la confirmation s'est ouverte : un clic qui suit de trop
+  // près est le second d'un double clic sur « Rendre ma copie », il ne confirme ni ne referme rien
+  const ouverteA = useRef<number | null>(null);
+  const declencheurRef = useRef<HTMLButtonElement | null>(null);
+  const continuerRef = useRef<HTMLButtonElement | null>(null);
+  const statutRef = useRef<HTMLDivElement | null>(null);
+  // où poser le focus après un changement d'état (jamais au premier rendu)
+  const focusApres = useRef<"continuer" | "declencheur" | "statut" | null>(null);
+  const sansReponse = Math.max(0, nb - nbRepondues);
+  const toutRepondu = nb > 0 && sansReponse === 0;
+
+  useEffect(() => {
+    const cible = focusApres.current;
+    focusApres.current = null;
+    if (cible === "continuer") continuerRef.current?.focus();
+    else if (cible === "declencheur") declencheurRef.current?.focus();
+    else if (cible === "statut") statutRef.current?.focus();
+  }, [confirmation, rendue]);
+
+  function ouvrir(quand: number) {
+    setErreur(null);
+    ouverteA.current = quand;
+    // le focus va sur « Continuer » : deux Entrée de suite ne rendent pas la copie par mégarde
+    focusApres.current = "continuer";
+    setConfirmation(true);
+  }
+
+  function fermer(quand: number | null) {
+    if (envoiRef.current || (quand !== null && clicTropTot(ouverteA.current, quand))) return;
+    setErreur(null);
+    ouverteA.current = null;
+    focusApres.current = "declencheur";
+    setConfirmation(false);
+  }
+
+  async function confirmer(quand: number) {
+    if (envoiRef.current || clicTropTot(ouverteA.current, quand)) return;
+    envoiRef.current = true;
+    setErreur(null);
+    setEnvoi(true);
+    try {
+      await onRendre();
+      focusApres.current = "statut";
+      setConfirmation(false);
+    } catch (e) {
+      setErreur(messageErreurSalle(e));
+    } finally {
+      envoiRef.current = false;
+      setEnvoi(false);
+    }
+  }
+
+  if (rendue) {
+    return (
+      <div ref={statutRef} tabIndex={-1} className={x.rendre} data-etat="rendue" role="status">
+        <Lock size={20} className={x.rendreIcone} aria-hidden />
+        <div className={x.rendreTexte}>
+          <p className={x.rendreTitre}>{EXAMEN.copieRendue}</p>
+          <p className={x.rendreSous}>
+            {EXAMEN.copieRendueSous} {EXAMEN.copieRendueRelire}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (confirmation) {
+    return (
+      <div
+        className={x.rendre}
+        data-etat="confirmation"
+        role="group"
+        aria-labelledby="examen-rendre-titre"
+        aria-describedby="examen-rendre-sous"
+        onKeyDown={(e) => {
+          if (e.key !== "Escape") return;
+          e.preventDefault();
+          fermer(null);
+        }}
+      >
+        <FileCheck size={20} className={x.rendreIcone} aria-hidden />
+        <div className={x.rendreTexte}>
+          <p id="examen-rendre-titre" className={x.rendreTitre}>
+            {EXAMEN.rendreConfirme}
+          </p>
+          <p id="examen-rendre-sous" className={x.rendreSous} data-manque={sansReponse > 0 ? "1" : "0"}>
+            {sansReponse > 0 ? EXAMEN.rendreSansReponse(sansReponse) : EXAMEN.rendreToutRepondu}
+          </p>
+        </div>
+        <div className={x.rendreActions}>
+          <button type="button" className={[s.btn, x.rendreBtn].join(" ")} data-avant="1" disabled={envoi} onClick={(e) => void confirmer(e.timeStamp)}>
+            {envoi ? EXAMEN.rendreEnvoi : EXAMEN.rendre}
+          </button>
+          <button ref={continuerRef} type="button" className={[s.btn, s.btnDiscret].join(" ")} disabled={envoi} onClick={(e) => fermer(e.timeStamp)}>
+            {EXAMEN.continuer}
+          </button>
+        </div>
+        {erreur && (
+          <p className={[s.erreur, x.rendreErreur].join(" ")} role="alert">
+            {erreur}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={x.rendre} data-etat={toutRepondu ? "avant" : "invite"}>
+      {toutRepondu ? <CheckCheck size={22} className={x.rendreIcone} aria-hidden /> : <FileCheck size={18} className={x.rendreIcone} aria-hidden />}
+      <div className={x.rendreTexte} role={toutRepondu ? "status" : undefined}>
+        <p className={x.rendreTitre}>{toutRepondu ? EXAMEN.toutRepondu : EXAMEN.rendreInvite}</p>
+        <p className={x.rendreSous}>{toutRepondu ? EXAMEN.toutReponduSous : EXAMEN.rendreInviteSous}</p>
+      </div>
+      <button ref={declencheurRef} type="button" className={[s.btn, x.rendreBtn].join(" ")} data-avant={toutRepondu ? "1" : "0"} onClick={(e) => ouvrir(e.timeStamp)}>
+        {EXAMEN.rendre}
+      </button>
+      {erreur && (
+        <p className={[s.erreur, x.rendreErreur].join(" ")} role="alert">
+          {erreur}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * La question affichée : l'énoncé, puis choisir et valider (QCM) ou saisir et
  * valider (calcul). Déjà répondue : ma réponse retenue, verrouillée, sans
- * verdict ni correction. Remontée avec key={position}.
+ * verdict ni correction. Copie rendue (`verrouillee`) : plus rien ne se
+ * choisit ni ne se valide, la relecture reste. Remontée avec key={position}.
  */
 function QuestionExamen({
   item,
   retenue,
+  verrouillee,
   repondre,
   onEnregistree,
 }: {
   item: SalleItem | null;
   retenue: ReponseRetenue | null;
+  /** ma copie est rendue : plus de réponse possible */
+  verrouillee: boolean;
   repondre: Repondre;
   onEnregistree: (r: ReponseOk) => void;
 }) {
@@ -400,7 +598,7 @@ function QuestionExamen({
   const [erreur, setErreur] = useState<string | null>(null);
   const calcul = item?.origine === "calcul";
   const nbChoix = item?.choix?.length ?? 0;
-  const bloque = retenue !== null || envoi;
+  const bloque = retenue !== null || envoi || verrouillee;
   // le joueur a pu changer de question pendant l'envoi : on ne l'emmène alors nulle part
   const monte = useRef(true);
   useEffect(() => {
@@ -492,6 +690,7 @@ function QuestionExamen({
   const unite = (item.unite ?? "") as CalcUnit;
   const etatChoix = (i: number): string => {
     if (retenue) return retenue.choix === i ? "retenu" : "estompe";
+    if (verrouillee) return "estompe";
     if (selection === i) return envoi ? "envoi" : "choisi";
     return envoi ? "estompe" : "libre";
   };
@@ -512,10 +711,10 @@ function QuestionExamen({
       )}
 
       {!calcul && item.choix && (
-        <div className={p.choix} role="radiogroup" aria-label={EXAMEN.choisir} onKeyDown={retenue ? undefined : flechesRadios}>
+        <div className={p.choix} role="radiogroup" aria-label={EXAMEN.choisir} onKeyDown={retenue || verrouillee ? undefined : flechesRadios}>
           {item.choix.map((texte, i) => {
             const etat = etatChoix(i);
-            const coche = retenue ? retenue.choix === i : selection === i;
+            const coche = retenue ? retenue.choix === i : !verrouillee && selection === i;
             const focusable = coche || (selection === null && !retenue && i === 0);
             return (
               <button
@@ -571,7 +770,7 @@ function QuestionExamen({
                 spellCheck={false}
                 value={saisie}
                 placeholder={PARTIE.calculPlaceholder}
-                disabled={envoi}
+                disabled={envoi || verrouillee}
                 onChange={(e) => {
                   setSaisie(e.target.value);
                   setErreur(null);
@@ -583,15 +782,16 @@ function QuestionExamen({
                 </span>
               )}
             </span>
-            <BoutonEnvoi surPeinture className={s.pleinMobile} disabled={envoi || !saisie.trim()}>
+            <BoutonEnvoi surPeinture className={s.pleinMobile} disabled={envoi || verrouillee || !saisie.trim()}>
               {envoi ? EXAMEN.envoi : EXAMEN.valider}
             </BoutonEnvoi>
           </div>
-          <p className={s.aide}>{PARTIE.calculAide}</p>
+          <p className={s.aide}>{verrouillee ? EXAMEN.copieRendueVerrou : PARTIE.calculAide}</p>
         </form>
       )}
 
-      {erreur && (
+      {/* copie rendue : plus rien à réessayer, la ligne d'aide dit déjà pourquoi (pas de message en double) */}
+      {erreur && !verrouillee && (
         <p className={[s.erreur, p.erreurLigne].join(" ")} role="alert">
           {erreur}
         </p>
@@ -607,12 +807,10 @@ function QuestionExamen({
       ) : (
         !calcul && (
           <div className={x.valider}>
-            <BoutonEnvoi type="button" surPeinture className={s.pleinMobile} disabled={envoi || selection === null} onClick={() => void valider()}>
+            <BoutonEnvoi type="button" surPeinture className={s.pleinMobile} disabled={envoi || verrouillee || selection === null} onClick={() => void valider()}>
               {envoi ? EXAMEN.envoi : EXAMEN.valider} <ArrowRight size={16} aria-hidden />
             </BoutonEnvoi>
-            <p className={s.aide}>
-              {EXAMEN.definitif} {EXAMEN.clavier}
-            </p>
+            <p className={s.aide}>{verrouillee ? EXAMEN.copieRendueVerrou : `${EXAMEN.definitif} ${EXAMEN.clavier}`}</p>
           </div>
         )
       )}

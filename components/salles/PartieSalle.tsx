@@ -7,11 +7,11 @@ import { VuePartie } from "@/components/salles/VuePartie";
 import { effetsParDefaut, type Effets } from "@/components/salles/effets";
 import { useHeureServeur } from "@/components/salles/anim";
 import type { SuiviSalle } from "@/components/salles/useEtatSalle";
-import { repondreSalle } from "@/lib/salles/api";
+import { rendreCopie, repondreSalle } from "@/lib/salles/api";
 import { estChronoGlobal, horlogeExamen } from "@/lib/salles/examen";
 import { clockDe, horlogeSession } from "@/lib/salles/logique";
 import { chiffreDecompte, reponseVue, type ReponseOk } from "@/lib/salles/partie";
-import type { ReponseResultat } from "@/lib/salles/types";
+import type { CopieRendue, ReponseResultat } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
 import { PARTIE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
@@ -25,6 +25,8 @@ import p from "./Partie.module.css";
 //    n'en lit aucune avant le montage : pas d'erreur d'hydratation) ;
 //  - envoie ma réponse (repondre_salle), garde ce que le serveur me rend
 //    (verdict et correction tout de suite) et relit l'état ;
+//  - chrono global : rend ma copie (rendre_copie) et relit l'état tout de
+//    suite, pour passer au débrief si j'étais le dernier à la rendre ;
 //  - signale les moments forts à `effets` (sons, confettis, Léonard :
 //    PLACEHOLDERS, voir effets.ts) ;
 //  - relit l'état dès que la fin de partie tombe à l'horloge.
@@ -40,6 +42,7 @@ export function PartieSalle({
   onRetour,
   effets = effetsParDefaut,
   repondre,
+  rendre,
 }: {
   suivi: SuiviSalle;
   /** admin : arrête la partie */
@@ -51,6 +54,8 @@ export function PartieSalle({
   effets?: Effets;
   /** aperçus : remplace l'appel au serveur */
   repondre?: (sessionId: string, position: number, rep: { choix: number } | { saisie: string }) => Promise<ReponseResultat>;
+  /** aperçus : remplace l'appel au serveur pour rendre la copie */
+  rendre?: (sessionId: string) => Promise<CopieRendue>;
 }) {
   const { etat, rafraichir, maintenant, cale } = suivi;
   const ses = etat.session;
@@ -72,6 +77,15 @@ export function PartieSalle({
     },
     [ses, repondre, rafraichir],
   );
+
+  const rendreMaCopie = useCallback(async (): Promise<CopieRendue> => {
+    if (!ses) throw new Error("Partie introuvable.");
+    const r = rendre ? await rendre(ses.id) : await rendreCopie((client.current ??= createClient()), ses.id);
+    // relit tout de suite ; si la partie est finie (j'étais le dernier), une lecture déjà en vol
+    // a pu partir avant la remise : on en relance une derrière, qui ouvre la correction
+    void rafraichir().then(() => (r.terminee ? rafraichir() : undefined));
+    return r;
+  }, [ses, rendre, rafraichir]);
 
   // les moments forts, une fois chacun (réinitialisés à chaque nouvelle partie)
   const vus = useRef(new Set<string>());
@@ -176,6 +190,7 @@ export function PartieSalle({
         estAdmin={etat.moi.estAdmin}
         t={t}
         repondre={envoyer}
+        rendreCopie={rendreMaCopie}
         onArreter={onArreter}
         onRejouer={onRejouer}
         onRetour={onRetour}

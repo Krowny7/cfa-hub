@@ -173,8 +173,11 @@ export type SalleSession = {
   nbJoueurs: number;
   /** par question ou global (lu dans la session ; « question » pour une partie d'avant le réglage) */
   chrono: SalleChrono;
-  /** chrono global : combien de réponses chaque joueur a données (jamais lesquelles) ; null en chrono par question */
-  avancement: { userId: string; n: number }[] | null;
+  /**
+   * chrono global : combien de réponses chaque joueur a données (jamais lesquelles) et s'il a
+   * rendu sa copie (migration_salles_rendre_copie.sql) ; null en chrono par question
+   */
+  avancement: { userId: string; n: number; rendu: boolean }[] | null;
 };
 
 export type SalleOrigine = "question" | "calcul";
@@ -292,6 +295,17 @@ export type ReponseResultat =
     }
   // calcul bon mais à la mauvaise échelle : rien n'est compté, on ressaisit
   | { ok: false; raison: "format"; indice: string };
+
+/**
+ * Ce que renvoie rendre_copie (chrono global) : combien de membres de la salle
+ * ont rendu leur copie, sur combien ; `terminee` : tout le monde l'a rendue, la
+ * partie est finie (la prochaine lecture d'etat_salle ouvre la correction).
+ */
+export type CopieRendue = {
+  rendus: number;
+  membres: number;
+  terminee: boolean;
+};
 
 /** Ce que renvoie lancer_session. */
 export type SessionLancee = {

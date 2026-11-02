@@ -1,7 +1,8 @@
 // Salles : la logique pure (code, horloge, score, réglages, classement), les
 // conversions des RPC, les appels (avec un faux client Supabase) et le tirage
 // des calculs côté serveur ; plus quelques gardes de cohérence entre
-// migration_salles.sql et le code TypeScript (constantes, droits, clés JSON).
+// migration_salles.sql et le code TypeScript (constantes, droits, clés JSON),
+// dont « Rendre ma copie » (migration_salles_rendre_copie.sql).
 // npx tsx --tsconfig tsconfig.json scripts/salles/test-salles.ts
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -52,6 +53,7 @@ import {
   lireEtatSalle,
   messageErreurSalle,
   rejoindreSalleParCode,
+  rendreCopie,
   repondreSalle,
   sallesReady,
   toEtat,
@@ -429,14 +431,26 @@ async function main() {
     const brutSes = brutEtat().session as Record<string, unknown>;
     const g = toEtat(
       brutEtat({
-        session: { ...brutSes, params: { ...(brutSes.params as object), chrono: "global" }, chrono: "global", index: 0, nb_visibles: 10, nb_fermees: 0, avancement: [{ user_id: "u2", n: 7 }, { user_id: "u1", n: 3 }] },
+        session: { ...brutSes, params: { ...(brutSes.params as object), chrono: "global" }, chrono: "global", index: 0, nb_visibles: 10, nb_fermees: 0, avancement: [{ user_id: "u2", n: 7, rendu: true }, { user_id: "u1", n: 3, rendu: false }, { user_id: "u3", n: 1 }] },
         corrections: [],
         mes_reponses: [{ position: 4, choix: 2, valeur: null, juste: null, points: null, delai_ms: 41_000 }],
         classement: [],
         mon_classement: null,
       }),
     );
-    ok("toEtat : chrono global, avancement de chaque joueur", g.session?.chrono === "global" && g.session.params.chrono === "global" && eq(g.session.avancement, [{ userId: "u2", n: 7 }, { userId: "u1", n: 3 }]) && g.session.nbFermees === 0 && g.session.nbVisibles === 10);
+    ok(
+      "toEtat : chrono global, avancement de chaque joueur (réponses données, copie rendue)",
+      g.session?.chrono === "global" &&
+        g.session.params.chrono === "global" &&
+        eq(g.session.avancement, [
+          { userId: "u2", n: 7, rendu: true },
+          { userId: "u1", n: 3, rendu: false },
+          { userId: "u3", n: 1, rendu: false },
+        ]) &&
+        g.session.nbFermees === 0 &&
+        g.session.nbVisibles === 10,
+      JSON.stringify(g.session?.avancement),
+    );
     ok("toEtat : chrono global avant la fin, ni justesse ni points (null, pas faux ni 0)", g.mesReponses[0].juste === null && g.mesReponses[0].points === null && g.mesReponses[0].choix === 2 && g.mesReponses[0].delaiMs === 41_000);
     const sansCle = toEtat(brutEtat({ session: { ...brutSes, params: { ...(brutSes.params as object), chrono: "global" } } }));
     ok("toEtat : sans la clé « chrono » de session, celui des réglages", sansCle.session?.chrono === "global");
@@ -606,6 +620,29 @@ async function main() {
     ok("repondreSalle : « Le temps est écoulé… » repris tel quel", tard === "Le temps est écoulé pour cette question.", tard);
   }
   {
+    const appels: Appel[] = [];
+    const r = await rendreCopie(faux({ rendre_copie: { ok: true, rendus: 2, membres: 3, terminee: false } }, appels), "ses-1");
+    ok("rendreCopie : la partie passée, rendus / membres lus, partie pas finie", appels[0].fn === "rendre_copie" && eq(appels[0].args, { p_session_id: "ses-1" }) && eq(r, { rendus: 2, membres: 3, terminee: false }));
+    const fin = await rendreCopie(faux({ rendre_copie: { ok: true, rendus: 3, membres: 3, terminee: true } }), "ses-1");
+    ok("rendreCopie : le dernier à rendre termine la partie", fin.terminee && fin.rendus === 3 && fin.membres === 3);
+    const vide = await rendreCopie(faux({ rendre_copie: null }), "ses-1");
+    ok("rendreCopie : réponse vide → rien de rendu, partie pas finie (sans exception)", eq(vide, { rendus: 0, membres: 0, terminee: false }));
+    let refus = "";
+    try {
+      await rendreCopie(faux({ rendre_copie: { __erreur: { code: "P0001", message: "On ne rend sa copie qu'en chrono global." } } }), "ses-1");
+    } catch (e) {
+      refus = (e as Error).message;
+    }
+    ok("rendreCopie : « On ne rend sa copie qu'en chrono global. » repris tel quel", refus === "On ne rend sa copie qu'en chrono global.", refus);
+    let verrou = "";
+    try {
+      await repondreSalle(faux({ repondre_salle: { __erreur: { code: "P0001", message: "Ta copie est rendue : tu ne peux plus répondre." } } }), "ses-1", 3, { choix: 1 });
+    } catch (e) {
+      verrou = (e as Error).message;
+    }
+    ok("repondreSalle après la copie rendue : « Ta copie est rendue : tu ne peux plus répondre. » repris tel quel", verrou === "Ta copie est rendue : tu ne peux plus répondre.", verrou);
+  }
+  {
     ok("messageErreurSalle : Not authenticated", /Session expirée/.test(messageErreurSalle(new Error("Not authenticated"))));
     ok("messageErreurSalle : réseau", /réseau/.test(messageErreurSalle({ message: "TypeError: Failed to fetch" })));
     ok("messageErreurSalle : erreur technique → phrase neutre", /réessaie/.test(messageErreurSalle({ message: 'duplicate key value violates unique constraint "salles_code_key"' })));
@@ -741,7 +778,10 @@ async function main() {
     ok("les RPC attendues par lib/salles/api.ts existent", ["creer_salle", "rejoindre_salle", "rejoindre_salle_publique", "quitter_salle", "modifier_salle", "supprimer_salle", "salles_publiques", "mes_salles", "salle_questions_disponibles", "lancer_session", "etat_salle", "repondre_salle", "arreter_session", "classement_session"].every((f) => publiques.includes(f)));
     const api = lire("lib/salles/api.ts");
     const appelees = [...api.matchAll(/(?:appeler|lire)\(supabase, "(\w+)"/g)].map((m) => m[1]);
-    ok("tout appel de api.ts correspond à une RPC du SQL", appelees.length >= 12 && appelees.every((f) => publiques.includes(f)), appelees.filter((f) => !publiques.includes(f)).join(","));
+    // les migrations suivantes des salles ajoutent leurs RPC (rendre_copie…)
+    const suites = ["migration_salles_chrono_global.sql", "migration_salles_rendre_copie.sql"].map(lire).join("\n");
+    const toutes = new Set([...publiques, ...[...suites.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g)].map((m) => m[1]).filter((f) => !f.startsWith("_"))]);
+    ok("tout appel de api.ts correspond à une RPC du SQL", appelees.length >= 13 && appelees.every((f) => toutes.has(f)), appelees.filter((f) => !toutes.has(f)).join(","));
 
     // les clés JSON lues par toEtat existent côté SQL
     const cles = ["server_now", "salle", "moi", "nb_membres", "membres", "session", "items", "corrections", "mes_reponses", "classement", "mon_classement", "historique", "repondu_courante", "nb_visibles", "nb_fermees", "nb_joueurs", "bonne_index", "bonne_valeur", "explication", "etapes", "delai_ms", "temps_ms", "avatar_url", "est_admin", "deja_membre", "en_cours", "session_id", "nb_questions", "nb_calculs", "manque", "started_at", "fin_at", "libelle", "donnees", "decimales", "unite", "deja", "raison", "indice"];
@@ -769,6 +809,19 @@ async function main() {
     ok("etat_salle : clés « chrono » et « avancement » de la session", g.includes("'chrono', CASE WHEN v_global THEN 'global' ELSE 'question' END") && g.includes("'avancement', v_avancement"));
     ok("etat_salle : ni justesse ni points avant la fin en chrono global", g.includes("'juste', CASE WHEN v_global AND v_h.phase <> 'fin' THEN NULL ELSE r.juste END") && g.includes("'points', CASE WHEN v_global AND v_h.phase <> 'fin' THEN NULL ELSE r.points END"));
     ok("repondre_salle : réponse masquée (clé « masque »), 1 000 points par bonne réponse", g.includes("'masque', true") && /v_points := 1000;/.test(g) && SALLE_POINTS_GLOBAL === 1000);
+  }
+
+  // -------------------------------------------------------------------------
+  section("Cohérence migration_salles_rendre_copie.sql ↔ TypeScript");
+  {
+    const r = lire("migration_salles_rendre_copie.sql");
+    ok("rendre_copie(p_session_id uuid) : accordée aux joueurs connectés, retirée à PUBLIC et anon", /CREATE OR REPLACE FUNCTION rendre_copie\(p_session_id uuid\)/.test(r) && r.includes("GRANT EXECUTE ON FUNCTION rendre_copie(uuid) TO authenticated;") && r.includes("REVOKE ALL ON FUNCTION rendre_copie(uuid) FROM PUBLIC, anon;"));
+    ok("rendre_copie renvoie les clés lues par rendreCopie (rendus, membres, terminee)", ["'rendus'", "'membres'", "'terminee'"].every((k) => r.includes(k)));
+    ok("rendre_copie : chrono global seulement, idempotente, fin de partie quand tout le monde a rendu", r.includes("IS DISTINCT FROM 'global'") && r.includes("ON CONFLICT (session_id, user_id) DO NOTHING") && /IF v_rendus >= v_membres THEN[\s\S]*statut = 'terminee'/.test(r));
+    ok("etat_salle : avancement[].rendu, même pour qui a rendu sans répondre", r.includes("'rendu', a.rendu") && r.includes("SELECT d.user_id FROM salle_rendus d WHERE d.session_id = v_ses.id"));
+    ok("repondre_salle : refus après la copie rendue, avec le message repris par l'écran", r.includes("RAISE EXCEPTION 'Ta copie est rendue : tu ne peux plus répondre.'"));
+    ok("la migration est rejouable et ne détruit rien", r.includes("CREATE TABLE IF NOT EXISTS salle_rendus") && !/\b(DROP\s+TABLE|DELETE\s+FROM|TRUNCATE)\b/i.test(r));
+    ok("la table des copies rendues n'a aucune policy (lue seulement par les fonctions)", r.includes("ALTER TABLE salle_rendus ENABLE ROW LEVEL SECURITY;") && !/CREATE POLICY/i.test(r));
   }
 
   console.log(ko ? `\n${ko} échec(s)` : "\nTout est vert");

@@ -3,6 +3,7 @@ import { parseCalcCandidates } from "@/lib/calc/engine";
 import { analyserCode, decalageHorloge, fusionnerEtat, paramsDepuisJson, paramsVersJson, prochainDepuis, SALLE_TOPIC_KEYS } from "./logique";
 import type {
   CalculPourSalle,
+  CopieRendue,
   EtatSalle,
   Lecture,
   MockDisponible,
@@ -35,7 +36,8 @@ import type {
 // Aucune bonne réponse n'arrive ici avant la clôture de la question ou la
 // réponse du joueur : c'est le serveur (SQL) qui décide. En chrono global
 // (migration_salles_chrono_global.sql), rien n'arrive avant la fin de la
-// partie : ni correction, ni justesse, ni points (`masque`). Tant que la migration
+// partie : ni correction, ni justesse, ni points (`masque`) ; chacun peut y rendre
+// sa copie avant la fin (rendreCopie, migration_salles_rendre_copie.sql). Tant que la migration
 // n'est pas appliquée, les lectures renvoient { ok: false, migrationAbsente:
 // true } (jamais d'exception) et sallesReady() renvoie false : l'écran dit que
 // les salles arrivent, rien ne casse.
@@ -119,7 +121,9 @@ function toSession(r: Raw): SalleSession {
     reponduCourante: num(r.repondu_courante),
     nbJoueurs: num(r.nb_joueurs),
     chrono,
-    avancement: Array.isArray(r.avancement) ? (r.avancement as unknown[]).map((a) => ({ userId: String(obj(a).user_id), n: num(obj(a).n) })) : null,
+    avancement: Array.isArray(r.avancement)
+      ? (r.avancement as unknown[]).map((a) => ({ userId: String(obj(a).user_id), n: num(obj(a).n), rendu: obj(a).rendu === true }))
+      : null,
   };
 }
 
@@ -448,6 +452,18 @@ export async function supprimerSalle(supabase: SupabaseClient, salleId: string):
 /** Arrête la partie en cours (admin seul) : elle est terminée, les corrections s'ouvrent. */
 export async function arreterSession(supabase: SupabaseClient, salleId: string): Promise<void> {
   await appeler(supabase, "arreter_session", { p_salle_id: salleId });
+}
+
+/**
+ * Chrono global : rend ma copie (rendre_copie). Mes réponses sont verrouillées
+ * (repondre_salle refuse la suite) ; la correction reste cachée tant que
+ * d'autres jouent. `terminee` : tous les membres ont rendu la leur, la partie
+ * est finie et la prochaine lecture d'etat_salle ouvre la correction. Rendre
+ * deux fois ne change rien. Refusé hors chrono global et avant le départ.
+ */
+export async function rendreCopie(supabase: SupabaseClient, sessionId: string): Promise<CopieRendue> {
+  const r = obj(await appeler(supabase, "rendre_copie", { p_session_id: sessionId }));
+  return { rendus: num(r.rendus), membres: num(r.membres), terminee: r.terminee === true };
 }
 
 /**

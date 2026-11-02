@@ -4,6 +4,10 @@
 // réponse par question, définitive, et rien de révélé avant la fin (ni
 // justesse, ni points, ni classement : seulement combien de réponses chacun a
 // données). À la fin : les corrections, le classement et le débrief.
+// Chacun peut rendre sa copie avant la fin du chrono : ses réponses se
+// verrouillent, et quand tous les membres ont rendu la leur, la partie se
+// termine sur-le-champ (migration_salles_rendre_copie.sql : rendre_copie,
+// avancement[].rendu).
 // Aucun accès réseau ni horloge lue ici : l'heure (du serveur) est passée en
 // argument. Testé par scripts/salles/test-examen.tsx. Module neutre.
 //
@@ -119,46 +123,93 @@ export function positionDeDepart(nb: number, repondues: { has: (p: number) => bo
 }
 
 // ---------------------------------------------------------------------------
-// L'avancement des joueurs (combien de réponses, rien d'autre)
+// L'avancement des joueurs (combien de réponses, copie rendue ou non, rien d'autre)
 
-export type AvancementJoueur = { userId: string; username: string | null; avatarUrl: string | null; n: number; moi: boolean };
+export type AvancementJoueur = {
+  userId: string;
+  username: string | null;
+  avatarUrl: string | null;
+  n: number;
+  /** a rendu sa copie (plus de réponse possible) */
+  rendu: boolean;
+  moi: boolean;
+};
 
-/** Lit `session.avancement` ([{ user_id | userId, n }]) ; [] s'il manque. */
-export function avancementBrut(session: Pick<SalleSession, "params"> | null | undefined): { userId: string; n: number }[] {
+/** Lit `session.avancement` ([{ user_id | userId, n, rendu }]) ; [] s'il manque. `rendu` absent : faux. */
+export function avancementBrut(session: Pick<SalleSession, "params"> | null | undefined): { userId: string; n: number; rendu: boolean }[] {
   const brut = (session as SessionLue | null | undefined)?.avancement;
   if (!Array.isArray(brut)) return [];
-  const out: { userId: string; n: number }[] = [];
+  const out: { userId: string; n: number; rendu: boolean }[] = [];
   for (const x of brut) {
     if (!x || typeof x !== "object") continue;
     const o = x as Record<string, unknown>;
     const id = o.userId ?? o.user_id;
     const n = Number(o.n);
-    if (typeof id === "string" && id && Number.isFinite(n)) out.push({ userId: id, n: Math.max(0, Math.floor(n)) });
+    if (typeof id === "string" && id && Number.isFinite(n)) out.push({ userId: id, n: Math.max(0, Math.floor(n)), rendu: o.rendu === true });
   }
   return out;
+}
+
+/** Ai-je rendu ma copie, d'après l'avancement lu ? (l'écran y ajoute la remise qu'il vient de faire) */
+export function copieRendue(session: Pick<SalleSession, "params"> | null | undefined, moiId: string): boolean {
+  return avancementBrut(session).some((a) => a.userId === moiId && a.rendu);
+}
+
+/**
+ * L'erreur est-elle le refus de repondre_salle après la copie rendue (« Ta copie
+ * est rendue : tu ne peux plus répondre. ») ? Rendue depuis un autre onglet :
+ * l'écran se verrouille alors tout de suite, sans attendre la lecture suivante.
+ */
+export function refusCopieRendue(e: unknown): boolean {
+  const message = e instanceof Error ? e.message : typeof e === "string" ? e : "";
+  return /copie est rendue/i.test(message);
+}
+
+/** Après l'ouverture de la confirmation, le temps pendant lequel un clic est la suite d'un double clic. */
+export const GARDE_DOUBLE_CLIC_MS = 500;
+
+/**
+ * Ce clic dans la confirmation arrive-t-il trop vite après son ouverture ? C'est
+ * alors le second clic d'un double clic sur « Rendre ma copie » (le bouton de
+ * confirmation s'affiche au même endroit) : on l'ignore. Les heures sont celles
+ * des événements (`timeStamp`, ms) ; `ouverteA` null : ouverte sans clic.
+ */
+export function clicTropTot(ouverteA: number | null, maintenant: number): boolean {
+  if (ouverteA === null || !Number.isFinite(ouverteA) || !Number.isFinite(maintenant)) return false;
+  const ecart = maintenant - ouverteA;
+  return ecart >= 0 && ecart < GARDE_DOUBLE_CLIC_MS;
 }
 
 /**
  * L'avancement de chacun, avec son pseudo : du plus avancé au moins avancé.
  * Ma ligne prend le plus grand de mon compte local (plus frais) et de celui du
- * serveur, et figure même si je n'ai encore rien répondu.
+ * serveur, et figure même si je n'ai encore rien répondu ; elle est « rendue »
+ * si le serveur le dit ou si je viens de rendre ma copie (`moiRendu`).
  */
 export function avancementJoueurs(opts: {
   session: Pick<SalleSession, "params"> | null | undefined;
   membres: Pick<SalleMembre, "userId" | "username" | "avatarUrl">[];
   moiId: string;
   mesRepondues: number;
+  moiRendu?: boolean;
 }): AvancementJoueur[] {
-  const { session, membres, moiId, mesRepondues } = opts;
+  const { session, membres, moiId, mesRepondues, moiRendu = false } = opts;
   const parId = new Map(membres.map((m) => [m.userId, m]));
   const lignes = new Map<string, AvancementJoueur>();
   for (const a of avancementBrut(session)) {
     const m = parId.get(a.userId);
-    lignes.set(a.userId, { userId: a.userId, username: m?.username ?? null, avatarUrl: m?.avatarUrl ?? null, n: a.n, moi: a.userId === moiId });
+    lignes.set(a.userId, { userId: a.userId, username: m?.username ?? null, avatarUrl: m?.avatarUrl ?? null, n: a.n, rendu: a.rendu, moi: a.userId === moiId });
   }
   const moiM = parId.get(moiId);
   const moi = lignes.get(moiId);
-  lignes.set(moiId, { userId: moiId, username: moiM?.username ?? null, avatarUrl: moiM?.avatarUrl ?? null, n: Math.max(moi?.n ?? 0, mesRepondues), moi: true });
+  lignes.set(moiId, {
+    userId: moiId,
+    username: moiM?.username ?? null,
+    avatarUrl: moiM?.avatarUrl ?? null,
+    n: Math.max(moi?.n ?? 0, mesRepondues),
+    rendu: (moi?.rendu ?? false) || moiRendu,
+    moi: true,
+  });
   return [...lignes.values()].sort((a, b) => b.n - a.n || Number(b.moi) - Number(a.moi) || String(a.username ?? "").localeCompare(String(b.username ?? ""), "fr"));
 }
 

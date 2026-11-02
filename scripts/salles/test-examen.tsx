@@ -6,7 +6,9 @@
 // (PartieExamen) à plusieurs instants d'une partie d'exemple passée au chrono
 // global : le décompte, la partie en cours (JAMAIS de verdict ni de
 // correction), un calcul, tout répondu, la fin avec le podium et le débrief
-// (filtre « Mes erreurs »), la fin avant l'arrivée des corrections. Un dernier
+// (filtre « Mes erreurs »), la fin avant l'arrivée des corrections, « Rendre
+// ma copie » (le bloc, la confirmation dans la page, le verrouillage, le repère
+// « copie rendue » des joueurs, la fin quand tout le monde a rendu). Un dernier
 // contrôle lit Examen.module.css (classes utilisées, pas d'animation oubliée).
 import "../codex/sans-css";
 import fs from "node:fs";
@@ -14,23 +16,29 @@ import path from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { DebriefExamen } from "@/components/salles/DebriefExamen";
-import { PartieExamen } from "@/components/salles/PartieExamen";
+import { PartieExamen, RendreCopie } from "@/components/salles/PartieExamen";
 import {
   avancementBrut,
   avancementJoueurs,
   chronoBas,
+  clicTropTot,
+  copieRendue,
   debriefExamen,
   estChronoGlobal,
   finRevelee,
+  GARDE_DOUBLE_CLIC_MS,
   horlogeExamen,
   libelleChrono,
   positionDeDepart,
   prochaineNonRepondue,
+  refusCopieRendue,
   reponsesRetenues,
 } from "@/lib/salles/examen";
+import { SalleErreur } from "@/lib/salles/api";
+import { EXAMEN } from "@/lib/voice-salles";
 import { exemplePartie } from "@/lib/salles/exemples";
 import type { ReponseOk } from "@/lib/salles/partie";
-import type { EtatSalle, SalleMaReponse, SalleSession } from "@/lib/salles/types";
+import type { CopieRendue, EtatSalle, SalleMaReponse, SalleSession } from "@/lib/salles/types";
 
 (globalThis as { React?: typeof React }).React = React;
 
@@ -71,10 +79,12 @@ const finales = base.etat.mesReponses;
 const masquee = (m: SalleMaReponse): SalleMaReponse => ({ ...m, juste: null, points: null, delaiMs: 30_000 + m.position * 20_000 });
 
 type Instant = "decompte" | "cours" | "tout" | "fin" | "finSansCorrections";
-function partieGlobale(instant: Instant, opts: { repondues?: number[]; admin?: boolean } = {}): { etat: EtatSalle; t: number } {
+type OptsPartie = { repondues?: number[]; admin?: boolean; rendus?: string[] };
+function partieGlobale(instant: Instant, opts: OptsPartie = {}): { etat: EtatSalle; t: number } {
   const t = instant === "decompte" ? DEBUT - 2_400 : instant === "fin" || instant === "finSansCorrections" ? FIN + 3_000 : DEBUT + 150_000;
   const fin = instant === "fin" || instant === "finSansCorrections";
-  const repondues = opts.repondues ?? (instant === "tout" ? Array.from({ length: NB }, (_, i) => i) :instant === "cours" ? [0, 1, 4] : []);
+  const repondues = opts.repondues ?? (instant === "tout" ? Array.from({ length: NB }, (_, i) => i) : instant === "cours" ? [0, 1, 4] : []);
+  const rendu = (id: string) => (opts.rendus ?? []).includes(id);
   const session: SalleSession = {
     ...base.etat.session!,
     statut: fin ? "terminee" : instant === "decompte" ? "attente" : "en_cours",
@@ -90,9 +100,9 @@ function partieGlobale(instant: Instant, opts: { repondues?: number[]; admin?: b
     avancement: fin
       ? null
       : [
-          { userId: "u0", n: 7 },
-          { userId: "u1", n: 5 },
-          { userId: MOI, n: repondues.length },
+          { userId: "u0", n: 7, rendu: rendu("u0") },
+          { userId: "u1", n: 5, rendu: rendu("u1") },
+          { userId: MOI, n: repondues.length, rendu: rendu(MOI) },
         ],
   };
   // l'exemple laisse une question sans réponse : on en invente une quand il faut tout répondre
@@ -113,7 +123,8 @@ function partieGlobale(instant: Instant, opts: { repondues?: number[]; admin?: b
   return { etat, t };
 }
 
-const rendreExamen = (instant: Instant, opts: { repondues?: number[]; admin?: boolean; locales?: Record<number, ReponseOk | undefined> } = {}): string => {
+const COPIE: CopieRendue = { rendus: 1, membres: 3, terminee: false };
+const rendreExamen = (instant: Instant, opts: OptsPartie & { locales?: Record<number, ReponseOk | undefined> } = {}): string => {
   const { etat, t } = partieGlobale(instant, opts);
   const admin = opts.admin ?? true;
   return rendre(
@@ -130,6 +141,7 @@ const rendreExamen = (instant: Instant, opts: { repondues?: number[]; admin?: bo
       estAdmin={admin}
       t={t}
       repondre={async () => ({ ok: true, deja: false, masque: true, juste: false, points: 0, delaiMs: 1, choix: 0, valeur: null, bonneIndex: null, bonneValeur: null, explication: null, etapes: [] })}
+      rendreCopie={async () => COPIE}
       onArreter={admin ? async () => {} : undefined}
       onRejouer={admin ? async () => ({ ok: true }) : undefined}
       onRetour={() => {}}
@@ -169,6 +181,40 @@ console.log("# logique pure");
   check("avancementJoueurs : ma ligne prend mon compte local s'il est plus frais (4 > 3)", av.find((j) => j.moi)?.n === 4 && av.filter((j) => j.moi).length === 1);
   check("avancementJoueurs : sans avancement lu, ma ligne seule", avancementJoueurs({ session: { params: base.etat.session!.params }, membres, moiId: MOI, mesRepondues: 0 }).length === 1);
   check("avancementBrut : lit aussi le JSON du serveur (user_id)", avancementBrut({ params: base.etat.session!.params, avancement: [{ user_id: "a", n: 3 }, { n: 2 }] } as never).length === 1);
+  const brutRendu = avancementBrut({ params: base.etat.session!.params, avancement: [{ user_id: "a", n: 3, rendu: true }, { user_id: "b", n: 2 }, { user_id: "c", n: 1, rendu: "oui" }] } as never);
+  check("avancementBrut : « rendu » lu, faux s'il manque ou n'est pas un booléen vrai", brutRendu.map((a) => a.rendu).join() === "true,false,false");
+  const sesRendus = partieGlobale("cours", { rendus: ["u0", MOI] }).etat.session;
+  check("copieRendue : d'après l'avancement lu, pour moi seulement", copieRendue(sesRendus, MOI) && copieRendue(sesRendus, "u0") && !copieRendue(sesRendus, "u1") && !copieRendue(partieGlobale("cours").etat.session, MOI) && !copieRendue(null, MOI));
+  const avR = avancementJoueurs({ session: partieGlobale("cours", { rendus: ["u0"] }).etat.session, membres, moiId: MOI, mesRepondues: 3 });
+  check("avancementJoueurs : le repère « rendu » suit chaque joueur", avR.find((j) => j.userId === "u0")?.rendu === true && avR.find((j) => j.userId === "u1")?.rendu === false && avR.find((j) => j.moi)?.rendu === false);
+  check(
+    "avancementJoueurs : ma copie rendue à l'instant compte avant la lecture suivante (moiRendu)",
+    avancementJoueurs({ session: partieGlobale("cours").etat.session, membres, moiId: MOI, mesRepondues: 3, moiRendu: true }).find((j) => j.moi)?.rendu === true &&
+      avancementJoueurs({ session: { params: base.etat.session!.params }, membres, moiId: MOI, mesRepondues: 0, moiRendu: true })[0].rendu === true,
+  );
+  // le refus de repondre_salle, tel que repondreSalle le lève (SalleErreur au message repris tel quel)
+  const refus = new SalleErreur({ code: "P0001", message: "Ta copie est rendue : tu ne peux plus répondre." });
+  check(
+    "refusCopieRendue : reconnaît le refus du serveur après la copie rendue, et lui seul",
+    refusCopieRendue(refus) &&
+      refus.message === EXAMEN.copieRendueVerrou &&
+      refusCopieRendue("Ta copie est rendue : tu ne peux plus répondre.") &&
+      !refusCopieRendue(new SalleErreur({ message: "Le temps est écoulé." })) &&
+      !refusCopieRendue(new Error("Réponse invalide.")) &&
+      !refusCopieRendue(null) &&
+      !refusCopieRendue({ message: 42 }),
+  );
+  check(
+    `clicTropTot : un clic moins de ${GARDE_DOUBLE_CLIC_MS} ms après l'ouverture est la suite d'un double clic`,
+    clicTropTot(1_000, 1_000) &&
+      clicTropTot(1_000, 1_120) &&
+      clicTropTot(1_000, 1_000 + GARDE_DOUBLE_CLIC_MS - 1) &&
+      !clicTropTot(1_000, 1_000 + GARDE_DOUBLE_CLIC_MS) &&
+      !clicTropTot(1_000, 4_000) &&
+      !clicTropTot(1_000, 900) &&
+      !clicTropTot(null, 1_000) &&
+      !clicTropTot(Number.NaN, 1_000),
+  );
 
   const d = debriefExamen(NB, base.etat.items, base.etat.corrections, finales);
   check("debriefExamen : justes, faux et sans réponse comptés (10 au total)", d.justes + d.faux + d.sans === NB && d.sans === 1 && d.justes === finales.filter((m) => m.juste).length && d.complet);
@@ -218,7 +264,7 @@ console.log("# une réponse enregistrée, puis tout répondu");
 {
   const html = rendreExamen("tout");
   const q0 = finales.find((m) => m.position === 0)!;
-  check("tout répondu : « Tout est répondu, la correction arrive à la fin du chrono »", html.includes("Tout est répondu, la correction arrive à la fin du chrono"));
+  check("tout répondu : « Tout est répondu : rends ta copie pour finir plus tôt »", html.includes("Tout est répondu : rends ta copie pour finir plus tôt") && html.includes("elles ne se changent plus"));
   check("la question 1 s'affiche, verrouillée : « Réponse enregistrée » avec le choix retenu", /Question <b>1<\/b>/.test(html) && html.includes("Répondue") && html.includes(`Réponse enregistrée : <b>${"ABCD"[q0.choix ?? 0]}</b>`));
   check("le choix retenu est marqué (sans verdict), les autres estompés, tous désactivés", compte(html, /data-etat="retenu"/g) === 1 && compte(html, /data-etat="estompe"/g) === 3 && compte(html, /role="radio"[^>]*disabled=""/g) + compte(html, /disabled=""[^>]*role="radio"/g) === 4 && !html.includes("Valider et continuer"));
   check("toujours aucun verdict ni correction", !/>Juste</.test(html) && !/>Faux</.test(html) && !html.includes("Bonne réponse") && secrets.every((x) => !html.includes(x)));
@@ -226,6 +272,100 @@ console.log("# une réponse enregistrée, puis tout répondu");
   const locale: ReponseOk = { ok: true, deja: false, masque: true, juste: false, points: 0, delaiMs: 1, choix: 2, valeur: null, bonneIndex: null, bonneValeur: null, explication: null, etapes: [] };
   const avecLocale = rendreExamen("cours", { repondues: [0, 1], locales: { 2: locale } });
   check("une réponse que le serveur vient de rendre compte tout de suite (3 / 10), on passe à la suivante sans réponse", /3<small>\/10<\/small>/.test(avecLocale) && /Question <b>4<\/b>/.test(avecLocale));
+}
+
+console.log("# rendre sa copie");
+{
+  const rendreDe = (html: string) => boutonDe(html, ">Rendre ma copie<");
+  // en jeu : l'invite discrète, le bouton secondaire (contour, pas d'encre)
+  const enJeu = rendreExamen("cours");
+  check("en jeu : « Rendre ma copie » toujours là, avec l'invite", enJeu.includes("Rendre ma copie") && enJeu.includes("Fini avant le chrono ?") && enJeu.includes('data-etat="invite"'));
+  check("le bouton est secondaire : contour fin, jamais d'encre", /class="btn rendreBtn"/.test(rendreDe(enJeu)) && !rendreDe(enJeu).includes("rl-encre") && rendreDe(enJeu).includes('data-avant="0"') && !rendreDe(enJeu).includes("disabled"));
+  check("le bloc est au-dessus de la question (sous la grille)", enJeu.indexOf("Rendre ma copie") > enJeu.indexOf('class="numeros"') && enJeu.indexOf("Rendre ma copie") < enJeu.indexOf('id="examen-question"'));
+  check("pas de confirmation tant qu'on n'a pas cliqué, ni de « copie rendue »", !enJeu.includes("Tu ne pourras plus répondre") && !enJeu.includes("Copie rendue.") && !enJeu.includes("copie rendue<"));
+  check("un seul « Rendre ma copie » dans la page", compte(enJeu, />Rendre ma copie</g) === 1);
+
+  // tout répondu : le bloc passe en avant
+  const tout = rendreExamen("tout");
+  check("tout répondu : le bloc passe en avant (bouton en os, toujours sans encre)", tout.includes('data-etat="avant"') && rendreDe(tout).includes('data-avant="1"') && !rendreDe(tout).includes("rl-encre") && tout.includes("Tout est répondu : rends ta copie pour finir plus tôt"));
+
+  // la confirmation, dans la page
+  const conf = rendre(<RendreCopie nb={NB} nbRepondues={7} rendue={false} onRendre={async () => {}} ouverte />);
+  check("confirmation : « Rendre ta copie ? Tu ne pourras plus répondre. », dans la page", conf.includes("Rendre ta copie ? Tu ne pourras plus répondre.") && conf.includes('role="group"') && conf.includes('aria-labelledby="examen-rendre-titre"'));
+  check("confirmation : le nombre de questions sans réponse (3), mis en avant", conf.includes("3 questions sans réponse.") && conf.includes('data-manque="1"'));
+  check("confirmation : « Rendre ma copie » et « Continuer », sans encre", conf.includes(">Rendre ma copie<") && conf.includes(">Continuer<") && !conf.includes("rl-encre") && compte(conf, /<button/g) === 2);
+  const conf1 = rendre(<RendreCopie nb={NB} nbRepondues={NB - 1} rendue={false} onRendre={async () => {}} ouverte />);
+  const confTout = rendre(<RendreCopie nb={NB} nbRepondues={NB} rendue={false} onRendre={async () => {}} ouverte />);
+  check("confirmation : « 1 question sans réponse. » au singulier ; rien ne manque → pas d'alerte", conf1.includes("1 question sans réponse.") && confTout.includes("Toutes les questions ont une réponse.") && confTout.includes('data-manque="0"') && !confTout.includes("sans réponse."));
+  const sources = fs.readFileSync(path.join(process.cwd(), "components/salles/PartieExamen.tsx"), "utf8");
+  check("jamais de fenêtre du navigateur pour confirmer (window.confirm)", !/window\.confirm|\bconfirm\(/.test(sources));
+  // les clics ne se rejouent pas sans navigateur : on vérifie que les gardes sont bien branchées
+  check(
+    "double clic : la confirmation ignore un clic trop proche de son ouverture (« Rendre ma copie » et « Continuer »)",
+    /onClick=\{\(e\) => ouvrir\(e\.timeStamp\)\}/.test(sources) &&
+      /onClick=\{\(e\) => void confirmer\(e\.timeStamp\)\}/.test(sources) &&
+      /onClick=\{\(e\) => fermer\(e\.timeStamp\)\}/.test(sources) &&
+      compte(sources, /clicTropTot\(ouverteA\.current, quand\)/g) === 2,
+  );
+  check(
+    "double clic : la remise ne part qu'une fois (garde synchrone, pas seulement l'état « envoi »)",
+    /if \(envoiRef\.current \|\| clicTropTot\(ouverteA\.current, quand\)\) return;\s*envoiRef\.current = true;/.test(sources),
+  );
+  check(
+    "refus du serveur (« Ta copie est rendue… ») : l'écran se verrouille tout de suite, sans message en double",
+    /repondre=\{\(rep\) => repondreIci\(courante, rep\)\}/.test(sources) && /if \(refusCopieRendue\(e\)\) \{\s*setRendueIci\(session\.id\);/.test(sources) && sources.includes("{erreur && !verrouillee && ("),
+  );
+
+  // copie rendue (le serveur le dit) : tout est verrouillé, la relecture reste
+  const rendue = rendreExamen("cours", { rendus: [MOI] });
+  check("copie rendue : « Copie rendue. La correction arrive quand tout le monde a rendu sa copie, ou à la fin du chrono. »", rendue.includes("Copie rendue.") && rendue.includes("La correction arrive quand tout le monde a rendu sa copie, ou à la fin du chrono.") && rendue.includes('data-etat="rendue"'));
+  check("copie rendue : plus de bouton « Rendre ma copie »", !rendue.includes(">Rendre ma copie<") && !rendue.includes("Fini avant le chrono ?"));
+  check(
+    "copie rendue : les choix désactivés, aucun coché, « Valider » désactivé",
+    compte(rendue, /role="radio"/g) === 4 && compte(rendue, /role="radio"[^>]*disabled=""/g) + compte(rendue, /disabled=""[^>]*role="radio"/g) === 4 && compte(rendue, /aria-checked="true"/g) === 0 && boutonDe(rendue, "Valider et continuer").includes('disabled=""'),
+  );
+  check("copie rendue : « Ta copie est rendue : tu ne peux plus répondre. », la question dit « Sans réponse »", rendue.includes("Ta copie est rendue : tu ne peux plus répondre.") && rendue.includes(">Sans réponse<") && !rendue.includes(">À répondre<"));
+  check("copie rendue : la navigation et la grille restent (relecture)", !boutonDe(rendue, "Précédente").includes("disabled") && !boutonDe(rendue, "Suivante").includes("disabled") && compte(rendue, /class="case"[^>]*disabled/g) === 0 && compte(rendue, /class="case"/g) === NB);
+  check("copie rendue : toujours aucun verdict ni correction", !/>Juste</.test(rendue) && !/>Faux</.test(rendue) && !rendue.includes("Bonne réponse") && secrets.every((x) => !rendue.includes(x)));
+  check("copie rendue : le chrono court toujours (les autres jouent)", rendue.includes('role="timer"') && rendue.includes(">5:00<"));
+  const rendueTout = rendreExamen("tout", { rendus: [MOI] });
+  check("copie rendue, tout répondu : la question 1 se relit, « Réponse enregistrée »", /Question <b>1<\/b>/.test(rendueTout) && rendueTout.includes("Réponse enregistrée") && rendueTout.includes("Copie rendue.") && !rendueTout.includes(">Rendre ma copie<"));
+  const calc = base.etat.items.find((i) => i.origine === "calcul");
+  if (calc) {
+    const rendueCalc = rendreExamen("cours", { repondues: Array.from({ length: calc.position }, (_, i) => i), rendus: [MOI] });
+    check("copie rendue, un calcul : le champ désactivé", /id="examen-calcul"[^>]*disabled=""/.test(rendueCalc) || /disabled=""[^>]*id="examen-calcul"/.test(rendueCalc));
+    check("copie rendue, un calcul : « Valider » désactivé", boutonDe(rendueCalc, "Valider et continuer").includes('disabled=""') && rendueCalc.includes("Ta copie est rendue : tu ne peux plus répondre."));
+  }
+
+  // « Où en sont les joueurs » : un repère « copie rendue » par joueur
+  const deux = rendreExamen("cours", { rendus: ["u0", MOI] });
+  check("avancement : un repère « copie rendue » pour chaque joueur qui a rendu (Inès B. et moi)", compte(deux, /class="joueurRendu"/g) === 2 && compte(deux, / copie rendue<\/span>/g) === 2 && compte(deux, /data-rendu="1"/g) === 2 && compte(deux, /data-rendu="0"/g) === 1);
+  const ines = deux.slice(deux.indexOf("Inès B."), deux.indexOf("</li>", deux.indexOf("Inès B.")));
+  const marc = deux.slice(deux.indexOf("Marc L."), deux.indexOf("</li>", deux.indexOf("Marc L.")));
+  check("avancement : le repère est sur la bonne ligne (Inès B. oui, Marc L. non), le compte reste", ines.includes("copie rendue") && ines.includes("7 / 10") && !marc.includes("copie rendue") && marc.includes("5 / 10"));
+  check("avancement : personne n'a rendu → aucun repère", !enJeu.includes("joueurRendu") && !enJeu.includes("copie rendue<") && compte(enJeu, /data-rendu="1"/g) === 0);
+  check("l'aide de l'avancement parle des copies rendues", enJeu.includes("Le nombre de réponses et les copies rendues seulement"));
+
+  // tout le monde a rendu : la partie est terminée avant fin_at, le débrief s'ouvre
+  const { etat } = partieGlobale("fin");
+  const finTot = rendre(
+    <PartieExamen
+      session={{ ...etat.session!, statut: "terminee", phase: "fin", finAt: new Date(DEBUT + 150_000).toISOString() }}
+      items={etat.items}
+      corrections={etat.corrections}
+      mesReponses={etat.mesReponses}
+      locales={{}}
+      classement={etat.classement}
+      monClassement={etat.monClassement}
+      membres={etat.membres}
+      moi={{ userId: MOI, username: "Toi", avatarUrl: null }}
+      estAdmin={false}
+      t={DEBUT + 150_500}
+      repondre={async () => ({ ok: false, raison: "format", indice: "" })}
+      rendreCopie={async () => COPIE}
+    />,
+  );
+  check("tout le monde a rendu (partie terminée avant le chrono) : podium et débrief, plus de « Rendre ma copie »", finTot.includes("gagne la partie") && finTot.includes("Le débrief") && !finTot.includes("Rendre ma copie") && !finTot.includes('role="timer"'));
 }
 
 console.log("# la fin : podium, bilan et débrief");
@@ -280,6 +420,7 @@ console.log("# la fin à l'horloge, avant la lecture qui la confirme");
       estAdmin
       t={FIN + 500}
       repondre={async () => ({ ok: false, raison: "format", indice: "" })}
+      rendreCopie={async () => COPIE}
     />,
   );
   check("« Temps écoulé », la correction et le classement arrivent", html.includes("Temps écoulé") && html.includes("La correction et le classement arrivent…"));
@@ -306,7 +447,7 @@ console.log("# un mock de 90 questions");
   });
   const s = partieGlobale("cours").etat.session!;
   const debut = Date.parse(s.startedAt);
-  const ses90: SalleSession = { ...s, nb: NB90, temps: 90, finAt: new Date(debut + NB90 * 90_000).toISOString(), nbVisibles: NB90, avancement: [{ userId: "u0", n: 60 }, { userId: MOI, n: 45 }] };
+  const ses90: SalleSession = { ...s, nb: NB90, temps: 90, finAt: new Date(debut + NB90 * 90_000).toISOString(), nbVisibles: NB90, avancement: [{ userId: "u0", n: 60, rendu: false }, { userId: MOI, n: 45, rendu: false }] };
   const mes90: SalleMaReponse[] = Array.from({ length: 45 }, (_, pos) => ({ position: pos, choix: 0, valeur: null, juste: null, points: null, delaiMs: pos * 1_000 }));
   const html = rendre(
     <PartieExamen
@@ -322,6 +463,7 @@ console.log("# un mock de 90 questions");
       estAdmin={false}
       t={debut + 3_600_000}
       repondre={async () => ({ ok: false, raison: "format", indice: "" })}
+      rendreCopie={async () => COPIE}
     />,
   );
   check("90 numéros, 45 répondus, la 46e affichée", compte(html, /class="case"/g) === NB90 && casesRepondues(html) === 45 && /aria-current="step"[^>]*>46</.test(html));
