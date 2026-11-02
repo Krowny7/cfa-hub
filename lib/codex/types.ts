@@ -17,7 +17,7 @@ export type Matiere = string;
 export type NotionId = string;
 
 /** D'où vient une réponse (mêmes mots que ratures.sources et lib/answer-stats.ts). */
-export type SourceReponse = "fiche" | "ciblee" | "qcm" | "defi" | "cinq" | "eclair" | "duel" | "blanc" | "examen" | "atelier" | "rature" | "calc";
+export type SourceReponse = "fiche" | "ciblee" | "qcm" | "defi" | "cinq" | "eclair" | "duel" | "salle" | "blanc" | "examen" | "atelier" | "rature" | "calc";
 
 export type ResultatDuel = "victoire" | "defaite" | "nul";
 

@@ -42,7 +42,8 @@ async function safeRows<T>(run: () => PromiseLike<{ data: unknown; error: unknow
  * confondues : quiz des fiches (une ligne par réponse), sessions QCM,
  * sessions d'entraînement ciblé, examens blancs et leurs reprises, duels
  * réglés, copies rendues du défi du jour (daily_attempts) et séries éclair
- * (eclair_series), les questions des Ateliers (ateliers) et les calculs
+ * (eclair_series), les questions des Ateliers (ateliers), les réponses des
+ * Salles (mes_reponses_salles, questions et calculs) et les calculs
  * (calc_attempts, plus les re-tests de calcul des Ateliers), comme le logo
  * vivant de la barre du haut (components/adn/AnneauDuJourData.ts), si leurs
  * migrations sont appliquées ; sinon la lecture échoue et ne compte rien.
@@ -68,7 +69,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     finished_at: string | null;
   };
 
-  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, eclair, ateliers, calc] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, eclair, ateliers, calc, salles] = await Promise.all([
     safeRows<{ answered_at: string; is_correct: boolean }>(() =>
       supabase.from("quiz_answer_log").select("answered_at,is_correct").eq("user_id", userId).gte("answered_at", since).limit(5000),
     ),
@@ -116,6 +117,8 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     safeRows<{ answered_at: string; correct: boolean }>(() =>
       supabase.from("calc_attempts").select("answered_at,correct").eq("user_id", userId).gte("answered_at", since).limit(5000),
     ),
+    // Salles : une ligne par réponse, questions et calculs (RPC de migration_salles_stats.sql ; absente : rien).
+    safeRows<{ repondu_le: string; juste: boolean; calcul: boolean }>(() => supabase.rpc("mes_reponses_salles", { p_depuis: since, p_user: userId })),
   ]);
 
   const all: DatedCount[] = [
@@ -138,6 +141,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     // les calculs : calc_attempts, et les re-tests de calcul des Ateliers (le premier passage est dans calc_attempts)
     ...calc.map((r) => ({ at: r.answered_at, n: 1, correct: r.correct ? 1 : 0, calc: true })),
     ...ateliers.flatMap((r) => (Array.isArray(r.reponses) ? r.reponses : []).filter((x) => x.k === "calc" && x.r === true && x.at).map((x) => ({ at: x.at as string, n: 1, correct: x.ok ? 1 : 0, calc: true }))),
+    ...salles.map((r) => ({ at: r.repondu_le, n: 1, correct: r.juste ? 1 : 0, calc: r.calcul })),
   ];
 
   const byDay = new Map<string, { n: number; correct: number; calc: number }>();

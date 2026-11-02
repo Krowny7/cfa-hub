@@ -32,7 +32,7 @@ export { contenuDuProgramme };
 // (optionnelles, jamais bloquantes) jusqu'au branchement.
 
 export const EVENEMENTS: Record<TypeEvenement, SourceDonnee> = {
-  question_repondue: { libelle: "Une réponse", source: "vue : quiz_answer_log + duel_answers + daily_answers + mock_exam_results.answers + practice_session_results (détail) + ateliers.reponses + eclair_series + calc_attempts ; matière/notion via quiz_questions.notion (lib/answer-stats.ts fait déjà ce recoupement)", branche: true },
+  question_repondue: { libelle: "Une réponse", source: "vue : quiz_answer_log + duel_answers + daily_answers + mock_exam_results.answers + practice_session_results (détail) + ateliers.reponses + eclair_series + salle_reponses (parties de Salle finies) + calc_attempts ; matière/notion via quiz_questions.notion (lib/answer-stats.ts fait déjà ce recoupement)", branche: true },
   session_terminee: { libelle: "Une séance complète", source: "practice_session_results (topics, score, total, completed_at) ; practice_sessions (QCM) ; quiz_attempts ; une page de fiche (quiz_answer_log par run_id)", branche: true },
   drill_page_terminee: { libelle: "Une page de drill", source: "quiz_answer_log (mode = 'page', par run_id) ⨝ quiz_sets.title « <Matière> — Drill Fiche Page N »", branche: true },
   defi_rendu: { libelle: "Les 30 du jour", source: "daily_attempts (finished_at, score, total) ⨝ daily_challenges (hors 5 du jour)", branche: true },

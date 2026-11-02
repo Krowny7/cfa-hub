@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { VuePartie } from "@/components/salles/VuePartie";
 import { effetsParDefaut, type Effets } from "@/components/salles/effets";
 import { useHeureServeur } from "@/components/salles/anim";
@@ -57,6 +58,8 @@ export function PartieSalle({
       if (!ses) throw new Error("Partie introuvable.");
       const r = repondre ? await repondre(ses.id, position, rep) : await repondreSalle((client.current ??= createClient()), ses.id, position, rep);
       if (r.ok) {
+        // le logo vivant de la barre du haut avance tout de suite, comme aux 30 du jour
+        if (!r.deja) poserTrait(1);
         setLocales((l) => ({ ...l, [position]: r }));
         void rafraichir();
       }

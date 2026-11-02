@@ -46,9 +46,9 @@ const repondues = (answers: unknown, total: unknown) =>
   Array.isArray(answers) ? (answers as Repondu[]).filter((a) => a && a.selected_index !== null && a.selected_index !== undefined).length : Number(total) || 0;
 
 /** Questions posées par jour (Paris), toutes sources, avant `avantIso`. */
-export async function lireJours(sb: SupabaseClient, userId: string, avantIso: string): Promise<[string, number][]> {
+export async function lireJours(sb: SupabaseClient, userId: string, avantIso: string, admin = false): Promise<[string, number][]> {
   type DuelRow = { challenger_id: string; question_ids: string[] | null; challenger_finished_at: string | null; opponent_finished_at: string | null; finished_at: string | null };
-  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, calc, eclair, ateliers] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, calc, eclair, ateliers, salles] = await Promise.all([
     toutes<{ answered_at: string }>((a, b) => sb.from("quiz_answer_log").select("answered_at").eq("user_id", userId).lt("answered_at", avantIso).order("answered_at").range(a, b)),
     toutes<{ occurred_at: string; total: number; mode: string }>((a, b) =>
       sb.from("practice_sessions").select("occurred_at,total,mode").eq("user_id", userId).lt("occurred_at", avantIso).order("occurred_at").range(a, b),
@@ -87,6 +87,12 @@ export async function lireJours(sb: SupabaseClient, userId: string, avantIso: st
     toutes<{ reponses: { k?: string; r?: boolean; at?: string }[] | null }>((a, b) =>
       sb.from("ateliers").select("reponses").eq("user_id", userId).lt("started_at", avantIso).order("started_at").range(a, b),
     ),
+    // Salles : une ligne par réponse, questions et calculs. Le client admin lit la table ; le client du
+    // joueur passe par la RPC (pas de policy de lecture), qui ne rend que ses propres réponses.
+    toutes<{ repondu_le: string }>((a, b) =>
+      admin ? sb.from("salle_reponses").select("repondu_le").eq("user_id", userId).lt("repondu_le", avantIso).order("repondu_le").range(a, b)
+        : sb.rpc("mes_reponses_salles", { p_depuis: "1970-01-01T00:00:00Z", p_user: userId }).lt("repondu_le", avantIso).range(a, b),
+    ),
   ]);
 
   const parJour = new Map<string, number>();
@@ -109,6 +115,7 @@ export async function lireJours(sb: SupabaseClient, userId: string, avantIso: st
   for (const r of calc) add(r.answered_at, 1);
   for (const r of eclair) add(r.finished_at, Number(r.total) || 0);
   for (const r of ateliers) for (const x of Array.isArray(r.reponses) ? r.reponses : []) if ((x.k !== "calc" || x.r === true) && x.at && Date.parse(x.at) < Date.parse(avantIso)) add(x.at, 1);
+  for (const r of salles) add(r.repondu_le, 1);
   return [...parJour.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1));
 }
 
@@ -129,7 +136,8 @@ export const joursAvant = cache(async (userId: string, aujourdhui: string): Prom
   const admin = adminOuNull();
   let rows: [string, number][];
   if (admin) {
-    rows = await unstable_cache(() => lireJours(admin, userId, avantIso), ["rl-objectif-jours", userId, aujourdhui], { revalidate: 60 * 60 * 26 })();
+    // v2 : les jours passés comptent aussi les Salles (2026-11-02)
+    rows = await unstable_cache(() => lireJours(admin, userId, avantIso, true), ["rl-objectif-jours-v2", userId, aujourdhui], { revalidate: 60 * 60 * 26 })();
   } else {
     rows = await lireJours(await createClient(), userId, avantIso);
   }

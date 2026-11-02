@@ -222,6 +222,7 @@ export const SOURCES_RATURE: [string, string][] = [
   ["cinq", "Les 5 du jour"],
   ["eclair", "Séries éclair"],
   ["duel", "Duels"],
+  ["salle", "Salles"],
   ["fiche", "Fiches"],
   ["qcm", "QCM"],
   ["session", "Sessions"],

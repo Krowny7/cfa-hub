@@ -54,6 +54,7 @@ const MARQUE: Record<string, SourceMarque> = {
   cinq: "defi",
   eclair: "eclair",
   duel: "duel",
+  salle: "session",
   ciblee: "session",
   blanc: "examen",
   examen: "examen",

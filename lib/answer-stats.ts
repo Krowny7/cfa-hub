@@ -1,14 +1,16 @@
 // Questions répondues, toutes sources confondues : duels, défi du jour,
-// examens blancs, examens officiels, QCM, sessions ciblées et fiches. Recoupe les tables où
+// parties de Salle, séries éclair, Ateliers, examens blancs, examens
+// officiels, QCM, sessions ciblées, calculs et fiches. Recoupe les tables où
 // chaque parcours enregistre ses réponses, puis range tout par matière (les
 // 10 du CFA Niveau I), par thème (reading, page de fiche, session de mock) et
-// par passage (un duel, une session, un quiz de page…).
+// par passage (un duel, une partie de Salle, une session, un quiz de page…).
 //
 // Module neutre (pas de "use client"). Le chargement (`getAnswerStats`) est
 // réservé au serveur : il lit des tables protégées avec le client admin
-// quand la RLS bloque (duel_answers), toujours filtrées sur UN joueur, et ne
-// renvoie que des comptes (jamais une bonne réponse). Les petites fonctions
-// de calcul (`tallyOf`, libellés) servent aussi aux composants clients.
+// quand la RLS bloque (duel_answers, daily_answers, salle_reponses), toujours
+// filtrées sur UN joueur, et ne renvoie que des comptes (jamais une bonne
+// réponse). Les petites fonctions de calcul (`tallyOf`, libellés) servent
+// aussi aux composants clients.
 //
 // Sources et règles :
 // - Duels : duel_answers (une ligne par réponse), seulement pour les duels
@@ -20,6 +22,15 @@
 //   copie. Sans la clé admin, les copies rendues comptent au score
 //   (daily_attempts), rangées dans « Plusieurs matières ». Tables absentes
 //   (migration du défi pas encore appliquée) : la source reste vide.
+// - Salles : salle_reponses (une ligne par réponse ; client admin, pas de
+//   policy), jointes à salle_items (la question de la banque copiée, ou le
+//   calcul et sa matière) et à salle_sessions, seulement pour les parties
+//   finies (terminées ou arrêtées, ou dont l'heure de fin est passée) : comme
+//   une copie du défi, comptée une fois rendue. Un passage par partie
+//   (« Salle · <nom de la salle> », daté de sa fin). Les QCM sont rangés par
+//   set, jugés par le serveur ; les calculs (leur type n'est pas gardé) dans
+//   leur matière, thème « Calculs en Salle ». Sans la clé admin, ou tables
+//   absentes (migration_salles.sql) : la source reste vide.
 // - Examens blancs : mock_exam_results.answers (réponse par question, jugée
 //   avec la clé côté serveur) ; mock_exam_attempts (reprises) ne gardent que
 //   le score, rangé dans « Plusieurs matières ».
@@ -48,13 +59,14 @@ import type { Seance } from "@/lib/forme";
 // Types et libellés (partagés avec les composants)
 // ---------------------------------------------------------------------------
 
-export const ANSWER_SOURCES = ["duel", "daily", "eclair", "atelier", "mock", "exam", "qcm", "practice", "calc", "fiche"] as const;
+export const ANSWER_SOURCES = ["duel", "daily", "salle", "eclair", "atelier", "mock", "exam", "qcm", "practice", "calc", "fiche"] as const;
 export type AnswerSource = (typeof ANSWER_SOURCES)[number];
 export type SourceFilter = AnswerSource | "all";
 
 export const SOURCE_LABELS: Record<AnswerSource, string> = {
   duel: "Duels",
   daily: "Défi du jour",
+  salle: "Salles",
   eclair: "Séries éclair",
   atelier: "Ateliers",
   mock: "Examens blancs",
@@ -69,6 +81,7 @@ export const SOURCE_LABELS: Record<AnswerSource, string> = {
 export const SOURCE_HREFS: Record<AnswerSource, string> = {
   duel: "/duel",
   daily: "/defi",
+  salle: "/salles",
   eclair: "/eclair",
   atelier: "/atelier",
   mock: "/mock-exams",
@@ -279,6 +292,22 @@ async function readOnce<T>(p: PromiseLike<Res<T>>): Promise<T[] | null> {
   }
 }
 
+/**
+ * Comme readIds, mais chaque paquet est lu en entier (pages de 1000) : pour
+ * une table où un identifiant porte beaucoup de lignes (les questions d'une
+ * partie de Salle). Paquets lus l'un après l'autre ; null si l'un échoue.
+ */
+async function readIdsPaged<T>(ids: string[], make: (chunk: string[], from: number, to: number) => PromiseLike<Res<T>>): Promise<T[] | null> {
+  const out: T[] = [];
+  for (let i = 0; i < ids.length; i += IN_CHUNK) {
+    const chunk = ids.slice(i, i + IN_CHUNK);
+    const rows = await readAll<T>((a, b) => make(chunk, a, b));
+    if (rows === null) return null;
+    out.push(...rows);
+  }
+  return out;
+}
+
 /** Lignes d'une table par identifiants, par paquets (quelques requêtes en parallèle) ; null si un paquet échoue. */
 async function readIds<T>(ids: string[], make: (chunk: string[]) => PromiseLike<Res<T>>): Promise<T[] | null> {
   const chunks: string[][] = [];
@@ -328,6 +357,9 @@ type AtelierRow = { id: string; reponses: { k?: string; q?: string; ok?: boolean
 type LogRow = { set_id: string; is_correct: boolean; run_id: string; mode: string | null; answered_at: string };
 type QuestionRow = { id: string; set_id: string; correct_index: number | null };
 type SetRow = { id: string; title: string | null; folder_id: string | null };
+type SalleReponseRow = { session_id: string; position: number; choix: number | null; valeur: number | string | null; juste: boolean | null };
+type SalleSessionRow = { id: string; salle_id: string; statut: string; fin_at: string | null };
+type SalleItemRow = { session_id: string; position: number; origine: string; topic: string | null; question_id: string | null };
 
 type Given = { question_id: string; selected_index: number | null };
 
@@ -359,6 +391,13 @@ function dailyClosed(a: DailyAttemptRow, limitS: number | null | undefined, now:
   return Number.isFinite(start) && start + (limitS || DAILY_LIMIT_S) * 1000 + DAILY_GRACE_MS < now;
 }
 
+/** Une partie de Salle est finie : terminée (ou arrêtée), ou son heure de fin est passée (le serveur la close à la prochaine visite). */
+function salleFinie(s: SalleSessionRow, now: number) {
+  if (s.statut === "terminee") return true;
+  const fin = s.fin_at ? new Date(s.fin_at).getTime() : NaN;
+  return Number.isFinite(fin) && fin <= now;
+}
+
 /** Un duel est clos pour ce joueur : plus personne n'y répond, les scores peuvent se lire. */
 function duelClosed(d: DuelRow, userId: string, now: number) {
   if (d.status === "finished") return true;
@@ -378,7 +417,8 @@ export type AnswerStatsOptions = {
   detail?: boolean;
   /**
    * true si `reader` contourne la RLS (client admin). Sans lui, les réponses
-   * de duels sont illisibles (aucune policy) : la source est marquée manquante.
+   * de duels et de Salles sont illisibles (aucune policy) : ces sources sont
+   * marquées manquantes.
    */
   privileged?: boolean;
   now?: number;
@@ -395,7 +435,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   const now = opts.now ?? Date.now();
   const missing = new Set<AnswerSource>();
 
-  const [duels, duelAnswers, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, dailyAnswers, calcRows, eclairRows, atelierRows] = await Promise.all([
+  const [duels, duelAnswers, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, dailyAnswers, calcRows, eclairRows, atelierRows, salleReponses] = await Promise.all([
     readOnce<DuelRow>(
       reader
         .from("duels")
@@ -423,6 +463,12 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     readOnce<EclairRow>(reader.from("eclair_series").select("id,question_ids,answers,score,total,finished_at").eq("user_id", userId).not("finished_at", "is", null).limit(5000)),
     // Ateliers (migration_atelier.sql ; table absente : source vide)
     readOnce<AtelierRow>(reader.from("ateliers").select("id,reponses,started_at,finished_at").eq("user_id", userId).limit(2000)),
+    // Salles : les réponses (admin seulement, pas de policy ; migration_salles.sql absente : source vide)
+    opts.privileged
+      ? readAll<SalleReponseRow>((a, b) =>
+          reader.from("salle_reponses").select("session_id,position,choix,valeur,juste").eq("user_id", userId).order("repondu_le").order("session_id").order("position").range(a, b),
+        )
+      : Promise.resolve(null),
   ]);
 
   if (duels === null || duelAnswers === null) missing.add("duel");
@@ -435,7 +481,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   if (eclairRows === null) missing.add("eclair");
   if (atelierRows === null) missing.add("atelier");
 
-  // --- Questions à juger ou à ranger (duels, défi du jour, examens blancs, sessions ciblées)
+  // --- Questions à juger ou à ranger (duels, défi du jour, Salles, examens blancs, sessions ciblées)
   const closed = new Map<string, DuelRow>();
   for (const d of duels ?? []) if (duelClosed(d, userId, now)) closed.set(d.id, d);
   const duelRows = (duelAnswers ?? []).filter((a) => closed.has(a.duel_id));
@@ -444,8 +490,17 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   // (client admin), pour ne compter que les copies closes. Une copie encore
   // ouverte ne compte jamais : sa justesse reste cachée jusqu'au bout.
   const dailyIds = [...new Set((dailyAttempts ?? []).map((a) => a.challenge_id))];
-  const challenges =
-    opts.privileged && dailyIds.length ? await readIds<DailyChallengeRow>(dailyIds, (c) => reader.from("daily_challenges").select("id,question_ids,time_limit_seconds,program").in("id", c)) : null;
+  // Salles : les parties où le joueur a répondu et leurs questions (client admin), lues en même temps
+  const partieIds = [...new Set((salleReponses ?? []).map((r) => r.session_id))];
+  const [challenges, salleSessions, salleItems] = await Promise.all([
+    opts.privileged && dailyIds.length ? readIds<DailyChallengeRow>(dailyIds, (c) => reader.from("daily_challenges").select("id,question_ids,time_limit_seconds,program").in("id", c)) : Promise.resolve(null),
+    partieIds.length ? readIds<SalleSessionRow>(partieIds, (c) => reader.from("salle_sessions").select("id,salle_id,statut,fin_at").in("id", c)) : Promise.resolve([] as SalleSessionRow[]),
+    partieIds.length
+      ? readIdsPaged<SalleItemRow>(partieIds, (c, a, b) =>
+          reader.from("salle_items").select("session_id,position,origine,topic,question_id").in("session_id", c).order("session_id").order("position").range(a, b),
+        )
+      : Promise.resolve([] as SalleItemRow[]),
+  ]);
   const challengeOf = new Map((challenges ?? []).map((c) => [c.id, c]));
   const dailyDone = new Map<string, DailyAttemptRow>();
   for (const a of dailyAttempts ?? []) if (dailyClosed(a, challengeOf.get(a.challenge_id)?.time_limit_seconds, now)) dailyDone.set(a.challenge_id, a);
@@ -457,12 +512,27 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
         .map((a) => ({ ...a, question_id: a.question_id ?? challengeOf.get(a.challenge_id)?.question_ids?.[a.position] ?? null }))
     : [];
 
+  // Salles : seulement les parties finies (la justesse ne compte qu'une fois
+  // la partie close, comme une copie du défi), chaque réponse avec sa question
+  const salleLue = salleReponses !== null && salleSessions !== null && salleItems !== null;
+  if (!salleLue) missing.add("salle");
+  const partiesFinies = new Map<string, SalleSessionRow>();
+  if (salleLue) for (const s of salleSessions) if (salleFinie(s, now)) partiesFinies.set(s.id, s);
+  const itemOf = new Map((salleItems ?? []).map((i) => [`${i.session_id}:${i.position}`, i]));
+  const salleRows = salleLue
+    ? salleReponses.flatMap((r) => {
+        const it = partiesFinies.has(r.session_id) ? itemOf.get(`${r.session_id}:${r.position}`) : undefined;
+        return it ? [{ r, it }] : [];
+      })
+    : [];
+
   // Réponses gardées par question (examens blancs, sessions ciblées) : à
   // juger avec la clé, lisible seulement côté admin. Sans elle, ces passages
   // comptent au score, comme les anciens résultats sans détail.
   const qids = new Set<string>();
   for (const a of duelRows) qids.add(a.question_id);
   for (const a of dailyRows) if (a.question_id) qids.add(a.question_id);
+  for (const { it } of salleRows) if (it.origine === "question" && it.question_id) qids.add(it.question_id);
   // séries éclair : la position i de question_ids répond à answers[i]
   const eclairGiven = (eclairRows ?? []).map((r) => ({
     r,
@@ -560,6 +630,32 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
         n: num(a.total),
         ok: Math.min(num(a.score), num(a.total)),
       });
+  }
+
+  // Salles : un passage par partie finie. Les QCM sont rangés par set (justesse
+  // gardée par le serveur) ; les calculs, sans type gardé, dans leur matière.
+  type PartieSalle = { questions: { qid: string; answered: boolean; ok: boolean }[]; calculs: Map<string, [number, number]> };
+  const bySalle = new Map<string, PartieSalle>();
+  for (const { r, it } of salleRows) {
+    const g: PartieSalle = bySalle.get(r.session_id) ?? { questions: [], calculs: new Map() };
+    if (it.origine === "question") {
+      if (it.question_id) g.questions.push({ qid: it.question_id, answered: r.choix !== null, ok: r.juste === true });
+    } else if (it.origine === "calcul" && r.valeur !== null) {
+      const subject = it.topic && SUBJECT_NAMES[it.topic] ? it.topic : "other";
+      const t = g.calculs.get(subject) ?? [0, 0];
+      t[0] += 1;
+      t[1] += r.juste === true ? 1 : 0;
+      g.calculs.set(subject, t);
+    }
+    bySalle.set(r.session_id, g);
+  }
+  for (const [id, g] of bySalle) {
+    const s = partiesFinies.get(id)!;
+    const pid = `sa:${id}`;
+    passages.set(pid, { source: "salle", label: "Salle", at: s.fin_at ?? "", href: `/salles/${s.salle_id}` });
+    perSet("salle", pid, g.questions);
+    for (const [subject, [n, ok]] of g.calculs)
+      contribs.push({ source: "salle", passage: pid, target: { kind: "bucket", subject, themeKey: "salle-calc", label: "Calculs en Salle", tag: null, order: 1850 }, n, ok });
   }
 
   // Séries éclair : un passage par série rendue, détaillé par question avec
@@ -697,15 +793,18 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   const folderIds = [...new Set(sets.map((s) => s.folder_id).filter((x): x is string => !!x))];
   const examIds = [...new Set([...(mockResults ?? []).map((r) => r.exam_id), ...(mockAttempts ?? []).map((r) => r.exam_id)])];
   const opponentIds = detail ? [...new Set([...closed.values()].filter((d) => byDuel.has(d.id)).map((d) => (d.challenger_id === userId ? d.opponent_id : d.challenger_id)).filter((x): x is string => !!x))] : [];
-  const [folders, exams, opponents] = await Promise.all([
+  const salleIds = detail ? [...new Set([...bySalle.keys()].map((id) => partiesFinies.get(id)?.salle_id).filter((x): x is string => !!x))] : [];
+  const [folders, exams, opponents, salles] = await Promise.all([
     readByIds<{ id: string; name: string }>(folderIds, (c) => reader.from("library_folders").select("id,name").in("id", c)),
     readByIds<{ id: string; title: string | null }>(examIds, (c) => reader.from("mock_exams").select("id,title").in("id", c)),
     readByIds<{ id: string; username: string | null }>(opponentIds, (c) => reader.from("profiles").select("id,username").in("id", c)),
+    readByIds<{ id: string; nom: string | null }>(salleIds, (c) => reader.from("salles").select("id,nom").in("id", c)),
   ]);
   const folderName = new Map(folders.map((f) => [f.id, f.name]));
   const setInfo = new Map(sets.map((s) => [s.id, { title: s.title, folder: s.folder_id ? folderName.get(s.folder_id) ?? null : null }]));
   const examTitle = new Map(exams.map((e) => [e.id, e.title?.trim() || "Examen blanc"]));
   const opponentName = new Map(opponents.map((p) => [p.id, p.username?.trim() || null]));
+  const salleNom = new Map(salles.map((s) => [s.id, s.nom?.trim() || null]));
 
   // Libellés finaux des passages
   for (const [id, p] of passages) {
@@ -714,6 +813,10 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
       const other = d ? (d.challenger_id === userId ? d.opponent_id : d.challenger_id) : null;
       const name = other ? opponentName.get(other) : null;
       if (name) p.label = `Duel contre ${name}`;
+    } else if (id.startsWith("sa:")) {
+      const s = partiesFinies.get(id.slice(3));
+      const nom = s ? salleNom.get(s.salle_id) : null;
+      if (nom) p.label = `Salle · ${nom}`;
     } else if (id.startsWith("m:")) {
       p.label = examTitle.get(id.slice(2)) ?? p.label;
     }
@@ -821,7 +924,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     if (s && tallyOf(s.by).n > 0) out.push({ key, name, code: "", pseudo: true, by: s.by, themes: toThemes(key, s), seances: enSeances(s.seances, SEANCES_MAX) });
   }
 
-  const readable = [duels, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, eclairRows, atelierRows].some((x) => x !== null);
+  const readable = [duels, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, eclairRows, atelierRows, salleReponses].some((x) => x !== null);
   return { available: readable, missing: [...missing], by: total, subjects: out, seances: enSeances(toutes, SEANCES_MAX * 2) };
 }
 
