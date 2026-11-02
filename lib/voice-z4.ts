@@ -123,7 +123,6 @@ export const ENTRAINER = {
   calculsTitre: "Calculs",
   calculsAction: "Ouvrir les calculs",
   /** le petit lien du diptyque vers la session ciblée de calculs (/calculs/session) */
-  calculsSession: "Session ciblée",
   /** les trois pastilles de niveau (du plus simple au plus dur) et leur libellé accessible */
   calculsNiveaux: ["Facile", "Moyen", "Difficile"] as const,
   calculsNiveauxLibelle: "Trois niveaux par calcul, de facile à difficile",

@@ -224,10 +224,6 @@ function Diptyque() {
             </li>
           ))}
         </ul>
-        <Link href="/calculs/session" className={s.lienSession}>
-          {ENTRAINER.calculsSession}
-          <ArrowRight size={15} aria-hidden />
-        </Link>
       </Entree>
       <Entree
         id="ent-cible"
