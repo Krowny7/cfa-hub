@@ -77,11 +77,22 @@
 
 /* ——— l'en-tête : le salut à gauche, J-n et la date de l'examen à droite ——— */
 .entete {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px 24px;
+}
+/* le grand anneau du logo, presque transparent, derrière le salut (comme l'ancien PageHero) ;
+   le salut et l'examen passent devant, les cartes qui suivent aussi */
+.enso {
+  position: absolute;
+  left: -64px;
+  top: -96px;
+}
+.entete > :not(.enso) {
+  position: relative;
 }
 .salut {
   font-size: 30px;
@@ -1361,6 +1372,10 @@
   }
 }
 @container (max-width: 760px) {
+  /* l'anneau de fond du salut : seulement sur grand écran (comme l'ancien PageHero) */
+  .enso {
+    display: none;
+  }
   /* au téléphone, toutes les cibles tactiles font 44 px */
   .lien,
   .lienc,
