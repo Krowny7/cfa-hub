@@ -20,5 +20,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "_backup_before_nav_rework"]
+  "exclude": ["node_modules", "_backup_before_nav_rework", "app/preview-da"]
 }
