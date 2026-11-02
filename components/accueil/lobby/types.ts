@@ -208,7 +208,7 @@ export type ScoresLobby = { copie: RecordLobby; maitrise: RecordLobby; examen: R
 export type DeblocageLobby = { nom: string; type: "cadre" | "banniere" | "titre" | "folio" | "ornement"; fait: number; total: number; reste: string; href: string; unite: string };
 export type QueteLobby = { titre: string; valeur: number; cible: number; xp: number | null; href: string };
 export type GrandeSalleLobby = { titre: string; ligne: string; action: Lien };
-export type AfficheLobby = { nom: IllustrationNom; legende: string; position?: string };
+export type AfficheLobby = { nom: IllustrationNom; legende?: string; position?: string };
 /**
  * Une relance reçue (migration_accueil.sql), ajoutée aux nouvelles des amis : « Marie t'a relancé ce matin ».
  * `jour` : le jour de Paris de la relance ; `quand` : « ce matin », « hier » (dit au serveur).

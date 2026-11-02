@@ -346,7 +346,7 @@ export function carteRang(o: {
 
 /** Les deux affiches par défaut (images du site, légendes courtes, aucun lien). */
 export const AFFICHES: { rival: AfficheLobby; scores: AfficheLobby } = {
-  rival: { nom: "duel-lice", legende: "La Lice", position: "50% 50%" },
+  rival: { nom: "duel-lice", position: "50% 50%" },
   scores: { nom: "reviser-bibliotheque", legende: "La Bibliothèque", position: "50% 50%" },
 };
 

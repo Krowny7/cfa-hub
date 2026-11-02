@@ -276,11 +276,12 @@ titre("# la Grande Salle");
 titre("# les deux affiches");
 {
   check("les deux peintures existent dans lib/illustrations", AFFICHES.rival.nom in ILLUSTRATIONS && AFFICHES.scores.nom in ILLUSTRATIONS);
-  check("à la place de la ligue : La Lice ; rangée des scores : La Bibliothèque", AFFICHES.rival.nom === "duel-lice" && AFFICHES.rival.legende === "La Lice" && AFFICHES.scores.nom === "reviser-bibliotheque" && AFFICHES.scores.legende === "La Bibliothèque");
+  check("à la place de la ligue : le Colisée de la Lice, sans légende ; rangée des scores : La Bibliothèque", AFFICHES.rival.nom === "duel-lice" && AFFICHES.rival.legende === undefined && AFFICHES.scores.nom === "reviser-bibliotheque" && AFFICHES.scores.legende === "La Bibliothèque");
   for (const cle of ["rival", "scores"] as const) {
     const h = rendre(<Affiche a={AFFICHES[cle]} className="place" />);
-    check(`l'affiche « ${AFFICHES[cle].legende} » : une figure, une peinture, une légende, AUCUN lien ni bouton`, h.startsWith("<figure") && h.includes("<img") && h.includes("<figcaption") && h.includes(AFFICHES[cle].legende) && !h.includes("<a ") && !h.includes("<button") && !h.includes("href="), h.slice(0, 120));
-    check(`l'affiche « ${AFFICHES[cle].legende} » : l'image vient de public/illustrations (alt lu), jamais de /_blob/`, h.includes(ILLUSTRATIONS[AFFICHES[cle].nom].src) && !h.includes("/_blob/") && h.includes(`alt="${ILLUSTRATIONS[AFFICHES[cle].nom].alt}"`));
+    const legende = AFFICHES[cle].legende;
+    check(`l'affiche « ${AFFICHES[cle].nom} » : une figure, une peinture, sa légende s'il y en a une, AUCUN lien ni bouton`, h.startsWith("<figure") && h.includes("<img") && (legende ? h.includes("<figcaption") && h.includes(legende) : !h.includes("<figcaption")) && !h.includes("<a ") && !h.includes("<button") && !h.includes("href="), h.slice(0, 120));
+    check(`l'affiche « ${AFFICHES[cle].nom} » : l'image vient de public/illustrations (alt lu), jamais de /_blob/`, h.includes(ILLUSTRATIONS[AFFICHES[cle].nom].src) && !h.includes("/_blob/") && h.includes(`alt="${ILLUSTRATIONS[AFFICHES[cle].nom].alt}"`));
   }
 }
 
