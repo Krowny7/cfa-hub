@@ -1854,6 +1854,28 @@ a.stat:hover {
   text-align: right;
   white-space: nowrap;
 }
+/* les réponses de la période (activite_depuis) : un détail en petit et en gris, jamais un bloc de plus */
+.evRep {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--ink-2);
+}
+.evSans {
+  padding: 0 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.nbRep {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
 .astuce {
   font-size: 13px;
   line-height: 1.45;
@@ -1887,6 +1909,10 @@ a.stat:hover {
 }
 .ficheValeur > span {
   font-size: 13px;
+}
+/* les réponses de la période gardent leur petite taille dans la fiche aussi */
+.ficheValeur > .nbRep {
+  font-size: 12px;
 }
 .ferme {
   display: grid;
@@ -1934,7 +1960,8 @@ a.stat:hover {
 }
 .pas {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* il y a 90, 60, 30 et 3 jours, puis aujourd'hui */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
 }
 .pas li {
@@ -2169,7 +2196,8 @@ a.stat:hover {
   /* l'évolution des matières : deux colonnes de cartes, la barre sous le nom */
   .evog {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(5, auto);
+    /* autant de rangées que la moitié des lignes (moins de dix quand des matières n'ont pas eu de réponse) */
+    grid-template-rows: repeat(var(--ev-rangs, 5), auto);
     grid-auto-flow: column;
     gap: 6px;
   }

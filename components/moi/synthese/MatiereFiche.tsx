@@ -10,7 +10,8 @@ import s from "@/components/moi/synthese/Synthese.module.css";
 // et la fiche de la matière choisie. Présentation pure, sans hook : l'îlot
 // TesMatieres tient l'état et passe ce que modele.ts a calculé. Le seul bouton
 // d'encre du panneau est « Réviser X » de la fiche ; « Ouvrir X » reste un
-// bouton à contour.
+// bouton à contour. Les réponses de la période (activite_depuis) restent en
+// petit et en gris : un détail, jamais un bloc de plus.
 
 const TON = { pos: s.pos, neg: s.neg, nul: s.nul } as const;
 const classes = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
@@ -34,6 +35,7 @@ export function VueEnsemble({ e, comp, avecNotions, avecEvolution, onOuvrir }: {
         {e.avant && (
           <p className={s.ensAvant}>
             <span>{SYN.matieres.legende.avant(e.avant.j)} :</span> <b className={s.mono}>{pc(e.avant.pct)}</b> <span className={TON[e.avant.ton]}>{e.avant.points}</span>
+            {e.avant.reponses && <span className={s.nbRep}>{e.avant.reponses}</span>}
           </p>
         )}
         <ul className={s.kvl}>
@@ -86,22 +88,28 @@ export function VueEnsemble({ e, comp, avecNotions, avecEvolution, onOuvrir }: {
       </div>
       <div className={s.ensDroite}>
         <p className={s.eyebrow}>{e.genre === "ecart" && comp !== null ? T.evolution(comp) : T.classement}</p>
-        <div className={s.evog}>
-          {e.evolution.map((l) => (
-            <button key={l.i} type="button" className={classes(s.ev, l.neg && s.evNeg)} onClick={() => onOuvrir(l.i)} aria-label={l.aria}>
-              <span className={s.evNom} aria-hidden>
-                {l.court}
-              </span>
-              <span className={s.et} aria-hidden>
-                <i style={{ width: `${l.w}%` }} />
-              </span>
-              <span className={classes(s.mono, s.evVal)} aria-hidden>
-                {l.texte}
-              </span>
-            </button>
-          ))}
-        </div>
-        <p className={s.astuce}>{T.astuce(avecNotions, avecEvolution)}</p>
+        {e.evolution.length > 0 && (
+          // au téléphone, deux colonnes : autant de rangées que la moitié des lignes
+          <div className={s.evog} style={{ "--ev-rangs": Math.ceil(e.evolution.length / 2) } as React.CSSProperties}>
+            {e.evolution.map((l) => (
+              <button key={l.i} type="button" className={classes(s.ev, l.neg && s.evNeg)} onClick={() => onOuvrir(l.i)} aria-label={l.aria}>
+                <span className={s.evNom} aria-hidden>
+                  {l.court}
+                  {l.reponses && <small className={s.evRep}>{l.reponses}</small>}
+                </span>
+                <span className={s.et} aria-hidden>
+                  <i style={{ width: `${l.w}%` }} />
+                </span>
+                <span className={classes(s.mono, s.evVal)} aria-hidden>
+                  {l.texte}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        {e.sansReponse && <p className={s.evSans}>{e.sansReponse}</p>}
+        {e.aucuneReponse && <p className={s.evSans}>{e.aucuneReponse}</p>}
+        <p className={s.astuce}>{T.astuce(avecNotions, avecEvolution, e.evolution.length > 0)}</p>
       </div>
     </div>
   );
@@ -127,6 +135,7 @@ export function FicheVue({ f, comp, source, onFermer }: { f: FicheMatiere; comp:
             {f.valeur}
           </b>
           {f.ecart && comp !== null && <span className={f.ecart.genre === "ecart" ? TON[f.ecart.ton] : s.nul}>{f.ecart.genre === "ecart" ? T.ecart(f.ecart.texte, comp) : SYN.matieres.nouvelle}</span>}
+          {f.periode && <span className={f.periode.aucune ? s.nul : s.nbRep}>{f.periode.texte}</span>}
           {f.nonMesuree && <span className={s.nul}>{SYN.matieres.pasMesuree}</span>}
         </p>
         <ul className={s.kv}>

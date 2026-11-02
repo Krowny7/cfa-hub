@@ -12,6 +12,7 @@ import {
   RADAR_PETIT,
   SEUIL_ACQUIS,
   SEUIL_BAS,
+  comparaisonParDefaut,
   comparaisonsDispo,
   ensembleMatieres,
   etiquettesRadar,
@@ -28,9 +29,12 @@ import { SYN } from "@/lib/voice-moi";
 import s from "@/components/moi/synthese/Synthese.module.css";
 
 // « Tes matières » (grande carte, id="matieres") : la maîtrise des dix matières
-// en radar ou en barres, face à « toi il y a 30, 60 ou 90 jours » quand
-// l'historique répond, et un panneau qui montre la vue d'ensemble ou la fiche de
-// la matière choisie (ses notions, son évolution, quoi réviser). Îlot client :
+// en radar ou en barres, face à « toi il y a 3, 30, 60 ou 90 jours » quand
+// l'historique répond (30 jours à l'ouverture), et un panneau qui montre la vue
+// d'ensemble ou la fiche de la matière choisie (ses notions, son évolution, quoi
+// réviser). Quand activite_depuis répond, le panneau dit aussi, en petit, combien
+// de réponses ont été données sur la période, et une matière sans réponse n'a
+// pas d'écart (son ±0 ne dirait rien). Îlot client :
 // quatre états seulement (la vue, la comparaison, le tri, la matière ouverte),
 // ni contexte ni URL. Les nombres et les dates viennent déjà écrits du serveur
 // ou de modele.ts (aucun Intl : pas d'écart d'hydratation). L'encre vive n'a que
@@ -59,7 +63,7 @@ export type TesMatieresProps = {
 export function TesMatieres({ matieres, globale, notions, sourceNotions }: TesMatieresProps) {
   const dispo = comparaisonsDispo(globale);
   const [vue, setVue] = useState<VueMatieres>("radar");
-  const [comp, setComp] = useState<Comparaison | null>(dispo[0] ?? null);
+  const [comp, setComp] = useState<Comparaison | null>(comparaisonParDefaut(dispo));
   const [tri, setTri] = useState<TriMatieres>("programme");
   const [mat, setMat] = useState<number | null>(null);
   const panneau = useRef<HTMLElement | null>(null);

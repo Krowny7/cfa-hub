@@ -425,13 +425,21 @@ const TOPIC_CLES: ReadonlySet<string> = new Set(TOPICS.map((t) => t.key));
 /** Les matières avec leur poids officiel, dans l'ordre du programme (pour qui n'a pas la maîtrise sous la main). */
 export const MATIERES_POIDS: readonly { cle: string; poids: number }[] = TOPICS.map((t) => ({ cle: t.key, poids: t.weight }));
 
-/** Les comparaisons du sélecteur : il y a 30, 60 et 90 jours (les trois premières dates demandées à maitrise_synthese). */
+/** Les comparaisons longues du sélecteur : il y a 30, 60 et 90 jours (les trois premières dates demandées à maitrise_synthese). */
 export const JOURS_COMPARAISON = [30, 60, 90] as const;
 /** Les semaines de la courbe de progression : il y a 7 × k jours, k de 1 à 12 (les douze dates qui suivent). */
 export const SEMAINES_COURBE = 12;
-/** Le rang, dans la liste des dates, de chaque comparaison, et celui de la première semaine (il y a 7 jours). */
-export const RANG_COMPARAISON = { 30: 0, 60: 1, 90: 2 } as const;
+/** Le rang, dans la liste des dates, de la première semaine (il y a 7 jours). */
 export const RANG_SEMAINE = JOURS_COMPARAISON.length;
+/** La comparaison courte : il y a 3 jours, ajoutée À LA FIN des dates (rang 15) pour ne décaler ni 30 / 60 / 90 (rangs 0 à 2) ni les semaines (3 à 14). */
+export const JOURS_RECENT = 3;
+export const RANG_RECENT = RANG_SEMAINE + SEMAINES_COURBE;
+/** Les comparaisons du sélecteur, dans son ordre : il y a 3, 30, 60 et 90 jours (c'est aussi l'ordre des dates de activite_depuis). */
+export const COMPARAISONS = [JOURS_RECENT, ...JOURS_COMPARAISON] as const;
+/** Le rang, dans la liste des dates, de chaque comparaison. */
+export const RANG_COMPARAISON = { 3: RANG_RECENT, 30: 0, 60: 1, 90: 2 } as const;
+/** Les dates demandées à maitrise_synthese, en jours avant maintenant, dans l'ordre : 30, 60, 90, les douze semaines, puis 3 (16 dates, 20 au plus côté SQL). */
+export const JOURS_SYNTHESE: readonly number[] = [...JOURS_COMPARAISON, ...Array.from({ length: SEMAINES_COURBE }, (_, i) => 7 * (i + 1)), JOURS_RECENT];
 
 /** Joueurs mesurés qu'il faut au moins pour montrer la moyenne d'une matière. */
 export const MIN_JOUEURS_MOYENNE = 5;
@@ -505,6 +513,45 @@ export function mesuresDuJour(m: Maitrise): Record<string, Mesure> {
   return Object.fromEntries(m.matieres.map((x) => [x.cle, { pct: x.pct, n: x.n }]));
 }
 
+// ── L'activité depuis chaque comparaison (activite_depuis) ─────────────────
+
+/** Ce qui a été fait dans une matière depuis une date : les réponses et, parmi elles, les justes. */
+export type ActiviteMatiere = { n: number; justes: number };
+/** L'activité depuis chaque comparaison, par matière (une matière absente : aucune réponse sur la période). */
+export type Activite = Record<Comparaison, Record<string, ActiviteMatiere>>;
+
+/**
+ * Le JSON `depuis` de activite_depuis (migration_moi_activite.sql) rangé par
+ * comparaison. `ordre` : la comparaison de chaque date demandée, dans l'ordre de
+ * la demande ; le rang `i` du JSON (à partir de 1) y renvoie. Une période sans
+ * ligne n'a eu aucune réponse (objet vide) ; une matière inconnue ou une valeur
+ * de travers est écartée. Un JSON qui n'est pas une liste : null (source absente).
+ */
+export function activiteEn(depuis: unknown, ordre: readonly Comparaison[] = COMPARAISONS): Activite | null {
+  if (!Array.isArray(depuis)) return null;
+  const r = { 3: {}, 30: {}, 60: {}, 90: {} } as Activite;
+  for (const ligne of depuis) {
+    if (!estObjet(ligne)) continue;
+    const i = nombreDe(ligne.i);
+    if (i === null || !Number.isInteger(i) || i < 1 || i > ordre.length || !estObjet(ligne.matieres)) continue;
+    const periode = r[ordre[i - 1]];
+    for (const [cle, v] of Object.entries(ligne.matieres)) {
+      if (!TOPIC_CLES.has(cle) || !estObjet(v)) continue;
+      const n = nombreDe(v.n);
+      const justes = nombreDe(v.justes);
+      if (n === null || n < 0 || justes === null || justes < 0) continue;
+      periode[cle] = { n: Math.round(n), justes: Math.min(Math.round(justes), Math.round(n)) };
+    }
+  }
+  return r;
+}
+
+/** Les réponses d'une matière sur chaque période ; null sans l'activité (source absente). */
+function reponsesDe(activite: Activite | null, cle: string): Record<Comparaison, number> | null {
+  if (!activite) return null;
+  return { 3: activite[3][cle]?.n ?? 0, 30: activite[30][cle]?.n ?? 0, 60: activite[60][cle]?.n ?? 0, 90: activite[90][cle]?.n ?? 0 };
+}
+
 // ── Les moyennes des joueurs et les atouts ─────────────────────────────────
 
 /** Les moyennes de maitrise_synthese : par matière, seulement celles que 5 joueurs mesurés au moins fondent. */
@@ -542,10 +589,14 @@ export function atouts(matieres: readonly Pick<MatiereSynthese, "cle" | "court" 
 
 // ── Les matières et la maîtrise globale ────────────────────────────────────
 
-/** Les dix matières de la synthèse : la maîtrise d'aujourd'hui, son évolution (si l'historique répond), la moyenne des joueurs, ce qu'il y a à gagner, les liens. */
-export function matieresSynthese(m: Maitrise, histo: PointHistorique[] | null, moyennes: Record<string, number> | null): MatiereSynthese[] {
+/**
+ * Les dix matières de la synthèse : la maîtrise d'aujourd'hui, son évolution (si
+ * l'historique répond), ce qui a été fait depuis chaque comparaison (si
+ * activite_depuis répond), la moyenne des joueurs, ce qu'il y a à gagner, les liens.
+ */
+export function matieresSynthese(m: Maitrise, histo: PointHistorique[] | null, moyennes: Record<string, number> | null, activite: Activite | null = null): MatiereSynthese[] {
   return m.matieres.map((x): MatiereSynthese => {
-    const a = (j: 30 | 60 | 90) => histo?.[RANG_COMPARAISON[j]]?.matieres[x.cle]?.pct ?? null;
+    const a = (j: Comparaison) => histo?.[RANG_COMPARAISON[j]]?.matieres[x.cle]?.pct ?? null;
     return {
       cle: x.cle,
       nom: x.nom,
@@ -556,7 +607,8 @@ export function matieresSynthese(m: Maitrise, histo: PointHistorique[] | null, m
       statut: x.statut,
       n: x.n,
       total: x.total,
-      ilYa: histo ? { 30: a(30), 60: a(60), 90: a(90) } : null,
+      ilYa: histo ? { 3: a(3), 30: a(30), 60: a(60), 90: a(90) } : null,
+      reponses: reponsesDe(activite, x.cle),
       moyJoueurs: moyennes?.[x.cle] ?? null,
       // les matières pas encore mesurées sortent de « Où gagner » ; la division reste celle de la préparation (Σ poids)
       gain: x.statut === "non_mesuree" ? 0 : gainPreparation(x, MAITRISE.REPERE, m.matieres),
@@ -566,13 +618,22 @@ export function matieresSynthese(m: Maitrise, histo: PointHistorique[] | null, m
   });
 }
 
-/** La maîtrise globale (= la préparation) aujourd'hui et il y a 30, 60 et 90 jours ; null à une date où rien n'était mesuré. */
-export function globaleSynthese(m: Maitrise, histo: PointHistorique[] | null): GlobaleSynthese {
-  const a = (j: 30 | 60 | 90) => {
+/**
+ * La maîtrise globale (= la préparation) aujourd'hui et il y a 3, 30, 60 et 90
+ * jours (null à une date où rien n'était mesuré), et les réponses données depuis
+ * chacune, toutes matières (null sans l'activité).
+ */
+export function globaleSynthese(m: Maitrise, histo: PointHistorique[] | null, activite: Activite | null = null): GlobaleSynthese {
+  const a = (j: Comparaison) => {
     const p = histo?.[RANG_COMPARAISON[j]];
     return p && mesureeA(p.matieres) ? preparationA(p.matieres) : null;
   };
-  return { auj: m.preparation, ilYa: histo ? { 30: a(30), 60: a(60), 90: a(90) } : null };
+  const total = (j: Comparaison) => Object.values(activite?.[j] ?? {}).reduce((t, x) => t + x.n, 0);
+  return {
+    auj: m.preparation,
+    ilYa: histo ? { 3: a(3), 30: a(30), 60: a(60), 90: a(90) } : null,
+    reponses: activite ? { 3: total(3), 30: total(30), 60: total(60), 90: total(90) } : null,
+  };
 }
 
 // ── Les notions ────────────────────────────────────────────────────────────
@@ -747,8 +808,8 @@ export function progressionSynthese(histo: PointHistorique[] | null, m: Maitrise
 
 export type VueMatieres = "radar" | "barres";
 export type TriMatieres = "programme" | "faible";
-/** Il y a 30, 60 ou 90 jours. */
-export type Comparaison = (typeof JOURS_COMPARAISON)[number];
+/** Il y a 3, 30, 60 ou 90 jours. */
+export type Comparaison = (typeof COMPARAISONS)[number];
 
 const SEUIL = MAITRISE.REPERE;
 const BAS = MAITRISE.ZONES[0];
@@ -772,20 +833,34 @@ export function decimal(x: number): string {
   return String(Math.round(x * 10) / 10).replace(".", ",");
 }
 
-/** Les comparaisons offertes : celles où la maîtrise globale était mesurée. Aucune sans historique (le sélecteur disparaît). */
+/** Les comparaisons offertes, dans l'ordre du sélecteur (3, 30, 60, 90 jours) : celles où la maîtrise globale était mesurée. Aucune sans historique (le sélecteur disparaît). */
 export function comparaisonsDispo(globale: GlobaleSynthese | null): Comparaison[] {
   const a = globale?.ilYa;
-  return a ? JOURS_COMPARAISON.filter((j) => a[j] !== null) : [];
+  return a ? COMPARAISONS.filter((j) => a[j] !== null) : [];
+}
+
+/** La comparaison choisie à l'ouverture : 30 jours s'il est offert, sinon la première offerte ; null sans comparaison. */
+export function comparaisonParDefaut(dispo: readonly Comparaison[]): Comparaison | null {
+  return dispo.includes(30) ? 30 : (dispo[0] ?? null);
 }
 
 export type EcartMatiere = { genre: "ecart"; d: number; texte: string; ton: TonDelta } | { genre: "nouvelle" };
 
-/** L'écart d'une matière face à elle-même il y a `comp` jours ; « nouvelle » si elle n'était pas mesurée alors ; null sans comparaison ou sans mesure d'aujourd'hui. */
-export function ecartMatiere(m: Pick<MatiereSynthese, "pct" | "ilYa">, comp: Comparaison | null): EcartMatiere | null {
+/**
+ * L'écart d'une matière face à elle-même il y a `comp` jours ; « nouvelle » si
+ * elle n'était pas mesurée alors ; null sans comparaison, sans mesure
+ * d'aujourd'hui, ou quand elle n'a eu AUCUNE réponse sur la période (son ±0 ne
+ * dit rien : rien n'a été fait). Le radar, les barres et la fiche suivent.
+ */
+export function ecartMatiere(m: Pick<MatiereSynthese, "pct" | "ilYa"> & { reponses?: MatiereSynthese["reponses"] }, comp: Comparaison | null): EcartMatiere | null {
   if (comp === null || !m.ilYa || m.pct === null) return null;
   const avant = m.ilYa[comp];
-  if (avant === null) return { genre: "nouvelle" };
+  // aucune réponse sur la période : pas d'écart à montrer (son ±0 ne dit rien). Les deux sources (la maîtrise
+  // du jour et l'historique) peuvent différer d'un cheveu : un écart réel reste affiché, même sans réponse comptée.
+  const sansReponse = m.reponses?.[comp] === 0;
+  if (avant === null) return sansReponse ? null : { genre: "nouvelle" };
   const d = m.pct - avant;
+  if (sansReponse && d === 0) return null;
   return { genre: "ecart", d, texte: delta(d), ton: tonDelta(d) };
 }
 
@@ -1019,6 +1094,8 @@ export type LigneEvolution = {
   court: string;
   /** « +8 », « nouvelle », « 58 % », « — » */
   texte: string;
+  /** « 42 réponses » sur la période, en petit sous le nom ; null sans l'activité ou sans comparaison */
+  reponses: string | null;
   /** la longueur de la barre, 0 à 100 */
   w: number;
   neg: boolean;
@@ -1029,7 +1106,8 @@ export type Ensemble = {
   /** le nombre de matières (10) */
   total: number;
   globale: number;
-  avant: { j: Comparaison; pct: number; ecart: string; ton: TonDelta; points: string } | null;
+  /** « Toi il y a 3 j : 63 % +3 points · 126 réponses » ; `reponses` : null sans l'activité */
+  avant: { j: Comparaison; pct: number; ecart: string; ton: TonDelta; points: string; reponses: string | null } | null;
   haute: number;
   moyenne: number;
   basse: number;
@@ -1040,7 +1118,12 @@ export type Ensemble = {
   faible: { court: string; valeur: string; i: number } | null;
   /** « ecart » : classées par évolution ; « classement » : par maîtrise (sans historique) */
   genre: "ecart" | "classement";
+  /** quand l'activité de la période est connue, seulement les matières qui y ont eu des réponses */
   evolution: LigneEvolution[];
+  /** activité connue : les matières sans réponse sur la période, en une ligne discrète (« Sans réponse en 3 j : Éthique, Quant. ») ; null s'il n'y en a pas */
+  sansReponse: string | null;
+  /** activité connue et aucune réponse sur toute la période : la liste se réduit à cette ligne (evolution vide) */
+  aucuneReponse: string | null;
 };
 
 /** La note de préparation d'une liste de matières (Σ poids × pct / Σ poids ; une matière non mesurée compte 0). */
@@ -1049,27 +1132,47 @@ function preparationDes(ms: readonly Pick<MatiereSynthese, "poids" | "pct">[]): 
   return total > 0 ? Math.round(ms.reduce((t, m) => t + m.poids * (m.pct ?? 0), 0) / total) : 0;
 }
 
+/**
+ * La vue d'ensemble. Quand l'activité de la période est connue (activite_depuis),
+ * la liste « En J jours » ne garde que les matières où il y a eu des réponses
+ * (chacune avec son nombre, en petit) ; les autres tiennent en une ligne
+ * discrète, et sans aucune réponse la liste se réduit à une phrase. Sans
+ * l'activité : la liste complète, comme avant.
+ */
 export function ensembleMatieres(matieres: readonly MatiereSynthese[], globale: GlobaleSynthese | null, comp: Comparaison | null): Ensemble {
+  const E = SYN.matieres.ensemble;
   const mesurees = matieres.map((_, i) => i).filter((i) => matieres[i].pct !== null);
   const pctDe = (i: number) => matieres[i].pct as number;
   const auj = globale?.auj ?? preparationDes(matieres);
   const avantPct = comp !== null ? (globale?.ilYa?.[comp] ?? null) : null;
   const ecarts = matieres.map((m) => ecartMatiere(m, comp));
   const avecEcart = ecarts.filter((e): e is Extract<EcartMatiere, { genre: "ecart" }> => e?.genre === "ecart");
+  // l'activité de la période : les réponses de chaque matière (null : inconnue, ou pas de comparaison)
+  const nRep = matieres.map((m) => (comp !== null ? (m.reponses?.[comp] ?? null) : null));
+  const connue = nRep.some((n) => n !== null);
+  // « muette » : aucune réponse sur la période et aucun écart à montrer (un écart réel, même sans réponse comptée, reste en ligne)
+  const muette = (i: number) => nRep[i] === 0 && ecarts[i]?.genre !== "ecart";
+  const sans = connue ? matieres.map((_, i) => i).filter(muette) : [];
+  const aucune = connue && matieres.length > 0 && sans.length === matieres.length;
   let iFort = -1;
   let iFaible = -1;
   for (const i of mesurees) {
     if (iFort < 0 || pctDe(i) > pctDe(iFort)) iFort = i;
     if (iFaible < 0 || pctDe(i) < pctDe(iFaible)) iFaible = i;
   }
-  const genre: Ensemble["genre"] = comp !== null && avecEcart.length > 0 ? "ecart" : "classement";
+  // avec une comparaison et l'activité connue, la liste reste « En J jours » dès qu'une matière a bougé ou répondu ;
+  // le classement (du plus fort au plus faible) garde, lui, ses dix lignes
+  const genre: Ensemble["genre"] = comp !== null && (avecEcart.length > 0 || aucune || (connue && sans.length < matieres.length)) ? "ecart" : "classement";
   const maxAbs = Math.max(8, ...avecEcart.map((e) => Math.abs(e.d)));
   const lignes: LigneEvolution[] = matieres.map((m, i) => {
     const e = ecarts[i];
-    if (m.pct === null) return { i, court: m.court, texte: SYN.matieres.tiret, w: 0, neg: false, aria: SYN.matieres.ensemble.classAria(m.nom, SYN.matieres.pasMesuree) };
-    if (genre === "classement") return { i, court: m.court, texte: valeurMatiere(m), w: m.pct, neg: false, aria: SYN.matieres.ensemble.classAria(m.nom, valeurMatiere(m)) };
-    if (e?.genre === "ecart") return { i, court: m.court, texte: e.texte, w: r1((Math.abs(e.d) / maxAbs) * 100), neg: e.d < 0, aria: SYN.matieres.ensemble.evoAria(m.nom, e.texte, comp as number) };
-    return { i, court: m.court, texte: SYN.matieres.nouvelle, w: 0, neg: false, aria: SYN.matieres.ensemble.evoNouvelle(m.nom, comp as number) };
+    const n = nRep[i];
+    const reponses = n !== null ? E.reponses(n) : null;
+    const ligne = { i, court: m.court, reponses, neg: false };
+    if (m.pct === null) return { ...ligne, texte: SYN.matieres.tiret, w: 0, aria: E.classAria(m.nom, SYN.matieres.pasMesuree, reponses) };
+    if (genre === "classement") return { ...ligne, texte: valeurMatiere(m), w: m.pct, aria: E.classAria(m.nom, valeurMatiere(m), reponses) };
+    if (e?.genre === "ecart") return { ...ligne, texte: e.texte, w: r1((Math.abs(e.d) / maxAbs) * 100), neg: e.d < 0, aria: E.evoAria(m.nom, e.texte, comp as number, reponses) };
+    return { ...ligne, texte: SYN.matieres.nouvelle, w: 0, aria: E.evoNouvelle(m.nom, comp as number, reponses) };
   });
   // rang : l'évolution décroissante (les nouvelles, puis les non mesurées, à la fin) ou la maîtrise décroissante ; à égalité, l'ordre du programme
   const cle = (l: LigneEvolution): number => {
@@ -1078,12 +1181,14 @@ export function ensembleMatieres(matieres: readonly MatiereSynthese[], globale: 
     if (genre === "classement") return pctDe(l.i);
     return e?.genre === "ecart" ? e.d : -1e6;
   };
-  const evolution = [...lignes].sort((a, b) => cle(b) - cle(a) || a.i - b.i);
+  // une matière sans réponse sur la période sort de la liste (elle rejoint la ligne « Sans réponse »)
+  const evolution = (genre === "ecart" ? lignes.filter((l) => !muette(l.i)) : lignes).sort((a, b) => cle(b) - cle(a) || a.i - b.i);
   const dg = avantPct !== null ? auj - avantPct : 0;
+  const repG = comp !== null ? (globale?.reponses?.[comp] ?? (connue ? nRep.reduce<number>((t, n) => t + (n ?? 0), 0) : null)) : null;
   return {
     total: matieres.length,
     globale: auj,
-    avant: avantPct !== null && comp !== null ? { j: comp, pct: avantPct, ecart: delta(dg), ton: tonDelta(dg), points: SYN.matieres.ensemble.points(delta(dg), dg) } : null,
+    avant: avantPct !== null && comp !== null ? { j: comp, pct: avantPct, ecart: delta(dg), ton: tonDelta(dg), points: E.points(delta(dg), dg), reponses: repG !== null && (repG > 0 || dg === 0) ? E.suite(repG) : null } : null,
     haute: mesurees.filter((i) => pctDe(i) >= SEUIL).length,
     moyenne: mesurees.filter((i) => pctDe(i) >= BAS && pctDe(i) < SEUIL).length,
     basse: mesurees.filter((i) => pctDe(i) < BAS).length,
@@ -1093,6 +1198,8 @@ export function ensembleMatieres(matieres: readonly MatiereSynthese[], globale: 
     faible: iFaible >= 0 && mesurees.length >= 2 ? { court: matieres[iFaible].court, valeur: valeurMatiere(matieres[iFaible]), i: iFaible } : null,
     genre,
     evolution,
+    sansReponse: genre === "ecart" && comp !== null && sans.length > 0 && !aucune ? E.sansReponse(comp, sans.map((i) => matieres[i].court)) : null,
+    aucuneReponse: comp !== null && aucune ? E.aucuneReponse(comp) : null,
   };
 }
 
@@ -1138,12 +1245,14 @@ export type FicheMatiere = {
   info: string | null;
   nonMesuree: boolean;
   ecart: EcartMatiere | null;
+  /** à côté de l'écart : « · 42 réponses » sur la période, ou « aucune réponse en 3 jours » (à la place de l'écart) ; null sans l'activité */
+  periode: { texte: string; aucune: boolean } | null;
   poids: string;
   reponses: string;
   avant: { j: Comparaison; valeur: string } | null;
   /** « +2,3 pts », « acquise », « — » */
   gain: string;
-  /** il y a 90, 60, 30 jours puis aujourd'hui ; null sans historique */
+  /** il y a 90, 60, 30 et 3 jours puis aujourd'hui ; null sans historique */
   evolution: { cle: string; libelle: string; valeur: string; actif: boolean; auj: boolean }[] | null;
   notions: LigneNotion[] | null;
   resume: ResumeNotions | null;
@@ -1158,6 +1267,7 @@ export function ficheMatiere(m: MatiereSynthese, i: number, comp: Comparaison | 
     return v === null ? SYN.matieres.tiret : pc(v);
   };
   const mienne = notions ? notions.filter((n) => n.m === i) : null;
+  const nRep = comp !== null && m.pct !== null && m.ilYa ? (m.reponses?.[comp] ?? null) : null;
   return {
     i,
     nom: m.nom,
@@ -1166,13 +1276,14 @@ export function ficheMatiere(m: MatiereSynthese, i: number, comp: Comparaison | 
     info: infoMatiere(m),
     nonMesuree: m.pct === null,
     ecart: ecartMatiere(m, comp),
+    periode: nRep === null || comp === null ? null : nRep === 0 ? { texte: f.aucuneEn(comp), aucune: true } : { texte: SYN.matieres.ensemble.suite(nRep), aucune: false },
     poids: poidsTexte(m.poids),
     reponses: entier(m.total),
     avant: comp !== null && m.ilYa ? { j: comp, valeur: valAvant(comp) } : null,
     gain: m.pct === null ? SYN.matieres.tiret : m.pct >= SEUIL ? f.acquise : f.gainPts(decimal(m.gain)),
     evolution: m.ilYa
       ? [
-          ...([90, 60, 30] as const).map((j) => ({ cle: String(j), libelle: SYN.matieres.comparer.option(j), valeur: valAvant(j), actif: comp === j, auj: false })),
+          ...([90, 60, 30, 3] as const).map((j) => ({ cle: String(j), libelle: SYN.matieres.comparer.option(j), valeur: valAvant(j), actif: comp === j, auj: false })),
           { cle: "auj", libelle: f.auj, valeur: m.pct === null ? SYN.matieres.tiret : pc(m.pct), actif: false, auj: true },
         ]
       : null,
@@ -1204,7 +1315,15 @@ export function phraseMatieres(c: { matieres: readonly MatiereSynthese[]; global
     const m = matieres[i];
     if (m.pct === null) return L.matPasMesuree(m.court, Math.max(1, MAITRISE.SEUIL_PROVISOIRE - m.n));
     const e = ecartMatiere(m, comp);
-    const tete = e?.genre === "ecart" && comp !== null ? L.matEcart(m.court, m.pct - e.d, m.pct, comp, e.texte) : e?.genre === "nouvelle" && comp !== null ? L.matNouvelle(m.court, m.pct, comp) : L.matSimple(m.court, m.pct);
+    const sansRep = comp !== null && m.reponses?.[comp] === 0;
+    const tete =
+      e?.genre === "ecart" && comp !== null
+        ? L.matEcart(m.court, m.pct - e.d, m.pct, comp, e.texte)
+        : e?.genre === "nouvelle" && comp !== null
+          ? L.matNouvelle(m.court, m.pct, comp)
+          : sansRep && comp !== null
+            ? L.matSansReponse(m.court, m.pct, comp)
+            : L.matSimple(m.court, m.pct);
     return `${tete} ${clauseSeuil(m, i, c.notions)}${m.statut === "provisoire" ? L.matProvisoire(m.n, MAITRISE.SEUIL_MESURE) : ""}`;
   }
   const mesurees = matieres.map((_, i) => i).filter((i) => matieres[i].pct !== null);
@@ -1220,7 +1339,11 @@ export function phraseMatieres(c: { matieres: readonly MatiereSynthese[]; global
     const dDe = (i: number) => (ecarts[i] as Extract<EcartMatiere, { genre: "ecart" }>).d;
     const hausse = avec.filter((i) => dDe(i) > 0);
     const d = glob - avantG;
-    const p1 = `${L.prise(comp, d, avantG, glob)}${avec.length ? L.progres(hausse.length, avec.length, d < 0) : ""}.`;
+    // les réponses de la période (activite_depuis), quand elles sont connues : « en 3 jours (126 réponses), tu as pris… »
+    // (« sans aucune réponse » seulement si la maîtrise n'a pas bougé : sinon les deux sources ne s'accordent pas, on se tait)
+    const repLu = c.globale?.reponses?.[comp] ?? null;
+    const rep = repLu === 0 && d !== 0 ? null : repLu;
+    const p1 = `${L.prise(comp, d, avantG, glob, rep)}${avec.length ? L.progres(hausse.length, avec.length, d < 0) : ""}.`;
     let p2 = "";
     if (hausse.length) {
       const best = Math.max(...hausse.map(dDe));
@@ -1232,7 +1355,8 @@ export function phraseMatieres(c: { matieres: readonly MatiereSynthese[]; global
     let p3: string;
     if (!faibles.length) p3 = L.aucuneFaible(SEUIL);
     else {
-      const items = faibles.map((i) => L.faibleItem(matieres[i].court, matieres[i].ilYa?.[comp] ?? null, matieres[i].pct as number));
+      // « (36 → 44 %) » seulement pour une matière comparable : sans réponse sur la période, juste « (44 %) »
+      const items = faibles.map((i) => L.faibleItem(matieres[i].court, ecarts[i]?.genre === "ecart" ? (matieres[i].ilYa?.[comp] ?? null) : null, matieres[i].pct as number));
       // « ont doublé ou presque » seulement si toutes ont progressé
       const toutes = faibles.every((i) => ecarts[i]?.genre === "ecart" && dDe(i) > 0);
       let verbe: string | null = null;

@@ -4,6 +4,7 @@ import { countPlayers } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import { lireNotionsJoueur } from "@/components/moi/points-faibles-data";
 import {
+  activiteEn,
   calculSynthese,
   codexSynthese,
   globaleSynthese,
@@ -28,7 +29,7 @@ import type { NotionSynthese, SyntheseMoi, TropheesSynthese } from "@/components
 import { lireSobre } from "@/lib/codex/sobre";
 import { compterCartesMarquees } from "@/lib/flashcards/marquees";
 import { getMaitrise, getTopicMastery, programMastery } from "@/lib/mastery";
-import { datesSynthese, lireMaitriseSynthese, lireRythme } from "@/lib/moi-synthese";
+import { datesSynthese, lireActivite, lireMaitriseSynthese, lireRythme } from "@/lib/moi-synthese";
 import { NOTIONS } from "@/lib/notions";
 import { dateExamen, etatObjectif, jourParis } from "@/lib/objectif";
 import { joursEntre } from "@/lib/objectif-calc";
@@ -45,7 +46,8 @@ import { jourJ } from "@/lib/voice";
 // l'objectif, la note estimée, la salle des trophées, puis les matières (avec
 // leur évolution), les notions, le calcul ou la théorie, le rythme et la
 // progression, qui viennent des deux fonctions de migration_moi_synthese.sql
-// (maitrise_synthese et rythme_joueur, avec le client de service).
+// (maitrise_synthese et rythme_joueur, avec le client de service), et ce qui a
+// été fait depuis chaque comparaison (activite_depuis, migration_moi_activite.sql).
 // Tant que la migration n'est pas collée, ou sans clé de service, ces sources
 // valent null et les blocs qui en dépendent aussi (la carte se masque ou se
 // simplifie) : aucune valeur inventée. Seul repli, lu en série et seulement
@@ -100,13 +102,13 @@ async function lireNotions(supabase: SupabaseClient, syn: { notions: Record<stri
 
 /**
  * Tout ce que la page Moi « La synthèse » montre.
- * @param admin le client de service (tryAdmin) ; null : les trophées sans « dernier gagné », et ni historique, ni calcul, ni rythme, ni moyennes
+ * @param admin le client de service (tryAdmin) ; null : les trophées sans « dernier gagné », et ni historique, ni activité, ni calcul, ni rythme, ni moyennes
  * @param now l'instant de la requête (ms)
  */
 export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClient | null, user: Pick<User, "id" | "user_metadata">, now: number): Promise<SyntheseMoi> {
   const id = user.id;
   const dates = datesSynthese(now);
-  const [profil, maitrise, mesures, etat, classe, joueurs, temps, codex, questions, cartes, trophees, examen, syn, ryt] = await Promise.all([
+  const [profil, maitrise, mesures, etat, classe, joueurs, temps, codex, questions, cartes, trophees, examen, syn, ryt, act] = await Promise.all([
     lireProfil(supabase, id).catch(() => null),
     getMaitrise(supabase, id).catch(() => null),
     getTopicMastery(supabase, id).catch(() => null),
@@ -126,6 +128,8 @@ export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClie
     // les deux fonctions de migration_moi_synthese.sql : null sans clé de service, sans la migration, ou si la réponse est illisible
     lireMaitriseSynthese(admin, id, dates).catch(() => null),
     lireRythme(admin, id).catch(() => null),
+    // les réponses depuis 3, 30, 60 et 90 jours (migration_moi_activite.sql) : null sans clé de service ou sans la migration
+    lireActivite(admin, id, dates).catch(() => null),
   ]);
   const rang = rangSynthese({
     elo: classe?.elo ?? DEFAULT_ELO,
@@ -140,6 +144,7 @@ export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClie
   // les matières : la maîtrise d'aujourd'hui toujours, son évolution et les moyennes des joueurs si maitrise_synthese répond
   const histo = syn ? historiqueEn(syn.historique, dates.map((d) => jourParis(Date.parse(d)))) : null;
   const moyennes = syn ? moyennesDe(syn.moyennes) : null;
+  const activite = act ? activiteEn(act.depuis) : null;
   const aRepondu = maitrise ? maitrise.matieres.some((m) => m.total > 0) : true;
   const { notions, source } = await lireNotions(supabase, syn, aRepondu);
 
@@ -156,8 +161,8 @@ export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClie
     },
     objectif: etat ? objectifSynthese(etat, matiereLaPlusFaible(maitrise)) : { etat: "sans" },
     note: noteSynthese(maitrise),
-    matieres: maitrise ? matieresSynthese(maitrise, histo, moyennes) : null,
-    globale: maitrise ? globaleSynthese(maitrise, histo) : null,
+    matieres: maitrise ? matieresSynthese(maitrise, histo, moyennes, activite) : null,
+    globale: maitrise ? globaleSynthese(maitrise, histo, activite) : null,
     notions,
     sourceNotions: source,
     calcul: syn ? calculSynthese(mesuresCalculDe(syn.calcul), maitrise?.matieres) : null,

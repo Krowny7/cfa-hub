@@ -89,6 +89,8 @@ export const REG = {
 export type Segment = string | { b: string } | { marque: string } | { neg: string };
 
 const pluriel = (n: number, un: string, plusieurs: string) => `${nombre(n)} ${n > 1 ? plusieurs : un}`;
+/** « 126 réponses », « 1 réponse », « aucune réponse ». */
+const reponsesTexte = (n: number) => (n <= 0 ? "aucune réponse" : pluriel(n, "réponse", "réponses"));
 const enLettres = (n: number) => ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"][n] ?? nombre(n);
 
 export const SYN = {
@@ -233,10 +235,20 @@ export const SYN = {
       ouvrir: (court: string) => `Ouvrir ${court}`,
       evolution: (j: number) => `En ${j} jours, matière par matière`,
       classement: "Du plus fort au plus faible",
-      evoAria: (nom: string, texte: string, j: number) => `${nom} : ${texte} points en ${j} jours. Ouvrir sa fiche.`,
-      evoNouvelle: (nom: string, j: number) => `${nom} : nouvelle, pas encore mesurée il y a ${j} jours. Ouvrir sa fiche.`,
-      classAria: (nom: string, valeur: string) => `${nom} : ${valeur}. Ouvrir sa fiche.`,
-      astuce: (notions: boolean, evolution: boolean) => `Choisis une matière, ici ou sur le graphique, pour ouvrir sa fiche : ${[notions ? "ses notions" : null, evolution ? "son évolution" : null, "quoi réviser"].filter(Boolean).join(", ")}.`,
+      /** les noms lus d'une ligne ; `rep` : « 42 réponses » sur la période, quand l'activité est connue */
+      evoAria: (nom: string, texte: string, j: number, rep: string | null = null) => `${nom} : ${texte} points en ${j} jours${rep ? `, ${rep}` : ""}. Ouvrir sa fiche.`,
+      evoNouvelle: (nom: string, j: number, rep: string | null = null) => `${nom} : nouvelle, pas encore mesurée il y a ${j} jours${rep ? `, ${rep} depuis` : ""}. Ouvrir sa fiche.`,
+      classAria: (nom: string, valeur: string, rep: string | null = null) => `${nom} : ${valeur}${rep ? `, ${rep}` : ""}. Ouvrir sa fiche.`,
+      // ce qui a été fait sur la période (activite_depuis) : en petit, jamais en gros
+      /** « 42 réponses », « 1 réponse », « aucune réponse » */
+      reponses: (n: number) => reponsesTexte(n),
+      /** à la suite d'un écart : « · 126 réponses » */
+      suite: (n: number) => `· ${reponsesTexte(n)}`,
+      sansReponse: (j: number, courts: string[]) => `Sans réponse en ${j}${NBSP}j : ${courts.join(", ")}.`,
+      aucuneReponse: (j: number) => `Aucune réponse ces ${j} derniers jours.`,
+      /** `liste` : la liste de droite est là (sinon, « sur le graphique » seulement) */
+      astuce: (notions: boolean, evolution: boolean, liste = true) =>
+        `Choisis une matière, ${liste ? "ici ou " : ""}sur le graphique, pour ouvrir sa fiche : ${[notions ? "ses notions" : null, evolution ? "son évolution" : null, "quoi réviser"].filter(Boolean).join(", ")}.`,
     },
     // la fiche d'une matière
     fiche: {
@@ -244,6 +256,8 @@ export const SYN = {
       kicker: "Fiche matière",
       fermer: "Fermer la fiche",
       ecart: (texte: string, j: number) => `${texte} en ${j} jours`,
+      /** à la place de l'écart, quand la matière n'a eu aucune réponse sur la période */
+      aucuneEn: (j: number) => `aucune réponse en ${j} jours`,
       poids: "Poids",
       reponses: "Réponses",
       avant: (j: number) => `Il y a ${j}${NBSP}j`,
@@ -270,12 +284,15 @@ export const SYN = {
     pied: "Ce que ça veut dire :",
     lire: {
       aucune: (min: number) => `aucune matière n'est encore mesurée : il faut ${min} réponses dans une matière pour la juger.`,
-      prise: (j: number, d: number, avant: number, apres: number) =>
-        d > 0
-          ? `en ${j} jours, tu as pris ${pluriel(d, "point", "points")} (${avant} → ${pct(apres)})`
+      /** `reponses` : les réponses de la période quand elles sont connues (« en 3 jours (126 réponses), … », « en 3 jours, sans aucune réponse, … ») */
+      prise: (j: number, d: number, avant: number, apres: number, reponses: number | null = null) => {
+        const en = reponses === 0 ? `en ${j} jours, sans aucune réponse` : `en ${j} jours${reponses ? ` (${reponsesTexte(reponses)})` : ""}`;
+        return d > 0
+          ? `${en}, tu as pris ${pluriel(d, "point", "points")} (${avant} → ${pct(apres)})`
           : d < 0
-            ? `en ${j} jours, tu as perdu ${pluriel(-d, "point", "points")} (${avant} → ${pct(apres)})`
-            : `en ${j} jours, tu es resté à ${pct(apres)}`,
+            ? `${en}, tu as perdu ${pluriel(-d, "point", "points")} (${avant} → ${pct(apres)})`
+            : `${en}, tu es resté à ${pct(apres)}`;
+      },
       progres: (nUp: number, k: number, baisse: boolean) =>
         nUp === 0 ? ", et aucune matière n'a progressé" : `${baisse ? ", mais" : " et"} progressé dans ${nUp === k ? (k === 1 ? "ta seule matière comparable" : `les ${k} matières`) : `${nUp} matière${nUp > 1 ? "s" : ""} sur ${k}`}`,
       hausse: (tops: string[], best: string) => `Plus forte hausse : ${enListe(tops)} (${best}).`,
@@ -292,6 +309,8 @@ export const SYN = {
       matEcart: (court: string, avant: number, apres: number, j: number, texte: string) => `${court} : de ${avant} à ${pct(apres)} en ${j} jours (${texte}).`,
       matNouvelle: (court: string, apres: number, j: number) => `${court} : ${pct(apres)}, mesurée depuis moins de ${j} jours.`,
       matSimple: (court: string, apres: number) => `${court} : ${pct(apres)}.`,
+      /** une matière choisie sans réponse sur la période : pas d'écart à commenter */
+      matSansReponse: (court: string, apres: number, j: number) => `${court} : ${pct(apres)}, sans réponse ces ${j} derniers jours.`,
       matPasMesuree: (court: string, reste: number) => `${court} n'est pas encore mesurée : encore ${reste} réponse${reste > 1 ? "s" : ""} et elle compte.`,
       auDessus: "Au-dessus du seuil",
       avantSeuil: (points: number) => `Encore ${points} point${points > 1 ? "s" : ""} avant le seuil`,

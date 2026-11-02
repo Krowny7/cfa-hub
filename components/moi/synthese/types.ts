@@ -106,6 +106,9 @@ export type NoteSynthese = { estimee: number; couverture: number; seuil: 70 };
 
 // ── Les matières et les notions (cartes des lots suivants) ─────────────────
 
+/** Une valeur pour chaque comparaison du sélecteur : il y a 3, 30, 60 et 90 jours. */
+export type ParComparaison<T> = { 3: T; 30: T; 60: T; 90: T };
+
 export type MatiereSynthese = {
   cle: string;
   nom: string;
@@ -116,8 +119,10 @@ export type MatiereSynthese = {
   statut: StatutMaitrise;
   n: number;
   total: number;
-  /** la maîtrise il y a 30, 60 et 90 jours (null : pas mesurée à la date) ; null en bloc sans l'historique */
-  ilYa: { 30: number | null; 60: number | null; 90: number | null } | null;
+  /** la maîtrise il y a 3, 30, 60 et 90 jours (null : pas mesurée à la date) ; null en bloc sans l'historique */
+  ilYa: ParComparaison<number | null> | null;
+  /** les réponses données depuis chacune de ces dates (0 : aucune) ; null sans activite_depuis */
+  reponses: ParComparaison<number> | null;
   /** la moyenne des joueurs (même règle) ; null sous 5 joueurs */
   moyJoueurs: number | null;
   /** les points de préparation à gagner en remontant à 70 % */
@@ -126,7 +131,8 @@ export type MatiereSynthese = {
   hrefEntrainer: string;
 };
 
-export type GlobaleSynthese = { auj: number; ilYa: { 30: number | null; 60: number | null; 90: number | null } | null };
+/** La maîtrise globale aujourd'hui et il y a 3, 30, 60, 90 jours ; les réponses depuis chaque date, toutes matières (null sans activite_depuis). */
+export type GlobaleSynthese = { auj: number; ilYa: ParComparaison<number | null> | null; reponses: ParComparaison<number> | null };
 
 export type EtatNotion = "r" | "a" | "e" | "encours" | "jamais";
 

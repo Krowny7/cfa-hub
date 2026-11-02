@@ -5,8 +5,11 @@
 // à 30, 60 et 90 jours, avec et sans historique, avec une matière choisie), puis
 // le rendu statique (l'îlot dans son état de départ, la fiche, les barres, les
 // sélecteurs). Les données sont celles de la maquette D : 61 % de maîtrise
-// globale, +6 points sur 30 jours, dix matières en hausse. Les noms de classes
-// des modules CSS sont rendus tels quels.
+// globale, +6 points sur 30 jours, dix matières en hausse. Enfin la comparaison
+// à 3 jours et l'activité de la période (activite_depuis) : 89 réponses en
+// 3 jours dans 4 matières, les 6 autres sans réponse (sans écart, regroupées en
+// une ligne), puis aucune réponse du tout. Les noms de classes des modules CSS
+// sont rendus tels quels.
 import "../codex/sans-css";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -20,6 +23,9 @@ import {
   NBSP,
   RADAR_GRAND,
   RADAR_PETIT,
+  RANG_RECENT,
+  activiteEn,
+  comparaisonParDefaut,
   comparaisonsDispo,
   ecartMatiere,
   ensembleMatieres,
@@ -106,7 +112,7 @@ const notions = notionsDe(NOTIONS, mesuresNotions);
 // ───────────────────────────────────────────────────────────────────────────
 console.log("# la maquette : les chiffres");
 check("dix matières, maîtrise globale 61 %, il y a 30 / 60 / 90 jours : 55, 47, 37", mats.length === 10 && glob.auj === 61 && glob.ilYa?.[30] === 55 && glob.ilYa?.[60] === 47 && glob.ilYa?.[90] === 37, JSON.stringify(glob));
-check("la comparaison : 30, 60 et 90 jours ; aucune sans historique ; 30 retiré quand elle n'était pas mesurée", comparaisonsDispo(glob).join() === "30,60,90" && comparaisonsDispo(globSans).length === 0 && comparaisonsDispo(null).length === 0 && comparaisonsDispo({ auj: 61, ilYa: { 30: null, 60: 47, 90: 37 } } as GlobaleSynthese).join() === "60,90");
+check("la comparaison : 30, 60 et 90 jours ; aucune sans historique ; 30 retiré quand elle n'était pas mesurée", comparaisonsDispo(glob).join() === "30,60,90" && comparaisonsDispo(globSans).length === 0 && comparaisonsDispo(null).length === 0 && comparaisonsDispo({ auj: 61, ilYa: { 3: null, 30: null, 60: 47, 90: 37 }, reponses: null }).join() === "60,90");
 
 titre("# le radar : dix sommets, l'anneau du seuil à 70, les seuils 49 / 50 / 69 / 70");
 {
@@ -163,7 +169,7 @@ titre("# les barres : tri du programme ou du plus faible (stable), repère, mati
   check("repère de comparaison = la maîtrise à la date ; aucun sans comparaison", prog[6].repere === 36 && lignesBarres(mats, null, "programme", null)[6].repere === null);
   const sel = lignesBarres(mats, 30, "programme", 6);
   check("matière ouverte : elle est marquée, les neuf autres sont estompées", sel[6].on && !sel[6].off && sel.filter((l) => l.off).length === 9);
-  check("« nouvelle » quand la matière n'était pas mesurée à la date, sans écart chiffré", lignesBarres(mats.map((m, i) => (i === 3 ? { ...m, ilYa: { 30: null, 60: null, 90: null } } : m)), 30, "programme", null)[3].ecart?.texte === "nouvelle" && ecartMatiere({ pct: 50, ilYa: { 30: null, 60: 40, 90: 30 } }, 30)?.genre === "nouvelle");
+  check("« nouvelle » quand la matière n'était pas mesurée à la date, sans écart chiffré", lignesBarres(mats.map((m, i) => (i === 3 ? { ...m, ilYa: { 3: 49, 30: null, 60: null, 90: null } } : m)), 30, "programme", null)[3].ecart?.texte === "nouvelle" && ecartMatiere({ pct: 50, ilYa: { 3: 50, 30: null, 60: 40, 90: 30 } }, 30)?.genre === "nouvelle");
 }
 
 titre("# la valeur : « ≈ 52 % » provisoire (avec son infobulle), « — » non mesurée");
@@ -183,7 +189,7 @@ titre("# la vue d'ensemble : comptes par zone, plus forte et plus faible, évolu
   check("10 matières sur 10 en hausse", e.hausse?.n === 10 && e.hausse?.sur === 10);
   check("la plus forte : Portefeuille · 77 % ; la plus faible : Fixed Income · 44 % (ouvre l'index 6)", e.fort?.court === "Portefeuille" && ns(e.fort.valeur) === "77 %" && e.faible?.court === "Fixed Income" && ns(e.faible.valeur) === "44 %" && e.faible.i === 6);
   check("l'évolution : classée du plus fort gain au plus faible, à égalité l'ordre du programme (FSA, Actions, Fixed Income à +8)", e.genre === "ecart" && e.evolution.slice(0, 4).map((l) => l.court).join() === "FSA,Actions,Fixed Income,Éthique" && e.evolution[0].texte === "+8" && e.evolution[0].w === 100 && e.evolution.every((l) => !l.neg), e.evolution.map((l) => `${l.court}${l.texte}`).join(" "));
-  const ee = ensembleMatieres(mats.map((m, i) => (i === 4 ? { ...m, ilYa: { 30: 75, 60: 60, 90: 50 } } : m)), glob, 30);
+  const ee = ensembleMatieres(mats.map((m, i) => (i === 4 ? { ...m, ilYa: { 3: 71, 30: 75, 60: 60, 90: 50 } } : m)), glob, 30);
   check("une baisse : signe moins vrai, barre rouge", ee.evolution.at(-1)?.texte === "−4" && ee.evolution.at(-1)?.neg === true, JSON.stringify(ee.evolution.at(-1)));
   const sh = ensembleMatieres(sansHisto, globSans, null);
   check("sans historique : classées par maîtrise, ni « avant » ni « hausse » ; la globale se calcule quand même (61)", sh.genre === "classement" && sh.avant === null && sh.hausse === null && sh.globale === 61 && sh.evolution[0].court === "Portefeuille" && ns(sh.evolution[0].texte) === "77 %" && sh.evolution[9].court === "Fixed Income");
@@ -197,8 +203,8 @@ titre("# la fiche d'une matière");
 {
   const f = ficheMatiere(mats[6], 6, 30, notions, "unique");
   check("Fixed Income : 44 %, +8 en 30 jours, poids 12,5 %, 287 réponses, il y a 30 j : 36 %, à gagner +3,2 pts", ns(f.valeur) === "44 %" && f.ecart?.genre === "ecart" && f.ecart.texte === "+8" && ns(f.poids) === "12,5 %" && f.reponses === "287" && f.avant?.j === 30 && ns(f.avant.valeur) === "36 %" && ns(f.gain) === "+3,2 pts", JSON.stringify({ gain: f.gain, poids: f.poids }));
-  check("son évolution : 90, 60, 30 jours puis aujourd'hui (22, 29, 36, 44), « auj. » en dernier", f.evolution?.map((p) => `${ns(p.libelle)}:${ns(p.valeur)}`).join() === "90 j:22 %,60 j:29 %,30 j:36 %,auj.:44 %", f.evolution?.map((p) => `${ns(p.libelle)}:${ns(p.valeur)}`).join());
-  check("l'option 30 j est marquée, auj. aussi (aujourd'hui)", f.evolution?.[2].actif === true && f.evolution?.filter((p) => p.actif).length === 1 && f.evolution?.[3].auj === true);
+  check("son évolution : 90, 60, 30 et 3 jours puis aujourd'hui (22, 29, 36, —, 44), « auj. » en dernier", f.evolution?.map((p) => `${ns(p.libelle)}:${ns(p.valeur)}`).join() === "90 j:22 %,60 j:29 %,30 j:36 %,3 j:—,auj.:44 %", f.evolution?.map((p) => `${ns(p.libelle)}:${ns(p.valeur)}`).join());
+  check("l'option 30 j est marquée, auj. aussi (aujourd'hui)", f.evolution?.[2].actif === true && f.evolution?.filter((p) => p.actif).length === 1 && f.evolution?.[4].auj === true);
   check("ses notions : toutes celles de Fixed Income (dans l'ordre), les états rouge / ambre / acquise / en cours / jamais vue", f.notions?.length === FI.length && f.notions?.[0].ton === "e" && f.notions[1].ton === "r" && f.notions[2].ton === "a" && f.notions[3].etat === "encours" && ns(f.notions[3].valeur) === "3/8" && f.notions[3].ton === null && f.notions.at(-1)?.valeur === "jamais vue", f.notions?.slice(0, 5).map((n) => `${n.etat}:${n.valeur}`).join());
   check("le résumé : 1 sous 70 %, 1 en cours, le reste jamais vues", ns(texteResume(f.resume!, "unique")) === `2 sous 70 % · 1 en cours · ${FI.length - 4} jamais vues`, texteResume(f.resume!, "unique"));
   check("source « 90j » : « pas vue » au lieu de « jamais vue »", ficheMatiere(mats[6], 6, 30, notions, "90j").notions?.at(-1)?.valeur === "pas vue" && ns(texteResume(f.resume!, "90j")).includes("pas vues depuis 90 j"));
@@ -211,7 +217,7 @@ titre("# la fiche d'une matière");
   check("une matière acquise (77 %) : « acquise » à gagner", fa.gain === "acquise");
   const fn = ficheMatiere({ ...mats[3], pct: null, statut: "non_mesuree", n: 4, gain: 0 }, 3, 30, null, "unique");
   check("une matière non mesurée : « — », « pas encore mesurée », rien à gagner", fn.valeur === "—" && fn.nonMesuree && fn.gain === "—" && fn.ecart === null);
-  const fnv = ficheMatiere({ ...mats[3], ilYa: { 30: null, 60: 34, 90: 26 } }, 3, 30, null, "unique");
+  const fnv = ficheMatiere({ ...mats[3], ilYa: { 3: 49, 30: null, 60: 34, 90: 26 } }, 3, 30, null, "unique");
   check("« nouvelle » quand elle n'était pas mesurée à la date comparée", fnv.ecart?.genre === "nouvelle" && fnv.avant?.valeur === "—");
   const r = resumeNotions(notions.filter((n) => n.m === 6));
   check("resumeNotions : total, mesurées, sous 70, en cours, jamais", r.total === FI.length && r.mesurees === 3 && r.sous === 2 && r.enCours === 1 && r.jamais === FI.length - 4, JSON.stringify(r));
@@ -226,7 +232,7 @@ titre("# « Ce que ça veut dire » : à 30, 60 et 90 jours, sans historique, av
   const p90 = ns(phraseMatieres({ matieres: mats, globale: glob, comp: 90, mat: null, notions: null }));
   check("60 j : +14 points (47 → 61 %) ; 90 j : +24 points (37 → 61 %)", p60.startsWith("en 60 jours, tu as pris 14 points (47 → 61 %)") && p90.startsWith("en 90 jours, tu as pris 24 points (37 → 61 %)"), `${p60.slice(0, 70)} | ${p90.slice(0, 70)}`);
   check("90 j : Fixed Income a presque doublé (22 → 44) ; FSA aussi (26 → 49) : « ont doublé ou presque »", p90.includes("ont doublé ou presque"), p90);
-  const baisse = ns(phraseMatieres({ matieres: mats.map((m, i) => (i === 4 ? { ...m, ilYa: { 30: 80, 60: 60, 90: 50 } } : m)), globale: { auj: 61, ilYa: { 30: 66, 60: 47, 90: 37 } }, comp: 30, mat: null, notions: null }));
+  const baisse = ns(phraseMatieres({ matieres: mats.map((m, i) => (i === 4 ? { ...m, ilYa: { 3: 71, 30: 80, 60: 60, 90: 50 } } : m)), globale: { auj: 61, ilYa: { 3: 61, 30: 66, 60: 47, 90: 37 }, reponses: null }, comp: 30, mat: null, notions: null }));
   check("une baisse : « tu as perdu 5 points » et « mais » devant le progrès", baisse.includes("tu as perdu 5 points (66 → 61 %), mais progressé dans 9 matières sur 10") || baisse.includes("tu as perdu 5 points (66 → 61 %), mais progressé"), baisse.slice(0, 160));
   const sans = ns(phraseMatieres({ matieres: sansHisto, globale: globSans, comp: null, mat: null, notions: null }));
   check("sans historique : la phrase ne parle pas du temps (« tu es à 61 % … 3 sur 10 matières mesurées passent le seuil de 70 % »)", sans.startsWith("tu es à 61 % de maîtrise globale : 3 sur 10 matières mesurées passent le seuil de 70 %.") && !sans.includes("jours") && sans.includes("Fixed Income (44 %) et FSA (49 %) restent sous 50 %"), sans);
@@ -240,13 +246,13 @@ titre("# « Ce que ça veut dire » : à 30, 60 et 90 jours, sans historique, av
   check("une matière au-dessus du seuil : « Au-dessus du seuil. »", pt.includes("Portefeuille : de 71 à 77 % en 30 jours (+6). Au-dessus du seuil."), pt);
   const sh = ns(phraseMatieres({ matieres: sansHisto, globale: globSans, comp: null, mat: 6, notions: null }));
   check("matière choisie sans historique : « Fixed Income : 44 %. Encore 26 points… »", sh === "Fixed Income : 44 %. Encore 26 points avant le seuil.", sh);
-  const nouv = ns(phraseMatieres({ matieres: mats.map((m, i) => (i === 3 ? { ...m, ilYa: { 30: null, 60: 34, 90: 26 } } : m)), globale: glob, comp: 30, mat: 3, notions: null }));
+  const nouv = ns(phraseMatieres({ matieres: mats.map((m, i) => (i === 3 ? { ...m, ilYa: { 3: 49, 30: null, 60: 34, 90: 26 } } : m)), globale: glob, comp: 30, mat: 3, notions: null }));
   check("matière nouvelle : « mesurée depuis moins de 30 jours »", nouv.includes("FSA : 49 %, mesurée depuis moins de 30 jours."), nouv);
   const nmes = ns(phraseMatieres({ matieres: mats.map((m, i) => (i === 3 ? { ...m, pct: null, statut: "non_mesuree" as const, n: 4 } : m)), globale: glob, comp: 30, mat: 3, notions: null }));
   check("matière non mesurée : « encore 6 réponses et elle compte »", nmes.includes("FSA n'est pas encore mesurée : encore 6 réponses et elle compte."), nmes);
   const prov = ns(phraseMatieres({ matieres: matieresSynthese(maitrise({ ethics: { pct: 52, n: 23, total: 23 } }), histo(), null), globale: glob, comp: 30, mat: 0, notions: null }));
   check("matière provisoire : « Mesure provisoire (23 réponses sur 40). »", prov.includes("Mesure provisoire (23 réponses sur 40)."), prov);
-  const defi = ns(phraseMatieres({ matieres: mats.map((m) => ({ ...m, pct: 75, ilYa: { 30: 70, 60: 60, 90: 50 } })), globale: { auj: 75, ilYa: { 30: 70, 60: 60, 90: 50 } }, comp: 30, mat: null, notions: null }));
+  const defi = ns(phraseMatieres({ matieres: mats.map((m) => ({ ...m, pct: 75, ilYa: { 3: 75, 30: 70, 60: 60, 90: 50 } })), globale: { auj: 75, ilYa: { 3: 75, 30: 70, 60: 60, 90: 50 }, reponses: null }, comp: 30, mat: null, notions: null }));
   check("aucune sous 50 % : « vise maintenant le seuil de 70 % »", defi.includes("Aucune matière sous 50 % : vise maintenant le seuil de 70 %."), defi);
 }
 
@@ -285,7 +291,7 @@ titre("# le rendu sans historique (migration non collée) : ni sélecteur de com
 titre("# le rendu : rien de mesuré (joueur neuf)");
 {
   const vide: MatiereSynthese[] = mats.map((m) => ({ ...m, pct: null, statut: "non_mesuree" as const, n: 0, total: 0, ilYa: null, gain: 0 }));
-  const h = rendre(<TesMatieres matieres={vide} globale={{ auj: 0, ilYa: null }} notions={null} sourceNotions={null} />);
+  const h = rendre(<TesMatieres matieres={vide} globale={{ auj: 0, ilYa: null, reponses: null }} notions={null} sourceNotions={null} />);
   check("rendu sans erreur, dix points creux, dix « — », la phrase d'attente", h.length > 3000 && compte(h, /class="rV"/g) === 2 && ns(h).includes("aucune matière n'est encore mesurée") && !/NaN|undefined/.test(h));
   check("pas de « plus forte » ni de bouton « Ouvrir X »", !h.includes("Ta plus forte") && !h.includes("ensAction"));
 }
@@ -309,7 +315,8 @@ titre("# le rendu : la fiche d'une matière");
   check("sans notions : une colonne, ni « Ses notions » ni legende, mais le rappel pour revenir", sans.includes('data-colonnes="1"') && !sans.includes("Ses notions") && sans.includes("pour revenir à la vue d'ensemble") && compte(sans, /class="rl-encre-vif"/g) === 1);
   const nm = rendre(<FicheVue f={ficheMatiere({ ...mats[3], pct: null, statut: "non_mesuree", n: 4, gain: 0 }, 3, 30, null, "unique")} comp={30} source="unique" onFermer={() => {}} />);
   check("matière non mesurée : « — » et « pas encore mesurée », « à gagner » : —", nm.includes(">—<") && nm.includes("pas encore mesurée") && !/NaN|undefined/.test(nm));
-  const nv = rendre(<FicheVue f={ficheMatiere({ ...mats[3], ilYa: { 30: null, 60: 34, 90: 26 } }, 3, 30, null, "unique")} comp={30} source="unique" onFermer={() => {}} />);
+  const nv = rendre(<FicheVue f={ficheMatiere({ ...mats[3], ilYa: { 3: 49, 30: null, 60: 34, 90: 26 } }, 3, 30, null, "unique")} comp={30} source="unique" onFermer={() => {}} />);
+
   check("matière nouvelle : « nouvelle » à la place de l'écart", nv.includes(">nouvelle<") && !nv.includes("en 30 jours</span>"));
   const nj = rendre(<FicheVue f={ficheMatiere(mats[6], 6, 30, notions, "90j")} comp={30} source="90j" onFermer={() => {}} />);
   check("source 90 j : « pas vue » et « pas vue depuis 90 j »", nj.includes(">pas vue<") && ns(nj).includes("pas vue depuis 90 j") && !nj.includes("jamais vue"));
@@ -343,6 +350,121 @@ titre("# le rendu : les barres et les sélecteurs");
   check("le radar seul : la matière choisie a l'étiquette active et le halo ; la place est posée en variables CSS", compte(rad, /rlabOn/g) === 1 && compte(rad, /class="rhalo"/g) === 2 && compte(rad, /class="rsel"/g) === 2 && rad.includes("--xg:") && rad.includes("--yp:") && compte(rad, /aria-pressed="true"/g) === 1);
   const ens = rendre(<VueEnsemble e={ensembleMatieres(mats, glob, 30)} comp={30} avecNotions avecEvolution onOuvrir={() => {}} />);
   check("la vue d'ensemble seule : l'astuce cite les notions et l'évolution", ens.includes("ses notions, son évolution, quoi réviser"));
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// la comparaison à 3 jours (rang 15 des dates) et l'activité de la période
+/** Il y a 3 jours et les réponses depuis : [maîtrise il y a 3 j, réponses en 3 j]. Sans réponse, la maîtrise n'a pas bougé. */
+const TROIS: Record<string, readonly [number, number]> = {
+  ethics: [58, 0],
+  quant: [72, 14],
+  economics: [66, 0],
+  fsa: [45, 25],
+  corporate: [71, 0],
+  equity: [63, 0],
+  fixed_income: [39, 42],
+  derivatives: [53, 8],
+  alternatives: [69, 0],
+  portfolio: [77, 0],
+};
+/** Les 16 dates : 30 / 60 / 90 jours (rangs 0 à 2), douze semaines vides, puis il y a 3 jours (rang 15). */
+const histo16 = (recent: boolean): PointHistorique[] => {
+  const h: PointHistorique[] = [...histo(), ...Array.from({ length: 12 }, (_, k) => ({ jour: `semaine-${k + 1}`, matieres: {} }))];
+  h[RANG_RECENT] = { jour: "2026-10-28", matieres: Object.fromEntries(DONNEES.map((d) => [d[0], { pct: recent ? TROIS[d[0]][0] : d[1], n: 60 }])) };
+  return h;
+};
+/** activite_depuis : rang 1 = 3 jours (vide si `recent` est faux), rang 2 = 30 jours (40 à 49 réponses par matière), 60 et 90 jours sans ligne. */
+const activite = (recent: boolean) =>
+  activiteEn([
+    { i: 1, matieres: recent ? Object.fromEntries(Object.entries(TROIS).filter(([, v]) => v[1] > 0).map(([k, v]) => [k, { n: v[1], justes: Math.round(v[1] * 0.6) }])) : {} },
+    { i: 2, matieres: Object.fromEntries(DONNEES.map((d, k) => [d[0], { n: 40 + k, justes: 25 }])) },
+  ]);
+const mats3 = matieresSynthese(M, histo16(true), null, activite(true));
+const glob3 = globaleSynthese(M, histo16(true), activite(true));
+const mats0 = matieresSynthese(M, histo16(false), null, activite(false));
+const glob0 = globaleSynthese(M, histo16(false), activite(false));
+
+titre("# la comparaison à 3 jours : offerte en premier, 30 jours reste le défaut");
+{
+  check("3, 30, 60, 90 jours dans l'ordre du sélecteur ; il y a 3 jours : 60 %", comparaisonsDispo(glob3).join() === "3,30,60,90" && glob3.ilYa?.[3] === 60, JSON.stringify(glob3.ilYa));
+  check("le défaut : 30 jours s'il est offert, sinon la première offerte ; rien sans comparaison", comparaisonParDefaut(comparaisonsDispo(glob3)) === 30 && comparaisonParDefaut([3]) === 3 && comparaisonParDefaut([3, 60, 90]) === 3 && comparaisonParDefaut([60, 90]) === 60 && comparaisonParDefaut([]) === null);
+  check("chaque matière porte ses réponses : Fixed Income 42 en 3 j, 46 en 30 j ; Éthique 0 en 3 j ; total 89 en 3 j, 445 en 30 j", mats3[6].reponses?.[3] === 42 && mats3[6].reponses?.[30] === 46 && mats3[0].reponses?.[3] === 0 && glob3.reponses?.[3] === 89 && glob3.reponses?.[30] === 445, JSON.stringify(glob3.reponses));
+}
+
+titre("# aucune réponse sur la période : pas d'écart (son ±0 ne dirait rien)");
+{
+  check("Éthique, sans réponse en 3 jours : pas d'écart ; Fixed Income : +5", ecartMatiere(mats3[0], 3) === null && ecartMatiere(mats3[6], 3)?.genre === "ecart" && (ecartMatiere(mats3[6], 3) as { texte: string }).texte === "+5");
+  check("le même ±0 sans l'activité (source absente) reste affiché, comme avant", ecartMatiere({ pct: 58, ilYa: { 3: 58, 30: 51, 60: 44, 90: 35 }, reponses: null }, 3)?.genre === "ecart" && ecartMatiere({ pct: 58, ilYa: { 3: 58, 30: 51, 60: 44, 90: 35 } }, 3)?.genre === "ecart");
+  check("0 réponse masque aussi « nouvelle » ; une réponse suffit à garder l'écart", ecartMatiere({ pct: 58, ilYa: { 3: null, 30: 51, 60: 44, 90: 35 }, reponses: { 3: 0, 30: 4, 60: 4, 90: 4 } }, 3) === null && ecartMatiere({ pct: 58, ilYa: { 3: 58, 30: 51, 60: 44, 90: 35 }, reponses: { 3: 1, 30: 4, 60: 4, 90: 4 } }, 3)?.genre === "ecart");
+  const e = etiquettesRadar(mats3, 3, null);
+  check("radar : l'étiquette d'Éthique n'a pas d'écart (et son nom lu non plus) ; Fixed Income « +5 »", e[0].ecart === null && !e[0].aria.includes("face à toi") && e[6].ecart?.texte === "+5" && e[6].aria.includes("il y a 3 jours"));
+  const b = lignesBarres(mats3, 3, "programme", null);
+  check("barres : pas d'écart pour Éthique, le repère reste (58) ; Dérivés « −1 »", b[0].ecart === null && b[0].repere === 58 && b[7].ecart?.texte === "−1");
+}
+
+titre("# la vue d'ensemble à 3 jours : seules les matières travaillées, les autres en une ligne");
+{
+  const e = ensembleMatieres(mats3, glob3, 3);
+  check("« Toi il y a 3 j : 60 % +1 point · 89 réponses »", e.avant?.pct === 60 && e.avant.points === "+1 point" && e.avant.reponses === "· 89 réponses", JSON.stringify(e.avant));
+  check("4 lignes, classées par évolution : Fixed Income +5, FSA +4, Quant +2, Dérivés −1", e.genre === "ecart" && e.evolution.map((l) => `${l.court}${l.texte}`).join() === "Fixed Income+5,FSA+4,Quant+2,Dérivés−1", e.evolution.map((l) => `${l.court}${l.texte}`).join());
+  check("chaque ligne porte son nombre de réponses (« 42 réponses ») et le dit au lecteur d'écran", e.evolution.map((l) => ns(l.reponses ?? "")).join() === "42 réponses,25 réponses,14 réponses,8 réponses" && ns(e.evolution[0].aria) === "Fixed Income : +5 points en 3 jours, 42 réponses. Ouvrir sa fiche.", e.evolution[0].aria);
+  check("les 6 matières sans réponse : une seule ligne discrète, dans l'ordre du programme", ns(e.sansReponse ?? "") === "Sans réponse en 3 j : Éthique, Économie, Entreprise, Actions, Alternatifs, Portefeuille." && e.aucuneReponse === null, e.sansReponse ?? "");
+  check("en hausse : 3 sur 4 (les matières sans réponse ne comptent pas)", e.hausse?.n === 3 && e.hausse.sur === 4);
+  const e30 = ensembleMatieres(mats3, glob3, 30);
+  check("à 30 jours (toutes travaillées) : les 10 lignes, chacune avec ses réponses, pas de ligne « Sans réponse »", e30.evolution.length === 10 && e30.evolution.every((l) => /^4[0-9] réponses$/.test(ns(l.reponses ?? ""))) && e30.sansReponse === null && e30.avant?.reponses === "· 445 réponses");
+  const z = ensembleMatieres(mats0, glob0, 3);
+  check("aucune réponse en 3 jours : la liste se réduit à « Aucune réponse ces 3 derniers jours. »", z.evolution.length === 0 && z.aucuneReponse === "Aucune réponse ces 3 derniers jours." && z.sansReponse === null && z.genre === "ecart" && z.hausse === null);
+  check("… et « Toi il y a 3 j : 61 % ±0 point · aucune réponse »", z.avant?.pct === 61 && z.avant.points === "±0 point" && z.avant.reponses === "· aucune réponse", JSON.stringify(z.avant));
+  const sa = ensembleMatieres(mats, glob, 30);
+  check("source absente (pas d'activité) : la liste complète, sans nombre de réponses, ni ligne « Sans réponse »", sa.evolution.length === 10 && sa.evolution.every((l) => l.reponses === null) && sa.sansReponse === null && sa.aucuneReponse === null && sa.avant?.reponses === null);
+  // relecture : une seule matière travaillée, « nouvelle » (pas mesurée il y a 3 jours) ; les autres mesurées, sans réponse
+  const seule = mats3.map((m, i) => (i === 1 ? { ...m, ilYa: m.ilYa ? { ...m.ilYa, 3: null } : m.ilYa, reponses: { 3: 12, 30: 40, 60: 40, 90: 40 } } : { ...m, ilYa: m.ilYa ? { ...m.ilYa, 3: m.pct } : m.ilYa, reponses: { 3: 0, 30: 40, 60: 40, 90: 40 } }));
+  const es = ensembleMatieres(seule, glob3, 3);
+  check("une matière « nouvelle » travaillée, les 9 autres muettes : on reste « En 3 jours » (pas un classement amputé), une ligne + « Sans réponse »", es.genre === "ecart" && es.evolution.length === 1 && es.evolution[0].i === 1 && ns(es.sansReponse ?? "").startsWith("Sans réponse en 3 j : ") && es.aucuneReponse === null, `${es.genre} ${es.evolution.length} ${es.sansReponse}`);
+  check("sans comparaison (classement), les dix lignes restent, sans ligne « Sans réponse »", ensembleMatieres(seule, glob3, null).evolution.length === 10 && ensembleMatieres(seule, glob3, null).sansReponse === null);
+  // relecture : le compte de réponses et la maîtrise du jour viennent de deux sources ; un vrai écart reste affiché
+  check("0 réponse comptée mais un écart réel (+2) : l'écart reste ; ±0 sans réponse : masqué", (ecartMatiere({ pct: 60, ilYa: { 3: 58, 30: 51, 60: 44, 90: 35 }, reponses: { 3: 0, 30: 4, 60: 4, 90: 4 } }, 3) as { texte?: string } | null)?.texte === "+2" && ecartMatiere({ pct: 58, ilYa: { 3: 58, 30: 51, 60: 44, 90: 35 }, reponses: { 3: 0, 30: 4, 60: 4, 90: 4 } }, 3) === null);
+}
+
+titre("# la fiche et la phrase à 3 jours");
+{
+  const fe = ficheMatiere(mats3[0], 0, 3, null, "unique");
+  check("Éthique : pas d'écart, « aucune réponse en 3 jours » à la place", fe.ecart === null && fe.periode?.aucune === true && fe.periode.texte === "aucune réponse en 3 jours" && fe.avant?.j === 3 && ns(fe.avant.valeur) === "58 %");
+  const ff = ficheMatiere(mats3[6], 6, 3, null, "unique");
+  check("Fixed Income : +5 en 3 jours · 42 réponses", ff.ecart?.genre === "ecart" && ff.ecart.texte === "+5" && ff.periode?.aucune === false && ns(ff.periode.texte) === "· 42 réponses");
+  check("sans l'activité, ou sans comparaison : rien de plus dans la fiche", ficheMatiere(mats[6], 6, 30, null, "unique").periode === null && ficheMatiere(mats3[6], 6, null, null, "unique").periode === null);
+  const p3 = ns(phraseMatieres({ matieres: mats3, globale: glob3, comp: 3, mat: null, notions: null }));
+  check(
+    "« en 3 jours (89 réponses), tu as pris 1 point (60 → 61 %) et progressé dans 3 matières sur 4. »",
+    p3.startsWith("en 3 jours (89 réponses), tu as pris 1 point (60 → 61 %) et progressé dans 3 matières sur 4.") && p3.includes("Plus forte hausse : Fixed Income (+5).") && p3.includes("Fixed Income (39 → 44 %) et FSA (45 → 49 %) progressent, mais restent sous 50 %"),
+    p3,
+  );
+  const p0 = ns(phraseMatieres({ matieres: mats0, globale: glob0, comp: 3, mat: null, notions: null }));
+  check("aucune réponse : « en 3 jours, sans aucune réponse, tu es resté à 61 %. » et les plus faibles sans flèche", p0.startsWith("en 3 jours, sans aucune réponse, tu es resté à 61 %.") && p0.includes("Fixed Income (44 %) et FSA (49 %) restent sous 50 %") && !p0.includes("→"), p0);
+  const pe = ns(phraseMatieres({ matieres: mats3, globale: glob3, comp: 3, mat: 0, notions: null }));
+  check("Éthique choisie, sans réponse en 3 jours : « Éthique : 58 %, sans réponse ces 3 derniers jours. Encore 12 points avant le seuil. »", pe === "Éthique : 58 %, sans réponse ces 3 derniers jours. Encore 12 points avant le seuil.", pe);
+  const pf = ns(phraseMatieres({ matieres: mats3, globale: glob3, comp: 3, mat: 6, notions: null }));
+  check("Fixed Income choisie : « de 39 à 44 % en 3 jours (+5) »", pf.startsWith("Fixed Income : de 39 à 44 % en 3 jours (+5)."), pf);
+}
+
+titre("# le rendu à 3 jours : petit, gris, sans bloc de plus");
+{
+  const carte3 = rendre(<TesMatieres matieres={mats3} globale={glob3} notions={notions} sourceNotions="unique" />);
+  const groupe = carte3.slice(carte3.indexOf('aria-label="Se comparer à toi il y a"'));
+  const options = groupe.slice(0, groupe.indexOf("</div>"));
+  check("le sélecteur : 3 j, 30 j, 60 j, 90 j dans cet ordre, « 30 j » choisi à l'ouverture", ns(options).indexOf(">3 j<") > 0 && ns(options).indexOf(">3 j<") < ns(options).indexOf(">30 j<") && ns(options).indexOf(">60 j<") < ns(options).indexOf(">90 j<") && compte(options, /<button/g) === 4 && /aria-pressed="true"[^>]*>(?:<canvas[^>]*><[/]canvas>)?30 j/.test(ns(options)));
+  check("à 30 jours : les 10 lignes portent leurs réponses en petit (evRep), « · 445 réponses » après l'écart global", compte(carte3, /class="evRep"/g) === 10 && ns(carte3).includes('class="nbRep">· 445 réponses<') && !carte3.includes("evSans"));
+  check("toujours 2 liquides seulement (Radar, 30 j) : rien de neuf n'est en encre", compte(carte3, /class="rl-encre-vif"/g) === 2);
+  const v3 = rendre(<VueEnsemble e={ensembleMatieres(mats3, glob3, 3)} comp={3} avecNotions={false} avecEvolution onOuvrir={() => {}} />);
+  check("vue d'ensemble à 3 jours : 4 lignes-boutons, 4 nombres de réponses, la ligne « Sans réponse en 3 j » (un paragraphe, pas un bouton)", compte(v3, /class="ev( evNeg)?"/g) === 4 && compte(v3, /class="evRep"/g) === 4 && /<p class="evSans">Sans réponse en 3.j : Éthique, /.test(ns(v3)) && ns(v3).includes("· 89 réponses"));
+  check("au téléphone, deux colonnes de 2 rangées (--ev-rangs), pas 5", v3.includes("--ev-rangs:2"));
+  const v0 = rendre(<VueEnsemble e={ensembleMatieres(mats0, glob0, 3)} comp={3} avecNotions={false} avecEvolution onOuvrir={() => {}} />);
+  check("aucune réponse : pas de liste, une seule ligne « Aucune réponse ces 3 derniers jours. », titre « En 3 jours, matière par matière »", !v0.includes('class="evog"') && v0.includes('<p class="evSans">Aucune réponse ces 3 derniers jours.</p>') && v0.includes("En 3 jours, matière par matière") && ns(v0).includes("· aucune réponse"));
+  const fe = rendre(<FicheVue f={ficheMatiere(mats3[0], 0, 3, null, "unique")} comp={3} source="unique" onFermer={() => {}} />);
+  check("fiche d'Éthique à 3 jours : « aucune réponse en 3 jours » en gris, aucun « ±0 »", fe.includes('<span class="nul">aucune réponse en 3 jours</span>') && !fe.includes("±0"));
+  const ff = rendre(<FicheVue f={ficheMatiere(mats3[6], 6, 3, null, "unique")} comp={3} source="unique" onFermer={() => {}} />);
+  check("fiche de Fixed Income : « +5 en 3 jours » puis « · 42 réponses » en petit", ff.includes(">+5 en 3 jours</span>") && ns(ff).includes('<span class="nbRep">· 42 réponses</span>'));
+  check("sans l'activité (la carte de départ) : aucun nombre de réponses, aucune ligne « Sans réponse »", !carte.includes("evRep") && !carte.includes("nbRep") && !carte.includes("evSans") && carte.includes("--ev-rangs:5"));
 }
 
 console.log("");

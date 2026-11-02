@@ -8,11 +8,12 @@
 // (lot 2) la lecture du JSON de maitrise_synthese et de rythme_joueur : les
 // dates, l'historique, la note à une date, les 93 notions et leurs états, le
 // repli sur 90 jours, calcul ou théorie, les atouts, le rythme, la courbe, et
-// les lecteurs mémorisés qui rendent null au moindre accroc.
-import { COUVERTURE_MIN, JOURS_COMPARAISON, MATIERES_POIDS, RANG_COMPARAISON, RANG_SEMAINE, SEMAINES_COURBE, atouts, calculGlobal, calculSynthese, chiffresObjectif, comptesNotions, dateCourte, dateJour, dateLongue, echelleQuestions, entier, etatNotion, geometrieJauge, geometrieTrajectoire, globaleSynthese, historiqueEn, hrefQuete, ligneRang, matiereLaPlusFaible, matieresSynthese, mesureeA, mesuresCalculDe, mesuresDuJour, mesuresNotionsDe, metalDePalier, moyennesDe, notionsDe, notionsDepuisPointsFaibles, pc, preparationA, progressionSynthese, rangSynthese, rythmeDe, signe, sousEchantillonner, ton, TRAJECTOIRE_COMPACTE, TRAJECTOIRE_LARGE, tempsSynthese, barreRang, type Mesure } from "@/components/moi/synthese/modele";
+// les lecteurs mémorisés qui rendent null au moindre accroc ; enfin la date
+// de 3 jours (rang 15) et l'activité depuis chaque comparaison (activite_depuis).
+import { COMPARAISONS, COUVERTURE_MIN, JOURS_COMPARAISON, JOURS_RECENT, JOURS_SYNTHESE, MATIERES_POIDS, RANG_COMPARAISON, RANG_RECENT, RANG_SEMAINE, SEMAINES_COURBE, activiteEn, atouts, calculGlobal, calculSynthese, chiffresObjectif, comptesNotions, dateCourte, dateJour, dateLongue, echelleQuestions, entier, etatNotion, geometrieJauge, geometrieTrajectoire, globaleSynthese, historiqueEn, hrefQuete, ligneRang, matiereLaPlusFaible, matieresSynthese, mesureeA, mesuresCalculDe, mesuresDuJour, mesuresNotionsDe, metalDePalier, moyennesDe, notionsDe, notionsDepuisPointsFaibles, pc, preparationA, progressionSynthese, rangSynthese, rythmeDe, signe, sousEchantillonner, ton, TRAJECTOIRE_COMPACTE, TRAJECTOIRE_LARGE, tempsSynthese, barreRang, type Mesure } from "@/components/moi/synthese/modele";
 import { CHIFFRES_EXEMPLE, PLAN_EXEMPLE } from "./synthese-exemple";
 import { maitriseDepuis, type Maitrise } from "@/lib/maitrise";
-import { datesSynthese, lireMaitriseSynthese, lireRythme, rytBrutDepuis, synBrutDepuis } from "@/lib/moi-synthese";
+import { actBrutDepuis, datesActivite, datesSynthese, lireActivite, lireMaitriseSynthese, lireRythme, rytBrutDepuis, synBrutDepuis } from "@/lib/moi-synthese";
 import { NOTIONS } from "@/lib/notions";
 import { PALETTES, paletteDeChemin } from "@/lib/palettes";
 import { codexMoiDe } from "@/lib/profil/codex-moi";
@@ -175,7 +176,7 @@ titre("# dernier gagné");
 
 const JOUR_MS = 86_400_000;
 const MAINTENANT = Date.parse("2026-10-31T10:00:00Z");
-/** Le jour (AAAA-MM-JJ) de chacune des 15 dates demandées. */
+/** Le jour (AAAA-MM-JJ) de chacune des 16 dates demandées. */
 const JOURS = datesSynthese(MAINTENANT).map((x) => x.slice(0, 10));
 const idsDe = (matiere: string) => NOTIONS.filter((n) => n.matiere === matiere).map((n) => n.id);
 
@@ -184,9 +185,12 @@ titre("# datesSynthese");
 {
   const d = datesSynthese(MAINTENANT);
   const il = (j: number) => new Date(MAINTENANT - j * JOUR_MS).toISOString();
-  check("15 dates distinctes (30, 60, 90 jours, puis 12 semaines), 20 au plus pour la fonction SQL", d.length === 15 && new Set(d).size === 15 && d.length <= 20, String(new Set(d).size));
-  check("rangs 0 à 2 : il y a 30, 60 et 90 jours", d[RANG_COMPARAISON[30]] === il(30) && d[RANG_COMPARAISON[60]] === il(60) && d[RANG_COMPARAISON[90]] === il(90));
-  check("rangs 3 à 14 : il y a 7 × k jours, k de 1 à 12", RANG_SEMAINE === JOURS_COMPARAISON.length && Array.from({ length: SEMAINES_COURBE }, (_, k) => d[RANG_SEMAINE + k] === il(7 * (k + 1))).every(Boolean));
+  check("16 dates distinctes (30, 60, 90 jours, 12 semaines, puis 3 jours), 20 au plus pour la fonction SQL", d.length === 16 && new Set(d).size === 16 && d.length <= 20 && JOURS_SYNTHESE.length === 16, String(new Set(d).size));
+  check("rangs 0 à 2 : il y a 30, 60 et 90 jours (inchangés)", d[0] === il(30) && d[1] === il(60) && d[2] === il(90) && d[RANG_COMPARAISON[30]] === il(30) && d[RANG_COMPARAISON[60]] === il(60) && d[RANG_COMPARAISON[90]] === il(90));
+  check("rangs 3 à 14 : il y a 7 × k jours, k de 1 à 12 (inchangés)", RANG_SEMAINE === 3 && RANG_SEMAINE === JOURS_COMPARAISON.length && Array.from({ length: SEMAINES_COURBE }, (_, k) => d[RANG_SEMAINE + k] === il(7 * (k + 1))).every(Boolean));
+  check("rang 15, ajouté à la fin : il y a 3 jours", JOURS_RECENT === 3 && RANG_RECENT === 15 && RANG_COMPARAISON[3] === 15 && d[15] === il(3));
+  check("les comparaisons du sélecteur : 3, 30, 60, 90 jours, dans cet ordre", COMPARAISONS.join() === "3,30,60,90");
+  check("activite_depuis reçoit les dates des comparaisons dans l'ordre 3, 30, 60, 90 (les mêmes instants)", datesActivite(d).join() === [il(3), il(30), il(60), il(90)].join());
   check("les poids officiels : 10 matières, 102,5 en tout", MATIERES_POIDS.length === 10 && MATIERES_POIDS.reduce((s, m) => s + m.poids, 0) === 102.5);
 }
 
@@ -206,7 +210,7 @@ titre("# historique et note à une date");
     { i: 3, matieres: [] },
   ];
   const h = historiqueEn(brut, JOURS);
-  check("un point par date, dans l'ordre, avec son jour", !!h && h.length === 15 && h[0].jour === JOURS[0] && h[14].jour === JOURS[14]);
+  check("un point par date, dans l'ordre, avec son jour (16, le dernier il y a 3 jours)", !!h && h.length === 16 && h[0].jour === JOURS[0] && h[15].jour === JOURS[15] && JOURS[15] === "2026-10-28");
   check("le rang i (à partir de 1) renvoie à la date i − 1 : 70 % sur 30 réponses, puis 75 %", !!h && h[0].matieres.ethics?.pct === 70 && h[0].matieres.ethics.n === 30 && h[3].matieres.ethics?.pct === 75);
   check("sous 10 réponses : pct null, la clé reste avec son n", !!h && h[0].matieres.quant?.pct === null && h[0].matieres.quant.n === 6);
   check("pct hors bornes ramené à 100 ; matière inconnue, valeur illisible, rang absurde : écartés sans exception", !!h && h[3].matieres.quant?.pct === 100 && !("bogus" in h[3].matieres) && !("fsa" in h[3].matieres) && Object.keys(h[1].matieres).length === 0 && Object.keys(h[2].matieres).length === 0);
@@ -334,10 +338,11 @@ titre("# rythme");
 titre("# matières, globale, progression");
 {
   const m = maitriseDepuis({ matieres: { ethics: { pct: 80, n: 60, total: 80 }, quant: { pct: 50, n: 45, total: 50 }, fsa: { pct: 30, n: 12, total: 12 } } }) as Maitrise;
-  // l'historique : il y a 30 j (rang 1), 60 j (rang 2), puis la semaine k au rang 3 + k
+  // l'historique : il y a 30 j (rang 1), 60 j (rang 2), la semaine k au rang 3 + k, puis il y a 3 j (rang 16)
   const lignes: { i: number; matieres: Record<string, Mesure> }[] = [
     { i: 1, matieres: { ethics: { pct: 70, n: 30 }, quant: { pct: 45, n: 20 } } },
     { i: 2, matieres: { ethics: { pct: 60, n: 20 } } },
+    { i: RANG_RECENT + 1, matieres: { ethics: { pct: 78, n: 60 } } },
   ];
   for (let k = 8; k >= 6; k--) lignes.push({ i: RANG_SEMAINE + k, matieres: { ethics: { pct: 60, n: 15 } } });
   for (let k = 5; k >= 1; k--) lignes.push({ i: RANG_SEMAINE + k, matieres: { ethics: { pct: 75, n: 35 }, quant: { pct: 40, n: 12 } } });
@@ -346,14 +351,15 @@ titre("# matières, globale, progression");
   const par = (cle: string) => ms.find((x) => x.cle === cle);
   check("10 matières dans l'ordre du programme, noms courts français", ms.length === 10 && ms.map((x) => x.cle).join() === TOPICS.map((t) => t.key).join() && ms.every((x) => x.court === COURTS_FR[x.cle] && x.mini === MINIS_FR[x.cle]));
   check("aujourd'hui : Éthique 80 % mesurée, FSA 30 % provisoire, Économie non mesurée", par("ethics")?.pct === 80 && par("ethics")?.statut === "mesuree" && par("fsa")?.statut === "provisoire" && par("economics")?.statut === "non_mesuree" && par("economics")?.pct === null);
-  check("il y a 30, 60, 90 jours : Éthique 70, 60, rien ; Quant 45, rien, rien (nouvelle)", JSON.stringify(par("ethics")?.ilYa) === JSON.stringify({ 30: 70, 60: 60, 90: null }) && JSON.stringify(par("quant")?.ilYa) === JSON.stringify({ 30: 45, 60: null, 90: null }));
+  check("il y a 3, 30, 60, 90 jours : Éthique 78, 70, 60, rien ; Quant rien, 45, rien, rien (nouvelle)", JSON.stringify(par("ethics")?.ilYa) === JSON.stringify({ 3: 78, 30: 70, 60: 60, 90: null }) && JSON.stringify(par("quant")?.ilYa) === JSON.stringify({ 3: null, 30: 45, 60: null, 90: null }));
   check("moyenne des joueurs : seulement là où elle est fondée (Quant 60)", par("quant")?.moyJoueurs === 60 && par("ethics")?.moyJoueurs === null);
   check("gain : 0 au-dessus de 70 % et pour une matière non mesurée ; Quant 1,5 ; FSA provisoire 4,9 (poids / 102,5)", par("ethics")?.gain === 0 && par("economics")?.gain === 0 && par("quant")?.gain === 1.5 && par("fsa")?.gain === 4.9, `${par("quant")?.gain} ${par("fsa")?.gain}`);
   check("liens : fiche de la matière et séance ciblée", par("quant")?.hrefReviser === "/fiches/quantitative-methods" && par("quant")?.hrefEntrainer === "/practice?topic=quant&go=1");
   const sans = matieresSynthese(m, null, null);
-  check("sans historique ni moyennes : ilYa et moyJoueurs à null (pas de sélecteur 30/60/90)", sans.every((x) => x.ilYa === null && x.moyJoueurs === null) && globaleSynthese(m, null).ilYa === null);
+  check("sans historique ni moyennes : ilYa et moyJoueurs à null (pas de sélecteur 3/30/60/90)", sans.every((x) => x.ilYa === null && x.moyJoueurs === null) && globaleSynthese(m, null).ilYa === null);
+  check("sans activité (activite_depuis absente) : reponses à null, pour chaque matière et pour la globale", ms.every((x) => x.reponses === null) && sans.every((x) => x.reponses === null) && globaleSynthese(m, h).reponses === null);
   const g = globaleSynthese(m, h);
-  check("globale : 21 aujourd'hui (= la préparation), 15 il y a 30 j, 10 il y a 60 j, rien il y a 90 j", g.auj === 21 && g.auj === m.preparation && g.ilYa?.[30] === 15 && g.ilYa?.[60] === 10 && g.ilYa?.[90] === null, JSON.stringify(g));
+  check("globale : 21 aujourd'hui (= la préparation), 13 il y a 3 j, 15 il y a 30 j, 10 il y a 60 j, rien il y a 90 j", g.auj === 21 && g.auj === m.preparation && g.ilYa?.[3] === 13 && g.ilYa?.[30] === 15 && g.ilYa?.[60] === 10 && g.ilYa?.[90] === null, JSON.stringify(g));
   check("mesuresDuJour : le format de l'historique", mesuresDuJour(m).ethics.pct === 80 && mesuresDuJour(m).ethics.n === 60 && mesuresDuJour(m).economics.pct === null);
 
   const p = progressionSynthese(h, m, "2026-10-31");
@@ -371,6 +377,39 @@ titre("# matières, globale, progression");
     "la courbe garde le jour et l'examen à venir (pour dater la projection) ; un examen passé est oublié",
     p?.aujourdhui === "2026-10-31" && p.examen === null && progressionSynthese(h, m, "2026-10-31", "2027-02-18")?.examen === "2027-02-18" && progressionSynthese(h, m, "2026-10-31", "2026-10-31")?.examen === "2026-10-31" && progressionSynthese(h, m, "2026-10-31", "2026-06-01")?.examen === null && pv?.aujourdhui === "2026-10-31",
   );
+}
+
+// ── l'activité depuis chaque comparaison (activite_depuis) ──────────────────
+titre("# activité depuis 3, 30, 60, 90 jours");
+{
+  // rang i : 1 = 3 jours, 2 = 30, 3 = 60, 4 = 90 (l'ordre de datesActivite)
+  const brut = [
+    { i: 1, matieres: { ethics: { n: 12, justes: 9 }, fixed_income: { n: 30, justes: 18 } } },
+    { i: 2, matieres: { ethics: { n: 80, justes: 60 }, quant: { n: 40, justes: 25 }, "ethics:avec": { n: 9, justes: 9 }, bogus: { n: 5, justes: 5 }, fsa: "x", equity: { n: -1, justes: 0 }, corporate: { n: 4, justes: 9 } } },
+    { i: 4, matieres: { ethics: { n: "200", justes: 150 } } },
+    { i: 9, matieres: { ethics: { n: 1, justes: 1 } } },
+    { i: 0, matieres: {} },
+    { i: 2.5, matieres: {} },
+    null,
+    "x",
+    { i: 3 },
+  ];
+  const a = activiteEn(brut);
+  check("rangée par comparaison : 3 j (Éthique 12, Fixed Income 30), 30 j, 90 j", !!a && a[3].ethics?.n === 12 && a[3].ethics.justes === 9 && a[3].fixed_income?.n === 30 && a[30].ethics?.n === 80 && a[30].quant?.justes === 25 && a[90].ethics?.n === 200, JSON.stringify(a));
+  check("une période sans ligne (60 j ici) : aucune réponse, objet vide", !!a && Object.keys(a[60]).length === 0);
+  check("matière inconnue, clé « : », valeur de travers ou négative : écartées ; plus de justes que de réponses : ramené au nombre de réponses", !!a && !("ethics:avec" in a[30]) && !("bogus" in a[30]) && !("fsa" in a[30]) && !("equity" in a[30]) && a[30].corporate?.justes === 4);
+  check("rang absurde (0, 9, 2,5, absent) : ignoré sans exception", !!a && Object.keys(a[3]).length === 2 && Object.keys(a[90]).length === 1);
+  check("un JSON qui n'est pas une liste : null (source absente) ; une liste vide : quatre périodes sans réponse", [undefined, null, "x", 3, {}].every((x) => activiteEn(x) === null) && JSON.stringify(activiteEn([])) === JSON.stringify({ 3: {}, 30: {}, 60: {}, 90: {} }));
+  check("activite_depuis : la forme vérifiée (une liste « depuis »), sinon null", actBrutDepuis({ v: 1, depuis: [] }) !== null && [undefined, null, 3, "x", [], {}, { depuis: {} }, { depuis: "x" }].every((x) => actBrutDepuis(x) === null));
+
+  const m = maitriseDepuis({ matieres: { ethics: { pct: 80, n: 60, total: 80 }, quant: { pct: 50, n: 45, total: 50 }, fixed_income: { pct: 40, n: 30, total: 30 } } }) as Maitrise;
+  const ms = matieresSynthese(m, historiqueEn([], JOURS), null, a);
+  const par = (cle: string) => ms.find((x) => x.cle === cle);
+  check("chaque matière porte ses réponses par période (0 : aucune) : Éthique 12 / 80 / 0 / 200 ; Économie 0 partout", JSON.stringify(par("ethics")?.reponses) === JSON.stringify({ 3: 12, 30: 80, 60: 0, 90: 200 }) && JSON.stringify(par("economics")?.reponses) === JSON.stringify({ 3: 0, 30: 0, 60: 0, 90: 0 }));
+  const g = globaleSynthese(m, historiqueEn([], JOURS), a);
+  check("la globale fait la somme des matières : 42 réponses en 3 j, 124 en 30 j, 0 en 60 j, 200 en 90 j", JSON.stringify(g.reponses) === JSON.stringify({ 3: 42, 30: 124, 60: 0, 90: 200 }), JSON.stringify(g.reponses));
+  const vide = globaleSynthese(m, historiqueEn([], JOURS), activiteEn([]));
+  check("aucune réponse nulle part : 0 partout (pas null : la source a répondu)", JSON.stringify(vide.reponses) === JSON.stringify({ 3: 0, 30: 0, 60: 0, 90: 0 }) && !JSON.stringify(vide).includes("NaN"));
 }
 
 // ── les lecteurs mémorisés : null au moindre accroc ─────────────────────────
@@ -394,7 +433,7 @@ async function lecteurs() {
   const a1 = await lireMaitriseSynthese(ok.client, "u-ok", dates);
   const a2 = await lireMaitriseSynthese(ok.client, "u-ok", dates);
   check("réponse valide : rendue, et gardée (une seule requête pour le même joueur)", a1 !== null && a2 === a1 && ok.appels.length === 1);
-  check("l'appel : maitrise_synthese, le joueur et les 15 dates", ok.appels[0].nom === "maitrise_synthese" && ok.appels[0].args.p_user === "u-ok" && Array.isArray(ok.appels[0].args.p_dates) && (ok.appels[0].args.p_dates as string[]).length === 15);
+  check("l'appel : maitrise_synthese, le joueur et les 16 dates", ok.appels[0].nom === "maitrise_synthese" && ok.appels[0].args.p_user === "u-ok" && Array.isArray(ok.appels[0].args.p_dates) && (ok.appels[0].args.p_dates as string[]).length === 16);
   await lireMaitriseSynthese(ok.client, "u-autre", dates);
   check("un autre joueur : sa propre lecture", ok.appels.length === 2 && ok.appels[1].args.p_user === "u-autre");
 
@@ -424,6 +463,24 @@ async function lecteurs() {
   const rerr = faux(() => ({ data: null, error: { message: "x" } }));
   const rtxt = faux(() => ({ data: [1, 2], error: null }));
   check("rythme : erreur ou JSON inattendu : null", (await lireRythme(rerr.client, "u-rerr")) === null && (await lireRythme(rtxt.client, "u-rtxt")) === null);
+
+  const act = faux(() => ({ data: { v: 1, depuis: [{ i: 1, matieres: { ethics: { n: 3, justes: 2 } } }] }, error: null }));
+  const ac1 = await lireActivite(act.client, "u-act", dates);
+  const ac2 = await lireActivite(act.client, "u-act", dates);
+  const pd = act.appels[0]?.args.p_dates as string[] | undefined;
+  check("activité : rendue et gardée (une requête), appel activite_depuis avec le joueur", ac1 !== null && ac2 === ac1 && act.appels.length === 1 && act.appels[0].nom === "activite_depuis" && act.appels[0].args.p_user === "u-act");
+  check("activité : les 4 dates des comparaisons, dans l'ordre 3, 30, 60, 90 jours (rangs 15, 0, 1, 2 de datesSynthese)", Array.isArray(pd) && pd.length === 4 && pd.join() === [dates[15], dates[0], dates[1], dates[2]].join());
+  const aerr = faux(() => ({ data: null, error: { message: "fonction absente" } }));
+  const anul = faux(() => ({ data: null, error: null }));
+  const abiz = faux(() => ({ data: { v: 1, depuis: "x" }, error: null }));
+  check(
+    "activité : migration pas collée, NULL, JSON de travers, exception, pas de client de service : null",
+    (await lireActivite(aerr.client, "u-aerr", dates)) === null &&
+      (await lireActivite(anul.client, "u-anul", dates)) === null &&
+      (await lireActivite(abiz.client, "u-abiz", dates)) === null &&
+      (await lireActivite(leve.client, "u-aleve", dates)) === null &&
+      (await lireActivite(null, "u-asans", dates)) === null,
+  );
 }
 
 // ── la place sans relire la note, le Codex sans historique ──────────────────

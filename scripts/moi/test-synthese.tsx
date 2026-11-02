@@ -133,6 +133,17 @@ titre("# les variantes");
   }
 }
 
+titre("# Tes matières : la comparaison à 3 jours et les réponses de la période (activite_depuis)");
+{
+  const groupe = base.slice(base.indexOf('aria-label="Se comparer à toi il y a"'));
+  const options = groupe.slice(0, groupe.indexOf("</div>")).split(NB).join(" ");
+  check("le sélecteur : 3 j, 30 j, 60 j, 90 j, dans cet ordre (30 j reste le choix d'ouverture : voir l'inventaire des liquides)", compte(options, /<button/g) === 4 && options.indexOf(">3 j<") > 0 && options.indexOf(">3 j<") < options.indexOf(">30 j<") && options.indexOf(">30 j<") < options.indexOf(">60 j<") && options.indexOf(">60 j<") < options.indexOf(">90 j<"));
+  check("à 30 jours, toutes les matières ont été travaillées : 10 lignes avec leurs réponses en petit, « · 665 réponses » au total", compte(base, /class="evRep"/g) === 10 && base.includes('class="nbRep">· 665 réponses<') && !base.includes("evSans"));
+  const neuf = rendre("nouveau");
+  const sa = rendre("sansAdmin");
+  check("nouveau joueur et sans admin : aucun nombre de réponses ni ligne « Sans réponse »", ![neuf, sa].some((h) => h.includes("evRep") || h.includes("nbRep") || h.includes("evSans")));
+}
+
 console.log("");
 console.log(ko === 0 ? "Tout est vert." : `${ko} échec(s).`);
 process.exit(ko === 0 ? 0 : 1);

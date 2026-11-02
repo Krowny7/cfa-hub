@@ -2,12 +2,15 @@
 // D (Theo, Platine II, J-110, 1 240 questions sur 3 000, 61 % si l'examen était
 // aujourd'hui), avec des variantes pour les cas limites. Toutes les cartes
 // sont remplies comme le ferait lireSynthese (donnees.ts) : les mêmes fonctions
-// de modele.ts lisent une fausse réponse de maitrise_synthese et de
-// rythme_joueur. Sert aux tests de rendu (scripts/moi/test-synthese.tsx) et à
-// l'aperçu local (preview-da/moi-synthese). Aucune lecture, aucun réseau.
+// de modele.ts lisent une fausse réponse de maitrise_synthese, de rythme_joueur
+// et de activite_depuis (89 réponses ces 3 derniers jours, dans 4 matières).
+// Sert aux tests de rendu (scripts/moi/test-synthese.tsx) et à l'aperçu local
+// (preview-da/moi-synthese). Aucune lecture, aucun réseau.
 import {
-  JOURS_COMPARAISON,
-  SEMAINES_COURBE,
+  COMPARAISONS,
+  JOURS_SYNTHESE,
+  RANG_RECENT,
+  activiteEn,
   calculSynthese,
   chiffresObjectif,
   globaleSynthese,
@@ -75,8 +78,8 @@ const LIGNES: LigneTrophee[] = [
 // ── les matières, les notions et les cartes « examen » (maquette D) ──────────
 
 const AUJ = PLAN_EXEMPLE.aujourdhui;
-/** Les jours de datesSynthese : il y a 30, 60 et 90 jours, puis chaque semaine sur 12 semaines. */
-const JOURS = [...JOURS_COMPARAISON, ...Array.from({ length: SEMAINES_COURBE }, (_, i) => 7 * (i + 1))].map((j) => decaleJour(AUJ, -j));
+/** Les jours de datesSynthese : il y a 30, 60 et 90 jours, chaque semaine sur 12 semaines, puis il y a 3 jours (rang 15). */
+const JOURS = JOURS_SYNTHESE.map((j) => decaleJour(AUJ, -j));
 
 /** Ta maîtrise aujourd'hui, il y a 30 / 60 / 90 jours, et tes réponses (61 % de préparation). */
 const MATIERES: Record<string, readonly [number, number, number, number, number]> = {
@@ -91,6 +94,21 @@ const MATIERES: Record<string, readonly [number, number, number, number, number]
   alternatives: [69, 66, 56, 45, 98],
   portfolio: [77, 71, 62, 50, 174],
 };
+/** Il y a 3 jours et les réponses depuis : [maîtrise il y a 3 j, réponses en 3 j] (89 en tout). Sans réponse, la maîtrise n'a pas bougé. */
+const TROIS_JOURS: Record<string, readonly [number, number]> = {
+  ethics: [58, 0],
+  quant: [72, 14],
+  economics: [66, 0],
+  fsa: [45, 25],
+  corporate: [71, 0],
+  equity: [63, 0],
+  fixed_income: [39, 42],
+  derivatives: [53, 8],
+  alternatives: [69, 0],
+  portfolio: [77, 0],
+};
+/** La part des réponses de chaque matière données depuis 30, 60 et 90 jours. */
+const PART_DEPUIS = { 30: 0.3, 60: 0.55, 90: 0.75 } as const;
 /** La moyenne des joueurs (même règle), pour les atouts. */
 const MOYENNES: Record<string, number> = { quant: 70, portfolio: 63, economics: 59, corporate: 69, alternatives: 62, equity: 60, ethics: 62, fsa: 50, fixed_income: 45, derivatives: 51 };
 /** Calcul ou théorie : [avec, sans] par matière (71 % sans calcul, 54 % avec). */
@@ -123,16 +141,29 @@ const RYTHME: Record<string, readonly [number, number]> = {
 const maitriseDe = (vide: boolean): Maitrise =>
   maitriseDepuis({ matieres: vide ? {} : Object.fromEntries(Object.entries(MATIERES).map(([k, v]) => [k, { pct: v[0], n: 60, total: v[4] }])) }) as Maitrise;
 
-/** La réponse de maitrise_synthese : les 3 dates de comparaison, puis 12 semaines (la maîtrise redescend en ligne droite vers celle d'il y a 90 jours). */
+/** La réponse de maitrise_synthese : les 3 dates de comparaison, 12 semaines (la maîtrise redescend en ligne droite vers celle d'il y a 90 jours), puis il y a 3 jours. */
 function historiqueBrut(): unknown[] {
   return JOURS.map((_, k) => {
     const matieres = Object.fromEntries(
       Object.entries(MATIERES).map(([cle, v]) => {
+        if (k === RANG_RECENT) return [cle, { pct: TROIS_JOURS[cle][0], n: 60 }];
         if (k < 3) return [cle, { pct: v[k + 1], n: 60 }];
         const t = Math.min(1, (7 * (k - 2)) / 90);
         return [cle, { pct: Math.round(v[0] + (v[3] - v[0]) * t), n: 60 }];
       }),
     );
+    return { i: k + 1, matieres };
+  });
+}
+
+/** La réponse de activite_depuis (rang 1 = 3 jours, puis 30, 60, 90) : une matière sans réponse sur la période n'a pas de ligne. */
+function activiteBrute(): unknown[] {
+  return COMPARAISONS.map((j, k) => {
+    const matieres: Record<string, { n: number; justes: number }> = {};
+    for (const [cle, v] of Object.entries(MATIERES)) {
+      const n = j === 3 ? TROIS_JOURS[cle][1] : Math.round(v[4] * PART_DEPUIS[j]);
+      if (n > 0) matieres[cle] = { n, justes: Math.round((n * v[0]) / 100) };
+    }
     return { i: k + 1, matieres };
   });
 }
@@ -180,6 +211,8 @@ function blocs(v: Variante, examen: string | null): Blocs {
     };
   }
   const histo = historiqueEn(neuf ? [] : historiqueBrut(), JOURS);
+  // un joueur neuf : activite_depuis répond, mais sans aucune réponse
+  const activite = activiteEn(neuf ? [] : activiteBrute());
   const moyennes = moyennesDe(Object.fromEntries(Object.entries(MOYENNES).map(([k, pct]) => [k, { pct, joueurs: 12 }])));
   const calcul = neuf
     ? {}
@@ -191,8 +224,8 @@ function blocs(v: Variante, examen: string | null): Blocs {
       );
   const rythme = neuf ? { sec: null, n: 0, matieres: {} } : { sec: 104, n: 2220, matieres: Object.fromEntries(Object.entries(RYTHME).map(([k, [sec, n]]) => [k, { sec, n }])) };
   return {
-    matieres: matieresSynthese(m, histo, neuf ? null : moyennes),
-    globale: globaleSynthese(m, histo),
+    matieres: matieresSynthese(m, histo, neuf ? null : moyennes, activite),
+    globale: globaleSynthese(m, histo, activite),
     notions: notionsDe(NOTIONS, neuf ? {} : mesuresNotions()),
     sourceNotions: "unique",
     calcul: calculSynthese(mesuresCalculDe(calcul), m.matieres),
