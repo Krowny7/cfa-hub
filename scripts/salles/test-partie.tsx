@@ -129,6 +129,14 @@ console.log("# classement en direct, podium, bilan");
   const { etat } = exemplePartie("fin");
   const rejou = paramsPourRejouer(etat.session!.params) as Record<string, unknown>;
   check("paramsPourRejouer : les réglages sans le décompte des tirages", rejou.nombre === 10 && rejou.type === "mixte" && rejou.temps === 45 && rejou.partCalculs === 40 && !("nbQuestions" in rejou) && !("nbCalculs" in rejou));
+  const rejouGlobal = paramsPourRejouer({ ...etat.session!.params, chrono: "global" }) as Record<string, unknown>;
+  check("paramsPourRejouer : le chrono global est gardé pour rejouer", rejouGlobal.chrono === "global");
+  // chrono global, partie pas finie : etat_salle rend juste et points à null
+  const cachee = mienne(4, { juste: null, points: null });
+  const vueCachee = reponseVue(4, {}, [cachee]);
+  check("reponseVue : chrono global avant la fin, réponse masquée (ni juste ni points)", vueCachee?.masque === true && vueCachee.juste === false && vueCachee.points === 0 && vueCachee.choix === 0);
+  check("reponseVue : la réponse masquée que le serveur vient de rendre", reponseVue(4, { 4: ok({ masque: true, juste: false, points: 0, bonneIndex: null, explication: null }) }, [])?.masque === true && reponseVue(2, {}, [mienne(2)])?.masque === false);
+  check("totalPoints / bilanJoueur : des points masqués comptent pour 0", totalPoints(10, {}, [cachee, mienne(1, { points: 1000 })]) === 1000 && bilanJoueur({ session: { nb: 5, nbJoueurs: 2 }, mesReponses: [cachee], classement: [], monClassement: null, moiId: "moi" }).points === 0);
   check("finRecente : moins de dix minutes après la fin, avec les dates du serveur", finRecente("2026-10-30T20:00:00Z", "2026-10-30T20:05:00Z") && !finRecente("2026-10-30T20:00:00Z", "2026-10-30T20:10:00Z") && !finRecente("2026-10-30T20:00:00Z", "2026-10-30T19:59:00Z") && !finRecente("pas une date", "2026-10-30T20:05:00Z"));
 }
 

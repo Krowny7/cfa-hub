@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { PartieExamen } from "@/components/salles/PartieExamen";
 import { VuePartie } from "@/components/salles/VuePartie";
 import { effetsParDefaut, type Effets } from "@/components/salles/effets";
 import { useHeureServeur } from "@/components/salles/anim";
 import type { SuiviSalle } from "@/components/salles/useEtatSalle";
 import { repondreSalle } from "@/lib/salles/api";
+import { estChronoGlobal, horlogeExamen } from "@/lib/salles/examen";
 import { clockDe, horlogeSession } from "@/lib/salles/logique";
 import { chiffreDecompte, reponseVue, type ReponseOk } from "@/lib/salles/partie";
 import type { ReponseResultat } from "@/lib/salles/types";
@@ -26,7 +28,10 @@ import p from "./Partie.module.css";
 //  - signale les moments forts à `effets` (sons, confettis, Léonard :
 //    PLACEHOLDERS, voir effets.ts) ;
 //  - relit l'état dès que la fin de partie tombe à l'horloge.
-// La présentation est dans VuePartie (testée sans réseau).
+// La présentation est dans VuePartie (testée sans réseau). Au chrono global
+// (correction à la fin, comme les 30 du jour), c'est PartieExamen : le serveur
+// ne rend alors ni verdict ni correction avant la fin, et aucun effet « juste /
+// faux » ne part pendant la partie.
 
 export function PartieSalle({
   suivi,
@@ -74,11 +79,14 @@ export function PartieSalle({
   useEffect(() => {
     vus.current = new Set();
   }, [sessionId]);
-  const h = ses && t !== null ? horlogeSession(clockDe(ses), t) : null;
-  const finLocale = h?.phase === "fin";
-  const chiffre = h?.phase === "decompte" ? chiffreDecompte(h.avantProchainMs ?? 0) : null;
-  const premiereOuverte = h?.phase === "question" && h.index === 0;
+  const global = estChronoGlobal(ses);
+  const h = ses && t !== null && !global ? horlogeSession(clockDe(ses), t) : null;
+  const hg = ses && t !== null && global ? horlogeExamen(ses, t) : null;
+  const finLocale = global ? hg?.phase === "fin" : h?.phase === "fin";
+  const chiffre = hg ? (hg.phase === "decompte" ? chiffreDecompte(hg.avantDebutMs) : null) : h?.phase === "decompte" ? chiffreDecompte(h.avantProchainMs ?? 0) : null;
+  const premiereOuverte = hg ? hg.phase === "question" : h?.phase === "question" && h.index === 0;
   const verdictCourant = (() => {
+    // chrono global : pas de verdict avant la fin (le serveur le masque)
     if (!h || (h.phase !== "question" && h.phase !== "revelation")) return null;
     const r = reponseVue(h.index, locales, etat.mesReponses);
     return { index: h.index, phase: h.phase, juste: r ? r.juste : null, points: r?.points ?? 0 };
@@ -102,17 +110,31 @@ export function PartieSalle({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chiffre, premiereOuverte, clef]);
 
+  // chrono global : à la fin locale, le classement lu est encore celui de la partie (tout le
+  // monde à 0 point) ; la place n'est connue qu'une fois la fin confirmée par le serveur
+  const finConfirmee = !global || ses?.statut === "terminee";
   useEffect(() => {
     if (!finLocale || !ses) return;
     const moiLigne = etat.classement.find((l) => l.userId === etat.moi.userId);
-    if (!vus.current.has("fin")) {
+    if (finConfirmee && !vus.current.has("fin")) {
       vus.current.add("fin");
       effets.surEvenement({ type: "fin", place: moiLigne?.rang ?? etat.monClassement?.rang ?? null, nbJoueurs: ses.nbJoueurs });
     }
     // la fin tombe à l'horloge avant que le serveur ne le dise : on relit tout de suite
     if (ses.statut !== "terminee") void rafraichir();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finLocale]);
+  }, [finLocale, finConfirmee]);
+
+  // chrono global : toutes les corrections arrivent à la fin ; s'il en manque, on relit (lecture
+  // incrémentale à partir de la première correction manquante) en plus du rythme de useEtatSalle
+  const nbCorrections = etat.corrections.length;
+  const manqueCorrections = global && finLocale && ses ? nbCorrections < ses.nb : false;
+  const statut = ses?.statut ?? null;
+  useEffect(() => {
+    if (!manqueCorrections) return;
+    const id = setTimeout(() => void rafraichir(), 1200);
+    return () => clearTimeout(id);
+  }, [manqueCorrections, nbCorrections, statut, rafraichir]);
 
   // ma ligne pour le classement : un objet stable, pour que les lignes ne se redessinent pas à chaque tic
   const moiMembre = etat.membres.find((m) => m.userId === etat.moi.userId);
@@ -136,6 +158,28 @@ export function PartieSalle({
           <span>{PARTIE.synchro}</span>
         </div>
       </section>
+    );
+  }
+
+  if (global) {
+    return (
+      <PartieExamen
+        session={ses}
+        items={etat.items}
+        corrections={etat.corrections}
+        mesReponses={etat.mesReponses}
+        locales={locales}
+        classement={etat.classement}
+        monClassement={etat.monClassement}
+        membres={etat.membres}
+        moi={moi}
+        estAdmin={etat.moi.estAdmin}
+        t={t}
+        repondre={envoyer}
+        onArreter={onArreter}
+        onRejouer={onRejouer}
+        onRetour={onRetour}
+      />
     );
   }
 

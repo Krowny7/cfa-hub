@@ -1,18 +1,23 @@
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FaceAFace } from "@/lib/profil/face-a-face";
+import { lirePartiesCommunes } from "@/lib/salles/rencontres";
 
 // Les épreuves communes de deux joueurs : ce qu'ils ont fait l'un et l'autre
 // avec les mêmes questions (le défi du jour, les 5 du jour, un examen blanc
-// classé, et leurs duels). Lu avec le client admin, côté serveur, et
-// seulement les scores, déjà publics dans les classements du défi et des
-// examens. Une copie du jour ne compte qu'une fois close des deux côtés
-// (finished_at et score posés) : l'embargo d'une copie ouverte tient. Les
-// duels viennent du bilan déjà lu (lib/profil/face-a-face.ts). Deux lectures
-// en parallèle, sans boucle ; si l'une échoue, null (pas de bilan partiel). Module serveur ; l'onglet Face-à-face seulement.
+// classé, leurs duels et leurs parties de Salle). Lu avec le client admin,
+// côté serveur, et seulement les scores, déjà publics dans les classements du
+// défi, des examens et des Salles. Une copie du jour ne compte qu'une fois
+// close des deux côtés (finished_at et score posés) : l'embargo d'une copie
+// ouverte tient. Une partie de Salle ne compte qu'une fois finie, si les deux
+// y ont répondu (lib/salles/rencontres.ts) : le score est en points, le
+// classement de la partie départage. Les duels viennent du bilan déjà lu
+// (lib/profil/face-a-face.ts). Trois lectures en parallèle ; si l'une échoue,
+// null (pas de bilan partiel) ; sans la migration des Salles, elles n'ajoutent
+// rien. Module serveur ; l'onglet Face-à-face seulement.
 
-export type TypeEpreuve = "defi" | "cinq" | "examen" | "duel";
-export const TYPES_EPREUVE: TypeEpreuve[] = ["defi", "cinq", "examen", "duel"];
+export type TypeEpreuve = "defi" | "cinq" | "examen" | "duel" | "salle";
+export const TYPES_EPREUVE: TypeEpreuve[] = ["defi", "cinq", "examen", "duel", "salle"];
 
 export type Issue = "victoire" | "defaite" | "nul";
 
@@ -29,6 +34,8 @@ export type EpreuveCommune = {
   total: number;
   issue: Issue;
   href: string | null;
+  /** une partie de Salle : les scores sont des points, et voici les bonnes réponses de chacun (sur `total` questions) */
+  bonnes?: { moi: number; lui: number };
 };
 
 export type Bilan = { victoires: number; defaites: number; nuls: number };
@@ -66,7 +73,7 @@ export const epreuvesCommunes = cache(
   async (admin: SupabaseClient | null, moi: string, autre: string, duels: FaceAFace | null): Promise<EpreuvesCommunes | null> => {
     const epreuves: EpreuveCommune[] = [];
     if (admin && moi !== autre) {
-      const [jours, examens] = await Promise.all([
+      const [jours, examens, salles] = await Promise.all([
         admin
           .from("daily_attempts")
           .select("challenge_id,user_id,day,score,total,daily_challenges(program)")
@@ -88,9 +95,11 @@ export const epreuvesCommunes = cache(
             (r) => (r.error ? null : ((r.data ?? []) as unknown as CopieExamen[])),
             () => null,
           ),
+        // les parties de Salle finies jouées ensemble (migration absente : [])
+        lirePartiesCommunes(admin, moi, { autre, noms: true }).catch(() => null),
       ]);
       // une lecture en échec : pas de bilan partiel présenté comme complet, la carte s'efface
-      if (!jours || !examens) return null;
+      if (!jours || !examens || !salles) return null;
       for (const [m, a] of paires(jours, (l) => l.challenge_id, (l) => l.user_id, moi, autre)) {
         const programme = un(m.daily_challenges)?.program ?? "";
         const cinq = programme.endsWith("-cinq");
@@ -121,6 +130,22 @@ export const epreuvesCommunes = cache(
           href: `/mock-exams/${m.exam_id}`,
         });
       }
+      for (const p of salles) {
+        epreuves.push({
+          cle: `s-${p.sessionId}`,
+          type: "salle",
+          date: p.fin,
+          jour: false,
+          titre: p.nom,
+          monScore: p.moi.points,
+          sonScore: p.lui.points,
+          total: p.nb,
+          issue: p.issue === "moi" ? "victoire" : p.issue === "lui" ? "defaite" : "nul",
+          // une salle supprimée depuis : la partie compte, sans lien
+          href: p.salleId ? `/salles/${p.salleId}` : null,
+          bonnes: { moi: p.moi.bonnes, lui: p.lui.bonnes },
+        });
+      }
     }
     // les duels : la liste (50 au plus) du bilan, et son compte sur tous les duels
     for (const d of duels?.duels ?? []) {
@@ -143,7 +168,7 @@ export const epreuvesCommunes = cache(
     epreuves.sort((x, y) => instant(y) - instant(x));
 
     const vide = (): Bilan => ({ victoires: 0, defaites: 0, nuls: 0 });
-    const parType: Record<TypeEpreuve, Bilan> = { defi: vide(), cinq: vide(), examen: vide(), duel: vide() };
+    const parType: Record<TypeEpreuve, Bilan> = { defi: vide(), cinq: vide(), examen: vide(), duel: vide(), salle: vide() };
     for (const e of epreuves) {
       if (e.type === "duel") continue;
       const b = parType[e.type];

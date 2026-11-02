@@ -444,3 +444,9 @@ $$;
 REVOKE ALL ON FUNCTION _salle_pool_mock(text[], text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION salle_mocks_disponibles() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION salle_mocks_disponibles() TO authenticated;
+
+-- Une partie de mock peut compter jusqu'à 600 questions : la contrainte de
+-- migration_salles.sql (nb de 1 à 50) est relevée (appliquée le 2026-11-02,
+-- elle refusait le lancement d'une session complète de 90 questions).
+ALTER TABLE salle_sessions DROP CONSTRAINT IF EXISTS salle_sessions_nb_check;
+ALTER TABLE salle_sessions ADD CONSTRAINT salle_sessions_nb_check CHECK (nb >= 1 AND nb <= 600);

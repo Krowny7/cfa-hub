@@ -3,14 +3,16 @@
 // scripts/salles/test-salles.ts. Module neutre (pas de "use client").
 //
 // Les règles d'horloge, de score et de réglages sont aussi écrites en SQL
-// (migration_salles.sql : _salle_horloge, repondre_salle, _salle_params) : le
-// serveur fait foi, ce module sert à afficher, à caler les compteurs et à
-// valider avant l'envoi. Garder les deux d'accord.
+// (migration_salles.sql : _salle_horloge, repondre_salle, _salle_params ;
+// migration_salles_chrono_global.sql : _salle_horloge_partie pour le chrono
+// global) : le serveur fait foi, ce module sert à afficher, à caler les
+// compteurs et à valider avant l'envoi. Garder les deux d'accord.
 
 import { TOPICS } from "@/lib/practiceTopics";
 import type {
   EtatSalle,
   MockDisponible,
+  SalleChrono,
   SalleDifficulte,
   SalleMock,
   SalleMockOrdre,
@@ -56,6 +58,10 @@ export const SALLE_DESCRIPTION_MAX = 120;
 export const SALLE_LECTURE_MS = 2500;
 
 export const SALLE_TYPES: SalleType[] = ["questions", "calculs", "mixte"];
+/** Par question (une à la fois, correction tout de suite) ou global (comme les 30 du jour, correction à la fin). */
+export const SALLE_CHRONOS: SalleChrono[] = ["question", "global"];
+/** Chrono global : chaque bonne réponse vaut 1 000 points, le temps cumulé départage. */
+export const SALLE_POINTS_GLOBAL = 1000;
 export const SALLE_SOURCES: SalleSource[] = ["banque", "mocks", "examen"];
 /** Mocks officiels : jusqu'à 600 questions (toutes les sessions, variantes comprises). */
 export const SALLE_NOMBRE_MAX_MOCK = 600;
@@ -136,9 +142,12 @@ export function genererCode(rand: () => number = Math.random): string {
 // ---------------------------------------------------------------------------
 // Horloge de la partie
 //
-// La question i s'ouvre à started_at + i × (temps + pause). Tous les calculs
-// sont faits en millisecondes entières, à partir d'une heure « serveur » : voir
-// decalageHorloge pour caler le navigateur sur le serveur.
+// Chrono par question : la question i s'ouvre à started_at + i × (temps +
+// pause). Chrono global : toutes les questions s'ouvrent à started_at, la
+// partie finit à started_at + nb × temps (pas de pause), rien n'est clos avant
+// la fin. Tous les calculs sont faits en millisecondes entières, à partir
+// d'une heure « serveur » : voir decalageHorloge pour caler le navigateur sur
+// le serveur.
 
 /** Ce qu'il faut savoir d'une partie pour lire l'horloge. */
 export type ClockSession = {
@@ -151,6 +160,8 @@ export type ClockSession = {
   nb: number;
   /** arrêtée par l'admin (ou finie) : la partie est terminée quelle que soit l'heure */
   terminee?: boolean;
+  /** chrono global : toutes les questions ouvertes d'un coup, un seul chrono de nb × temps */
+  global?: boolean;
 };
 
 export type Horloge = {
@@ -161,7 +172,7 @@ export type Horloge = {
   nbFermees: number;
   /** questions dont l'énoncé est révélé */
   nbVisibles: number;
-  /** pendant « question » : ms restantes pour répondre ; sinon 0 */
+  /** pendant « question » : ms restantes pour répondre (chrono global : sur le chrono de la partie) ; sinon 0 */
   restantMs: number;
   /** ms avant le prochain changement de phase (ouverture, fin du temps, fin de partie) ; null une fois finie */
   avantProchainMs: number | null;
@@ -169,18 +180,37 @@ export type Horloge = {
 
 const msCycle = (s: ClockSession) => (s.temps + s.pause) * 1000;
 
-/** Instant d'ouverture de la question `i`. */
-export const ouvertureQuestion = (s: ClockSession, i: number) => s.startedAt + i * msCycle(s);
-/** Instant où le temps de la question `i` est écoulé (le compteur arrive à 0). */
-export const finTempsQuestion = (s: ClockSession, i: number) => ouvertureQuestion(s, i) + s.temps * 1000;
-/** Instant où la correction de la question `i` devient publique. */
-export const revelationQuestion = (s: ClockSession, i: number) => finTempsQuestion(s, i) + SALLE_MARGE_S * 1000;
-/** Fin de la partie (fin de la dernière pause). */
-export const finPartie = (s: ClockSession) => s.startedAt + s.nb * msCycle(s);
+/** Instant d'ouverture de la question `i` (chrono global : le départ, pour toutes). */
+export const ouvertureQuestion = (s: ClockSession, i: number) => (s.global ? s.startedAt : s.startedAt + i * msCycle(s));
+/** Instant où le temps de la question `i` est écoulé (le compteur arrive à 0 ; chrono global : la fin de la partie). */
+export const finTempsQuestion = (s: ClockSession, i: number) => (s.global ? finPartie(s) : ouvertureQuestion(s, i) + s.temps * 1000);
+/** Instant où la correction de la question `i` devient publique (chrono global : à la fin de la partie, pour toutes). */
+export const revelationQuestion = (s: ClockSession, i: number) => (s.global ? finPartie(s) : finTempsQuestion(s, i) + SALLE_MARGE_S * 1000);
+/** Fin de la partie : fin de la dernière pause ; chrono global : départ + nb × temps. */
+export function finPartie(s: ClockSession): number {
+  return s.global ? s.startedAt + Math.max(0, Math.floor(s.nb)) * s.temps * 1000 : s.startedAt + s.nb * msCycle(s);
+}
 
-/** L'état de la partie à l'heure `maintenant` (ms, heure du serveur). Miroir de _salle_horloge. */
+/**
+ * L'état d'une partie en chrono global. Miroir de _salle_horloge_partie :
+ * décompte (index -1 ; tous les énoncés révélés 2 s avant le départ), puis
+ * « question » (index 0, toutes visibles, aucune close) jusqu'à la fin
+ * (départ + nb × temps), puis « fin » (tout est clos d'un coup).
+ */
+function horlogeGlobale(s: ClockSession, maintenant: number, nb: number): Horloge {
+  const fin = finPartie(s);
+  if (s.terminee || maintenant >= fin) return { phase: "fin", index: nb, nbFermees: nb, nbVisibles: nb, restantMs: 0, avantProchainMs: null };
+  const e = maintenant - s.startedAt;
+  if (e < 0) {
+    return { phase: "decompte", index: -1, nbFermees: 0, nbVisibles: e + SALLE_APERCU_S * 1000 >= 0 ? nb : 0, restantMs: 0, avantProchainMs: -e };
+  }
+  return { phase: "question", index: 0, nbFermees: 0, nbVisibles: nb, restantMs: fin - maintenant, avantProchainMs: fin - maintenant };
+}
+
+/** L'état de la partie à l'heure `maintenant` (ms, heure du serveur). Miroir de _salle_horloge (et de _salle_horloge_partie en chrono global). */
 export function horlogeSession(s: ClockSession, maintenant: number): Horloge {
   const nb = Math.max(0, Math.floor(s.nb));
+  if (s.global) return horlogeGlobale(s, maintenant, nb);
   if (s.terminee) return { phase: "fin", index: nb, nbFermees: nb, nbVisibles: nb, restantMs: 0, avantProchainMs: null };
   const cycle = msCycle(s);
   const e = maintenant - s.startedAt;
@@ -219,7 +249,10 @@ export function delaiAvantLecture(s: ClockSession, maintenant: number, baseMs: n
     if (d > 0 && d < plusProche) plusProche = d;
   };
   considerer(s.startedAt);
-  for (let i = 0; i < s.nb; i++) {
+  // chrono global : les énoncés (2 s avant le départ), le départ, la fin ; le
+  // rythme de base suffit pour l'avancement des autres joueurs
+  if (s.global) considerer(s.startedAt - SALLE_APERCU_S * 1000);
+  for (let i = 0; i < (s.global ? 0 : s.nb); i++) {
     considerer(ouvertureQuestion(s, i) - SALLE_APERCU_S * 1000);
     considerer(ouvertureQuestion(s, i));
     considerer(finTempsQuestion(s, i));
@@ -245,14 +278,15 @@ export function decalageHorloge(serverNowIso: string, envoyeMs: number, recuMs: 
 /** L'heure du serveur maintenant, d'après le décalage mesuré. */
 export const heureServeur = (decalageMs: number, maintenantClient: number = Date.now()) => maintenantClient + decalageMs;
 
-/** Lit une partie telle que le serveur la décrit (dates ISO, durées en secondes). */
-export function clockDe(session: { startedAt: string; temps: number; pause: number; nb: number; statut?: string }): ClockSession {
+/** Lit une partie telle que le serveur la décrit (dates ISO, durées en secondes, chrono par question ou global). */
+export function clockDe(session: { startedAt: string; temps: number; pause: number; nb: number; statut?: string; chrono?: SalleChrono }): ClockSession {
   return {
     startedAt: Date.parse(session.startedAt),
     temps: session.temps,
     pause: session.pause,
     nb: session.nb,
     terminee: session.statut === "terminee",
+    global: session.chrono === "global",
   };
 }
 
@@ -274,8 +308,9 @@ export function pointsReponse(temps: number, restantMs: number): number {
   return Math.floor((SALLE_POINTS_MAX * (T + R) + T) / (2 * T));
 }
 
-/** Les points qu'une réponse donnée à l'instant `maintenant` (heure du serveur) rapporterait, si elle est juste. */
+/** Les points qu'une réponse donnée à l'instant `maintenant` (heure du serveur) rapporterait, si elle est juste (chrono global : toujours 1 000). */
 export function pointsAu(s: ClockSession, position: number, maintenant: number): number {
+  if (s.global) return SALLE_POINTS_GLOBAL;
   return pointsReponse(s.temps, finTempsQuestion(s, position) - maintenant);
 }
 
@@ -319,6 +354,7 @@ export function paramsParDefaut(): SalleParams {
     difficulte: "melange",
     temps: SALLE_TEMPS_DEFAUT,
     partCalculs: 0,
+    chrono: "question",
   };
 }
 
@@ -337,7 +373,8 @@ function entier(v: unknown): number | null {
  * (banque par défaut, ignorée pour les calculs), au moins une matière connue
  * (sans doublon, dans l'ordre du programme), difficulté (mélangée par défaut),
  * temps de 15 à 120 s (45 par défaut), part des calculs de 10 à 90 % pour un
- * mélange (0 pour des questions seules, 100 pour des calculs seuls).
+ * mélange (0 pour des questions seules, 100 pour des calculs seuls), chrono
+ * par question (défaut) ou global.
  */
 export function validerParams(brut: unknown): { ok: true; params: SalleParams } | { ok: false; erreurs: ParamsErreur[] } {
   const erreurs: ParamsErreur[] = [];
@@ -364,6 +401,12 @@ export function validerParams(brut: unknown): { ok: true; params: SalleParams } 
   if (r.source !== undefined && r.source !== null && r.source !== "") {
     if (SALLE_SOURCES.includes(r.source as SalleSource)) source = r.source as SalleSource;
     else erreurs.push({ champ: "source", message: "La source des questions est la banque complète ou les mocks." });
+  }
+
+  let chrono: SalleChrono = "question";
+  if (r.chrono !== undefined && r.chrono !== null && r.chrono !== "") {
+    if (SALLE_CHRONOS.includes(r.chrono as SalleChrono)) chrono = r.chrono as SalleChrono;
+    else erreurs.push({ champ: "chrono", message: "Le chrono est par question ou global." });
   }
 
   let difficulte: SalleDifficulte = "melange";
@@ -402,11 +445,11 @@ export function validerParams(brut: unknown): { ok: true; params: SalleParams } 
 
   if (erreurs.length || !type || nombre === null) return { ok: false, erreurs };
   if (mock) {
-    return { ok: true, params: { type: "questions", nombre, source: "examen", topics, difficulte: "melange", temps, partCalculs: 0, mock } };
+    return { ok: true, params: { type: "questions", nombre, source: "examen", topics, difficulte: "melange", temps, partCalculs: 0, mock, chrono } };
   }
   return {
     ok: true,
-    params: { type, nombre, source: type === "calculs" ? "banque" : source, topics, difficulte, temps, partCalculs },
+    params: { type, nombre, source: type === "calculs" ? "banque" : source, topics, difficulte, temps, partCalculs, chrono },
   };
 }
 
@@ -436,8 +479,15 @@ export function repartirNombre(p: Pick<SalleParams, "type" | "nombre" | "partCal
   return { questions: p.nombre - calculs, calculs };
 }
 
-/** Durée d'une partie en secondes, du décompte à la dernière correction (sans la pause finale). */
-export function dureeEstimee(p: Pick<SalleParams, "nombre" | "temps">, pause: number = SALLE_PAUSE_S): number {
+/** Le chrono d'une partie en chrono global, en secondes : nombre × temps moyen par question. */
+export const chronoGlobalS = (p: Pick<SalleParams, "nombre" | "temps">) => p.nombre * p.temps;
+
+/**
+ * Durée d'une partie en secondes, du décompte à la dernière correction (sans
+ * la pause finale) ; chrono global : décompte + nombre × temps.
+ */
+export function dureeEstimee(p: Pick<SalleParams, "nombre" | "temps" | "chrono">, pause: number = SALLE_PAUSE_S): number {
+  if (p.chrono === "global") return SALLE_DECOMPTE_S + chronoGlobalS(p);
   return SALLE_DECOMPTE_S + p.nombre * (p.temps + pause) - pause;
 }
 
@@ -452,8 +502,13 @@ export function libelleDuree(secondes: number): string {
   return r ? `${m} min ${r} s` : `${m} min`;
 }
 
-/** Une ligne qui résume les réglages : « 20 questions · mocks · 3 matières · difficile · 45 s ». */
-export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" | "topics" | "difficulte" | "temps" | "mock">): string {
+/**
+ * Une ligne qui résume les réglages : « 20 questions · mocks · 3 matières ·
+ * difficile · 45 s » ; en chrono global, le temps devient « chrono global
+ * 15 min » (nombre × temps).
+ */
+export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" | "topics" | "difficulte" | "temps" | "mock" | "chrono">): string {
+  const temps = p.chrono === "global" ? `chrono global ${libelleDuree(chronoGlobalS(p))}` : `${p.temps} s`;
   const quoi = p.type === "calculs" ? "calculs" : p.type === "mixte" ? "questions et calculs" : "questions";
   const matieres = p.topics.length === SALLE_TOPIC_KEYS.length ? "toutes les matières" : `${p.topics.length} matière${p.topics.length > 1 ? "s" : ""}`;
   if (p.source === "examen" && p.mock) {
@@ -463,12 +518,12 @@ export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" 
       p.mock.examens.map(examenCourt).join(", ") || "aucune session",
       version,
       p.mock.ordre === "examen" ? "ordre de l'examen" : "mélangées",
-      `${p.temps} s`,
+      temps,
     ].join(" · ");
   }
   const parts = [`${p.nombre} ${quoi}`];
   if (p.type !== "calculs") parts.push(p.source === "mocks" ? "mocks" : "banque complète");
-  parts.push(matieres, p.difficulte === "melange" ? "difficulté mélangée" : p.difficulte, `${p.temps} s`);
+  parts.push(matieres, p.difficulte === "melange" ? "difficulté mélangée" : p.difficulte, temps);
   return parts.join(" · ");
 }
 
@@ -485,6 +540,7 @@ export function paramsVersJson(p: SalleParams): Record<string, unknown> {
     difficulte: p.difficulte,
     temps: p.temps,
     part_calculs: p.partCalculs,
+    chrono: p.chrono ?? "question",
   };
   if (p.source === "examen" && p.mock) {
     json.examens = p.mock.examens;
@@ -495,15 +551,20 @@ export function paramsVersJson(p: SalleParams): Record<string, unknown> {
   return json;
 }
 
-/** Les réglages gardés par le serveur (salle_sessions.params), avec les nombres effectivement tirés. */
+/** Les réglages gardés par le serveur (salle_sessions.params, chrono compris), avec les nombres effectivement tirés. */
 export function paramsDepuisJson(raw: unknown): SalleParamsStockes {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const v = validerParams({ ...r, partCalculs: r.part_calculs ?? r.partCalculs });
   const base = v.ok ? v.params : paramsParDefaut();
   const n = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : Number(x) || 0);
   const rep = repartirNombre(base);
+  // une partie d'avant le réglage (sans clé « chrono ») se jouait par question :
+  // chrono laissé absent (absent = par question), pour que les réglages de la
+  // partie suivante puissent proposer le chrono global (reglagesDeDepart)
+  const lus: SalleParams = { ...base };
+  if (r.chrono === undefined || r.chrono === null || r.chrono === "") delete lus.chrono;
   return {
-    ...base,
+    ...lus,
     nbQuestions: r.nb_questions === undefined ? rep.questions : n(r.nb_questions),
     nbCalculs: r.nb_calculs === undefined ? rep.calculs : n(r.nb_calculs),
   };
@@ -516,9 +577,21 @@ export function paramsDepuisJson(raw: unknown): SalleParamsStockes {
  * Le paramètre `p_depuis` à passer à etat_salle : le nombre de corrections déjà
  * reçues pour la partie affichée (les énoncés, eux, sont renvoyés à partir de
  * là, ce qui couvre la question en cours et la suivante). 0 sans état.
+ *
+ * Chrono global : aucune correction n'arrive avant la fin, et etat_salle
+ * renverrait alors tous les énoncés à chaque lecture (lourd pour un mock de 90
+ * à 180 questions). Tant que la partie court et que tous les énoncés sont là,
+ * on demande à partir de `nb` : rien de nouveau, seulement la session,
+ * l'avancement et mes réponses. Dès que la partie est finie (phase « fin »),
+ * on repart de la première correction manquante : les nb corrections arrivent
+ * d'un coup.
  */
 export function prochainDepuis(prev: EtatSalle | null): number {
-  return prev?.session ? prev.corrections.length : 0;
+  const s = prev?.session;
+  if (!prev || !s) return 0;
+  const nb = Math.max(0, Math.floor(s.nb));
+  if (s.chrono === "global" && s.phase !== "fin" && s.statut !== "terminee" && prev.corrections.length === 0 && nb > 0 && prev.items.length >= nb) return nb;
+  return prev.corrections.length;
 }
 
 function parPosition<T extends { position: number }>(a: T[], b: T[]): T[] {

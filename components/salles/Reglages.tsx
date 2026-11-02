@@ -18,6 +18,7 @@ import {
   SALLE_TEMPS_PROPOSES,
   SALLE_TOPIC_KEYS,
   SALLE_TYPE_LABELS,
+  chronoGlobalS,
   disponiblesMock,
   dureeEstimee,
   libelleDuree,
@@ -26,7 +27,7 @@ import {
   repartirNombre,
   validerParams,
 } from "@/lib/salles/logique";
-import type { MockDisponible, QuestionsDisponibles, SalleDifficulte, SalleMock, SalleMockOrdre, SalleMockVersion, SalleParams, SalleSource, SalleType, TopicKey } from "@/lib/salles/types";
+import type { MockDisponible, QuestionsDisponibles, SalleChrono, SalleDifficulte, SalleMock, SalleMockOrdre, SalleMockVersion, SalleParams, SalleSource, SalleType, TopicKey } from "@/lib/salles/types";
 import { flechesRadios } from "@/components/salles/radios";
 import { MATIERES_COURTES } from "@/lib/voice-classement";
 import { REGLAGES } from "@/lib/voice-salles";
@@ -41,7 +42,11 @@ import s from "./Salles.module.css";
 //  - le nombre (5 à 50), la source des questions (banque complète / examens
 //    blancs), les matières (cases, « Toutes »), la difficulté (facile, moyen,
 //    difficile ou mélangée), le temps par question (15 à 120 s) ;
-//  - un résumé en direct (durée estimée, nombre de questions disponibles).
+//  - le chrono : global (un seul chrono de nombre × temps, correction à la
+//    fin, comme les 30 du jour : proposé d'office, et quand on choisit un mock
+//    officiel) ou par question (correction après chaque question) ;
+//  - un résumé en direct (durée estimée ou chrono total, nombre de questions
+//    disponibles).
 // Le formulaire ne sait pas lancer lui-même : `onLancer` appelle l'action
 // serveur (app/salles/actions.ts), qui tire les calculs côté serveur. Les
 // effectifs de la banque (par matière) viennent de `chargerDispos` ; sans lui,
@@ -64,6 +69,11 @@ const VERSIONS: { cle: SalleMockVersion; nom: string; aide: string }[] = [
   { cle: "variantes", nom: REGLAGES.versionVariantes, aide: REGLAGES.versionVariantesAide },
   { cle: "tout", nom: REGLAGES.versionTout, aide: REGLAGES.versionToutAide },
 ];
+/** Le chrono global d'abord : c'est le choix de départ (reglagesDeDepart). */
+const CHRONOS: { cle: SalleChrono; nom: string; aide: string }[] = [
+  { cle: "global", nom: REGLAGES.chronoGlobal, aide: REGLAGES.chronoGlobalAide },
+  { cle: "question", nom: REGLAGES.chronoQuestion, aide: REGLAGES.chronoQuestionAide },
+];
 const ORDRES: { cle: SalleMockOrdre; nom: string; aide: string }[] = [
   { cle: "examen", nom: REGLAGES.ordreExamen, aide: REGLAGES.ordreExamenAide },
   { cle: "melange", nom: REGLAGES.ordreMelange, aide: REGLAGES.ordreMelangeAide },
@@ -79,10 +89,16 @@ export function disponibles(dispos: QuestionsDisponibles[] | null | undefined, t
   return dispos.filter((d) => topics.includes(d.topic)).reduce((t, d) => t + (difficulte === "melange" ? d.total : d[difficulte]), 0);
 }
 
-/** Les réglages de départ : ceux de la dernière partie, sinon les valeurs par défaut. */
+/**
+ * Les réglages de départ : ceux de la dernière partie, sinon les valeurs par
+ * défaut. Le chrono part sur « global » (correction à la fin, comme les 30 du
+ * jour), sauf si la dernière partie a choisi un chrono : une partie d'avant le
+ * réglage (chrono absent) part donc aussi sur « global ».
+ */
 export function reglagesDeDepart(precedents?: Partial<SalleParams> | null): SalleParams {
-  const v = validerParams({ ...paramsParDefaut(), ...(precedents ?? {}) });
-  return v.ok ? v.params : paramsParDefaut();
+  const chrono = precedents?.chrono ?? "global";
+  const v = validerParams({ ...paramsParDefaut(), ...(precedents ?? {}), chrono });
+  return v.ok ? v.params : { ...paramsParDefaut(), chrono: "global" };
 }
 
 export function Reglages({
@@ -146,8 +162,10 @@ export function Reglages({
   }
   function choisirSource(cle: SalleSource) {
     if (cle !== "examen") return set({ source: cle });
-    // un mock : questions seulement, toutes les matières, le temps du jour J si rien n'a été réglé
-    set({ source: cle, type: "questions", topics: [...SALLE_TOPIC_KEYS], temps: params.temps === SALLE_TEMPS_DEFAUT ? TEMPS_EXAMEN : params.temps, mock });
+    // un mock : questions seulement, toutes les matières, le temps du jour J si
+    // rien n'a été réglé, et le chrono global (comme le jour J) ; l'admin peut
+    // encore revenir au chrono par question
+    set({ source: cle, type: "questions", topics: [...SALLE_TOPIC_KEYS], temps: params.temps === SALLE_TEMPS_DEFAUT ? TEMPS_EXAMEN : params.temps, mock, chrono: params.source === "examen" ? params.chrono : "global" });
   }
 
   const reel: SalleParams = surMock
@@ -217,6 +235,7 @@ export function Reglages({
   }
 
   const dureeS = dureeEstimee(reel);
+  const global = reel.chrono === "global";
   return (
     <form className={s.reglages} onSubmit={lancer} aria-label={REGLAGES.titre} noValidate>
       {/* ——— ce qu'on joue ——— */}
@@ -459,31 +478,49 @@ export function Reglages({
       </fieldset>
       )}
 
-      {/* ——— le temps ——— */}
+      {/* ——— le chrono : par question ou global ——— */}
+      <fieldset className={s.bloc}>
+        <legend className={s.libelle}>{REGLAGES.chrono}</legend>
+        <div className={s.choix} role="radiogroup" aria-label={REGLAGES.chrono} onKeyDown={flechesRadios}>
+          {CHRONOS.map((o) => {
+            const on = (params.chrono ?? "question") === o.cle;
+            return (
+              <button key={o.cle} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1} className={s.puce} onClick={() => set({ chrono: o.cle })}>
+                <b>{o.nom}</b>
+                <span>{o.aide}</span>
+              </button>
+            );
+          })}
+        </div>
+        {global && <p className={s.aide}>{REGLAGES.chronoGlobalDetail}</p>}
+      </fieldset>
+
+      {/* ——— le temps (en chrono global : la moyenne par question, le chrono vaut nombre × temps) ——— */}
       <div className={s.bloc} role="group" aria-labelledby={`${uid}-temps`}>
         <div className={s.blocTete}>
           <span id={`${uid}-temps`} className={s.libelle}>
-            {REGLAGES.temps}
+            {global ? REGLAGES.tempsMoyen : REGLAGES.temps}
           </span>
           <span className={s.valeur}>
             {params.temps} <small>s</small>
           </span>
         </div>
-        <div className={[s.choix, s.choixPetits].join(" ")} role="radiogroup" aria-label={REGLAGES.temps} onKeyDown={flechesRadios}>
+        <div className={[s.choix, s.choixPetits].join(" ")} role="radiogroup" aria-label={global ? REGLAGES.tempsMoyen : REGLAGES.temps} onKeyDown={flechesRadios}>
           {SALLE_TEMPS_PROPOSES.map((t) => (
             <button key={t} type="button" role="radio" aria-checked={params.temps === t} tabIndex={params.temps === t ? 0 : -1} className={[s.puce, s.puceCourte].join(" ")} onClick={() => set({ temps: t })}>
               <b>{REGLAGES.tempsValeur(t)}</b>
             </button>
           ))}
         </div>
+        {global && <p className={s.aide}>{REGLAGES.chronoTotalDetail(libelleDuree(chronoGlobalS(reel)), reel.nombre, reel.temps)}</p>}
         {surMock && <p className={s.aide}>{REGLAGES.tempsExamen}</p>}
-        <p className={s.aide}>{REGLAGES.pointsAide}</p>
+        <p className={s.aide}>{global ? REGLAGES.pointsGlobalAide : REGLAGES.pointsAide}</p>
       </div>
 
       {/* ——— le résumé et le lancement ——— */}
       <div className={s.recap} aria-live="polite">
         <p className={s.recapLigne}>{libelleParams(reel)}</p>
-        <p className={s.aide}>{REGLAGES.duree(libelleDuree(dureeS))}</p>
+        <p className={s.aide}>{global ? REGLAGES.chronoTotal(libelleDuree(chronoGlobalS(reel))) : REGLAGES.duree(libelleDuree(dureeS))}</p>
         {reel.topics.length === 0 && <p className={s.erreur}>{REGLAGES.aucuneMatiere}</p>}
         {surMock && mock.examens.length === 0 && <p className={s.erreur}>{REGLAGES.aucuneSession}</p>}
         {dispo !== null && dispo === 0 && reel.topics.length > 0 && <p className={s.erreur}>{REGLAGES.aucune}</p>}
@@ -529,9 +566,11 @@ export function ReglagesLecture({ params, titre }: { params: SalleParams; titre?
   }
   lignes.push([REGLAGES.topics, params.topics.length === SALLE_TOPIC_KEYS.length ? REGLAGES.topicsCompte(params.topics.length, SALLE_TOPIC_KEYS.length) : params.topics.map((k) => MATIERES_COURTES[k] ?? k).join(", ")]);
   if (!m) lignes.push([REGLAGES.difficulte, SALLE_DIFFICULTE_LABELS[params.difficulte]]);
+  const global = params.chrono === "global";
   lignes.push(
-    [REGLAGES.temps, REGLAGES.tempsValeur(params.temps)],
-    [REGLAGES.recap, REGLAGES.duree(libelleDuree(dureeEstimee(params)))],
+    [REGLAGES.chrono, global ? `${REGLAGES.chronoGlobal} · ${REGLAGES.chronoGlobalAide.toLowerCase()}` : `${REGLAGES.chronoQuestion} · ${REGLAGES.chronoQuestionAide.toLowerCase()}`],
+    [global ? REGLAGES.tempsMoyen : REGLAGES.temps, REGLAGES.tempsValeur(params.temps)],
+    [REGLAGES.recap, global ? REGLAGES.chronoTotal(libelleDuree(chronoGlobalS(params))) : REGLAGES.duree(libelleDuree(dureeEstimee(params)))],
   );
   return (
     <dl className={s.lecture} aria-label={titre ?? REGLAGES.lectureTitre}>

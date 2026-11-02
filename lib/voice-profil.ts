@@ -386,16 +386,16 @@ export const FACE = {
   voir: "Face-à-face",
 } as const;
 
-/** Les épreuves communes du Face-à-face : le défi, les 5 du jour, les examens blancs, les duels. */
+/** Les épreuves communes du Face-à-face : le défi, les 5 du jour, les examens blancs, les duels, les parties de Salle. */
 export const COMMUNES = {
   titre: "Épreuves communes",
   toi: "Toi",
-  type: { defi: "Défi du jour", cinq: "5 du jour", examen: "Examen blanc", duel: "Duel" } as const,
+  type: { defi: "Défi du jour", cinq: "5 du jour", examen: "Examen blanc", duel: "Duel", salle: "Salle" } as const,
   /** « Sur 23 épreuves communes : toi 14, Theo 7, 2 égalités » */
   general: (total: number, moi: number, lui: number, nom: string, nuls: number) =>
     `Sur ${pluriel(total, "épreuve commune", "épreuves communes")}${NBSP}: toi ${nombre(moi)}, ${nom} ${nombre(lui)}${nuls ? `, ${pluriel(nuls, "égalité", "égalités")}` : ""}`,
   aucune: (nom: string) => `Aucune épreuve commune avec ${nom} pour l'instant.`,
-  aucuneTexte: "Le défi du jour, les 5 du jour, un examen blanc classé ou un duel : dès que vous rendez tous deux la même copie, elle compte ici.",
+  aucuneTexte: "Le défi du jour, les 5 du jour, un examen blanc classé, un duel ou une partie de Salle : dès que vous rendez tous deux la même copie, elle compte ici.",
   /** « 12–9 » sous le nom de l'épreuve */
   score: (moi: number, lui: number) => `${nombre(moi)}–${nombre(lui)}`,
   egalites: (n: number) => pluriel(n, "égalité", "égalités"),
@@ -406,10 +406,12 @@ export const COMMUNES = {
   voirTout: (n: number) => `Voir tout (${nombre(n)})`,
   /** « 18/30 · 60 % » */
   copie: (score: number, total: number) => `${nombre(score)}/${nombre(total)}${total > 0 ? ` · ${pct((score / total) * 100)}` : ""}`,
+  /** une partie de Salle se joue aux points : « 12 450 pts · 18/30 » (les bonnes réponses, quand on les connaît) */
+  points: (points: number, bonnes: number | null, total: number) => `${nombre(points)}${NBSP}pts${bonnes !== null && total > 0 ? ` · ${nombre(bonnes)}/${nombre(total)}` : ""}`,
   issue: { victoire: "gagné", defaite: "perdu", nul: "égalité" } as const,
   /** lu à voix haute : « Défi du jour, 3 oct. : toi 18/30, Theo 15/30, gagné » */
   ligneDit: (type: string, date: string, moi: string, lui: string, nom: string, issue: string) => `${type}, ${date} : toi ${moi}, ${nom} ${lui}, ${issue}`,
-  aide: "Seules comptent les épreuves rendues par vous deux, aux mêmes questions. À score égal : égalité.",
+  aide: "Seules comptent les épreuves rendues par vous deux, aux mêmes questions. À score égal : égalité. Une partie de Salle se gagne aux points, comme son classement.",
 } as const;
 
 // ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@ import { COMMUNES, dateCourte, jourCourt } from "@/lib/voice-profil";
 
 // Le haut de l'onglet Face-à-face : toutes les épreuves faites par les deux
 // joueurs avec les mêmes questions. Le bilan général en une phrase, le bilan
-// par épreuve (défi du jour, 5 du jour, examen blanc, duel), les cinq
+// par épreuve (défi du jour, 5 du jour, examen blanc, duel, Salle), les cinq
 // dernières épreuves communes (vos deux copies, en points et en pourcentage,
 // et qui l'emporte), le reste dans un repli. Sans état.
 
@@ -20,10 +20,13 @@ function Ligne({ e, nom, annee }: { e: EpreuveCommune; nom: string; annee: strin
   // l'année seulement quand elle n'est pas celle de la plus récente
   const autreAnnee = anneeDe(e) !== annee;
   const date = e.jour ? jourCourt(e.date, autreAnnee) : dateCourte(e.date, autreAnnee);
-  const mienne = COMMUNES.copie(e.monScore, e.total);
-  const sienne = COMMUNES.copie(e.sonScore, e.total);
+  // une partie de Salle : des points (et les bonnes réponses) ; les autres épreuves : la copie sur le total
+  const salle = e.type === "salle";
+  const mienne = salle ? COMMUNES.points(e.monScore, e.bonnes?.moi ?? null, e.total) : COMMUNES.copie(e.monScore, e.total);
+  const sienne = salle ? COMMUNES.points(e.sonScore, e.bonnes?.lui ?? null, e.total) : COMMUNES.copie(e.sonScore, e.total);
   const issue = COMMUNES.issue[e.issue];
-  const titre = e.titre && e.type === "examen" ? e.titre : null;
+  // au survol : le titre de l'examen, ou le nom de la salle
+  const titre = e.titre && (e.type === "examen" || salle) ? e.titre : null;
   return (
     <li
       className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5 border-t border-line py-2.5 first:border-t-0 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_minmax(0,1fr)_4.5rem]"
@@ -75,7 +78,7 @@ export function EpreuvesCommunes({ donnees, nom, className = "" }: { donnees: Do
 
       {general.total > 0 && (
         <>
-          <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-4">
+          <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-5">
             {TYPES_EPREUVE.map((t) => {
               const b = parType[t];
               const n = b.victoires + b.defaites + b.nuls;

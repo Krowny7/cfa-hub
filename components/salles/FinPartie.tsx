@@ -39,6 +39,7 @@ function FinPartieBase({
   estAdmin,
   onRejouer,
   onRetour,
+  revue = true,
 }: {
   session: SalleSession;
   items: SalleItem[];
@@ -51,6 +52,8 @@ function FinPartieBase({
   /** admin : relance avec les mêmes réglages */
   onRejouer?: () => Promise<{ ok: boolean; erreur?: string }>;
   onRetour?: () => void;
+  /** « Revoir les questions » et le délai moyen (faux en chrono global : le débrief les remplace) */
+  revue?: boolean;
 }) {
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -148,39 +151,41 @@ function FinPartieBase({
             <i key={i} data-v={v} title={`${i + 1} · ${v === "juste" ? PARTIE.revueJuste : v === "faux" ? PARTIE.revueFaux : PARTIE.revueSans}`} />
           ))}
         </div>
-        {bilan.delaiMoyenMs !== null && <p className={p.bilanNote}>{PARTIE.bilanDelai(libelleDelai(bilan.delaiMoyenMs))}</p>}
+        {revue && bilan.delaiMoyenMs !== null && <p className={p.bilanNote}>{PARTIE.bilanDelai(libelleDelai(bilan.delaiMoyenMs))}</p>}
 
-        <details className={p.revue}>
-          <summary>{PARTIE.revue}</summary>
-          <ol className={p.revueListe}>
-            {items.map((it) => {
-              const rep = mesReponses.find((r) => r.position === it.position);
-              const cor = corrections.find((c) => c.position === it.position);
-              const v: Verdict = rep ? (rep.juste ? "juste" : "faux") : "sans";
-              const unite = (it.unite ?? "") as CalcUnit;
-              const bonne =
-                cor && it.origine === "question" && cor.bonneIndex !== null
-                  ? it.choix?.[cor.bonneIndex]
-                  : cor && cor.bonneValeur !== null
-                    ? formatCalc(cor.bonneValeur, unite, it.decimales ?? 2)
-                    : null;
-              return (
-                <li key={it.position} className={p.revueLigne} data-v={v}>
-                  <span className={p.revueNum}>{it.position + 1}</span>
-                  <span className={p.revueEnonce}>
-                    {it.enonce.length > 160 ? `${it.enonce.slice(0, 157).trimEnd()}…` : it.enonce}
-                    {bonne && (
-                      <span className={p.revueBonne}>
-                        <br />
-                        {PARTIE.bonneReponse} : <b>{bonne}</b> · {v === "juste" ? PARTIE.revueJuste : v === "faux" ? PARTIE.revueFaux : PARTIE.revueSans}
-                      </span>
-                    )}
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-        </details>
+        {revue && (
+          <details className={p.revue}>
+            <summary>{PARTIE.revue}</summary>
+            <ol className={p.revueListe}>
+              {items.map((it) => {
+                const rep = mesReponses.find((r) => r.position === it.position);
+                const cor = corrections.find((c) => c.position === it.position);
+                const v: Verdict = rep ? (rep.juste ? "juste" : "faux") : "sans";
+                const unite = (it.unite ?? "") as CalcUnit;
+                const bonne =
+                  cor && it.origine === "question" && cor.bonneIndex !== null
+                    ? it.choix?.[cor.bonneIndex]
+                    : cor && cor.bonneValeur !== null
+                      ? formatCalc(cor.bonneValeur, unite, it.decimales ?? 2)
+                      : null;
+                return (
+                  <li key={it.position} className={p.revueLigne} data-v={v}>
+                    <span className={p.revueNum}>{it.position + 1}</span>
+                    <span className={p.revueEnonce}>
+                      {it.enonce.length > 160 ? `${it.enonce.slice(0, 157).trimEnd()}…` : it.enonce}
+                      {bonne && (
+                        <span className={p.revueBonne}>
+                          <br />
+                          {PARTIE.bonneReponse} : <b>{bonne}</b> · {v === "juste" ? PARTIE.revueJuste : v === "faux" ? PARTIE.revueFaux : PARTIE.revueSans}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          </details>
+        )}
 
         <div className={p.finActions}>
           {estAdmin && onRejouer && (

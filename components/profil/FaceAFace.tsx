@@ -70,7 +70,7 @@ export function FaceAFace({
   moyennes: Record<string, number | null>;
   accent: string;
   monAccent: string | null;
-  /** toutes les épreuves faites par vous deux (défi, 5 du jour, examens, duels) ; null : non lues */
+  /** toutes les épreuves faites par vous deux (défi, 5 du jour, examens, duels, Salles) ; null : non lues */
   communes?: Communes | null;
 }) {
   const dernier = bilan.duels[0] ?? null;

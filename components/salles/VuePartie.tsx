@@ -54,7 +54,7 @@ export type PropsVuePartie = {
 };
 
 /** « Arrêter la partie » (admin), avec confirmation : la correction s'ouvre, les points marqués restent. */
-function BoutonArreter({ onArreter }: { onArreter: () => Promise<void> }) {
+export function BoutonArreter({ onArreter }: { onArreter: () => Promise<void> }) {
   const [arret, setArret] = useState(false);
   return (
     <button

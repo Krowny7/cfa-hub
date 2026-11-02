@@ -21,7 +21,7 @@ function ligneEpreuve(e: BilanEpreuve, nom: string) {
  * dans son cadre, sa présence, son insigne,
  * son rang, son ELO, sa place et son niveau, sur une ligne), « Croisé N fois »
  * avec le verdict (« Tu mènes 14–9 »), le détail par épreuve en grille de deux
- * (duels, les 30 du jour, les 5 du jour, examens blancs : le bilan de chacune), et un
+ * (duels, les 30 du jour, les 5 du jour, examens blancs, Salles : le bilan de chacune), et un
  * bouton « Profil » à droite de son pseudo. Présentation : les données arrivent en
  * props ; la présence se lit côté navigateur.
  */

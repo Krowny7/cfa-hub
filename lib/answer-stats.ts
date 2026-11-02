@@ -358,7 +358,8 @@ type LogRow = { set_id: string; is_correct: boolean; run_id: string; mode: strin
 type QuestionRow = { id: string; set_id: string; correct_index: number | null };
 type SetRow = { id: string; title: string | null; folder_id: string | null };
 type SalleReponseRow = { session_id: string; position: number; choix: number | null; valeur: number | string | null; juste: boolean | null };
-type SalleSessionRow = { id: string; salle_id: string; statut: string; fin_at: string | null };
+// salle_id vide : la salle a été supprimée, la partie reste (migration_salles_garder_parties.sql)
+type SalleSessionRow = { id: string; salle_id: string | null; statut: string; fin_at: string | null };
 type SalleItemRow = { session_id: string; position: number; origine: string; topic: string | null; question_id: string | null };
 
 type Given = { question_id: string; selected_index: number | null };
@@ -652,7 +653,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   for (const [id, g] of bySalle) {
     const s = partiesFinies.get(id)!;
     const pid = `sa:${id}`;
-    passages.set(pid, { source: "salle", label: "Salle", at: s.fin_at ?? "", href: `/salles/${s.salle_id}` });
+    passages.set(pid, { source: "salle", label: "Salle", at: s.fin_at ?? "", href: s.salle_id ? `/salles/${s.salle_id}` : null });
     perSet("salle", pid, g.questions);
     for (const [subject, [n, ok]] of g.calculs)
       contribs.push({ source: "salle", passage: pid, target: { kind: "bucket", subject, themeKey: "salle-calc", label: "Calculs en Salle", tag: null, order: 1850 }, n, ok });
@@ -815,7 +816,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
       if (name) p.label = `Duel contre ${name}`;
     } else if (id.startsWith("sa:")) {
       const s = partiesFinies.get(id.slice(3));
-      const nom = s ? salleNom.get(s.salle_id) : null;
+      const nom = s?.salle_id ? salleNom.get(s.salle_id) : null;
       if (nom) p.label = `Salle · ${nom}`;
     } else if (id.startsWith("m:")) {
       p.label = examTitle.get(id.slice(2)) ?? p.label;

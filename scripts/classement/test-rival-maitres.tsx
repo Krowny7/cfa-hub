@@ -2,7 +2,8 @@
 // S'affronter), sans base, réseau ni navigateur :
 //   npx tsx --tsconfig tsconfig.json scripts/classement/test-rival-maitres.tsx
 // Les calculs purs (choisirRival, cumulDe, sommetsDe, avecPlaces) puis le rendu
-// (react-dom/server) des deux cartes et de leur place dans la page.
+// (react-dom/server) des deux cartes et de leur place dans la page, et les
+// lectures sur une base en mémoire (dont les parties de Salle).
 import "../codex/sans-css";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -65,6 +66,12 @@ console.log("# choisirRival");
   check("aucune rencontre : null", choisirRival([]) === null);
   const egal = choisirRival([r("duel", "Z", "moi", "2026-10-01T00:00:00Z"), r("duel", "Y", "moi", "2026-10-01T00:00:00Z")]);
   check("égalité parfaite : l'identifiant le plus petit (ordre stable)", egal?.autre === "Y");
+  const avecSalle = choisirRival([r("salle", "S", "moi", "2026-10-12T10:00:00Z"), r("duel", "S", "lui", "2026-10-11T10:00:00Z"), r("salle", "S", "nul", "2026-10-13T10:00:00Z"), r("examen", "S", "moi", "2026-10-09T10:00:00Z")]);
+  check(
+    "les parties de Salle sont des rencontres : 4 rencontres, la Salle en dernier dans le détail (1–0 et 1 nul)",
+    avecSalle?.rencontres === 4 && avecSalle.epreuves.map((e) => e.epreuve).join(",") === "duel,examen,salle" && JSON.stringify(avecSalle.epreuves[2]) === JSON.stringify({ epreuve: "salle", rencontres: 2, moi: 1, lui: 0, nuls: 1 }) && avecSalle.derniere === "2026-10-13T10:00:00Z",
+    JSON.stringify(avecSalle?.epreuves),
+  );
 }
 
 // ——— les maîtres ———
@@ -138,6 +145,8 @@ console.log("# la carte « Ton plus grand rival »");
   check("le verdict : « Tu mènes 14–9 »", html.includes("Tu mènes 14–9"));
   check("quatre lignes d'épreuve, dans l'ordre", ["Duels", "Défi du jour (les 30)", "Les 5 du jour", "Examens blancs"].every((x) => html.includes(`<b>${x}</b>`)) && compte(html, /class="epreuve"/g) === 4);
   check("le détail : 4–2 pour toi, égalité, un nul", html.includes("4–2 pour toi") && html.includes("2–2, égalité") && html.includes("1–0 pour toi · 1 nul"));
+  const salle = rendre(<CarteRival rival={{ ...rival, rencontres: 26, moi: 15, lui: 11, epreuves: [...rival.epreuves, bilan("salle", 1, 2)] }} />);
+  check("les Salles : une cinquième ligne, en dernier, « 1–2 pour Léa »", compte(salle, /class="epreuve"/g) === 5 && salle.includes("<b>Salles</b>") && salle.indexOf("<b>Salles</b>") > salle.indexOf("<b>Examens blancs</b>") && salle.includes("1–2 pour Léa"));
   check("compacte : la carte joueur sans bannière, les épreuves sans piste", !html.includes("width:67%") && !html.includes("pisteFine"));
   check("un bouton « Profil » vers /people/u2 à côté du pseudo, plus de bouton Défier ni de lien en bas", html.includes('href="/people/u2"') && html.includes(">Profil</a>") && !html.includes('href="/duel?adversaire=u2"') && !html.includes("Voir son profil"));
   const lui = rendre(<CarteRival rival={{ ...rival, moi: 9, lui: 14 }} />);
@@ -293,10 +302,46 @@ async function lectures() {
     check("son ELO, ses parties, son niveau (1 500 XP), sa maîtrise du programme", r?.elo === 1524 && r.gamesPlayed === 31 && (r.niveau ?? 0) >= 1 && r.mastery === 9, JSON.stringify(r && { niveau: r.niveau, mastery: r.mastery }));
     check("un programme inconnu, une copie ouverte, un examen non terminé, un duel en attente : jamais comptés", r?.rencontres === 5);
     check("sans clé admin : null", (await lireRival(faux(base), null, "me")) === null);
-    check("rien joué ensemble : null", (await lireRival(faux(base), faux({ ...base, duels: [], daily_attempts: [], mock_exam_results: [] }), "me")) === null);
+    check("rien joué ensemble : null (pas de Salles non plus)", (await lireRival(faux(base), faux({ ...base, duels: [], daily_attempts: [], mock_exam_results: [] }), "me")) === null);
     check("une base en panne : null, jamais d'exception", (await lireRival(faux(base), faux(base, true), "me")) === null);
     const sansLeProfil = await lireRival(faux({ ...base, profiles: [], ratings: [] }), faux(base), "me");
     check("profil et ELO illisibles : la carte tient (nom « Joueur… », 1200 d'ELO)", !!sansLeProfil && sansLeProfil.name.startsWith("Joueur") && sansLeProfil.elo === 1200);
+
+    // les parties de Salle : finies (close, ou heure de fin passée), les deux ont répondu ; points, puis bonnes, puis temps
+    const passe = "2026-10-20T10:00:00Z";
+    const futur = new Date(Date.now() + 3_600_000).toISOString();
+    const rep = (session_id: string, user_id: string, position: number, points: number, juste: boolean, delai_ms: number) => ({ session_id, user_id, position, points, juste, delai_ms });
+    const salles = {
+      ...base,
+      salle_sessions: [
+        { id: "s1", salle_id: "salleX", statut: "terminee", fin_at: "2026-10-20T10:00:00Z", nb: 3 },
+        { id: "s2", salle_id: "salleX", statut: "en_cours", fin_at: passe, nb: 2 },
+        { id: "s3", salle_id: "salleX", statut: "en_cours", fin_at: futur, nb: 2 },
+        { id: "s4", salle_id: null, statut: "terminee", fin_at: "2026-10-21T10:00:00Z", nb: 2 },
+        { id: "s5", salle_id: "salleY", statut: "terminee", fin_at: "2026-10-22T10:00:00Z", nb: 2 },
+      ],
+      salle_reponses: [
+        // s1 : moi 1 800 points contre 1 500 pour A → pour moi ; B n'a rien répondu (pas de ligne)
+        rep("s1", "me", 0, 900, true, 4000), rep("s1", "me", 1, 900, true, 4000), rep("s1", "me", 2, 0, false, 9000),
+        rep("s1", "A", 0, 800, true, 6000), rep("s1", "A", 1, 700, true, 8000),
+        // s2 (en cours, mais heure de fin passée) : mêmes points, mêmes bonnes, A plus rapide → pour lui
+        rep("s2", "me", 0, 600, true, 9000),
+        rep("s2", "A", 0, 600, true, 5000),
+        // s3 : pas finie → jamais comptée
+        rep("s3", "me", 0, 1000, true, 1000), rep("s3", "A", 0, 500, true, 9000),
+        // s4 (salle supprimée depuis) : égalité parfaite avec A → nul, mais compte
+        rep("s4", "me", 0, 700, true, 3000), rep("s4", "A", 0, 700, true, 3000),
+        // s5 : une mauvaise réponse suffit pour être de la partie ; B : 0 point contre 0 → mêmes points, mêmes bonnes, temps 0 → nul
+        rep("s5", "me", 0, 0, false, 5000), rep("s5", "B", 0, 0, false, 8000),
+      ],
+    };
+    const rs = await lireRival(faux(salles), faux(salles), "me");
+    const detailSalle = JSON.stringify(rs?.epreuves.map((e) => [e.epreuve, e.moi, e.lui, e.nuls]));
+    check("avec les Salles : A, 8 rencontres (5 + 3 parties finies), la partie pas finie ignorée", rs?.userId === "A" && rs.rencontres === 8, JSON.stringify(rs && { id: rs.userId, n: rs.rencontres }));
+    check("le détail des Salles : 1–1 et 1 nul (points, puis plus rapide, salle supprimée comptée)", detailSalle === JSON.stringify([["duel", 1, 1, 0], ["trente", 1, 0, 0], ["cinq", 1, 0, 0], ["examen", 1, 0, 0], ["salle", 1, 1, 1]]), detailSalle);
+    check("bilan cumulé 5–2", rs?.moi === 5 && rs.lui === 2);
+    const seulB = await lireRival(faux(salles), faux({ ...salles, duels: [], daily_attempts: [], mock_exam_results: [], salle_reponses: salles.salle_reponses.filter((x) => x.session_id === "s5") }), "me");
+    check("une seule partie de Salle jouée ensemble suffit à faire un rival (B, nul)", seulB?.userId === "B" && seulB.rencontres === 1 && seulB.epreuves.length === 1 && seulB.epreuves[0].epreuve === "salle" && seulB.epreuves[0].nuls === 1, JSON.stringify(seulB?.epreuves));
   }
 
   console.log("# lireMaitres, sur une base en mémoire");

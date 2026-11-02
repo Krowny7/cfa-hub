@@ -321,6 +321,8 @@ export function exemplePartie(nom: EtatExemple, opts: { admin?: boolean } = {}):
     nbFermees: fermees,
     reponduCourante: 5,
     nbJoueurs: JOUEURS.length,
+    chrono: "question",
+    avancement: null,
   };
 
   const etat: EtatSalle = {
@@ -343,7 +345,7 @@ export function exemplePartie(nom: EtatExemple, opts: { admin?: boolean } = {}):
 /** Le classement final d'une partie terminée, avec mes vraies réponses. */
 function finalDe(mes: SalleMaReponse[]): SalleClassementLigne[] {
   const base = classementApres(NB);
-  const mesPoints = mes.reduce((a, m) => a + m.points, 0);
+  const mesPoints = mes.reduce((a, m) => a + (m.points ?? 0), 0);
   const lignes = base.map((l) =>
     l.userId === MOI ? { ...l, points: mesPoints, bonnes: mes.filter((m) => m.juste).length, repondues: mes.length, tempsMs: mes.filter((m) => m.juste).reduce((a, m) => a + m.delaiMs, 0) } : l,
   );

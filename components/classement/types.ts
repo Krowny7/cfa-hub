@@ -128,8 +128,8 @@ export type ClassementData = {
   salles?: EntreeSalles | null;
 };
 
-/** Les épreuves où deux joueurs se croisent : duels, les 30 du jour, les 5 du jour, examens blancs classés. */
-export type EpreuveRival = "duel" | "trente" | "cinq" | "examen";
+/** Les épreuves où deux joueurs se croisent : duels, les 30 du jour, les 5 du jour, examens blancs classés, parties de Salle. */
+export type EpreuveRival = "duel" | "trente" | "cinq" | "examen" | "salle";
 
 /** Le bilan face à un joueur dans une épreuve : rencontres, qui a fait mieux, égalités. */
 export type BilanEpreuve = {
@@ -167,7 +167,7 @@ export type RivalData = {
   /** bilan cumulé : fois où j'ai fait mieux / où il a fait mieux (les égalités ne comptent ni pour l'un ni pour l'autre) */
   moi: number;
   lui: number;
-  /** le détail par épreuve, seulement celles où ils se sont croisés (ordre fixe : duels, 30, 5, examens) */
+  /** le détail par épreuve, seulement celles où ils se sont croisés (ordre fixe : duels, 30, 5, examens, Salles) */
   epreuves: BilanEpreuve[];
 };
 

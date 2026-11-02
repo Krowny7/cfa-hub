@@ -124,11 +124,12 @@ export const RIVAL = {
   /** « Tu mènes 14–9 », « Léa mène 14–9 », « À égalité 9–9 » : le score du meneur d'abord */
   verdict: (nom: string, moi: number, lui: number) => (moi > lui ? `Tu mènes ${moi}–${lui}` : lui > moi ? `${nom} mène ${lui}–${moi}` : `À égalité ${moi}–${lui}`),
   epreuves: "Le détail par épreuve",
-  /** les quatre épreuves où l'on se croise */
+  /** les cinq épreuves où l'on se croise */
   duel: "Duels",
   trente: "Défi du jour (les 30)",
   cinq: "Les 5 du jour",
   examen: "Examens blancs",
+  salle: "Salles",
   /** « 4–2 pour toi », « 2–4 pour Léa », « 3–3, égalité » ; les égalités s'ajoutent : « · 1 nul » */
   ligne: (moi: number, lui: number, nom: string) => (moi > lui ? `${moi}–${lui} pour toi` : lui > moi ? `${moi}–${lui} pour ${nom}` : `${moi}–${lui}, égalité`),
   nuls: (n: number) => `${n} ${n > 1 ? "nuls" : "nul"}`,

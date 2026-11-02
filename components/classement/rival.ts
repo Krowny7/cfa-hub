@@ -18,7 +18,11 @@
 //   • un examen blanc classé passé par les deux (mock_exam_results, premier
 //     essai officiel), une fois l'examen terminé (clos, ou fenêtre ±window_days
 //     dépassée : on ne révèle pas un score avant) : gagne le meilleur
-//     pourcentage, égalité sinon (comme apply_mock_exam_elo).
+//     pourcentage, égalité sinon (comme apply_mock_exam_elo) ;
+//   • une partie de Salle finie où les deux ont donné au moins une réponse
+//     (lib/salles/rencontres.ts) : gagne celui qui a le plus de points, puis
+//     le plus de bonnes réponses, puis le temps le plus court (le classement
+//     de la partie) ; tout pareil = égalité. Date : la fin de la partie.
 // « Qui a fait mieux » compte les victoires de chacun ; les égalités sont des
 // rencontres mais ne comptent ni pour toi ni pour lui. Le rival est celui qui a
 // le plus de rencontres ; à égalité, celui qu'on a croisé le plus récemment.
@@ -32,9 +36,10 @@ import { levelInfoFromXp } from "@/lib/leveling";
 import { lireStyle } from "@/lib/profil/donnees";
 import { DEFAULT_ELO } from "@/lib/ranks";
 import { getLeaderboardRank } from "@/lib/rating";
+import { lirePartiesCommunes } from "@/lib/salles/rencontres";
 
 /** L'ordre des épreuves sur la carte. */
-export const EPREUVES_RIVAL: EpreuveRival[] = ["duel", "trente", "cinq", "examen"];
+export const EPREUVES_RIVAL: EpreuveRival[] = ["duel", "trente", "cinq", "examen", "salle"];
 
 /** Les programmes des défis du jour (migration_cinq_du_jour.sql). */
 const PROGRAMME: Record<string, EpreuveRival> = { "cfa-l1": "trente", "cfa-l1-cinq": "cinq" };
@@ -194,6 +199,12 @@ async function examensRencontres(admin: SupabaseClient, moi: string): Promise<Re
   return out;
 }
 
+/** Les parties de Salle finies jouées avec un autre joueur : le classement de la partie départage (lib/salles/rencontres.ts). */
+async function sallesRencontres(admin: SupabaseClient, moi: string): Promise<Rencontre[]> {
+  const parties = await lirePartiesCommunes(admin, moi);
+  return (parties ?? []).map((p) => ({ epreuve: "salle", autre: p.autre, issue: p.issue, quand: p.fin }));
+}
+
 /** Une source qui échoue (table absente, réseau) ne compte pas : jamais d'exception. */
 const sansErreur = async (lecture: Promise<Rencontre[]>): Promise<Rencontre[]> => {
   try {
@@ -212,8 +223,13 @@ const sansErreur = async (lecture: Promise<Rencontre[]>): Promise<Rencontre[]> =
 export async function lireRival(sb: SupabaseClient, admin: SupabaseClient | null, moi: string): Promise<RivalData | null> {
   if (!admin) return null;
   try {
-    const [duels, defis, examens] = await Promise.all([sansErreur(duelsRencontres(admin, moi)), sansErreur(defisRencontres(admin, moi)), sansErreur(examensRencontres(admin, moi))]);
-    const bilan = choisirRival([...duels, ...defis, ...examens]);
+    const [duels, defis, examens, salles] = await Promise.all([
+      sansErreur(duelsRencontres(admin, moi)),
+      sansErreur(defisRencontres(admin, moi)),
+      sansErreur(examensRencontres(admin, moi)),
+      sansErreur(sallesRencontres(admin, moi)),
+    ]);
+    const bilan = choisirRival([...duels, ...defis, ...examens, ...salles]);
     if (!bilan) return null;
     const id = bilan.autre;
     const [{ data: profil }, { data: rating }, { style }, place, maitrises] = await Promise.all([

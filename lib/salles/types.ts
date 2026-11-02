@@ -49,6 +49,14 @@ export type MockDisponible = {
   variantes: number;
 };
 
+/**
+ * Le chrono d'une partie : `question` = une question à la fois, son temps et
+ * sa correction tout de suite (le mode d'origine) ; `global` = comme les 30 du
+ * jour, toutes les questions ouvertes d'un coup, un seul chrono (nombre ×
+ * temps), la correction et le classement à la fin.
+ */
+export type SalleChrono = "question" | "global";
+
 /** Les réglages qu'un admin choisit pour une partie. */
 export type SalleParams = {
   type: SalleType;
@@ -58,12 +66,14 @@ export type SalleParams = {
   /** au moins une matière, sans doublon, dans l'ordre du programme */
   topics: TopicKey[];
   difficulte: SalleDifficulte;
-  /** secondes par question, de 15 à 120 */
+  /** secondes par question, de 15 à 120 (en chrono global : le temps moyen, le chrono total vaut nombre × temps) */
   temps: number;
   /** part des calculs en %, de 10 à 90 (type « mixte » seulement ; 0 pour questions, 100 pour calculs) */
   partCalculs: number;
   /** source `examen` seulement : quels mocks, et comment */
   mock?: SalleMock;
+  /** par question (défaut) ou global ; absent = par question */
+  chrono?: SalleChrono;
 };
 
 /** Les réglages tels que le serveur les a gardés : avec ce qui a vraiment été tiré. */
@@ -130,8 +140,8 @@ export type SalleStatut = "attente" | "en_cours" | "terminee";
 /**
  * Où en est la partie :
  *  - decompte   : avant la question 1 (le serveur laisse 8 s pour s'installer)
- *  - question   : le temps de répondre court
- *  - revelation : le temps est écoulé, on montre la correction (puis la pause)
+ *  - question   : le temps de répondre court (chrono global : toutes les questions sont ouvertes)
+ *  - revelation : le temps est écoulé, on montre la correction (puis la pause) ; jamais en chrono global
  *  - fin        : la partie est terminée
  */
 export type SallePhase = "decompte" | "question" | "revelation" | "fin";
@@ -151,16 +161,20 @@ export type SalleSession = {
   startedAt: string;
   /** fin de la dernière pause */
   finAt: string;
-  /** -1 pendant le décompte, 0..nb-1 la question en cours, nb à la fin */
+  /** -1 pendant le décompte, 0..nb-1 la question en cours, nb à la fin (chrono global : 0 tant que la partie court) */
   index: number;
   phase: SallePhase;
   /** nombre de questions dont l'énoncé est révélé */
   nbVisibles: number;
-  /** nombre de questions closes (correction publique, points comptés) */
+  /** nombre de questions closes (correction publique, points comptés) ; chrono global : 0 jusqu'à la fin, puis nb */
   nbFermees: number;
   /** combien de joueurs ont déjà répondu à la question en cours */
   reponduCourante: number;
   nbJoueurs: number;
+  /** par question ou global (lu dans la session ; « question » pour une partie d'avant le réglage) */
+  chrono: SalleChrono;
+  /** chrono global : combien de réponses chaque joueur a données (jamais lesquelles) ; null en chrono par question */
+  avancement: { userId: string; n: number }[] | null;
 };
 
 export type SalleOrigine = "question" | "calcul";
@@ -200,9 +214,11 @@ export type SalleMaReponse = {
   position: number;
   choix: number | null;
   valeur: number | null;
-  juste: boolean;
-  points: number;
-  /** millisecondes entre l'ouverture de la question et ma réponse */
+  /** null : chrono global, partie pas finie (la justesse reste cachée jusqu'à la fin) */
+  juste: boolean | null;
+  /** null : chrono global, partie pas finie */
+  points: number | null;
+  /** millisecondes entre l'ouverture de la question (chrono global : le départ) et ma réponse */
   delaiMs: number;
 };
 
@@ -259,6 +275,11 @@ export type ReponseResultat =
       ok: true;
       /** la réponse avait déjà été enregistrée : c'est elle qui est rendue */
       deja: boolean;
+      /**
+       * chrono global : la réponse est enregistrée mais rien n'est révélé
+       * (juste vaut false, points 0, aucune correction) avant la fin de la partie
+       */
+      masque?: boolean;
       juste: boolean;
       points: number;
       delaiMs: number;

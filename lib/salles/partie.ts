@@ -54,6 +54,8 @@ export type ReponseVue = {
   juste: boolean;
   points: number;
   delaiMs: number;
+  /** chrono global, partie pas finie : la réponse est enregistrée mais ni sa justesse ni ses points ne sont connus (juste false, points 0) */
+  masque?: boolean;
 };
 
 /**
@@ -63,9 +65,9 @@ export type ReponseVue = {
  */
 export function reponseVue(position: number, locales: Record<number, ReponseOk | undefined>, mes: SalleMaReponse[]): ReponseVue | null {
   const l = locales[position];
-  if (l) return { choix: l.choix, valeur: l.valeur, juste: l.juste, points: l.points, delaiMs: l.delaiMs };
+  if (l) return { choix: l.choix, valeur: l.valeur, juste: l.juste, points: l.points, delaiMs: l.delaiMs, masque: l.masque === true };
   const m = mes.find((x) => x.position === position);
-  return m ? { choix: m.choix, valeur: m.valeur, juste: m.juste, points: m.points, delaiMs: m.delaiMs } : null;
+  return m ? { choix: m.choix, valeur: m.valeur, juste: m.juste === true, points: m.points ?? 0, delaiMs: m.delaiMs, masque: m.juste === null } : null;
 }
 
 /** La correction d'une question close. */
@@ -185,7 +187,7 @@ export function bilanJoueur(opts: {
   const bonnesRep = mesReponses.filter((r) => r.juste && r.position < nb);
   // le classement du serveur fait foi pour les points et la place ; mes réponses servent de repli
   const ligne = classement.find((l) => l.userId === moiId) ?? monClassement;
-  const pointsRep = mesReponses.reduce((a, r) => a + (r.position < nb ? r.points : 0), 0);
+  const pointsRep = mesReponses.reduce((a, r) => a + (r.position < nb ? (r.points ?? 0) : 0), 0);
   return {
     nb,
     repondues: mesReponses.filter((r) => r.position < nb).length,
@@ -206,7 +208,7 @@ export const placeOrdinale = (n: number): string => (n === 1 ? "1er" : `${n}e`);
 
 /** Les réglages d'une partie terminée, débarrassés du décompte des tirages : de quoi relancer la même. */
 export function paramsPourRejouer(p: SalleSession["params"]) {
-  return { type: p.type, nombre: p.nombre, source: p.source, topics: p.topics, difficulte: p.difficulte, temps: p.temps, partCalculs: p.partCalculs };
+  return { type: p.type, nombre: p.nombre, source: p.source, topics: p.topics, difficulte: p.difficulte, temps: p.temps, partCalculs: p.partCalculs, mock: p.mock, chrono: p.chrono };
 }
 
 /**
@@ -224,7 +226,7 @@ export function finRecente(finAtIso: string, serverNowIso: string, minutes = 10)
 /** Mon total de points sur les questions de la partie : mes réponses connues du serveur, plus celles qu'il vient de me rendre. */
 export function totalPoints(nb: number, locales: Record<number, ReponseOk | undefined>, mes: SalleMaReponse[]): number {
   const parPosition = new Map<number, number>();
-  for (const m of mes) if (m.position >= 0 && m.position < nb) parPosition.set(m.position, m.points);
+  for (const m of mes) if (m.position >= 0 && m.position < nb) parPosition.set(m.position, m.points ?? 0);
   for (const [cle, l] of Object.entries(locales)) {
     const pos = Number(cle);
     if (l && pos >= 0 && pos < nb) parPosition.set(pos, l.points);

@@ -12,8 +12,10 @@ import {
   SALLE_DECOMPTE_S,
   SALLE_MARGE_S,
   SALLE_PAUSE_S,
+  SALLE_POINTS_GLOBAL,
   SALLE_TOPIC_KEYS,
   analyserCode,
+  chronoGlobalS,
   classer,
   clockDe,
   codeValide,
@@ -144,6 +146,44 @@ async function main() {
     ok("partie arrêtée : fin d'office, tout est clos", g.phase === "fin" && g.nbFermees === 3 && g.nbVisibles === 3);
   }
   ok("ouvertureQuestion / finTempsQuestion / revelationQuestion / finPartie", ouvertureQuestion(S, 2) === T0 + 70_000 && finTempsQuestion(S, 2) === T0 + 100_000 && revelationQuestion(S, 2) === T0 + 102_000 && finPartie(S) === T0 + 105_000);
+
+  section("Horloge du chrono global (miroir de _salle_horloge_partie)");
+  {
+    // 3 questions de 30 s : un seul chrono de 90 s, sans pause
+    const G: ClockSession = { startedAt: T0, temps: 30, pause: 5, nb: 3, global: true };
+    const a = h(-10_000, G);
+    ok("décompte : index -1, rien de visible ni de clos", a.phase === "decompte" && a.index === -1 && a.nbVisibles === 0 && a.nbFermees === 0 && a.avantProchainMs === 10_000, JSON.stringify(a));
+    ok("décompte : toutes les questions se révèlent ensemble 2 s avant le départ", h(-2001, G).nbVisibles === 0 && h(-2000, G).nbVisibles === 3 && h(-2000, G).phase === "decompte");
+    const b = h(0, G);
+    ok("t = 0 : phase question, index 0, toutes visibles, aucune close, 90 s au chrono", b.phase === "question" && b.index === 0 && b.nbVisibles === 3 && b.nbFermees === 0 && b.restantMs === 90_000 && b.avantProchainMs === 90_000, JSON.stringify(b));
+    const c = h(45_000, G);
+    ok("t = 45 s : toujours « question », pas de révélation entre les questions", c.phase === "question" && c.index === 0 && c.nbFermees === 0 && c.restantMs === 45_000, JSON.stringify(c));
+    ok("dernière milliseconde : encore « question », 1 ms au chrono", h(89_999, G).phase === "question" && h(89_999, G).restantMs === 1 && h(89_999, G).nbFermees === 0);
+    const f = h(90_000, G);
+    ok("t = 90 s (départ + nb × temps) : fin, tout est clos d'un coup", f.phase === "fin" && f.index === 3 && f.nbFermees === 3 && f.nbVisibles === 3 && f.avantProchainMs === null, JSON.stringify(f));
+    const g = h(10_000, { ...G, terminee: true });
+    ok("partie arrêtée : fin d'office, tout est clos", g.phase === "fin" && g.nbFermees === 3);
+    ok("finPartie / ouverture / fin du temps / révélation : toutes au départ et à la fin du chrono", finPartie(G) === T0 + 90_000 && ouvertureQuestion(G, 2) === T0 && finTempsQuestion(G, 2) === T0 + 90_000 && revelationQuestion(G, 0) === T0 + 90_000);
+    ok("pointsAu : 1 000 points pour toute bonne réponse, quelle que soit l'heure", pointsAu(G, 0, T0) === SALLE_POINTS_GLOBAL && pointsAu(G, 2, T0 + 89_000) === 1000);
+    ok("delaiAvantLecture : vise la révélation des énoncés, le départ et la fin", delaiAvantLecture(G, T0 - 2_500) === 620 && delaiAvantLecture(G, T0 - 1_000) === 1120 && delaiAvantLecture(G, T0 + 89_000) === 1120 && delaiAvantLecture(G, T0 + 40_000) === 2500);
+    ok("clockDe : chrono global lu dans la session", clockDe({ startedAt: new Date(T0).toISOString(), temps: 30, pause: 5, nb: 3, statut: "en_cours", chrono: "global" }).global === true && clockDe({ startedAt: new Date(T0).toISOString(), temps: 30, pause: 5, nb: 3 }).global === false);
+    // comparaison avec la définition SQL, sur des parties et des instants tirés au hasard
+    const rand = seeded(7);
+    let ecarts = 0;
+    for (let k = 0; k < 300; k++) {
+      const s: ClockSession = { startedAt: T0, temps: 15 + Math.floor(rand() * 106), pause: 5, nb: 1 + Math.floor(rand() * 600), global: true };
+      const fin = s.nb * s.temps * 1000;
+      for (const e of [-20_000, -2001, -2000, -1, 0, 1, fin - 1, fin, fin + 1, Math.floor(rand() * fin)]) {
+        const r = horlogeSession(s, T0 + e);
+        const phase = e >= fin ? "fin" : e < 0 ? "decompte" : "question";
+        const index = phase === "fin" ? s.nb : phase === "decompte" ? -1 : 0;
+        const fermees = phase === "fin" ? s.nb : 0;
+        const visibles = phase === "decompte" ? (e + 2000 >= 0 ? s.nb : 0) : s.nb;
+        if (r.phase !== phase || r.index !== index || r.nbFermees !== fermees || r.nbVisibles !== visibles) ecarts++;
+      }
+    }
+    ok("chrono global : aucun écart avec la définition SQL sur 3 000 instants", ecarts === 0, `${ecarts} écarts`);
+  }
   ok("constantes : pause 5 s, décompte 8 s, marge 2 s, aperçu 2 s", SALLE_PAUSE_S === 5 && SALLE_DECOMPTE_S === 8 && SALLE_MARGE_S === 2 && SALLE_APERCU_S === 2);
   {
     // comparaison avec une définition naïve, sur des parties et des instants tirés au hasard
@@ -180,7 +220,7 @@ async function main() {
     ok(`horloge = définition naïve sur ${essais} instants`, ecarts === 0, `${ecarts} écarts`);
   }
   {
-    ok("clockDe : lit une session du serveur", eq(clockDe({ startedAt: "2026-10-30T20:00:00.000Z", temps: 30, pause: 5, nb: 3, statut: "en_cours" }), { startedAt: Date.parse("2026-10-30T20:00:00.000Z"), temps: 30, pause: 5, nb: 3, terminee: false }));
+    ok("clockDe : lit une session du serveur", eq(clockDe({ startedAt: "2026-10-30T20:00:00.000Z", temps: 30, pause: 5, nb: 3, statut: "en_cours" }), { startedAt: Date.parse("2026-10-30T20:00:00.000Z"), temps: 30, pause: 5, nb: 3, terminee: false, global: false }));
     ok("clockDe : terminée", clockDe({ startedAt: "2026-10-30T20:00:00.000Z", temps: 30, pause: 5, nb: 3, statut: "terminee" }).terminee === true);
   }
   {
@@ -258,10 +298,10 @@ async function main() {
     ok("réglages par défaut valides et inchangés", v0.ok && eq(v0.params, def), JSON.stringify(v0));
 
     const v1 = validerParams({ type: "mixte", nombre: "20", topics: ["quant", "ethics", "bogus"], source: "mocks", difficulte: "difficile", temps: "60", partCalculs: 50 });
-    ok("mixte : chaînes numériques lues, matières dans l'ordre du programme, inconnues écartées", v1.ok && eq(v1.params, { type: "mixte", nombre: 20, source: "mocks", topics: ["ethics", "quant"], difficulte: "difficile", temps: 60, partCalculs: 50 }), JSON.stringify(v1));
+    ok("mixte : chaînes numériques lues, matières dans l'ordre du programme, inconnues écartées", v1.ok && eq(v1.params, { type: "mixte", nombre: 20, source: "mocks", topics: ["ethics", "quant"], difficulte: "difficile", temps: 60, partCalculs: 50, chrono: "question" }), JSON.stringify(v1));
 
     const v2 = validerParams({ type: "calculs", nombre: 10, topics: ["quant"], source: "mocks", partCalculs: 30 });
-    ok("calculs : source ramenée à la banque, part 100, temps 45 et difficulté mélangée par défaut", v2.ok && eq(v2.params, { type: "calculs", nombre: 10, source: "banque", topics: ["quant"], difficulte: "melange", temps: 45, partCalculs: 100 }), JSON.stringify(v2));
+    ok("calculs : source ramenée à la banque, part 100, temps 45 et difficulté mélangée par défaut", v2.ok && eq(v2.params, { type: "calculs", nombre: 10, source: "banque", topics: ["quant"], difficulte: "melange", temps: 45, partCalculs: 100, chrono: "question" }), JSON.stringify(v2));
 
     const v3 = validerParams({ type: "questions", nombre: 5, topics: ["fsa", "fsa", "fsa"], partCalculs: 70 });
     ok("questions : part de calculs ramenée à 0, matière en double comptée une fois", v3.ok && v3.params.partCalculs === 0 && eq(v3.params.topics, ["fsa"]), JSON.stringify(v3));
@@ -288,6 +328,11 @@ async function main() {
     refuse("matières absentes refusées", { ...base, topics: undefined }, "topics");
     refuse("mixte : part 9 % refusée", { ...base, type: "mixte", partCalculs: 9 }, "partCalculs");
     refuse("mixte : part 91 % refusée", { ...base, type: "mixte", partCalculs: 91 }, "partCalculs");
+    refuse("chrono inconnu refusé", { ...base, chrono: "libre" }, "chrono");
+    const vg = validerParams({ ...base, chrono: "global" });
+    ok("chrono global accepté, par question par défaut (absent ou vide)", vg.ok && vg.params.chrono === "global" && validerParams(base).ok && (validerParams(base) as { params: SalleParams }).params.chrono === "question" && (validerParams({ ...base, chrono: "" }) as { params: SalleParams }).params.chrono === "question");
+    const vm = validerParams({ ...base, source: "examen", nombre: 90, mock: { examens: ["Mock A — Session 1"], version: "base", complet: true, ordre: "examen" }, chrono: "global" });
+    ok("mock officiel : le chrono global est gardé", vm.ok && vm.params.chrono === "global" && vm.params.source === "examen", JSON.stringify(vm));
     const tout = validerParams({});
     ok("tout est signalé d'un coup (type, nombre, matières)", !tout.ok && ["type", "nombre", "topics"].every((c) => tout.erreurs.some((e) => e.champ === c)), JSON.stringify(tout));
     ok("null et non-objets refusés sans exception", !validerParams(null).ok && !validerParams("x").ok && !validerParams(42).ok);
@@ -314,14 +359,25 @@ async function main() {
     }
     ok("mixte, tous nombres (5-50) et toutes parts (10-90) : somme juste, au moins un de chaque, croissant", bon);
     ok("dureeEstimee : 10 questions de 30 s = 353 s", dureeEstimee({ nombre: 10, temps: 30 }) === 353);
+    ok("dureeEstimee : chrono global = décompte + nombre × temps (8 + 10 × 30 = 308 s)", dureeEstimee({ nombre: 10, temps: 30, chrono: "global" }) === 308 && chronoGlobalS({ nombre: 90, temps: 90 }) === 8100);
     ok("libelleDuree", libelleDuree(353) === "5 min 53 s" && libelleDuree(45) === "45 s" && libelleDuree(120) === "2 min" && libelleDuree(3900) === "1 h 05" && libelleDuree(-3) === "0 s");
     ok("libelleParams", libelleParams({ type: "questions", nombre: 20, source: "mocks", topics: ["ethics", "quant", "fsa"], difficulte: "difficile", temps: 45 }) === "20 questions · mocks · 3 matières · difficile · 45 s");
     ok("libelleParams : calculs, toutes les matières, difficulté mélangée", libelleParams({ type: "calculs", nombre: 10, source: "banque", topics: SALLE_TOPIC_KEYS, difficulte: "melange", temps: 60 }) === "10 calculs · toutes les matières · difficulté mélangée · 60 s");
+    ok("libelleParams : chrono global, le chrono total à la place du temps", libelleParams({ type: "questions", nombre: 20, source: "mocks", topics: ["ethics", "quant", "fsa"], difficulte: "difficile", temps: 45, chrono: "global" }) === "20 questions · mocks · 3 matières · difficile · chrono global 15 min");
+    ok("libelleParams : mock officiel en chrono global (90 × 90 s = 2 h 15)", libelleParams({ type: "questions", nombre: 90, source: "examen", topics: SALLE_TOPIC_KEYS, difficulte: "melange", temps: 90, chrono: "global", mock: { examens: ["Mock A — Session 1"], version: "base", complet: true, ordre: "examen" } }) === "90 questions (tout) · Mock A · S1 · questions d'origine · ordre de l'examen · chrono global 2 h 15");
     const p: SalleParams = { type: "mixte", nombre: 20, source: "mocks", topics: ["ethics", "quant"], difficulte: "moyen", temps: 60, partCalculs: 40 };
     const json = paramsVersJson(p);
-    ok("paramsVersJson : snake_case attendu par lancer_session", eq(json, { type: "mixte", nombre: 20, source: "mocks", topics: ["ethics", "quant"], difficulte: "moyen", temps: 60, part_calculs: 40 }));
-    ok("paramsDepuisJson : relit les réglages et les nombres tirés", eq(paramsDepuisJson({ ...json, nb_questions: 12, nb_calculs: 8 }), { ...p, nbQuestions: 12, nbCalculs: 8 }));
-    ok("paramsDepuisJson : sans les nombres tirés, la répartition prévue", eq(paramsDepuisJson(json), { ...p, nbQuestions: 12, nbCalculs: 8 }));
+    ok("paramsVersJson : snake_case attendu par lancer_session (chrono par question par défaut)", eq(json, { type: "mixte", nombre: 20, source: "mocks", topics: ["ethics", "quant"], difficulte: "moyen", temps: 60, part_calculs: 40, chrono: "question" }));
+    ok("paramsDepuisJson : relit les réglages et les nombres tirés", eq(paramsDepuisJson({ ...json, nb_questions: 12, nb_calculs: 8 }), { ...p, chrono: "question", nbQuestions: 12, nbCalculs: 8 }));
+    ok("paramsDepuisJson : sans les nombres tirés, la répartition prévue", eq(paramsDepuisJson(json), { ...p, chrono: "question", nbQuestions: 12, nbCalculs: 8 }));
+    const jg = paramsVersJson({ ...p, chrono: "global" });
+    ok("paramsVersJson / paramsDepuisJson : le chrono global fait l'aller-retour (clé « chrono »)", jg.chrono === "global" && paramsDepuisJson(jg).chrono === "global");
+    const ancienne = paramsDepuisJson({ type: "questions", nombre: 10, topics: ["quant"], temps: 30 });
+    ok(
+      "paramsDepuisJson : une partie d'avant le réglage (sans « chrono ») est par question (chrono absent = par question)",
+      ancienne.chrono === undefined && libelleParams(ancienne).endsWith("· 30 s") && dureeEstimee(ancienne) === dureeEstimee({ ...ancienne, chrono: "question" }) && paramsVersJson(ancienne).chrono === "question",
+    );
+    ok("paramsDepuisJson : « question » écrit en clair est gardé", paramsDepuisJson({ type: "questions", nombre: 10, topics: ["quant"], temps: 30, chrono: "question" }).chrono === "question");
     ok("paramsDepuisJson : JSON abîmé → réglages par défaut, sans exception", paramsDepuisJson(null).nombre === 10);
   }
 
@@ -368,7 +424,41 @@ async function main() {
     ok("toEtat : salle sans partie", vide.session === null && vide.monClassement === null && vide.items.length === 0);
     ok("toEtat : JSON vide sans exception", toEtat({}).membres.length === 0 && toEtat(null).session === null);
   }
+  ok("toEtat : chrono par question, sans avancement, pour une session d'avant le réglage", etat.session?.chrono === "question" && etat.session.avancement === null && etat.mesReponses[0].juste === true && etat.mesReponses[0].points === 912);
+  {
+    const brutSes = brutEtat().session as Record<string, unknown>;
+    const g = toEtat(
+      brutEtat({
+        session: { ...brutSes, params: { ...(brutSes.params as object), chrono: "global" }, chrono: "global", index: 0, nb_visibles: 10, nb_fermees: 0, avancement: [{ user_id: "u2", n: 7 }, { user_id: "u1", n: 3 }] },
+        corrections: [],
+        mes_reponses: [{ position: 4, choix: 2, valeur: null, juste: null, points: null, delai_ms: 41_000 }],
+        classement: [],
+        mon_classement: null,
+      }),
+    );
+    ok("toEtat : chrono global, avancement de chaque joueur", g.session?.chrono === "global" && g.session.params.chrono === "global" && eq(g.session.avancement, [{ userId: "u2", n: 7 }, { userId: "u1", n: 3 }]) && g.session.nbFermees === 0 && g.session.nbVisibles === 10);
+    ok("toEtat : chrono global avant la fin, ni justesse ni points (null, pas faux ni 0)", g.mesReponses[0].juste === null && g.mesReponses[0].points === null && g.mesReponses[0].choix === 2 && g.mesReponses[0].delaiMs === 41_000);
+    const sansCle = toEtat(brutEtat({ session: { ...brutSes, params: { ...(brutSes.params as object), chrono: "global" } } }));
+    ok("toEtat : sans la clé « chrono » de session, celui des réglages", sansCle.session?.chrono === "global");
+  }
   ok("prochainDepuis : nombre de corrections déjà reçues (0 sans état)", prochainDepuis(etat) === 1 && prochainDepuis(null) === 0 && prochainDepuis(toEtat(brutEtat({ session: null }))) === 0);
+  {
+    // chrono global : tous les énoncés reçus, aucune correction avant la fin → on ne redemande rien (depuis = nb)
+    const brutSes = brutEtat().session as Record<string, unknown>;
+    const ses = (surcharge: Record<string, unknown>) => ({ ...brutSes, nb: 2, statut: "en_cours", phase: "question", index: 0, nb_visibles: 2, nb_fermees: 0, ...surcharge });
+    const enCours = toEtat(brutEtat({ session: ses({ chrono: "global" }), corrections: [] }));
+    ok("prochainDepuis chrono global : tous les énoncés là, partie en cours → nb (rien de nouveau à relire)", enCours.items.length === 2 && prochainDepuis(enCours) === 2);
+    const incomplet = toEtat(brutEtat({ session: ses({ chrono: "global" }), items: [(brutEtat().items as unknown[])[0]], corrections: [] }));
+    ok("prochainDepuis chrono global : un énoncé manque → depuis 0", prochainDepuis(incomplet) === 0);
+    const decompte = toEtat(brutEtat({ session: ses({ chrono: "global", statut: "attente", phase: "decompte", index: -1 }), corrections: [] }));
+    ok("prochainDepuis chrono global : énoncés reçus pendant le décompte → nb", prochainDepuis(decompte) === 2);
+    const fin = toEtat(brutEtat({ session: ses({ chrono: "global", statut: "terminee", phase: "fin", index: 2, nb_fermees: 2 }), corrections: [] }));
+    ok("prochainDepuis chrono global : partie finie → première correction manquante (0 : toutes d'un coup)", prochainDepuis(fin) === 0);
+    const finPartielle = toEtat(brutEtat({ session: ses({ chrono: "global", statut: "terminee", phase: "fin", index: 2, nb_fermees: 2 }) }));
+    ok("prochainDepuis chrono global : fin, une correction déjà reçue → 1", prochainDepuis(finPartielle) === 1);
+    const question = toEtat(brutEtat({ session: ses({ chrono: "question" }), corrections: [] }));
+    ok("prochainDepuis chrono par question : inchangé (corrections reçues, même avec tous les énoncés)", prochainDepuis(question) === 0);
+  }
   {
     const suivant = toEtat(
       brutEtat({
@@ -499,6 +589,14 @@ async function main() {
     ok("repondreSalle calcul : saisie illisible refusée sans appel", /pas un nombre/.test(msg) && appels4.length === 0, msg);
     const fmt = await repondreSalle(faux({ repondre_salle: { ok: false, raison: "format", indice: "Réponds en pourcentage : 8.5 pour 8,5 %." } }), "ses-1", 5, { saisie: "0,085" });
     ok("repondreSalle calcul : mauvaise échelle → { ok: false, raison: format }", !fmt.ok && fmt.raison === "format" && /pourcentage/.test(fmt.indice));
+    const masquee = await repondreSalle(
+      faux({ repondre_salle: { ok: true, deja: false, masque: true, juste: false, points: 0, delai_ms: 41_000, choix: 1, valeur: null, bonne_index: null, bonne_valeur: null, explication: null, etapes: [] } }),
+      "ses-1",
+      7,
+      { choix: 1 },
+    );
+    ok("repondreSalle chrono global : enregistrée, masquée, aucune correction", masquee.ok && masquee.masque === true && !masquee.juste && masquee.points === 0 && masquee.bonneIndex === null && masquee.explication === null && masquee.etapes.length === 0 && masquee.choix === 1);
+    ok("repondreSalle chrono par question : masque faux", r.ok && r.masque === false);
     let tard = "";
     try {
       await repondreSalle(faux({ repondre_salle: { __erreur: { code: "P0001", message: "Le temps est écoulé pour cette question." } } }), "ses-1", 4, { choix: 0 });
@@ -659,6 +757,18 @@ async function main() {
     ok("les énoncés sont limités aux questions révélées, les corrections aux questions closes", /i\.position < v_h\.nb_visibles/.test(blocItems) && /i\.position < v_h\.nb_fermees/.test(blocCorrections));
     ok("le classement en direct ne compte que les questions closes", /_salle_classement\(p_salle_id, v_ses\.id, v_h\.nb_fermees\)/.test(sql));
     ok("les tables aux réponses cachées n'ont aucune policy", !/ON salle_items\b[^;]*FOR/.test(sql.replace(/REVOKE[^;]*;/g, "")) && !/ON salle_reponses\b[^;]*FOR/.test(sql.replace(/REVOKE[^;]*;/g, "")));
+  }
+
+  // -------------------------------------------------------------------------
+  section("Cohérence migration_salles_chrono_global.sql ↔ TypeScript");
+  {
+    const g = lire("migration_salles_chrono_global.sql");
+    ok("_salle_horloge_partie : même aperçu (2 s) et fin = fin_at", new RegExp(`c_apercu CONSTANT numeric := ${SALLE_APERCU_S}`).test(g) && /p_now >= p_fin/.test(g));
+    ok("lancer_session : fin_at = départ + nb × temps en chrono global", g.includes("WHEN v_p ->> 'chrono' = 'global' THEN v_total * v_temps"));
+    ok("_salle_params : chrono par question par défaut, question ou global", g.includes("coalesce(nullif(p ->> 'chrono', ''), 'question')") && g.includes("v_chrono NOT IN ('question', 'global')"));
+    ok("etat_salle : clés « chrono » et « avancement » de la session", g.includes("'chrono', CASE WHEN v_global THEN 'global' ELSE 'question' END") && g.includes("'avancement', v_avancement"));
+    ok("etat_salle : ni justesse ni points avant la fin en chrono global", g.includes("'juste', CASE WHEN v_global AND v_h.phase <> 'fin' THEN NULL ELSE r.juste END") && g.includes("'points', CASE WHEN v_global AND v_h.phase <> 'fin' THEN NULL ELSE r.points END"));
+    ok("repondre_salle : réponse masquée (clé « masque »), 1 000 points par bonne réponse", g.includes("'masque', true") && /v_points := 1000;/.test(g) && SALLE_POINTS_GLOBAL === 1000);
   }
 
   console.log(ko ? `\n${ko} échec(s)` : "\nTout est vert");

@@ -71,6 +71,8 @@ const session: SalleSession = {
   nbFermees: 20,
   reponduCourante: 0,
   nbJoueurs: 8,
+  chrono: "question",
+  avancement: null,
 };
 const donnees = (n: number, moi: string, extra: Partial<DonneesSalon> = {}): DonneesSalon => ({
   salle: { id: "00000000-0000-4000-8000-000000000001", nom: "Les révisions du jeudi", description: "Quant et Fixed Income.", code: "K7MX2Q", publique: true, adminId: "u0", createdAt: new Date().toISOString() },
@@ -118,6 +120,9 @@ console.log("# la vue d'un membre");
   );
   check("après une partie : ses réglages en lecture seule", avec.includes("Dernière partie") && avec.includes("<dt>Ce qu'on joue</dt><dd>Questions et calculs</dd>") && avec.includes("Questions d'examen") && avec.includes("Quant, Derivatives") && avec.includes("<dd>30 s</dd>"));
   check("l'historique : la dernière partie, son gagnant et ton rang", avec.includes("Partie 1") && avec.includes("Joueur 1 gagne avec 14 820 points") && avec.includes("Tu finis 3e sur 8"));
+  check("lecture seule : le chrono par question", avec.includes("<dt>Chrono</dt><dd>Par question · correction après chaque question</dd>") && avec.includes("<dt>Temps par question</dt>"));
+  const lectureGlobale = rendre(<ReglagesLecture params={{ ...PRECEDENTS, chrono: "global" }} />);
+  check("lecture seule, chrono global : le mode, le temps moyen et le chrono total", lectureGlobale.includes("<dt>Chrono</dt><dd>Global · un seul chrono, correction à la fin, comme les 30 du jour</dd>") && lectureGlobale.includes("<dt>Temps moyen par question</dt><dd>30 s</dd>") && lectureGlobale.includes("Chrono total : 10 min"));
   const lecture = rendre(<ReglagesLecture params={paramsParDefaut()} />);
   check("lecture seule, réglages par défaut : toutes les matières, difficulté mélangée, aucun champ", lecture.includes("Toutes les matières") && lecture.includes("Mélangé") && !lecture.includes("<input") && !lecture.includes("<button"));
 }
@@ -127,14 +132,21 @@ console.log("# les réglages de l'admin");
   const html = rendre(<Reglages onLancer={noop} />);
   check("par défaut : questions, 10 au total, banque complète, difficulté mélangée, 45 s", /aria-checked="true"[^>]*><b>Questions</.test(html) && />10 <small>au total/.test(html) && /aria-checked="true"[^>]*><b>Banque complète</.test(html) && /aria-checked="true"[^>]*><b>Mélangé</.test(html) && /aria-checked="true"[^>]*><b>45 s</.test(html));
   check("les 10 matières, toutes cochées", compte(html, /type="checkbox"/g) === 10 && compte(html, /checked=""/g) === 10 && html.includes("Toutes les matières"));
-  check("trois types, trois sources (banque, questions d'examen, mock officiel), quatre difficultés, sept temps", compte(html, /role="radio"/g) === 3 + 3 + 4 + 7);
+  check("trois types, trois sources (banque, questions d'examen, mock officiel), quatre difficultés, deux chronos, sept temps", compte(html, /role="radio"/g) === 3 + 3 + 4 + 2 + 7);
+  check("le chrono : « Global » coché par défaut (correction à la fin, comme les 30 du jour), « Par question » proposé", /aria-checked="true"[^>]*><b>Global<\/b><span>Un seul chrono, correction à la fin, comme les 30 du jour/.test(html) && /aria-checked="false"[^>]*><b>Par question<\/b><span>Correction après chaque question/.test(html) && html.includes("Temps moyen par question"));
   check("le curseur du nombre va de 5 à 50 par 5", /type="range"[^>]*min="5"[^>]*max="50"[^>]*step="5"/.test(html));
   check("pas de part de calculs avec des questions seules", !html.includes("Part des calculs"));
-  check("le résumé et la durée estimée (10 × 50 s − 5 s + 8 s = 8 min 23 s)", html.includes("10 questions · banque complète · toutes les matières · difficulté mélangée · 45 s") && html.includes("Durée estimée : 8 min 23 s"));
+  check("le résumé et le chrono total (10 × 45 s = 7 min 30 s)", html.includes("10 questions · banque complète · toutes les matières · difficulté mélangée · chrono global 7 min 30 s") && html.includes("Chrono total : 7 min 30 s") && !html.includes("Durée estimée"));
+  const parQuestion = rendre(<Reglages initial={{ chrono: "question" }} onLancer={noop} />);
+  check("dernière partie par question : « Par question » coché, la durée estimée (10 × 50 s − 5 s + 8 s = 8 min 23 s)", /aria-checked="true"[^>]*><b>Par question<\/b>/.test(parQuestion) && parQuestion.includes("Temps par question") && !parQuestion.includes("Temps moyen par question") && parQuestion.includes("difficulté mélangée · 45 s") && parQuestion.includes("Durée estimée : 8 min 23 s"));
+  check("reglagesDeDepart : chrono global sans partie précédente ou pour une partie d'avant le réglage, sinon celui de la dernière partie", reglagesDeDepart(null).chrono === "global" && reglagesDeDepart({ type: "questions", nombre: 10 }).chrono === "global" && reglagesDeDepart({ chrono: "question" }).chrono === "question" && reglagesDeDepart({ chrono: "global" }).chrono === "global" && reglagesDeDepart({ nombre: 999 }).chrono === "global");
   check("le bouton « Lancer la partie », un bouton d'encre (désactivé seulement sans matière ou en partie)", html.includes("Lancer la partie") && !/<button[^>]*disabled[^>]*>(?:(?!<\/button>)[^])*Lancer la partie/.test(html) && /<button type="submit" class="rl-encre encre bouton[^"]*"[^>]*>(?:(?!<\/button>)[^])*Lancer la partie/.test(html));
 
   const mixte = rendre(<Reglages initial={PRECEDENTS} onLancer={noop} />);
   check("reprise de la dernière partie : mixte, 20, examens blancs, 2 matières, difficile, 30 s", /aria-checked="true"[^>]*><b>Les deux</.test(mixte) && />20 <small>au total/.test(mixte) && /aria-checked="true"[^>]*><b>Questions d'examen</.test(mixte) && compte(mixte, /checked=""/g) === 2 && /aria-checked="true"[^>]*><b>Difficile</.test(mixte) && /aria-checked="true"[^>]*><b>30 s</.test(mixte));
+  const global = rendre(<Reglages initial={{ ...PRECEDENTS, chrono: "global" }} onLancer={noop} />);
+  check("chrono global : coché, « Temps moyen par question », le chrono total (20 × 30 s = 10 min)", /aria-checked="true"[^>]*><b>Global</.test(global) && global.includes("Temps moyen par question") && global.includes("Chrono total : 10 min (20 × 30 s)") && global.includes("Chrono total : 10 min</p>") && !global.includes("Durée estimée"));
+  check("chrono global : le résumé le dit, la règle des points aussi (1 000 par bonne réponse)", global.includes("20 questions et calculs · mocks · 2 matières · difficile · chrono global 10 min") && global.includes("Une bonne réponse vaut 1 000 points") && !global.includes("de 500 à 1 000 points"));
   check("mixte : le curseur de la part des calculs (40 % → 8 calculs, 12 questions)", mixte.includes("Part des calculs") && />40 <small>%/.test(mixte) && mixte.includes("8 calculs · 12 questions"));
 
   const calculs = rendre(<Reglages initial={{ ...PRECEDENTS, type: "calculs", partCalculs: 100 }} onLancer={noop} />);

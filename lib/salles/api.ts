@@ -8,6 +8,7 @@ import type {
   MockDisponible,
   QuestionsDisponibles,
   ReponseResultat,
+  SalleChrono,
   SalleClassementLigne,
   SalleCorrection,
   SalleHistorique,
@@ -32,7 +33,9 @@ import type {
 // Module neutre (pas de "use client") : on lui passe le client Supabase du
 // navigateur (lib/supabase/browser) ou du serveur (lib/supabase/server).
 // Aucune bonne réponse n'arrive ici avant la clôture de la question ou la
-// réponse du joueur : c'est le serveur (SQL) qui décide. Tant que la migration
+// réponse du joueur : c'est le serveur (SQL) qui décide. En chrono global
+// (migration_salles_chrono_global.sql), rien n'arrive avant la fin de la
+// partie : ni correction, ni justesse, ni points (`masque`). Tant que la migration
 // n'est pas appliquée, les lectures renvoient { ok: false, migrationAbsente:
 // true } (jamais d'exception) et sallesReady() renvoie false : l'écran dit que
 // les salles arrivent, rien ne casse.
@@ -49,6 +52,7 @@ const liste = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const str = (v: unknown) => (v === null || v === undefined ? null : String(v));
 const num = (v: unknown, d = 0) => (v === null || v === undefined || Number.isNaN(Number(v)) ? d : Number(v));
 const numOuNull = (v: unknown) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
+const boolOuNull = (v: unknown) => (v === null || v === undefined ? null : Boolean(v));
 const topicOuNull = (v: unknown): TopicKey | null => (typeof v === "string" && (SALLE_TOPIC_KEYS as string[]).includes(v) ? (v as TopicKey) : null);
 const niveauOuNull = (v: unknown): SalleNiveau | null => (v === "facile" || v === "moyen" || v === "difficile" ? v : null);
 
@@ -95,11 +99,14 @@ function toMembre(r: Raw): SalleMembre {
 function toSession(r: Raw): SalleSession {
   const statut: SalleStatut = r.statut === "terminee" ? "terminee" : r.statut === "attente" ? "attente" : "en_cours";
   const phase: SallePhase = r.phase === "decompte" || r.phase === "question" || r.phase === "revelation" || r.phase === "fin" ? r.phase : "fin";
+  const params = paramsDepuisJson(r.params);
+  // le chrono de la session (etat_salle), sinon celui des réglages, sinon par question
+  const chrono: SalleChrono = r.chrono === "global" || r.chrono === "question" ? r.chrono : params.chrono === "global" ? "global" : "question";
   return {
     id: String(r.id),
     numero: num(r.numero, 1),
     statut,
-    params: paramsDepuisJson(r.params),
+    params,
     nb: num(r.nb),
     temps: num(r.temps),
     pause: num(r.pause),
@@ -111,6 +118,8 @@ function toSession(r: Raw): SalleSession {
     nbFermees: num(r.nb_fermees),
     reponduCourante: num(r.repondu_courante),
     nbJoueurs: num(r.nb_joueurs),
+    chrono,
+    avancement: Array.isArray(r.avancement) ? (r.avancement as unknown[]).map((a) => ({ userId: String(obj(a).user_id), n: num(obj(a).n) })) : null,
   };
 }
 
@@ -147,8 +156,9 @@ function toMaReponse(r: Raw): SalleMaReponse {
     position: num(r.position),
     choix: numOuNull(r.choix),
     valeur: numOuNull(r.valeur),
-    juste: Boolean(r.juste),
-    points: num(r.points),
+    // null : chrono global, partie pas finie (rien n'est révélé)
+    juste: boolOuNull(r.juste),
+    points: numOuNull(r.points),
     delaiMs: num(r.delai_ms),
   };
 }
@@ -223,6 +233,8 @@ function toReponse(raw: unknown): ReponseResultat {
   return {
     ok: true,
     deja: Boolean(r.deja),
+    // chrono global : enregistrée, mais ni justesse ni correction avant la fin
+    masque: r.masque === true,
     juste: Boolean(r.juste),
     points: num(r.points),
     delaiMs: num(r.delai_ms),
@@ -443,7 +455,9 @@ export async function arreterSession(supabase: SupabaseClient, salleId: string):
  * Calcul : `{ saisie }` (le texte tapé, « 8,5 », « 1 234,5 », « 12 % »…).
  * Renvoie la correction à celui qui répond. Pour un calcul à la mauvaise
  * échelle, `{ ok: false, raison: "format", indice }` : rien n'est compté, on
- * peut ressaisir. Une saisie illisible lève une erreur sans appeler le serveur.
+ * peut ressaisir. En chrono global : `masque: true`, aucune correction (juste
+ * false, points 0) ; la réponse est définitive, à n'importe quelle position
+ * tant que la partie court, et sans indice d'échelle. Une saisie illisible lève une erreur sans appeler le serveur.
  */
 export async function repondreSalle(
   supabase: SupabaseClient,
