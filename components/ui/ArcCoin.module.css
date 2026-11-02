@@ -1,0 +1,18 @@
+/* L'arc du coin (ArcCoin.tsx) : le canvas couvre toute la carte, bord compris,
+   et l'arc n'en occupe que le coin bas droit. Sans clic, coupé en mode discret. */
+
+.coin {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  border-radius: inherit;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+:global(html[data-discreet="1"]) .coin {
+  display: none;
+}

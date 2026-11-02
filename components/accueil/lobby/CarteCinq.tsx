@@ -1,6 +1,6 @@
 import { Play, Zap } from "lucide-react";
 import { Bouton, Contour, Phrase, SceauUni } from "@/components/accueil/lobby/Encre";
-import { EclairLiaison } from "@/components/ui/ArcElectrique";
+import { ArcCoin } from "@/components/ui/ArcCoin";
 import type { CarteCinqLobby } from "@/components/accueil/lobby/types";
 import { nombre } from "@/lib/voice";
 import { LOBBY } from "@/lib/voice-accueil-lobby";
@@ -11,10 +11,11 @@ import s from "./Lobby.module.css";
 // joueurs et la meilleure copie, un seul bouton : d'encre tant qu'il reste à
 // jouer, à contour une fois les 5 rendues. Couleurs inversées (carte sombre,
 // demande de l'utilisateur) : sceau, cases et boutons dans leur version claire.
-// En bas à droite, un éclair décoratif (EclairLiaison, l'arc électrique du site,
-// ×2,2) : froid sur le noir (palier 3, aura cyan clair), aria-hidden, sans clic,
-// coupé en mode discret et posé en mouvement réduit. Composant serveur ; l'éclair
-// est un îlot client (components/ui).
+// Sur le coin bas droit, un courant électrique qui longe le bord (ArcCoin) :
+// froid sur le noir (palier 3, aura cyan clair), plein au coin, effilé vers le
+// milieu du bas et le haut du bord droit ; aria-hidden, sans clic, coupé en mode
+// discret et posé en mouvement réduit. Composant serveur ; l'arc est un îlot
+// client (components/ui).
 
 const ID = "lobby-cinq";
 /** Platine : l'aura de ce palier est cyan clair, bleu-blanc, lisible sur le noir de la carte. */
@@ -68,7 +69,7 @@ export function CarteCinq({ c, className }: { c: CarteCinqLobby; className?: str
           {c.action.libelle}
         </Bouton>
       )}
-      <EclairLiaison palier={PALIER_ECLAIR} echelle={2.2} className={s.eclairCinq} />
+      <ArcCoin palier={PALIER_ECLAIR} />
     </section>
   );
 }

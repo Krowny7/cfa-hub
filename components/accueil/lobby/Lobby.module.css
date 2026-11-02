@@ -1039,18 +1039,6 @@
 .cinqLigne b {
   color: var(--ink);
 }
-/* l'éclair décoratif en bas à droite (EclairLiaison ×2,2 = 48 × 66 px) : sa hauteur tient dans
-   la bande du bouton (40 px) + le bas de la carte (20 px) + 6 px de l'écart du dessus, donc il
-   ne monte jamais sur la ligne de texte d'au-dessus, et le bouton (largeur de son texte, à
-   gauche) ne le touche pas. Fond toujours noir : trait et cœur clairs même en thème jour
-   (le .arc de base les assombrit pour le papier ; deux classes ici l'emportent) */
-.inverse .eclairCinq {
-  right: 16px;
-  bottom: 6px;
-  z-index: 0;
-  --trait: var(--arc-c);
-  --noyau: #fff;
-}
 
 /* ——— Tes traits du jour ——— */
 /* l'anneau (156 px) et le titre à côté ; si la carte est étirée, ils se centrent dans la place qui reste */
