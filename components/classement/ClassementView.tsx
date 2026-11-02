@@ -129,14 +129,15 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
 
   return (
     <div className="rl-wide rl-page">
-      <div className="flex flex-col gap-7 md:gap-10">
+      <div className="flex flex-col gap-6">
+        {/* un en-tête bas (titre de section, écarts resserrés) : les cartes du dessous prennent la hauteur */}
         <header className={s.entete} style={styleDePalette(PAL)}>
-          <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex min-w-0 flex-col gap-2">
             <p className="t-small flex items-center gap-2 font-semibold">
               <Icone nom="classement" size={18} />
               <span>{CL.kicker(dom)}</span>
             </p>
-            <h1 className="t-hero rl-in m-0">{CL.titre}</h1>
+            <h1 className="t-h1 rl-in m-0">{CL.titre}</h1>
           </div>
           {/* « Trouver un adversaire », compacte, à droite du titre : un pseudo, des suggestions, son profil */}
           <RechercheJoueurs demo={data.joueursExemple} compacte />
