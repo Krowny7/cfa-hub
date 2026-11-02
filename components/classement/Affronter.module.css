@@ -313,7 +313,9 @@
   border-radius: 19px 0 0 19px;
   background: var(--noyer-fonce);
   color: var(--sur-nuit);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.8),
+    0 0 14px rgba(26, 16, 9, 0.6);
 }
 .fondSalle {
   position: absolute;
@@ -326,7 +328,10 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(26, 16, 9, 0.06) 0%, rgba(26, 16, 9, 0.6) 36%, rgba(26, 16, 9, 0.88) 60%, rgba(26, 16, 9, 0.92) 100%);
+  /* léger : la forteresse et le fist bump restent visibles ; une bande dense sous le bouton, l'ombre portée du texte fait le reste */
+  background:
+    linear-gradient(0deg, rgba(26, 16, 9, 0.85) 0, rgba(26, 16, 9, 0.6) 60px, transparent 110px),
+    linear-gradient(180deg, rgba(26, 16, 9, 0.04) 0%, rgba(26, 16, 9, 0.22) 34%, rgba(26, 16, 9, 0.5) 62%, rgba(26, 16, 9, 0.62) 100%);
 }
 .salleTitre {
   display: grid;
@@ -363,8 +368,9 @@
   white-space: nowrap;
   text-shadow: none;
 }
+/* étroite : les deux samouraïs du pont passent à sa droite */
 .salleNote {
-  max-width: 520px;
+  max-width: 260px;
   font-size: 15px;
   line-height: 1.45;
 }
