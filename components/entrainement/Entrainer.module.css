@@ -262,10 +262,6 @@
   line-height: 1.1;
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
 }
-/* un mot par ligne (« Entraînement / ciblé ») : le duel peint se tient à droite du titre */
-.titreEtroit {
-  width: min-content;
-}
 /* Calculs : trois pastilles de niveau, du plus clair au plus sombre (teintes fixes : elles se lisent sur la peinture, jour, nuit et mode discret) */
 .niveaux {
   display: flex;
