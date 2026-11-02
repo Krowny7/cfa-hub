@@ -64,7 +64,7 @@ function GrandeSalle({ data }: { data: ClassementData }) {
   return (
     <section className={s.salle} aria-label={CL.salle}>
       <div className={s.fondSalle} aria-hidden>
-        <PeintureAnimee nom="classement-grande-salle" position="50% 60%" decorative eager />
+        <Illustration nom="classement-grande-salle" position="50% 60%" decorative eager />
       </div>
       <div className={s.salleTitre}>
         <span className={s.sceauNoir} aria-hidden>
