@@ -63,6 +63,33 @@
       ]
     },
     {
+      "key": "glace",
+      "nom": "Mer de glace",
+      "inspiration": "la mer de glace du duel : bleu de nuit polaire, bleu glacier, turquoise et givre",
+      "voile": [
+        0.38,
+        0.66
+      ],
+      "couleurs": [
+        {
+          "nom": "nuit polaire",
+          "hex": "#15213d"
+        },
+        {
+          "nom": "bleu glacier",
+          "hex": "#2d5f96"
+        },
+        {
+          "nom": "turquoise",
+          "hex": "#4fb8b4"
+        },
+        {
+          "nom": "givre",
+          "hex": "#e6f2f7"
+        }
+      ]
+    },
+    {
       "key": "studiolo",
       "nom": "Le studiolo",
       "inspiration": "la marqueterie du studiolo de Gubbio",

@@ -16,7 +16,7 @@ import { activeSpace, type Space } from "./nav";
 // (url de la texture), `--pal-voile-haut` / `--pal-voile-bas` (opacité du voile
 // sombre qui garde le texte blanc lisible) et `data-palette` pour les styles.
 
-export type PaletteCle = "san-romano" | "atelier" | "studiolo" | "ebene" | "jade" | "florence" | "carnet" | "graphite";
+export type PaletteCle = "san-romano" | "atelier" | "glace" | "studiolo" | "ebene" | "jade" | "florence" | "carnet" | "graphite";
 
 export type CouleurNommee = { nom: string; hex: string };
 
@@ -82,7 +82,8 @@ export const PALETTES: Record<PaletteCle, Palette> = Object.fromEntries(
 /** Routes de chaque palette (le premier préfixe qui correspond l'emporte). */
 const ROUTES: { palette: PaletteCle; prefixes: string[] }[] = [
   { palette: "florence", prefixes: ["/classement", "/people", "/duel", "/defi", "/mock-exams", "/eclair", "/salles"] },
-  { palette: "atelier", prefixes: ["/entrainement", "/calculs", "/practice", "/qcm", "/official-exams", "/atelier"] },
+  { palette: "glace", prefixes: ["/entrainement", "/calculs", "/practice", "/qcm", "/official-exams"] },
+  { palette: "atelier", prefixes: ["/atelier"] },
   { palette: "studiolo", prefixes: ["/reviser", "/fiches", "/courses", "/flashcards"] },
   { palette: "carnet", prefixes: ["/codex"] },
   { palette: "jade", prefixes: ["/moi"] },
@@ -92,7 +93,7 @@ const ROUTES: { palette: PaletteCle; prefixes: string[] }[] = [
 /** Repli : une page sans palette propre prend celle de son espace. */
 const PALETTE_DE_L_ESPACE: Record<Space["key"], PaletteCle> = {
   reviser: "studiolo",
-  entrainer: "atelier",
+  entrainer: "glace",
   classement: "florence",
   moi: "jade",
 };

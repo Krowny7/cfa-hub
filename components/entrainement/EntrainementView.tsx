@@ -21,7 +21,7 @@ import { ENTRAINER } from "@/lib/voice-z4";
 import s from "./Entrainer.module.css";
 
 // Espace « S'entraîner » (maquette validée), même langage que Réviser : des
-// cartes en papier et en encre, la palette de l'onglet (« atelier »). Dans
+// cartes en papier et en encre, la palette de l'onglet (« glace »). Dans
 // l'ordre : le diptyque, un grand bandeau coupé en deux moitiés peintes à
 // égalité, « Calculs » (le titre, trois pastilles de niveau, le bouton d'encre)
 // et « Entraînement ciblé » (le titre, une échelle du poids de chaque matière à
@@ -41,9 +41,9 @@ import s from "./Entrainer.module.css";
 // ceux du programme (lib/practiceTopics).
 // Repères de Léonard (data-leonard) : session (le diptyque), eclair,
 // points-faibles, autres (les entrées secondaires).
-// Couleurs : celles de l'onglet « S'entraîner » (palette atelier, lib/palettes.ts :
-// styleDePalette pose --pal-1 brun chaud … --pal-4 flamme de bougie sur la
-// racine). L'encre de l'onglet (.rl-encre, globals.css) revient sur la page : le
+// Couleurs : celles de l'onglet « S'entraîner » (palette glace, tirée de la
+// peinture de la mer de glace, lib/palettes.ts : styleDePalette pose --pal-1
+// nuit polaire … --pal-4 givre sur la racine). L'encre de l'onglet (.rl-encre, globals.css) revient sur la page : le
 // vrai fluide (EncreVive) dans les trois boutons, la texture qui dérive dans
 // le sceau des séries éclair ; les deux sceaux du diptyque sont de simples
 // disques noirs. Mode discret et nuit : voir Entrainer.module.css.
@@ -61,7 +61,7 @@ export type EntrainementData = {
   trophees?: { lignes: LigneTrophee[]; complet: boolean } | null;
 };
 
-const PAL = PALETTES.atelier;
+const PAL = PALETTES.glace;
 const encre = (...cls: string[]) => ["rl-encre", s.encre, ...cls].join(" ");
 const papier = (...cls: string[]) => [s.carte, s.papier, ...cls].join(" ");
 

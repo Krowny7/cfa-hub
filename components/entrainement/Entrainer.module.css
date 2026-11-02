@@ -5,9 +5,11 @@
    suivent la largeur du bloc (requêtes de conteneur), pas celle de l'écran.
    Animations : transform seulement, coupées par prefers-reduced-motion.
    Couleurs : celles de l'onglet « S'entraîner » de la barre du haut, la
-   palette atelier (lib/palettes.ts ; EntrainementView pose --pal-1 brun chaud,
-   --pal-2 bleu crépuscule, --pal-3 ambre, --pal-4 flamme de bougie sur la
-   racine). Le rouge du stylo (--pen) ne marque que ce qui est sous 50 % et les
+   palette glace, tirée de la peinture de la mer de glace (lib/palettes.ts ;
+   EntrainementView pose --pal-1 nuit polaire, --pal-2 bleu glacier, --pal-3
+   turquoise, --pal-4 givre sur la racine). Les noms « ambre », « brun »,
+   « flamme » ci-dessous viennent de l'ancienne palette atelier : ce sont
+   maintenant ces teintes de glace. Le rouge du stylo (--pen) ne marque que ce qui est sous 50 % et les
    ratures. Les mélanges ci-dessous gardent le texte AA, jour et nuit. */
 
 .racine {
@@ -21,8 +23,8 @@
   /* les zones teintées de l'échelle des points faibles : rouge du stylo sous 50 %, ambre de 50 à 70 % (le neutre au-delà : --paper-2) */
   --zone-rouge: color-mix(in srgb, var(--pen) 22%, var(--paper-2));
   --zone-ambre: color-mix(in srgb, var(--ambre) 28%, var(--paper-2));
-  /* le surligneur : la flamme de bougie */
-  --surligne: color-mix(in srgb, var(--pal-4) 60%, transparent);
+  /* le surligneur : la turquoise (le givre serait invisible sur le papier) */
+  --surligne: color-mix(in srgb, var(--pal-3) 45%, transparent);
   /* le brun sombre : fond de repli de l'encre et des peintures, le temps que l'image arrive */
   --noyer-fonce: color-mix(in oklab, var(--pal-1) 62%, black);
   /* le texte posé sur l'encre et sur la peinture (le second : légendes du diptyque) */
@@ -33,7 +35,7 @@
 :global(html[data-theme="nuit"]) .racine {
   --acc: color-mix(in oklab, var(--pal-4) 80%, white);
   --ambre: var(--pal-3);
-  --surligne: color-mix(in srgb, var(--pal-4) 45%, transparent);
+  --surligne: color-mix(in srgb, var(--pal-3) 40%, transparent);
 }
 .racine :where(h2, h3, p) {
   margin: 0;
@@ -301,20 +303,21 @@
   text-decoration-thickness: 1.5px;
   text-underline-offset: 4px;
 }
+/* les teintes de la mer de glace : givre, turquoise, bleu glacier */
 .niveau1 {
-  background: #ffe29a;
-  border-color: #fbe29a;
-  color: #3b2314;
+  background: #e6f2f7;
+  border-color: #e6f2f7;
+  color: #15213d;
 }
 .niveau2 {
-  background: #ee9a30;
-  border-color: #f7b45a;
-  color: #2a1608;
+  background: #4fb8b4;
+  border-color: #8fd8d3;
+  color: #0d1a2c;
 }
 .niveau3 {
-  background: #6b3a1e;
-  border-color: #ffc95e;
-  color: #fff8ea;
+  background: #2d5f96;
+  border-color: #8fd8d3;
+  color: #f3fafc;
 }
 /* Entraînement ciblé : l'échelle du poids de chaque matière à l'examen (une barre de dix segments, largeur au poids, et sa légende) */
 .echelle {
@@ -341,13 +344,13 @@
   border-radius: 3px;
 }
 .ton1 {
-  background: #ffe29a;
+  background: #e6f2f7;
 }
 .ton2 {
-  background: #f0a938;
+  background: #4fb8b4;
 }
 .ton3 {
-  background: #a8602b;
+  background: #3a6fa8;
 }
 .legendeEchelle {
   display: flex;
