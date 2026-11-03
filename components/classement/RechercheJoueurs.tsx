@@ -94,9 +94,11 @@ export function RechercheJoueurs({ demo, compacte = false }: { demo?: DuelPlayer
 
   return (
     <form ref={zone} action="/people" method="get" role="search" className={[s.carte, s.bandeTrouver, compacte ? s.bandeCompacte : ""].filter(Boolean).join(" ")} aria-label={CL.trouver}>
-      <Sceau>
-        <Search size={18} />
-      </Sceau>
+      {!compacte && (
+        <Sceau>
+          <Search size={18} />
+        </Sceau>
+      )}
       <label htmlFor="cl-trouver" className={s.bandeTexte}>
         <b>{CL.trouver}</b>
         <span>{CL.trouverLigne}</span>

@@ -414,13 +414,25 @@
   box-shadow: var(--shadow-1);
   color: var(--ink);
 }
-/* compacte (dans l'en-tête) : une seule ligne, le titre seulement pour les lecteurs d'écran */
+/* compacte (dans l'en-tête) : une seule ligne basse, sans sceau (la loupe est dans le bouton), le titre seulement pour les lecteurs d'écran */
 .bandeCompacte {
-  flex: 0 1 480px;
+  flex: 0 1 360px;
   flex-wrap: nowrap;
-  gap: 10px;
-  padding: 8px 8px 8px 10px;
-  border-radius: 16px;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 13px;
+}
+.bandeCompacte .champ {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 14px;
+}
+.bandeCompacte .bouton {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+  font-size: 13.5px;
 }
 .bandeCompacte .bandeTexte {
   position: absolute;
