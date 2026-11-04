@@ -54,8 +54,8 @@ export function SpaceNav({ chemin }: { chemin?: string } = {}) {
         {SPACES.map((s) => {
           const on = s.key === active;
           return (
-            <Link key={s.key} href={s.href} className={"seg-item gap-0 px-3 text-[13px] @min-[380px]:px-2 @min-[430px]:px-3 @min-[430px]:text-[13.5px] @min-[570px]:gap-[7px] @min-[570px]:px-4" + (on && palette ? " rl-encre-on" : "") + (s.neuf ? " rl-onglet-neuf" : "")} aria-current={on ? "page" : undefined} aria-label={libelleOnglet(s.key, s.label, revoir)}>
-              <Icone nom={ICONE_ESPACE[s.key]} size={17} appui={on ? 1.12 : 0.95} className="hidden @min-[570px]:block @max-[379px]:block" />
+            <Link key={s.key} href={s.href} className={"seg-item gap-0 px-3 text-[13px] @min-[380px]:px-2 @min-[430px]:px-3 @min-[430px]:text-[13.5px] @min-[500px]:gap-[7px] @min-[500px]:px-4" + (on && palette ? " rl-encre-on" : "") + (s.neuf ? " rl-onglet-neuf" : "")} aria-current={on ? "page" : undefined} aria-label={libelleOnglet(s.key, s.label, revoir)}>
+              <Icone nom={ICONE_ESPACE[s.key]} size={17} appui={on ? 1.12 : 0.95} className="hidden @min-[500px]:block @max-[379px]:block" />
               <span className="@max-[379px]:sr-only">{s.label}</span>
               {s.key === "reviser" && <PastilleRevoir className="-right-0.5 -top-1.5" />}
             </Link>

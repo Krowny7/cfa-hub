@@ -49,6 +49,8 @@ export async function TopBar() {
       }}
     >
       <div className="mx-auto flex h-[64px] max-w-[1240px] items-center gap-3 px-4 md:gap-4 md:px-7">
+        {/* trois colonnes : les deux côtés se partagent la place, les onglets restent au centre de la barre */}
+        <div className="flex min-w-max flex-1 items-center gap-3 md:gap-4">
         <Link href="/dashboard" className="group rl-press relative whitespace-nowrap text-[14px] sm:text-[15.5px]">
           <span className="inline-flex items-center gap-2.5">
             <span className="sr-only">{t(locale, "appName")}, accueil</span>
@@ -69,8 +71,9 @@ export async function TopBar() {
             <DomainSwitcher compact />
           </div>
         )}
-        <div className="@container flex min-w-0 flex-1 justify-center">{user && <SpaceNav />}</div>
-        <div className="flex items-center gap-2">
+        </div>
+        <div className="@container flex min-w-0 flex-[0_1_520px] justify-center">{user && <SpaceNav />}</div>
+        <div className="flex min-w-max flex-1 items-center justify-end gap-2">
           {user ? (
             <>
               <RechercheJoueur />
