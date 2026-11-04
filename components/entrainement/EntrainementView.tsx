@@ -14,6 +14,7 @@ import { ECLAIR_HREF } from "@/lib/eclair";
 import { compter, nomTrophee, type LigneTrophee } from "@/lib/trophees";
 import { ECLAIR } from "@/lib/voice-z2c";
 import { nombre } from "@/lib/voice";
+import { CAS } from "@/lib/voice-cas-fsa";
 import { RV } from "@/lib/voice-reviser";
 import { ENTRAINER } from "@/lib/voice-z4";
 import s from "./Entrainer.module.css";
@@ -29,9 +30,9 @@ import s from "./Entrainer.module.css";
 // sur une échelle de 0 à 100 % dont les zones sont teintées, rouge sous 50 %,
 // ambre de 50 à 70 %, avec le trait pointillé du seuil à 70 % ; les notions
 // mesurées seulement en ratures tiennent une ligne à part, sous l'échelle) ; puis, à droite et empilés, « QCM par thème » et
-// « Examens officiels », à gauche un lieu peint sans action, réservé à un
-// usage futur (la peinture seule, sans titre ni lien). Téléphone : une
-// colonne, les deux entrées principales d'abord.
+// « Examens officiels », à gauche et en grand « Cas pratiques » (la même carte,
+// sur la place du lieu peint). Téléphone : une colonne, les deux entrées
+// principales d'abord.
 // Sans requête : app/entrainement charge les données, l'aperçu en fournit.
 // Les chiffres sont ceux de la base ; sans eux, la ligne disparaît (jamais de
 // valeur inventée). Le diptyque n'en lit aucun.
@@ -455,18 +456,16 @@ function Petite({ href, illu, position, titre, texte }: { href: string; illu: Il
   );
 }
 
-/** Le dernier étage : à gauche un lieu peint, sans titre ni action (la place d'un usage futur) ; à droite, empilés, le QCM et les examens officiels. */
+/** Le dernier étage : à gauche, en grand, les cas pratiques ; à droite, empilés, le QCM et les examens officiels. */
 function Autres() {
   return (
-    <div className={s.bas}>
-      <div className={s.lieu} aria-hidden>
-        <Illustration nom="practice-studiolo" position="50% 50%" decorative className={s.fond} />
-      </div>
-      <nav className={s.aside} aria-label={ENTRAINER.autres} data-leonard="autres">
+    <nav className={s.bas} aria-label={ENTRAINER.autres} data-leonard="autres">
+      <Petite href="/cas-pratiques" illu="practice-studiolo" position="50% 68%" titre={CAS.titre} texte={CAS.carteTexte} />
+      <div className={s.aside}>
         <Petite href="/qcm" illu="qcm-bibliotheque" position="50% 50%" titre={ENTRAINER.qcmTitre} texte={ENTRAINER.qcmTexte} />
         <Petite href="/official-exams" illu="exams-sceau" position="50% 50%" titre={ENTRAINER.examsTitre} texte={ENTRAINER.examsTexte} />
-      </nav>
-    </div>
+      </div>
+    </nav>
   );
 }
 

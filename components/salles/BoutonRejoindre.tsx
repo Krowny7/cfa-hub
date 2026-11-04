@@ -36,7 +36,7 @@ export function BoutonRejoindre({ salleId, nom, demo = false }: { salleId: strin
 
   return (
     <div style={{ display: "grid", gap: 4, justifyItems: "end" }}>
-      <BoutonEnvoi type="button" surPeinture className={s.petit} onClick={rejoindre} disabled={envoi} label={SALLES.rejoindreNom(nom)}>
+      <BoutonEnvoi type="button" className={s.petit} onClick={rejoindre} disabled={envoi} label={SALLES.rejoindreNom(nom)}>
         {SALLES.rejoindre}
       </BoutonEnvoi>
       {erreur && (

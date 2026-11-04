@@ -12,13 +12,14 @@ import type { EtatSalle, SalleParams } from "@/lib/salles/types";
 import { REGLAGES, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 
-// Le salon d'une salle (la salle d'attente), sur la carte d'encre noire du
-// site (components/salles/Stage) : nom, publique ou privée, code à partager (copier), joueurs
+// Le salon d'une salle (la salle d'attente), sur le papier du site
+// (components/salles/Stage) : nom, publique ou privée, code à partager (copier), joueurs
 // (l'admin marqué), puis à droite — pour l'admin, le formulaire de réglages
 // (`reglages`, qui lance la partie) ; pour un membre, « En attente du
 // lancement » et les réglages de la dernière partie en lecture seule — et en
 // bas Quitter la salle (l'admin peut aussi changer la visibilité ou supprimer).
-// Pendant une partie, `partie` (l'écran de jeu) prend la place du salon.
+// Pendant une partie, `partie` (l'écran de jeu) prend la place du salon : en
+// chrono par question, sur sa carte d'encre noire.
 // Composant de présentation : les données viennent de SalleVue (ou d'un
 // aperçu), les actions sont des fonctions facultatives (absentes : boutons inertes).
 
@@ -62,13 +63,13 @@ export function SalonView({
   }
 
   const dernieresParams: SalleParams | null = session ? session.params : null;
-  // une partie en chrono global : la salle se fait sobre (pas de carte noire), l'écran des 30 du jour prend la place
-  const sobre = !!partie && estChronoGlobal(session);
+  // une partie en chrono global : l'écran des 30 du jour prend la place, sous une simple ligne
+  const enJeuGlobal = !!partie && estChronoGlobal(session);
   const quitterMsg = nbMembres <= 1 ? SALLES.quitterDernier : moi.estAdmin ? SALLES.quitterAdminConfirme : SALLES.quitterConfirme;
 
   return (
-    <Stage salon={partie ? "partie" : "attente"} sobre={sobre}>
-      {sobre ? (
+    <Stage salon={partie ? "partie" : "attente"} encre={!!partie && !enJeuGlobal}>
+      {enJeuGlobal ? (
         <p className="m-0 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[13px]" style={{ color: "var(--ink)" }}>
           <span>
             <b className="font-semibold">{salle.nom}</b> <span className="text-muted">· {SALLES.salonKicker}</span>
@@ -164,7 +165,7 @@ export function SalonView({
         </div>
       )}
 
-      {!sobre && (
+      {!enJeuGlobal && (
       <footer className={s.pied}>
         <div className={s.piedActions}>
           <button

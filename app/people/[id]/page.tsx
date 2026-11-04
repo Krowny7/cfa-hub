@@ -349,7 +349,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const pastille = "inline-flex w-fit items-center gap-1.5 rounded-full bg-[color-mix(in_oklab,var(--paper)_82%,transparent)] py-1.5 text-[13px] font-semibold text-muted backdrop-blur hover:text-white";
   const haut = isMe ? (
     <div className="flex items-center gap-2">
-      <Link href={hrefPersonnaliser(id)} className={pastille + " px-3"} data-leonard="personnaliser">
+      <Link href={hrefPersonnaliser(id)} className="btn btn-primary btn-sm rl-press" data-leonard="personnaliser">
         <Palette size={14} aria-hidden /> {JOUEURS.personnaliser}
       </Link>
       <Link href={hrefOnglet(id, onglet, apercuAmi ? null : "ami")} className={pastille + " px-2.5"} aria-label={JOUEURS.voirCommeAmi} title={JOUEURS.voirCommeAmi}>

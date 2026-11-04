@@ -14,8 +14,10 @@ import s from "./Salles.module.css";
 // Le champ « Rejoindre avec un code » : 6 caractères (le tiret se pose tout
 // seul : K7M-X2Q), contrôlés avant tout appel (pas de 0, 1, O, I ni L), puis
 // rejoindre_salle ; on entre dans la salle ou on lit la raison du refus. Sert
-// sur la carte de S'affronter et sur /salles/rejoindre?code=. Le client
-// Supabase n'est créé que dans le navigateur ; `demo` (aperçus) : rien ne part.
+// sur /salles, sur /salles/rejoindre?code= et, avec `surCarte` (libellé réservé
+// aux lecteurs d'écran, bouton à contour : le bouton d'encre de la carte reste
+// seul), sur la carte peinte de S'affronter. Le client Supabase n'est créé que
+// dans le navigateur ; `demo` (aperçus) : rien ne part.
 
 /** La saisie telle qu'on l'affiche : majuscules, 6 caractères au plus, un tiret après le troisième. */
 export function saisieCode(brut: string): string {
@@ -23,7 +25,7 @@ export function saisieCode(brut: string): string {
   return n.length > 3 ? `${n.slice(0, 3)}-${n.slice(3)}` : n;
 }
 
-export function FormCode({ initial = "", id = "salle-code", demo = false }: { initial?: string; id?: string; demo?: boolean }) {
+export function FormCode({ initial = "", id = "salle-code", demo = false, surCarte = false }: { initial?: string; id?: string; demo?: boolean; surCarte?: boolean }) {
   const router = useRouter();
   const [code, setCode] = useState(saisieCode(initial));
   const [erreur, setErreur] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export function FormCode({ initial = "", id = "salle-code", demo = false }: { in
   const erreurId = `${id}-erreur`;
   return (
     <form className={s.formCode} onSubmit={envoyer} noValidate aria-label={SALLES.codeTitre}>
-      <label htmlFor={id} className={s.libelle}>
+      <label htmlFor={id} className={surCarte ? "sr-only" : s.libelle}>
         {SALLES.codeLabel}
       </label>
       <div className={s.formCodeRangee}>
@@ -81,9 +83,15 @@ export function FormCode({ initial = "", id = "salle-code", demo = false }: { in
             setErreur(null);
           }}
         />
-        <BoutonEnvoi surPeinture className={s.compact} disabled={envoi}>
-          <DoorOpen size={17} aria-hidden /> {envoi ? SALLES.codeEnCours : SALLES.codeEnvoi}
-        </BoutonEnvoi>
+        {surCarte ? (
+          <button type="submit" className={s.btn} disabled={envoi}>
+            {envoi ? SALLES.codeEnCours : SALLES.codeEnvoi}
+          </button>
+        ) : (
+          <BoutonEnvoi className={s.compact} disabled={envoi}>
+            <DoorOpen size={17} aria-hidden /> {envoi ? SALLES.codeEnCours : SALLES.codeEnvoi}
+          </BoutonEnvoi>
+        )}
       </div>
       {erreur && (
         <p id={erreurId} role="alert" className={s.erreur}>

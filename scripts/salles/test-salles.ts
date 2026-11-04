@@ -15,6 +15,7 @@ import {
   SALLE_PAUSE_S,
   SALLE_POINTS_GLOBAL,
   SALLE_TOPIC_KEYS,
+  ajusterMock,
   analyserCode,
   chronoGlobalS,
   classer,
@@ -40,8 +41,11 @@ import {
   pointsAu,
   pointsReponse,
   prochainDepuis,
+  questionsSession,
   repartirNombre,
   revelationQuestion,
+  sessionJouable,
+  sessionsMock,
   validerParams,
   type ClockSession,
 } from "../../lib/salles/logique";
@@ -367,6 +371,22 @@ async function main() {
     ok("libelleParams : calculs, toutes les matières, difficulté mélangée", libelleParams({ type: "calculs", nombre: 10, source: "banque", topics: SALLE_TOPIC_KEYS, difficulte: "melange", temps: 60 }) === "10 calculs · toutes les matières · difficulté mélangée · 60 s");
     ok("libelleParams : chrono global, le chrono total à la place du temps", libelleParams({ type: "questions", nombre: 20, source: "mocks", topics: ["ethics", "quant", "fsa"], difficulte: "difficile", temps: 45, chrono: "global" }) === "20 questions · mocks · 3 matières · difficile · chrono global 15 min");
     ok("libelleParams : mock officiel en chrono global (90 × 90 s = 2 h 15)", libelleParams({ type: "questions", nombre: 90, source: "examen", topics: SALLE_TOPIC_KEYS, difficulte: "melange", temps: 90, chrono: "global", mock: { examens: ["Mock A — Session 1"], version: "base", complet: true, ordre: "examen" } }) === "90 questions (tout) · Mock A · S1 · questions d'origine · ordre de l'examen · chrono global 2 h 15");
+    const mocksLus = [
+      { examen: "Mock A — Session 2", topic: "equity" as const, base: 90, variantes: 0 },
+      { examen: "Mock A — Session 1", topic: "ethics" as const, base: 27, variantes: 54 },
+      { examen: "Mock A — Session 1", topic: "quant" as const, base: 63, variantes: 126 },
+    ];
+    const [s1, s2] = sessionsMock(mocksLus);
+    ok("sessionsMock : une ligne par session, dans l'ordre, toutes matières confondues", eq([s1, s2], [{ examen: "Mock A — Session 1", base: 90, variantes: 180 }, { examen: "Mock A — Session 2", base: 90, variantes: 0 }]) && sessionsMock(null).length === 0);
+    ok("sessionJouable : les variantes, seules ou avec l'origine, seulement là où elles existent", sessionJouable(s2, "base") && !sessionJouable(s2, "variantes") && !sessionJouable(s2, "tout") && sessionJouable(s1, "variantes") && sessionJouable(s1, "tout"));
+    ok("questionsSession : origine, variantes, les deux", questionsSession(s1, "base") === 90 && questionsSession(s1, "variantes") === 180 && questionsSession(s1, "tout") === 270);
+    const selection = { examens: ["Mock A — Session 1", "Mock A — Session 2"], version: "variantes" as const, complet: true, ordre: "examen" as const };
+    ok("ajusterMock : une session sans variante sort de la sélection", eq(ajusterMock(selection, mocksLus).examens, ["Mock A — Session 1"]));
+    ok("ajusterMock : si rien n'en reste, la première session jouable la remplace", eq(ajusterMock({ ...selection, examens: ["Mock A — Session 2"] }, mocksLus).examens, ["Mock A — Session 1"]));
+    ok("ajusterMock : une sélection vidée à la main reste vide", ajusterMock({ ...selection, examens: [] }, mocksLus).examens.length === 0);
+    const sansVariante = mocksLus.map((d) => ({ ...d, variantes: 0 }));
+    ok("ajusterMock : sans aucune variante, retour aux questions d'origine", ajusterMock(selection, sansVariante).version === "base" && ajusterMock(selection, sansVariante).examens.length === 2);
+    ok("ajusterMock : la liste pas encore lue ne change rien", ajusterMock(selection, null) === selection && ajusterMock(selection, undefined) === selection);
     const p: SalleParams = { type: "mixte", nombre: 20, source: "mocks", topics: ["ethics", "quant"], difficulte: "moyen", temps: 60, partCalculs: 40 };
     const json = paramsVersJson(p);
     ok("paramsVersJson : snake_case attendu par lancer_session (chrono par question par défaut)", eq(json, { type: "mixte", nombre: 20, source: "mocks", topics: ["ethics", "quant"], difficulte: "moyen", temps: 60, part_calculs: 40, chrono: "question" }));
@@ -822,6 +842,15 @@ async function main() {
     ok("repondre_salle : refus après la copie rendue, avec le message repris par l'écran", r.includes("RAISE EXCEPTION 'Ta copie est rendue : tu ne peux plus répondre.'"));
     ok("la migration est rejouable et ne détruit rien", r.includes("CREATE TABLE IF NOT EXISTS salle_rendus") && !/\b(DROP\s+TABLE|DELETE\s+FROM|TRUNCATE)\b/i.test(r));
     ok("la table des copies rendues n'a aucune policy (lue seulement par les fonctions)", r.includes("ALTER TABLE salle_rendus ENABLE ROW LEVEL SECURITY;") && !/CREATE POLICY/i.test(r));
+  }
+
+  // -------------------------------------------------------------------------
+  section("Cohérence migration_salles_sans_variantes.sql ↔ TypeScript");
+  {
+    const v = lire("migration_salles_sans_variantes.sql").replace(/\r\n/g, "\n");
+    ok("_salle_pool : même signature, jamais de variante, quelle que soit la source", v.includes("CREATE OR REPLACE FUNCTION _salle_pool(p_source text)") && v.includes("split_part(c.titre, ' — ', 4) <> 'Variantes')\n    AND (\n      p_source = 'banque'"));
+    ok("les variantes restent jouables depuis un mock (_salle_pool_mock n'est pas repris)", !v.includes("CREATE OR REPLACE FUNCTION _salle_pool_mock") && lire("migration_salles_mocks.sql").includes("(p_version = 'tout' OR (p_version = 'variantes') = m.variante)"));
+    ok("la migration est rejouable et ne détruit rien", !/\b(DROP\s+TABLE|DELETE\s+FROM|TRUNCATE|UPDATE\s+\w+\s+SET)\b/i.test(v));
   }
 
   console.log(ko ? `\n${ko} échec(s)` : "\nTout est vert");

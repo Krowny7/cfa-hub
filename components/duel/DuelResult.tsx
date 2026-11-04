@@ -10,6 +10,9 @@ import { Verdict, type DecisiveVerdict, type MarqueCopie } from "@/components/ad
 import { CeremonieRang } from "@/components/classement/CeremonieRang";
 import { CeremonieSceaux } from "@/components/profil/CeremonieSceaux";
 import { DuelAiCopy } from "@/components/duel/DuelAiCopy";
+import { RideauFin, type GagnantFin } from "@/components/arene/RideauFin";
+import { vainqueurDuel } from "@/lib/arene/regles";
+import { ARENE } from "@/lib/voice-arene";
 import { PLACEMENT_GAMES } from "@/lib/ranks";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
 import { encore, signe } from "@/lib/voice";
@@ -133,6 +136,21 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
     !!state.finishedAt && Date.parse(state.serverNow) - Date.parse(state.finishedAt) < CEREMONIE_JOURS * 86_400_000;
   const dernier = me.elo === eloAfter;
 
+  // Le résultat d'un duel récent reste caché derrière « Voir le résultat » (components/arene/RideauFin)
+  const vainqueurId = vainqueurDuel(state.winnerId, [me.id, them?.id]);
+  const vainqueur = vainqueurId === me.id ? me : vainqueurId && them ? them : null;
+  const perdant = vainqueur === me ? them : me;
+  const gagnantFin: GagnantFin | null = vainqueur?.username
+    ? {
+        id: vainqueur.id,
+        pseudo: vainqueur.username,
+        photo: vainqueur.avatarUrl,
+        elo: vainqueur.elo,
+        score: ARENE.score(vainqueur.score ?? 0, state.questionCount),
+        ligne: perdant ? ARENE.scoreAdverse(perdant.username ?? ARENE.joueur, perdant.score ?? 0, state.questionCount) : null,
+      }
+    : null;
+
   async function rematch() {
     if (!supabase || !them) {
       setError("Aperçu : les boutons ne lancent rien ici.");
@@ -164,6 +182,7 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
   );
 
   return (
+    <RideauFin cle={`duel:${state.id}`} kicker={ARENE.kickerDuel(state.questionCount)} gagnant={gagnantFin} actif={!demo && recent}>
     <div className="grid w-full gap-10 md:gap-14">
       <div className="grid gap-4">
         <Verdict
@@ -269,5 +288,6 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
         </div>
       </section>
     </div>
+    </RideauFin>
   );
 }

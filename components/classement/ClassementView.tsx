@@ -99,8 +99,8 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 // duels, le titre « Duels » et sa phrase, le bouton « Lancer un duel », ou « Relever le défi » quand un défi
 // attend) ; (un bandeau peint,
 // BandePeinte, est dans l'en-tête, à droite du titre) ; la
-// carte « Les Salles » (components/salles/CarteSalles : créer une salle, rejoindre avec
-// un code, les salles publiques ; sans la migration, une ligne dit qu'elles arrivent) ; la
+// carte « Les Salles » (components/salles/CarteSalles : la peinture, le bouton vers /salles,
+// rejoindre avec un code ; sans la migration, une ligne dit qu'elles arrivent) ; la
 // rangée « Ton plus grand rival |
 // Les maîtres de chaque matière » (CarteRival, CarteMaitres : chacune seulement
 // si elle a des données) ; enfin le Classement général en

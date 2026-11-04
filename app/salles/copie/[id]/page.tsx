@@ -30,7 +30,7 @@ export default async function CopieSallePage({ params }: { params: Promise<{ id:
       <Link href="/moi?onglet=activites" className="t-small w-fit font-semibold">
         ← {ACTIVITES.titre}
       </Link>
-      <Stage sobre>
+      <Stage>
         <RevueSalle revue={copie.revue} numero={copie.numero} titre={copie.titre} />
       </Stage>
     </div>

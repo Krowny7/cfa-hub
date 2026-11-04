@@ -52,7 +52,7 @@ export function FormCreer({ demo = false }: { demo?: boolean }) {
   }
 
   return (
-    <form className={s.formulaire} onSubmit={envoyer} noValidate aria-label={SALLES.pageTitre}>
+    <form className={s.formulaire} onSubmit={envoyer} noValidate aria-label={SALLES.creer}>
       <div className={s.etiquetteChamp}>
         <label htmlFor={`${uid}-nom`} className={s.libelle}>
           {SALLES.nomLabel}
@@ -120,7 +120,7 @@ export function FormCreer({ demo = false }: { demo?: boolean }) {
         </p>
       )}
       <div>
-        <BoutonEnvoi surPeinture className={s.pleinMobile} disabled={envoi}>
+        <BoutonEnvoi className={s.pleinMobile} disabled={envoi}>
           <Plus size={18} aria-hidden /> {envoi ? SALLES.creerEnCours : SALLES.creerEnvoi}
         </BoutonEnvoi>
       </div>

@@ -10,6 +10,7 @@ import { EditeurBanniere } from "@/components/profil/EditeurBanniere";
 import { ModelesPage } from "@/components/profil/ModelesPage";
 import { AmbianceProfil, Banniere } from "@/components/profil/Pieces";
 import { SceauxPoses } from "@/components/profil/SceauxPoses";
+import { ReglagesArene } from "@/components/arene/ReglagesArene";
 import { Feuille } from "@/components/ui/Feuille";
 import {
   Regle,
@@ -303,6 +304,9 @@ export function Personnaliser({
             onEnvoi={setEnvoiImage}
             ranger={(brouillonBanniere) => rangerFichiersEnAttente(style.disposition, null, brouillonBanniere)}
         />
+
+        {/* ce que les autres voient en partie : la bannière de VS et la vidéo de victoire, enregistrées tout de suite */}
+        <ReglagesArene joueur={{ id: carte.id, pseudo: carte.name, photo: avatarUrl, elo: carte.elo, maitrise: carte.mastery, place: carte.place }} />
 
         {/* la page elle-même, rangée sur place */}
         <section id="rl-perso-page" aria-label={PERSO.zones.page} className="flex scroll-mt-24 flex-col gap-5">

@@ -1,12 +1,12 @@
-/* Les Salles, dans la DA du site (refonte du 2026-10-30) : la même encre noire
-   que la bande « Trouver un adversaire » de S'affronter (#15100c, bord noir,
-   coins de 20 px), des cartes à liseré fin, les titres en Dela Gothic One, le
-   texte en Geist, les petits chiffres et le code de la salle en Geist Mono, les
-   boutons et les sceaux d'encre de components/classement/Encre.tsx, et UN seul
-   accent, un vermillon sobre (le direct, l'urgence, la mauvaise réponse). Ni
-   biseaux, ni capitales espacées, ni or : l'ambiance de compétition tient au
-   fond sombre, au chrono et aux animations.
-   Les jetons --sl-* sont posés sur .jetons ; Partie.module.css les reprend.
+/* Les Salles, dans la DA du site : les cartes en papier de S'affronter, les
+   titres en Dela Gothic One, le texte en Geist, les petits chiffres et le code de
+   la salle en Geist Mono, les boutons et les sceaux d'encre de
+   components/classement/Encre.tsx, et un seul accent (le direct, l'urgence, la
+   mauvaise réponse).
+   Tout passe par les jetons --sl-*, posés sur .jetons : ceux du papier du site
+   (data-sobre, jour et nuit) partout, ceux de l'encre noire sur la carte peinte
+   de S'affronter et sur l'écran de jeu en chrono par question (Partie.module.css
+   les reprend). Une couleur ne s'écrit donc jamais ici, seulement dans ces jetons.
    Les mouvements (apparition des joueurs, pouls de l'attente) sont coupés en
    mouvement réduit et en mode discret ; en mode discret, la police du logo
    cède la place à Geist (comme .font-brand ailleurs). */
@@ -26,6 +26,24 @@
   --sl-texte: #f6efe4;
   --sl-texte-2: rgba(246, 239, 228, 0.72);
   --sl-encre: #15100c;
+  /* une carte, un choix, une ligne de liste */
+  --sl-carte: rgba(255, 255, 255, 0.04);
+  --sl-carte-ombre: none;
+  --sl-carte-coin: 16px;
+  --sl-rang: rgba(255, 255, 255, 0.035);
+  /* le survol, ce qui est coché, sa ligne à soi */
+  --sl-actif: rgba(255, 255, 255, 0.1);
+  --sl-bord-on: rgba(246, 239, 228, 0.55);
+  --sl-bord-actif: rgba(246, 239, 228, 0.7);
+  /* le bouton à contour et les champs */
+  --sl-btn-trait: 1px solid var(--sl-trait);
+  --sl-btn-fond: transparent;
+  --sl-champ: rgba(255, 255, 255, 0.08);
+  --sl-champ-trait: var(--sl-trait);
+  --sl-champ-texte: #fff;
+  --sl-champ-exemple: rgba(246, 239, 228, 0.6);
+  --sl-focus: #fff;
+  --sl-erreur: #ffd9d1;
   --sl-brand: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
   --sl-brand-w: 400;
   --sl-brand-ls: -0.01em;
@@ -37,8 +55,52 @@
   --sl-brand-w: 800;
   --sl-brand-ls: -0.02em;
 }
+/* sur le papier, les jetons passent à ceux du site (jour et nuit) */
+.jetons[data-sobre="1"] {
+  --sl-fond: var(--surface);
+  --sl-panneau: var(--surface);
+  --sl-panneau-2: var(--paper-2);
+  --sl-ligne: var(--pencil-2);
+  --sl-trait: var(--pencil-2);
+  --sl-voile: color-mix(in srgb, var(--ink) 5%, transparent);
+  --sl-puits: color-mix(in srgb, var(--ink) 6%, transparent);
+  --sl-metal: var(--ink);
+  --sl-metal-2: color-mix(in srgb, var(--ink) 50%, transparent);
+  --sl-vermillon: var(--perte);
+  --sl-vermillon-2: var(--perte);
+  --sl-texte: var(--ink);
+  --sl-texte-2: var(--ink-2);
+  --sl-encre: var(--surface);
+  --sl-carte: var(--surface);
+  --sl-carte-ombre: var(--shadow-1);
+  --sl-carte-coin: 20px;
+  --sl-rang: var(--paper);
+  --sl-actif: color-mix(in srgb, var(--ink) 7%, transparent);
+  --sl-bord-on: var(--ink);
+  --sl-bord-actif: var(--ink);
+  --sl-btn-trait: 1.5px solid var(--ink);
+  --sl-btn-fond: var(--surface);
+  --sl-champ: var(--surface);
+  --sl-champ-trait: var(--pencil);
+  --sl-champ-texte: var(--ink);
+  --sl-champ-exemple: var(--ink-3);
+  --sl-focus: var(--ink);
+  --sl-erreur: var(--perte);
+}
+/* nuit : le brun sombre et l'encre voilée se confondent avec les cartes ; un liseré d'ocre dessine le bouton, comme sur les cartes de S'affronter */
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .jetons[data-sobre="1"] :global(.rl-encre):is(a, button) {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-5) 40%, transparent),
+    var(--shadow-btn);
+}
+/* mode discret : le bouton plein du site à la place de l'encre */
+:global(html[data-discreet="1"]) .jetons[data-sobre="1"] :global(.rl-encre):is(a, button) {
+  background: var(--ink);
+  color: var(--paper);
+  text-shadow: none;
+}
 
-/* ——— la scène : une carte d'encre, comme la bande « Trouver un adversaire » ——— */
+/* ——— la scène : le papier du site ; la carte d'encre noire pour le jeu en chrono par question ——— */
 .racine {
   position: relative;
   display: grid;
@@ -50,6 +112,12 @@
   background: var(--sl-fond);
   box-shadow: var(--shadow-1);
 }
+.racine[data-sobre="1"] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
 .racine :where(h1, h2, h3, p, ul) {
   margin: 0;
   padding: 0;
@@ -58,13 +126,17 @@
   list-style: none;
 }
 .racine :focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--sl-focus);
   outline-offset: 2px;
 }
 /* le sceau d'initiales d'un joueur est une réserve dans l'encre : sur l'encre noire, il lui faut son papier */
 .jetons span[role="img"][aria-label^="Sceau"] {
   border-radius: 8px;
   background: var(--sl-metal);
+}
+/* sur le papier, le sceau d'initiales n'a plus besoin de son fond clair */
+.jetons[data-sobre="1"] span[role="img"][aria-label^="Sceau"] {
+  background: transparent;
 }
 
 /* ——— l'en-tête de la salle ——— */
@@ -75,16 +147,6 @@
   align-items: end;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--sl-ligne);
-  position: relative;
-}
-.entete::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  width: 96px;
-  height: 2px;
-  background: var(--sl-vermillon);
 }
 .surtitre {
   font-size: 12px;
@@ -130,8 +192,8 @@
   color: var(--sl-texte);
 }
 .etiquetteMetal {
-  border-color: rgba(246, 239, 228, 0.55);
-  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--sl-bord-on);
+  background: var(--sl-actif);
   color: var(--sl-texte);
 }
 .etiquetteVive {
@@ -158,7 +220,8 @@
   padding: 12px 16px 12px;
   border: 1px solid var(--sl-trait);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--sl-champ);
+  box-shadow: var(--sl-carte-ombre);
 }
 .codeLabel {
   font-size: 12.5px;
@@ -185,7 +248,7 @@
   animation: eclat 0.9s ease-out;
 }
 
-/* ——— les panneaux : des cartes à liseré fin sur l'encre ——— */
+/* ——— les panneaux : les cartes du site ——— */
 .grille {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -196,8 +259,11 @@
   .grille {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   }
-  .grilleLarge {
-    grid-template-columns: minmax(0, 1fr);
+}
+/* /salles sur téléphone : les salles d'abord, les formulaires ensuite */
+@media (max-width: 899px) {
+  .listesDabord > :last-child {
+    order: -1;
   }
 }
 .colonne {
@@ -209,8 +275,9 @@
   position: relative;
   min-width: 0;
   border: 1px solid var(--sl-ligne);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--sl-carte-coin);
+  background: var(--sl-carte);
+  box-shadow: var(--sl-carte-ombre);
 }
 .panneauCorps {
   display: grid;
@@ -277,13 +344,13 @@
   min-height: 54px;
   padding: 6px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--sl-rang);
   animation: entrer 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   animation-delay: calc(min(var(--i, 0), 14) * 38ms);
 }
 .membreMoi {
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(246, 239, 228, 0.4);
+  background: var(--sl-actif);
+  box-shadow: inset 0 0 0 1.5px var(--sl-bord-on);
 }
 .membreNom {
   display: grid;
@@ -336,13 +403,8 @@
   font-weight: 600;
   color: var(--sl-texte-2);
 }
-.videJoueurs {
-  padding: 4px 20px 22px;
-  font-size: 14px;
-  color: var(--sl-texte-2);
-}
 
-/* ——— les boutons : l'encre pour agir (Encre.tsx), un contour fin pour le reste ——— */
+/* ——— les boutons : l'encre pour agir (Encre.tsx), un contour pour le reste, comme « Défier » ——— */
 .btn {
   position: relative;
   display: inline-flex;
@@ -351,9 +413,9 @@
   gap: 8px;
   min-height: 44px;
   padding: 0 18px;
-  border: 1px solid var(--sl-trait);
+  border: var(--sl-btn-trait);
   border-radius: 12px;
-  background: transparent;
+  background: var(--sl-btn-fond);
   color: var(--sl-texte);
   font: inherit;
   font-size: 14px;
@@ -376,16 +438,21 @@
 }
 @media (hover: hover) {
   .btn:not([disabled]):hover {
-    border-color: rgba(246, 239, 228, 0.7);
-    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--sl-bord-actif);
+    background: var(--sl-actif);
   }
 }
 .btnDiscret {
   min-height: 38px;
   padding: 0 14px;
   border-color: transparent;
+  background: transparent;
   font-size: 13.5px;
   color: var(--sl-texte-2);
+}
+.btnDiscret[aria-pressed="true"] {
+  border-color: var(--sl-ligne);
+  color: var(--sl-texte);
 }
 @media (hover: hover) {
   .btnDiscret:not([disabled]):hover {
@@ -395,9 +462,6 @@
 }
 .btnDanger {
   color: var(--sl-vermillon);
-}
-.btnPlein {
-  width: 100%;
 }
 /* un bouton d'encre à la hauteur d'un champ, ou plus petit dans une ligne de liste */
 .jetons .compact {
@@ -413,23 +477,23 @@
   padding: 0 14px;
 }
 
-/* ——— les champs : ceux de la bande « Trouver un adversaire » ——— */
+/* ——— les champs ——— */
 .champ {
   width: 100%;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid var(--sl-trait);
+  border: 1px solid var(--sl-champ-trait);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: var(--sl-champ);
+  color: var(--sl-champ-texte);
   font: inherit;
   font-size: 15px;
 }
 .champ::placeholder {
-  color: rgba(246, 239, 228, 0.6);
+  color: var(--sl-champ-exemple);
 }
 .champ:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--sl-focus);
   outline-offset: 2px;
 }
 .champCode {
@@ -463,23 +527,88 @@
   background: color-mix(in srgb, var(--sl-vermillon) 12%, var(--sl-fond));
   font-size: 14px;
   line-height: 1.45;
-  color: #ffd9d1;
+  color: var(--sl-erreur);
 }
 .info {
   padding: 10px 14px;
   border: 1px solid var(--sl-trait);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--sl-voile);
   font-size: 14px;
   line-height: 1.45;
   color: var(--sl-texte);
 }
 
-/* ——— les réglages ——— */
+/* ——— les réglages : les onglets d'étapes, une question, le repli, la barre de lancement ———
+   en colonne flexible : un élément de grille ne colle pas (.barre) */
 .reglages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 20px 20px;
+}
+.etape {
   display: grid;
-  gap: 20px;
-  padding: 16px 20px 22px;
+  gap: 14px;
+  min-width: 0;
+}
+.etape[hidden] {
+  display: none;
+}
+.reglages .etape:focus-visible {
+  outline: none;
+}
+.question {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--sl-texte);
+}
+.navEtapes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.navSuivant {
+  margin-left: auto;
+}
+.options {
+  border-top: 1px solid var(--sl-ligne);
+}
+.optionsTete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sl-texte);
+  list-style: none;
+  cursor: pointer;
+}
+.optionsTete::-webkit-details-marker {
+  display: none;
+}
+.optionsTete svg {
+  flex: none;
+  transition: transform var(--dur-1, 0.15s) ease-out;
+}
+.options[open] .optionsTete svg {
+  transform: rotate(180deg);
+}
+.optionsResume {
+  margin-left: auto;
+  font-family: var(--sl-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--sl-texte-2);
+  white-space: nowrap;
+}
+.optionsCorps {
+  display: grid;
+  gap: 18px;
+  padding: 6px 0 12px;
 }
 .bloc {
   display: grid;
@@ -516,8 +645,12 @@
 }
 .choix {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
   gap: 8px;
+}
+/* quatre grands choix : deux par ligne, jamais un seul sur la dernière */
+.choix:has(> :nth-child(4)):not(.choixPetits) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .choixPetits {
   grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
@@ -527,10 +660,10 @@
   gap: 1px;
   align-content: center;
   min-height: 52px;
-  padding: 6px 14px;
+  padding: 8px 14px;
   border: 1px solid var(--sl-trait);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--sl-carte);
   color: var(--sl-texte);
   font: inherit;
   text-align: left;
@@ -547,6 +680,11 @@
   font-size: 12.5px;
   color: var(--sl-texte-2);
 }
+.puce .puceCompte {
+  margin-top: 3px;
+  font-family: var(--sl-mono);
+  font-size: 12px;
+}
 .puce[aria-pressed="true"],
 .puce[aria-checked="true"] {
   border-color: var(--sl-metal);
@@ -557,19 +695,26 @@
 .puce[aria-checked="true"] span {
   color: color-mix(in srgb, var(--sl-encre) 78%, transparent);
 }
+.puce[disabled] {
+  border-style: dashed;
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .puce:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--sl-focus);
   outline-offset: 2px;
 }
 @media (hover: hover) {
   .puce[aria-pressed="false"]:hover,
-  .puce[aria-checked="false"]:hover {
-    border-color: rgba(246, 239, 228, 0.7);
-    background: rgba(255, 255, 255, 0.1);
+  .puce[aria-checked="false"]:not([disabled]):hover {
+    border-color: var(--sl-bord-actif);
+    background: var(--sl-actif);
   }
 }
 .puceCourte {
   min-height: 44px;
+  padding: 6px 10px;
   justify-items: center;
   text-align: center;
 }
@@ -604,15 +749,22 @@
   padding: 0 12px;
   border: 1px solid var(--sl-ligne);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--sl-carte);
   cursor: pointer;
 }
 .topic[data-on="1"] {
-  border-color: rgba(246, 239, 228, 0.55);
-  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--sl-bord-on);
+  background: var(--sl-actif);
+}
+/* une session sans variante, une matière absente des sessions choisies : elle le dit et ne se coche pas */
+.topic[data-off="1"] {
+  border-style: dashed;
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 .topic:has(:focus-visible) {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--sl-focus);
   outline-offset: 2px;
 }
 .coche {
@@ -622,6 +774,9 @@
   flex: none;
   accent-color: var(--sl-metal);
   cursor: pointer;
+}
+.coche[disabled] {
+  cursor: not-allowed;
 }
 .topicNom {
   min-width: 0;
@@ -640,23 +795,33 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+/* le résumé et le lancement : collés au bas de l'écran quand le formulaire dépasse */
+.barre {
+  position: sticky;
+  bottom: 8px;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--sl-ligne);
+  border-radius: 14px;
+  background: var(--sl-fond);
+  box-shadow: var(--sl-carte-ombre);
+}
+.barreRetour {
+  grid-column: 1 / -1;
+}
 .recap {
   display: grid;
-  gap: 8px;
-  padding: 14px 16px;
-  border: 1px solid var(--sl-ligne);
-  border-radius: 12px;
-  background: var(--sl-puits);
+  gap: 6px;
+  min-width: 0;
 }
 .recapLigne {
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 650;
   line-height: 1.4;
-}
-.lancement {
-  display: grid;
-  gap: 10px;
-  justify-items: start;
 }
 
 /* ——— lecture seule (les membres) ——— */
@@ -732,22 +897,7 @@
   animation-delay: 0.36s;
 }
 
-/* ——— la partie (emplacement) et l'historique ——— */
-.partie {
-  display: grid;
-  gap: 14px;
-  padding: 22px 20px 26px;
-  justify-items: start;
-}
-.grosChiffre {
-  font-family: var(--sl-brand);
-  font-weight: var(--sl-brand-w);
-  font-synthesis: none;
-  font-size: clamp(48px, 10vw, 88px);
-  line-height: 0.95;
-  color: var(--sl-texte);
-  font-variant-numeric: tabular-nums;
-}
+/* ——— l'historique et le pied du salon ——— */
 .historique {
   display: grid;
   gap: 4px;
@@ -761,7 +911,7 @@
   gap: 4px 14px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--sl-rang);
 }
 .historiqueNum {
   font-size: 14px;
@@ -790,34 +940,6 @@
   color: var(--sl-vermillon);
 }
 
-/* ——— chrono global : la salle se fait sobre, l'écran des 30 du jour sur le papier du site ——— */
-.racine[data-sobre="1"] {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-/* sur le papier, les jetons de la scène passent aux couleurs du site (jour et nuit) : le texte clair prévu pour
-   l'encre noire y serait invisible, sur le jeu comme sur l'écran de fin */
-.jetons[data-sobre="1"] {
-  --sl-fond: var(--surface);
-  --sl-panneau: var(--surface);
-  --sl-panneau-2: var(--paper-2);
-  --sl-ligne: var(--pencil-2);
-  --sl-trait: var(--pencil-2);
-  --sl-voile: color-mix(in srgb, var(--ink) 5%, transparent);
-  --sl-puits: color-mix(in srgb, var(--ink) 6%, transparent);
-  --sl-metal: var(--ink);
-  --sl-metal-2: color-mix(in srgb, var(--ink) 50%, transparent);
-  --sl-texte: var(--ink);
-  --sl-texte-2: var(--ink-2);
-  --sl-encre: var(--surface);
-}
-/* sur le papier, le sceau d'initiales n'a plus besoin de son fond clair */
-.jetons[data-sobre="1"] span[role="img"][aria-label^="Sceau"] {
-  background: transparent;
-}
-
 /* ——— pendant une partie, l'en-tête se fait discret : le jeu prend la place ——— */
 .racine[data-salon="partie"] .entete {
   padding-bottom: 10px;
@@ -839,7 +961,7 @@
   font-size: clamp(20px, 3vw, 24px);
 }
 
-/* ——— la page « créer / rejoindre » : un formulaire sur l'encre ——— */
+/* ——— le formulaire « créer une salle » ——— */
 .formulaire {
   display: grid;
   gap: 18px;
@@ -867,9 +989,6 @@
 }
 .ligneSalle:first-child {
   border-top: 0;
-}
-.ligneSalleVive {
-  box-shadow: none;
 }
 .ligneNom {
   display: grid;
@@ -899,61 +1018,92 @@
 .etatVif {
   color: var(--sl-vermillon);
 }
+.entreeBientot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--sl-texte-2);
+}
 
-/* ——— la carte d'entrée sur S'affronter : celle de sa voisine, la bande « Trouver un adversaire » ——— */
+/* ——— la carte de S'affronter, peinte comme ses voisines : la peinture, un voile à gauche, le texte clair ——— */
 .entree {
   position: relative;
-  min-width: 0;
-  padding: 14px 18px 20px;
-  border: 1px solid #000;
-  border-radius: 20px;
-  background: #15100c;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 14px;
+  min-height: 250px;
+  padding: 26px 30px;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--pencil-2);
+  background: var(--noyer-fonce);
   box-shadow: var(--shadow-1);
-  color: #f6efe4;
+  color: var(--sur-nuit);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
-.entree :where(h2, h3, p, ul) {
-  margin: 0;
-  padding: 0;
+.entree :focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
-.entree :where(ul) {
-  list-style: none;
+.entreeFond {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
 }
-.entreeTete {
+/* léger : les personnages restent visibles à droite */
+.entree::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(26, 16, 9, 0.86) 0%, rgba(26, 16, 9, 0.64) 36%, rgba(26, 16, 9, 0.12) 62%, rgba(26, 16, 9, 0) 100%);
+}
+.entreeTexte {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  max-width: 430px;
+}
+.entreeTexte h2 {
+  font-size: 28px;
+  line-height: 1.05;
+}
+.entreeTexte p {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.entreeActions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 16px;
-  margin-bottom: 16px;
+  gap: 10px;
+  max-width: 520px;
 }
-.entreeTitre {
-  flex: 1 1 260px;
-  display: grid;
-  gap: 1px;
-  min-width: 0;
+.entreeActions .formCode {
+  flex: 1 1 250px;
+  max-width: 300px;
 }
-.entreeTitre h2 {
-  font-family: var(--sl-brand);
-  font-weight: var(--sl-brand-w);
-  font-synthesis: none;
-  font-size: 22px;
-  line-height: 1.1;
-  letter-spacing: var(--sl-brand-ls);
+.entree .champ,
+.entree .btn {
+  min-height: 48px;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(20, 13, 8, 0.55);
 }
-.entreeCorps {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 22px;
+.entree .champCode {
+  font-size: 16px;
+  letter-spacing: 0.14em;
 }
-@media (min-width: 860px) {
-  .entreeCorps {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: 32px;
-  }
+.entree .champCode::placeholder {
+  letter-spacing: 0.14em;
 }
-.entreeActions {
-  display: grid;
-  gap: 18px;
-  align-content: start;
+:global(html[data-discreet="1"]) .entree :global(.rl-encre):is(a, button) {
+  background: #fff;
+  color: #111;
+  text-shadow: none;
 }
 .formCode {
   display: grid;
@@ -964,54 +1114,28 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
-.entreeListe {
-  display: grid;
-  gap: 8px;
-  align-content: start;
-  min-width: 0;
-}
-.entreeListeTete {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.entreeSous {
-  font-size: 13px;
-  font-weight: 650;
-  color: rgba(246, 239, 228, 0.72);
-}
-.entreeBientot {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--sl-texte-2);
-}
-.mes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.mes a {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--sl-trait);
-  border-radius: 99px;
-  background: var(--sl-voile);
-  color: var(--sl-texte);
-  font-size: 13.5px;
-  font-weight: 600;
-  text-decoration: none;
-}
-@media (hover: hover) {
-  .mes a:hover {
-    border-color: rgba(246, 239, 228, 0.7);
-    background: rgba(255, 255, 255, 0.12);
+/* téléphone : le voile passe en bas, sous le texte */
+@container (max-width: 640px) {
+  .entree {
+    min-height: 360px;
+    padding: 18px;
+  }
+  .entree::after {
+    background: linear-gradient(180deg, rgba(26, 16, 9, 0.04) 0%, rgba(26, 16, 9, 0.3) 38%, rgba(26, 16, 9, 0.86) 72%, rgba(26, 16, 9, 0.92) 100%);
+  }
+  .entreeTexte h2 {
+    font-size: 26px;
+  }
+  .entreeActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .entreeActions .formCode {
+    flex: none;
+    max-width: none;
+  }
+  .entreeActions > :global(.rl-encre) {
+    width: 100%;
   }
 }
 
@@ -1074,12 +1198,22 @@
   .jetons .pleinMobile {
     width: 100%;
   }
+  .barre {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .formCodeRangee {
     grid-template-columns: minmax(0, 1fr);
   }
   .formCodeRangee .btn,
   .jetons .formCodeRangee .compact {
     width: 100%;
+  }
+  /* sur la carte peinte, le champ et son bouton restent côte à côte */
+  .entree .formCodeRangee {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .entree .formCodeRangee .btn {
+    width: auto;
   }
 }
 
@@ -1091,7 +1225,8 @@
     animation: none;
   }
   .btn,
-  .puce {
+  .puce,
+  .optionsTete svg {
     transition: none;
   }
   .btn:active {

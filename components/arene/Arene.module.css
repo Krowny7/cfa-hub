@@ -1,0 +1,769 @@
+/* La mise en scène des parties : l'écran VS, la fin de partie, les réglages de
+   Personnaliser. Reprend les maquettes validées (bannières en coup de pinceau,
+   habillage 3B, quinconce 4A, mosaïque 4C, cadres 2A et 2B). Jamais d'écran
+   plein : un calque sur la page en cours, à peine assombri. Couleurs fixes : ces
+   surfaces restent les mêmes de jour et de nuit. Masques : public/arene/. */
+
+.calque {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  overflow: hidden;
+  background: rgba(20, 14, 8, 0.38);
+  color: #f6f6f3;
+  font-family: var(--font-sans);
+  line-height: 1.4;
+  outline: none;
+  animation: areneVoile 0.22s ease-out backwards;
+}
+/* l'écran VS ne bloque rien : les clics passent à travers */
+.calque[data-passe="1"] {
+  pointer-events: none;
+}
+.calque[data-sortie="1"] {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* tout y est en cqw : la scène garde le 16:9 des maquettes et tient dans l'écran */
+.scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(100vw, calc(100svh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  transform: translate(-50%, -50%);
+  container-type: inline-size;
+}
+
+/* la place du résultat tant qu'il est caché : la page ne s'effondre pas */
+.place {
+  min-height: 60svh;
+}
+
+/* ——— les bannières ——— */
+.ban {
+  --u: calc(var(--h) * 1cqw / 100);
+  --ph: 88;
+  position: absolute;
+  width: calc(var(--w) * 1cqw);
+  height: calc(var(--h) * 1cqw);
+}
+.banTrait {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: url("/arene/trait1.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/trait1.webp") center / 100% 100% no-repeat;
+}
+.t2 .banTrait {
+  -webkit-mask-image: url("/arene/trait2.webp");
+  mask-image: url("/arene/trait2.webp");
+}
+.droite .banTrait {
+  transform: scaleX(-1);
+}
+.banFond {
+  position: absolute;
+  inset: 0;
+  background-size: 135% auto;
+  background-position: 0% var(--y, 60%);
+  background-repeat: no-repeat;
+}
+.banVoile {
+  position: absolute;
+  inset: 0;
+}
+/* le trait rempli par la peinture (3B) */
+.ban[data-habit="b"] .banFond {
+  filter: saturate(1.05) brightness(1.04);
+}
+.ban[data-habit="b"] .banVoile {
+  background: linear-gradient(90deg, rgba(26, 18, 11, 0.1) 0, rgba(26, 18, 11, 0.56) 22%, rgba(26, 18, 11, 0.6) 50%, rgba(26, 18, 11, 0) 74%);
+}
+.ban[data-habit="b"].compact .banVoile {
+  background: linear-gradient(90deg, rgba(26, 18, 11, 0.1) 0, rgba(26, 18, 11, 0.6) 24%, rgba(26, 18, 11, 0.66) 62%, rgba(26, 18, 11, 0) 88%);
+}
+.ban[data-habit="b"] .banTxt {
+  text-shadow:
+    0 0 0.5em rgba(26, 18, 11, 0.75),
+    0 0.04em 0.12em rgba(26, 18, 11, 0.6);
+}
+/* un trait de couleur : la peinture n'en occupe que le bout, en gris */
+.ban[data-habit="a"] .banFond {
+  filter: grayscale(1) contrast(1.12) brightness(0.9);
+  opacity: 0.66;
+  -webkit-mask-image: linear-gradient(90deg, transparent 40%, #000 66%);
+  mask-image: linear-gradient(90deg, transparent 40%, #000 66%);
+}
+.banPhoto {
+  position: absolute;
+  top: 50%;
+  left: 7%;
+  width: calc(var(--u) * var(--ph));
+  height: calc(var(--u) * var(--ph));
+  transform: translateY(-50%);
+}
+.droite .banPhoto {
+  left: auto;
+  right: 7%;
+}
+.bord,
+.img {
+  position: absolute;
+  display: block;
+}
+.bord {
+  inset: 0;
+  background: #f6f6f3;
+  -webkit-mask: url("/arene/tache1.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/tache1.webp") center / 100% 100% no-repeat;
+}
+.img {
+  inset: 5%;
+  overflow: hidden;
+  background: #1a120b;
+  -webkit-mask: url("/arene/tache2.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/tache2.webp") center / 100% 100% no-repeat;
+}
+.img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* sans photo : ses initiales */
+.initiales {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: #f6f6f3;
+  font: 400 calc(var(--u) * 30) / 1 var(--font-brand), "Arial Black", sans-serif;
+}
+.banTxt {
+  position: absolute;
+  top: 50%;
+  left: calc(7% + var(--u) * (var(--ph) + 8));
+  max-width: calc(86% - var(--u) * (var(--ph) + 8));
+  transform: translateY(-50%);
+  color: #f6f6f3;
+  white-space: nowrap;
+}
+.droite .banTxt {
+  left: auto;
+  right: calc(7% + var(--u) * (var(--ph) + 8));
+  text-align: right;
+}
+.banTxt strong {
+  display: block;
+  overflow: hidden;
+  font: 400 calc(var(--u) * 27) / 1.05 var(--font-brand), "Arial Black", sans-serif;
+  text-overflow: ellipsis;
+}
+.banTxt span {
+  display: block;
+  font: 600 calc(var(--u) * 11.8) / 1.25 var(--font-sans);
+  opacity: 0.92;
+}
+.banTxt span + span {
+  font-weight: 500;
+  opacity: 0.9;
+}
+.compact {
+  --ph: 76;
+}
+.compact .banTxt strong {
+  font-size: calc(var(--u) * 23);
+}
+.compact .banTxt span {
+  font-size: calc(var(--u) * 11.5);
+}
+
+/* ——— l'écran VS ——— */
+.scene .ban {
+  animation: areneTrait 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+.scene .droite {
+  animation-name: areneTraitDroite;
+  animation-delay: 0.1s;
+}
+.entaille {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--l, 66) * 1cqw);
+  height: calc(var(--e, 8.5) * 1cqw);
+  background: #b4371f;
+  transform: translate(-50%, -50%) rotate(-58deg);
+  -webkit-mask: url("/arene/fin.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/fin.webp") center / 100% 100% no-repeat;
+}
+.vs {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  text-align: center;
+  font: 400 calc(var(--vs, 15) * 1cqw) / 0.95 var(--font-brand), "Arial Black", sans-serif;
+  letter-spacing: -0.015em;
+  text-shadow: 0 0.02em 0.22em rgba(26, 18, 11, 0.55);
+  transform: translate(-50%, -50%);
+  animation: areneVs 0.3s 0.18s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+.hud {
+  position: absolute;
+  right: 3cqw;
+  top: 2.8cqw;
+  margin: 0;
+  font: 600 1.8cqw / 1 var(--font-sans);
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 0.5em rgba(26, 18, 11, 0.7);
+  white-space: nowrap;
+}
+
+/* deux joueurs */
+.duoA,
+.duoB {
+  --w: 64;
+  --h: 20;
+}
+.duoA {
+  left: 1.2cqw;
+  top: 1.6cqw;
+}
+.duoB {
+  right: 1.2cqw;
+  bottom: 1.6cqw;
+}
+
+/* 3 ou 4 joueurs : le quinconce */
+.scene[data-disposition="quinconce"] {
+  --vs: 9;
+  --l: 52;
+  --e: 6;
+}
+.q0,
+.q1,
+.q2,
+.q3 {
+  --w: 46;
+  --h: 12.6;
+}
+.q0 {
+  left: 1.4cqw;
+  top: 1.8cqw;
+}
+.q1 {
+  right: 1.4cqw;
+  top: 15cqw;
+}
+.q2 {
+  left: 1.4cqw;
+  top: 28.4cqw;
+}
+.q3 {
+  right: 1.4cqw;
+  top: 41.6cqw;
+}
+.scene[data-nb="3"] .q1 {
+  top: 21.8cqw;
+}
+.scene[data-nb="3"] .q2 {
+  top: 41.6cqw;
+}
+
+/* 5 joueurs et plus : la mosaïque */
+.grille {
+  position: absolute;
+  inset: 2.6cqw 2cqw;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  place-items: center;
+}
+.grille .ban {
+  --w: 31.4;
+  --h: 14;
+  position: relative;
+}
+.milieu {
+  margin: 0;
+  text-align: center;
+  font: 400 4.1cqw / 1 var(--font-brand), "Arial Black", sans-serif;
+  text-shadow: 0 0.02em 0.22em rgba(26, 18, 11, 0.55);
+  white-space: nowrap;
+}
+
+/* ——— le résultat caché ——— */
+.rideauKicker {
+  position: absolute;
+  left: 10.4cqw;
+  top: 6.2cqw;
+  margin: 0;
+  font: 600 1.6cqw / 1 var(--font-sans);
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 0.5em rgba(26, 18, 11, 0.7);
+}
+.rideauTrait {
+  position: absolute;
+  left: 3.5cqw;
+  top: 9.5cqw;
+  width: 96cqw;
+  height: 26cqw;
+  background: #1a120b;
+  transform: rotate(-1.2deg);
+  -webkit-mask: url("/arene/trait1.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/trait1.webp") center / 100% 100% no-repeat;
+}
+.rideauTitre {
+  position: absolute;
+  left: 10.4cqw;
+  top: 16cqw;
+  margin: 0;
+  color: #f6f6f3;
+  font: 400 6cqw / 1 var(--font-brand), "Arial Black", sans-serif;
+  transform: rotate(-1.2deg);
+  white-space: nowrap;
+}
+.rideauSous {
+  position: absolute;
+  left: 10.6cqw;
+  top: 23.8cqw;
+  margin: 0;
+  color: #f6f6f3;
+  font: 500 1.9cqw / 1.2 var(--font-sans);
+  opacity: 0.85;
+  transform: rotate(-1.2deg);
+}
+.rideauBouton {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 38.4cqw;
+  padding-left: 7.4cqw;
+}
+/* la vraie encre, posée d'un coup de pinceau */
+.rideauBouton .boutonPinceau {
+  min-height: 0;
+  padding: 1.75em 3.5em 1.75em 2.6em;
+  border-radius: 0;
+  box-shadow: none;
+  font: 600 2.7cqw / 1 var(--font-sans);
+  letter-spacing: 0.01em;
+  -webkit-mask: url("/arene/bouton.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/bouton.webp") center / 100% 100% no-repeat;
+}
+
+.rideauBouton .boutonPinceau:disabled {
+  opacity: 0.7;
+}
+
+/* ——— la vidéo du vainqueur ——— */
+.fin {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+}
+/* préchargée derrière le bouton, sans rien montrer */
+.fin[data-cachee="1"] {
+  visibility: hidden;
+}
+.video {
+  position: relative;
+  flex: none;
+  aspect-ratio: 1170 / 720;
+}
+.video[data-format="vertical"] {
+  aspect-ratio: 540 / 877;
+}
+.videoScene {
+  width: min(92vw, calc((100svh - 150px) * 1.625));
+}
+.videoScene[data-format="vertical"] {
+  width: auto;
+  height: min(calc(100svh - 150px), calc(92vw / 0.6157));
+}
+.videoImg {
+  position: absolute;
+  left: 6.1%;
+  top: 9.9%;
+  width: 87.8%;
+  height: 80.2%;
+  background: #1a120b;
+  object-fit: cover;
+}
+.video[data-format="vertical"] .videoImg {
+  left: 9.9%;
+  top: 6.1%;
+  width: 80.2%;
+  height: 87.8%;
+}
+.videoCadre {
+  position: absolute;
+  inset: 0;
+  background: #f6f6f3;
+  pointer-events: none;
+  -webkit-mask: url("/arene/cadre-16-9.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/cadre-16-9.webp") center / 100% 100% no-repeat;
+}
+.video[data-format="vertical"] .videoCadre {
+  -webkit-mask-image: url("/arene/cadre-9-16.webp");
+  mask-image: url("/arene/cadre-9-16.webp");
+}
+.vainqueur {
+  flex: none;
+  text-align: center;
+  text-shadow: 0 0 0.6em rgba(26, 18, 11, 0.8);
+}
+.vainqueur strong {
+  display: block;
+  font: 400 clamp(24px, 3.4vw, 44px) / 1.05 var(--font-brand), "Arial Black", sans-serif;
+}
+.vainqueur span {
+  display: block;
+  margin-top: 0.25em;
+  font: 500 clamp(14px, 1.6vw, 20px) / 1.25 var(--font-sans);
+  opacity: 0.92;
+}
+.vainqueur b {
+  font-weight: 700;
+  color: #f2d27a;
+}
+/* le vainqueur sans vidéo : sa bannière */
+.finBan {
+  position: relative;
+  width: min(92vw, calc((100svh - 150px) * 3.2));
+  aspect-ratio: 64 / 20;
+  container-type: inline-size;
+}
+.finBan .ban {
+  --w: 100;
+  --h: 31.25;
+  left: 0;
+  top: 0;
+  animation: areneTrait 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* ——— téléphone et écrans en hauteur : les bannières en haut et en bas ——— */
+@media (max-aspect-ratio: 1/1) {
+  .scene {
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    transform: none;
+  }
+  .scene {
+    --vs: 26;
+    --l: 130;
+    --e: 15;
+  }
+  .scene[data-disposition="quinconce"] {
+    --vs: 16;
+    --l: 100;
+    --e: 10;
+  }
+  .hud {
+    left: 0;
+    right: 0;
+    top: calc(50% + 15cqw);
+    text-align: center;
+    font-size: 3.6cqw;
+  }
+  .duoA,
+  .duoB {
+    --w: 110;
+    --h: 38;
+  }
+  .duoA {
+    left: -6cqw;
+    top: max(7svh, env(safe-area-inset-top, 0px));
+  }
+  .duoB {
+    right: -6cqw;
+    bottom: max(7svh, env(safe-area-inset-bottom, 0px));
+  }
+  .q0,
+  .q1,
+  .q2,
+  .q3 {
+    --w: 100;
+    --h: 29;
+  }
+  .q0,
+  .q2 {
+    left: -3cqw;
+  }
+  .q1,
+  .q3 {
+    right: -3cqw;
+  }
+  .q0 {
+    top: 4svh;
+  }
+  .q1 {
+    top: 22svh;
+  }
+  .q2 {
+    top: auto;
+    bottom: 22svh;
+  }
+  .q3 {
+    top: auto;
+    bottom: 4svh;
+  }
+  .scene[data-nb="3"] .q1 {
+    top: 26svh;
+  }
+  .scene[data-nb="3"] .q2 {
+    top: auto;
+    bottom: 6svh;
+  }
+  .grille {
+    inset: max(4svh, env(safe-area-inset-top, 0px)) 2cqw;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: none;
+    grid-auto-rows: auto;
+    align-content: center;
+    gap: 3cqw 0;
+  }
+  .grille .ban {
+    --w: 49;
+    --h: 24;
+  }
+  .milieu {
+    grid-column: 1 / -1;
+    padding: 2cqw 0;
+    font-size: 8cqw;
+  }
+  .rideauKicker {
+    left: 8cqw;
+    top: calc(50% - 46cqw);
+    font-size: 3.6cqw;
+  }
+  .rideauTrait {
+    left: -5cqw;
+    top: calc(50% - 40cqw);
+    width: 118cqw;
+    height: 66cqw;
+  }
+  .rideauTitre {
+    left: 8cqw;
+    top: calc(50% - 26cqw);
+    font-size: 11.5cqw;
+    line-height: 1.05;
+    white-space: normal;
+    max-width: 80cqw;
+  }
+  .rideauSous {
+    left: 8.5cqw;
+    right: 12cqw;
+    top: calc(50% + 1cqw);
+    font-size: 3.8cqw;
+  }
+  .rideauBouton {
+    top: calc(50% + 30cqw);
+    padding-left: 5cqw;
+  }
+  .rideauBouton .boutonPinceau {
+    font-size: 5cqw;
+  }
+}
+
+/* ——— Personnaliser ——— */
+.reglages {
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 900px) {
+  .reglages {
+    grid-template-columns: minmax(0, 1.14fr) minmax(0, 1fr);
+    gap: 40px;
+  }
+}
+.colonne {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+.apercu {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 58 / 19;
+  container-type: inline-size;
+}
+.apercu .ban {
+  --w: 100;
+  --h: 32.75;
+  left: 0;
+  top: 0;
+}
+.vignettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vigChoix {
+  position: relative;
+  display: block;
+  padding: 0 0 9px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.vigChoix:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.vig {
+  display: grid;
+  width: 76px;
+  height: 52px;
+  place-items: center;
+  background-color: #6e5124;
+  background-position: 50% 62%;
+  background-size: cover;
+  color: #f6f6f3;
+  font: 600 12px / 1.1 var(--font-sans);
+  text-align: center;
+  -webkit-mask: url("/arene/tache1.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/tache1.webp") center / 100% 100% no-repeat;
+}
+.vigChoix[aria-checked="true"]::after,
+.traitChoix[aria-checked="true"]::after {
+  content: "";
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  bottom: 0;
+  height: 7px;
+  background: var(--ink);
+  -webkit-mask: url("/arene/fin.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/fin.webp") center / 100% 100% no-repeat;
+}
+.traits {
+  display: grid;
+  max-width: 420px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.traitChoix {
+  position: relative;
+  display: block;
+  min-height: 44px;
+  padding: 0 0 11px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: 500 13px / 1 var(--font-sans);
+  text-align: left;
+}
+.traitChoix[aria-checked="true"] {
+  font-weight: 700;
+}
+.traitChoix:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.traitChoix i {
+  display: block;
+  height: 30px;
+  margin-bottom: 6px;
+  background-position: 30% 62%;
+  background-size: 190% auto;
+  -webkit-mask: url("/arene/fin.webp") center / 100% 100% no-repeat;
+  mask: url("/arene/fin.webp") center / 100% 100% no-repeat;
+}
+.videoBloc {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  align-items: start;
+}
+@media (max-width: 420px) {
+  .videoBloc {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.videoApercu {
+  width: 100%;
+}
+.videoApercu .videoCadre {
+  background: var(--ink);
+}
+.videoVide {
+  background: var(--surface-2, rgba(26, 18, 11, 0.08));
+}
+.limites {
+  margin: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.fichier {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.fichier small {
+  display: block;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+@keyframes areneVoile {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes areneTrait {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes areneTraitDroite {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes areneVs {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calque,
+  .scene .ban,
+  .finBan .ban,
+  .vs {
+    animation: none;
+  }
+  .calque[data-sortie="1"] {
+    transition: none;
+  }
+}

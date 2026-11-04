@@ -467,6 +467,44 @@ export function disponiblesMock(dispos: MockDisponible[] | null | undefined, moc
     .reduce((t, d) => t + (mock.version === "base" ? d.base : mock.version === "variantes" ? d.variantes : d.base + d.variantes), 0);
 }
 
+/** Ce qu'offre une session de mock, toutes matières confondues. */
+export type SessionMock = { examen: string; base: number; variantes: number };
+
+/** Les sessions de mock proposées, dans l'ordre : leurs questions d'origine et leurs variantes. */
+export function sessionsMock(dispos: MockDisponible[] | null | undefined): SessionMock[] {
+  const parExamen = new Map<string, SessionMock>();
+  for (const d of dispos ?? []) {
+    const s = parExamen.get(d.examen) ?? { examen: d.examen, base: 0, variantes: 0 };
+    s.base += d.base;
+    s.variantes += d.variantes;
+    parExamen.set(d.examen, s);
+  }
+  return [...parExamen.values()].sort((a, b) => a.examen.localeCompare(b.examen));
+}
+
+/** Une session se joue-t-elle dans cette version ? Les variantes (seules ou avec l'origine) n'existent que sur certaines sessions. */
+export const sessionJouable = (s: SessionMock, version: SalleMockVersion) => (version === "base" ? s.base > 0 : s.variantes > 0);
+
+/** Ce qu'une session offre dans une version. */
+export const questionsSession = (s: SessionMock, version: SalleMockVersion) => (version === "base" ? s.base : version === "variantes" ? s.variantes : s.base + s.variantes);
+
+/**
+ * Ramène une sélection de mocks à ce qui existe : la version « variantes » ou
+ * « les deux » retombe sur l'origine si aucune session n'a de variante, et les
+ * sessions qui ne se jouent pas dans la version sortent de la sélection. Si
+ * rien n'en reste, la première session jouable la remplace ; une sélection
+ * vidée à la main reste vide. Sans la liste des mocks (null : pas encore lue),
+ * la sélection ne change pas.
+ */
+export function ajusterMock(mock: SalleMock, dispos: MockDisponible[] | null | undefined): SalleMock {
+  if (!dispos) return mock;
+  const sessions = sessionsMock(dispos);
+  const version = mock.version !== "base" && !sessions.some((s) => s.variantes > 0) ? "base" : mock.version;
+  const jouables = sessions.filter((s) => sessionJouable(s, version)).map((s) => s.examen);
+  const examens = mock.examens.filter((e) => jouables.includes(e));
+  return { ...mock, version, examens: examens.length || !mock.examens.length ? examens : jouables.slice(0, 1) };
+}
+
 /**
  * Combien de questions et de calculs demander. Un mélange donne au moins un de
  * chaque ; la part est arrondie au demi supérieur (entiers, comme en SQL).

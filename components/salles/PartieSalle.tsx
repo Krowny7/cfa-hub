@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { EcranVs } from "@/components/arene/EcranVs";
 import { PartieExamen } from "@/components/salles/PartieExamen";
 import { VuePartie } from "@/components/salles/VuePartie";
 import { effetsParDefaut, type Effets } from "@/components/salles/effets";
@@ -13,6 +14,7 @@ import { clockDe, horlogeSession } from "@/lib/salles/logique";
 import { chiffreDecompte, reponseVue, type ReponseOk } from "@/lib/salles/partie";
 import type { CopieRendue, ReponseResultat } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
+import { ARENE } from "@/lib/voice-arene";
 import { PARTIE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 import p from "./Partie.module.css";
@@ -199,21 +201,24 @@ export function PartieSalle({
   }
 
   return (
-    <VuePartie
-      session={ses}
-      items={etat.items}
-      corrections={etat.corrections}
-      mesReponses={etat.mesReponses}
-      locales={locales}
-      classement={etat.classement}
-      monClassement={etat.monClassement}
-      moi={moi}
-      estAdmin={etat.moi.estAdmin}
-      t={t}
-      repondre={envoyer}
-      onArreter={onArreter}
-      onRejouer={onRejouer}
-      onRetour={onRetour}
-    />
+    <>
+      {h?.phase === "decompte" && <EcranVs cle={`salle:${ses.id}`} joueurs={etat.membres.map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl, elo: m.elo }))} moiId={etat.moi.userId} hud={ARENE.hudSalle(etat.membres.length)} />}
+      <VuePartie
+        session={ses}
+        items={etat.items}
+        corrections={etat.corrections}
+        mesReponses={etat.mesReponses}
+        locales={locales}
+        classement={etat.classement}
+        monClassement={etat.monClassement}
+        moi={moi}
+        estAdmin={etat.moi.estAdmin}
+        t={t}
+        repondre={envoyer}
+        onArreter={onArreter}
+        onRejouer={onRejouer}
+        onRetour={onRetour}
+      />
+    </>
   );
 }

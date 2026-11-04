@@ -54,6 +54,14 @@ export const RV = {
   codexTitre: "Le Codex",
   codexSous: "Tes quêtes, tes sceaux et tout ce qui reste à conquérir.",
   codexAction: "Ouvrir le Codex",
+  codexNiveau: (n: number) => `Niveau ${nombre(n)}`,
+  codexXp: (a: number, b: number) => `${nombre(a)} / ${nombre(b)} XP`,
+  codexSuite: "La suite",
+  codexSeance: (faits: number, total: number, minutes: number) => `Séance ${faits + 1}/${total} · ${minutes} min`,
+  codexSeanceFinie: "La séance du jour est faite.",
+  codexARecuperer: (n: number) => (n > 0 ? `À récupérer · ${nombre(n)}` : "À récupérer"),
+  codexRien: "Rien à récupérer pour l'instant.",
+  codexFait: (n: number) => `Fait aujourd'hui : ${nombre(n)}`,
   registre: "Ton suivi",
 
   // l'Atelier : revoir mes erreurs

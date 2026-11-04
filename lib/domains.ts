@@ -3,13 +3,16 @@
 // quatre espaces (Réviser, S'entraîner, Classement, Moi) montrent le contenu
 // du programme choisi ; chaque domaine aura son propre rang. Seul
 // Finance · CFA Niveau I est ouvert pour l'instant : les autres s'affichent
-// « bientôt » et ne mènent encore à rien. Module neutre (pas de "use client").
+// « bientôt » et ne mènent encore à rien. Terminal est à part : ouvert, mais
+// hors de ces espaces, il a sa propre page (href). Module neutre (pas de "use client").
 
 export type Program = {
   key: string;
   name: string;
   short: string;
   ready: boolean;
+  /** programme à part, qui a sa propre page : le sélecteur de domaine y mène, les espaces l'ignorent */
+  href?: string;
 };
 
 export type Domain = {
@@ -30,6 +33,9 @@ export const DOMAINS: Domain[] = [
     programs: [
       { key: "cfa-l1", name: "CFA Niveau I", short: "CFA I", ready: true },
       { key: "cfa-l2", name: "CFA Niveau II", short: "CFA II", ready: false },
+      // ouvert (sinon les espaces l'annonceraient « bientôt »), et jamais en tête : le programme
+      // courant est le premier de la liste (CURRENT_PROGRAM) et le premier ouvert (DomainSpace)
+      { key: "terminal", name: "Terminal", short: "Terminal", ready: true, href: "/terminal" },
     ],
   },
   { key: "histoire", name: "Histoire", icon: "ScrollText", ready: false, programs: [] },

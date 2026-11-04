@@ -1,5 +1,5 @@
 /* La page S'entraîner (maquette validée) : le diptyque Calculs | Entraînement
-   ciblé, la rangée Séries éclair + Tes points faibles, puis un lieu peint à
+   ciblé, la rangée Séries éclair + Tes points faibles, puis Cas pratiques à
    gauche et, empilés à droite, QCM par thème et Examens officiels. Cartes en
    papier et en encre, jetons du site (jour et nuit) ; les mises en page
    suivent la largeur du bloc (requêtes de conteneur), pas celle de l'écran.
@@ -717,22 +717,11 @@
   }
 }
 
-/* ——— le dernier étage : le lieu peint (2/3) et, empilées, deux entrées (1/3) ——— */
+/* ——— le dernier étage : les cas pratiques (2/3) et, empilées, deux entrées (1/3) ——— */
 .bas {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 20px;
-}
-/* la peinture seule : ni titre, ni lien (la place d'un usage futur) */
-.lieu {
-  position: relative;
-  min-height: 300px;
-  min-width: 0;
-  overflow: hidden;
-  isolation: isolate;
-  border-radius: 20px;
-  background: var(--noyer-fonce);
-  box-shadow: var(--shadow-1);
 }
 .aside {
   display: grid;
@@ -772,7 +761,7 @@
   transition: transform var(--dur-2) var(--ease-out);
 }
 
-/* moyen : la rangée et le dernier étage passent sur une colonne ; les deux entrées côte à côte, le lieu peint dessous */
+/* moyen : la rangée et le dernier étage passent sur une colonne ; les cas pratiques, puis les deux entrées côte à côte */
 @container (max-width: 900px) {
   .rangee {
     grid-template-columns: minmax(0, 1fr);
@@ -786,10 +775,6 @@
   }
   .petiteImg {
     flex: 0 0 96px;
-  }
-  .lieu {
-    order: 2;
-    min-height: 220px;
   }
 }
 /* le diptyque se range en deux étages quand chaque moitié devient trop étroite */
@@ -816,7 +801,6 @@
   }
   .diptyque,
   .papier,
-  .lieu,
   .carte {
     border-radius: 16px;
   }
@@ -880,9 +864,6 @@
   }
   .aside {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .lieu {
-    min-height: 150px;
   }
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useState, type ComponentProps } from "react";
 import { ArrowLeft, ChartNoAxesColumn, Crown, RotateCcw, Trophy } from "lucide-react";
+import { RideauSalle } from "@/components/arene/Rideaux";
 import { Avatar } from "@/components/classement/Avatar";
 import { BoutonEnvoi } from "@/components/classement/Encre";
 import { fmtInt } from "@/components/classement/format";
@@ -208,5 +209,19 @@ function FinPartieBase({
   );
 }
 
-/** Mémorisé : le chrono redessine l'écran cinq fois par seconde, pas le podium. */
-export const FinPartie = memo(FinPartieBase);
+/**
+ * Mémorisé : le chrono redessine l'écran cinq fois par seconde, pas le podium.
+ * Le résultat reste caché derrière « Voir le résultat », et la vidéo du vainqueur
+ * passe avant lui (components/arene/RideauFin). `rideau={false}` : l'appelant en
+ * pose un lui-même, autour de ce qu'il montre en plus.
+ */
+export const FinPartie = memo(function FinPartie({ rideau = true, ...props }: ComponentProps<typeof FinPartieBase> & { rideau?: boolean }) {
+  const fin = <FinPartieBase {...props} />;
+  return rideau ? (
+    <RideauSalle session={props.session} classement={props.classement}>
+      {fin}
+    </RideauSalle>
+  ) : (
+    fin
+  );
+});

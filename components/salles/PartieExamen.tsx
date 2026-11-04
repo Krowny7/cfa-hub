@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCheck, FileCheck, Hourglass, Lock, Users } from "lucide-react";
+import { EcranVs } from "@/components/arene/EcranVs";
+import { RideauSalle } from "@/components/arene/Rideaux";
 import { Avatar } from "@/components/classement/Avatar";
 import { BoutonEnvoi } from "@/components/classement/Encre";
 import { etiquettesDe, type Repondre } from "@/components/salles/CarteQuestion";
@@ -34,6 +36,7 @@ import {
 import { libelleDuree, libelleParams } from "@/lib/salles/logique";
 import { chiffreDecompte, fractionTemps, secondesAffichees, type MoiPourClassement, type ReponseOk } from "@/lib/salles/partie";
 import type { CopieRendue, SalleClassementLigne, SalleCorrection, SalleItem, SalleMaReponse, SalleMembre, SalleSession } from "@/lib/salles/types";
+import { ARENE } from "@/lib/voice-arene";
 import { EXAMEN, PARTIE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 import p from "./Partie.module.css";
@@ -143,30 +146,42 @@ export function PartieExamen(props: PropsPartieExamen) {
     if (!finRevelee(session, mesReponses)) return <FinEnAttente session={session} />;
     // QCM seulement : la revue des 30 du jour (filtres, matières, « Copier pour l'IA ») ; sinon l'ancien débrief
     const revue = session.params.type === "questions" ? revueSalle(items, corrections, mesReponses) : null;
+    // le rideau couvre tout ce qui dit le résultat : le podium, le bilan et la correction
     return (
-      <div className={p.ecran}>
-        <FinPartie
-          session={session}
-          items={items}
-          corrections={corrections}
-          mesReponses={mesReponses}
-          classement={classement}
-          monClassement={monClassement}
-          moiId={moi.userId}
-          estAdmin={estAdmin}
-          onRejouer={onRejouer}
-          onRetour={onRetour}
-          revue={false}
-        />
-        {revue ? (
-          <RevueSalle revue={revue} numero={session.numero} titre={session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : SALLES.partieTitre(session.numero)} />
-        ) : (
-          <DebriefExamen nb={session.nb} items={items} corrections={corrections} mesReponses={mesReponses} />
-        )}
-      </div>
+      <RideauSalle session={session} classement={classement}>
+        <div className={p.ecran}>
+          <FinPartie
+            session={session}
+            items={items}
+            corrections={corrections}
+            mesReponses={mesReponses}
+            classement={classement}
+            monClassement={monClassement}
+            moiId={moi.userId}
+            estAdmin={estAdmin}
+            onRejouer={onRejouer}
+            onRetour={onRetour}
+            revue={false}
+            rideau={false}
+          />
+          {revue ? (
+            <RevueSalle revue={revue} numero={session.numero} titre={session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : SALLES.partieTitre(session.numero)} />
+          ) : (
+            <DebriefExamen nb={session.nb} items={items} corrections={corrections} mesReponses={mesReponses} />
+          )}
+        </div>
+      </RideauSalle>
     );
   }
-  if (h.phase === "decompte") return <DecompteExamen session={session} avantMs={h.avantDebutMs} onArreter={onArreter} />;
+  if (h.phase === "decompte") {
+    // l'écran VS vit dans le décompte : la partie démarre, il disparaît avec lui
+    return (
+      <>
+        <DecompteExamen session={session} avantMs={h.avantDebutMs} onArreter={onArreter} />
+        <EcranVs cle={`salle:${session.id}`} joueurs={membres.map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl }))} moiId={moi.userId} hud={ARENE.hudSalle(membres.length)} />
+      </>
+    );
+  }
   // QCM seulement (un mock officiel) : l'écran des 30 du jour, réponses modifiables jusqu'à la remise
   if (session.params.type === "questions") return <RunnerSalle {...props} restantMs={h.restantMs} totalMs={h.totalMs} />;
   return <JeuExamen {...props} restantMs={h.restantMs} totalMs={h.totalMs} />;

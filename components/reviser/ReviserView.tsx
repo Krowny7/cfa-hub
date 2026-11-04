@@ -2,7 +2,7 @@ import { EncreVive } from "@/components/nav/EncreVive";
 import Link from "next/link";
 import { Icone } from "@/components/adn/icons";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
-import { CalculCarnet, CarteCoursComplets } from "@/components/reviser/ParcoursClient";
+import { CarteCoursComplets } from "@/components/reviser/ParcoursClient";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import type { DonneesReviser, EtatFiche } from "@/components/reviser/parcours";
 import { Illustration } from "@/components/ui/Illustration";
@@ -14,21 +14,20 @@ import { RV } from "@/lib/voice-reviser";
 import { ESPACES } from "@/lib/voice-z4";
 import s from "./Parcours.module.css";
 
-// Espace « Réviser », disposition choisie par Théo : dans le cadre commun (.rl-cadre), le
-// cours complet en grand sur la peinture de la bibliothèque, les fiches et les flashcards à
-// sa droite ; dessous, la rangée des outils (page blanche, one-pagers, vidéos résumé,
-// Atelier), le Codex sous son illustration, puis le registre (carnet de ratures, questions
-// marquées, points faibles). Sans requête : app/reviser charge les données
-// (components/reviser/parcours-data.ts), l'aperçu en fournit d'exemple ; ce qui vient de
-// l'appareil (dernier cours, « Sans calcul ») est lu après le montage (ParcoursClient).
+// Espace « Réviser », disposition choisie par Théo. Dans le cadre commun (.rl-cadre) : le
+// cours complet en grand, les fiches et les flashcards à sa droite. Dessous : les one-pagers
+// et la peinture de la pêche, puis la page blanche, les vidéos résumé et l'Atelier, enfin le
+// Codex et son aperçu (`codex`, lu en flux par app/reviser). Le carnet de ratures, les
+// questions marquées et les points faibles sont sur la page de l'Atelier (Registre).
+// Sans requête : app/reviser charge les données (parcours-data.ts), l'aperçu en fournit
+// d'exemple ; ce qui vient de l'appareil (dernier cours) est lu après le montage.
 // Repères de Léonard (data-leonard) : bibliotheque, cours, fiches, fin, atelier.
-// Couleurs : celles de l'onglet « Réviser » (palette studiolo, lib/palettes.ts :
-// styleDePalette sur la racine pose --pal-1 noyer … --pal-4 ivoire). L'encre de l'onglet
-// (.rl-encre, globals.css) revient sur la page : le vrai fluide (EncreVive) dans les
-// boutons, les pastilles d'étape et les sceaux.
+// Couleurs : celles de l'onglet « Réviser » (palette studiolo, lib/palettes.ts). L'encre de
+// l'onglet (.rl-encre) revient sur la page : le vrai fluide (EncreVive) dans les boutons, les
+// pastilles d'étape et les sceaux.
 
-/** Les trois one-pagers de l'éventail (vraies vignettes, public/one-pagers). */
-const EVENTAIL = ["ethics", "equity", "fixed-income"].filter((slug) => SUBJECTS.some((x) => x.onePager === slug));
+/** Les one-pagers de la carte (vraies pages, public/one-pagers). */
+const EVENTAIL = ["ethics", "equity", "fixed-income", "portfolio", "derivatives"].filter((slug) => SUBJECTS.some((x) => x.onePager === slug));
 const ONE_PAGERS = SUBJECTS.filter((x) => x.onePager).length;
 
 const CASE: Record<EtatFiche, string | undefined> = { finie: s.f, entamee: s.e, neuve: undefined };
@@ -94,28 +93,48 @@ function Haut({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
         </li>
 
       <li className={s.case} data-leonard="fin">
-        <Link href="/flashcards" className={levable(s.petite)}>
-            <h4 className={s.petiteTitre}>{RV.fcTitre}</h4>
-            {fc.cartes !== null && fc.cartes > 0 && <span className={s.nb + " t-num"}>{nombre(fc.cartes)}</span>}
-            <span className={s.sous}>{RV.fcSous(fc.parMatiere)}</span>
-            <span className={s.visuel + " " + s.pile}>
-              <i aria-hidden />
-              <i aria-hidden />
-              <i aria-hidden>
-                <small>{RV.fcCarteTete}</small>
-                <span>
-                  ModDur = <span className={s.surligne}>MacDur / (1 + r)</span>
-                </span>
-              </i>
-              {fc.boucle && (
-                <span className={s.etat} title={fc.boucle.aide}>
-                  {fc.boucle.texte}
-                </span>
-              )}
+        <Link href="/flashcards" className={s.paquet} aria-label={RV.fcTitre}>
+          <i aria-hidden />
+          <i aria-hidden />
+          <span className={s.flash}>
+            <span className={s.flashHaut}>
+              <small>{RV.fcCarteTete}</small>
+              {fc.cartes !== null && fc.cartes > 0 && <span className="t-num">{nombre(fc.cartes)}</span>}
             </span>
-          </Link>
+            <span className={s.flashFormule}>
+              ModDur = <span className={s.surligne}>MacDur / (1 + r)</span>
+            </span>
+            <span className={s.flashBas}>
+              <b>{RV.fcTitre}</b>
+              <span>{fc.boucle ? fc.boucle.texte : RV.fcSous(fc.parMatiere)}</span>
+            </span>
+          </span>
+        </Link>
       </li>
     </ol>
+  );
+}
+
+/** Les one-pagers (la carte, ce sont les pages) et la peinture. */
+function Pages() {
+  return (
+    <div className={s.duo}>
+      <Link href="/fiches/one-pagers" className={s.pages} aria-label={RV.opTitre}>
+        <span className={s.pagesFan} aria-hidden>
+          {EVENTAIL.map((slug) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={slug} src={`/one-pagers/${slug}.webp`} alt="" width={300} height={425} loading="lazy" decoding="async" />
+          ))}
+        </span>
+        <span className={s.pagesTitre}>
+          <b>{RV.opTitre}</b>
+          <span className="t-num">{ONE_PAGERS}</span>
+        </span>
+      </Link>
+      <div className={s.peche} aria-hidden>
+        <Illustration nom="practice-studiolo" position="50% 60%" decorative className={s.fond} />
+      </div>
+    </div>
   );
 }
 
@@ -133,19 +152,6 @@ function Outils({ d }: { d: DonneesReviser }) {
             <Illustration nom="reviser-page-blanche" position="50% 72%" decorative />
           </span>
         </Link>
-      </li>
-      <li className={s.case}>
-        <Link href="/fiches/one-pagers" className={levable(s.petite)}>
-            <h4 className={s.petiteTitre}>{RV.opTitre}</h4>
-            <span className={s.nb + " t-num"}>{ONE_PAGERS}</span>
-            <span className={s.sous}>{RV.opSous}</span>
-            <span className={s.visuel + " " + s.eventail} aria-hidden>
-              {EVENTAIL.map((slug) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={slug} src={`/one-pagers/${slug}-mini.webp`} alt="" width={46} height={62} loading="lazy" decoding="async" />
-              ))}
-            </span>
-          </Link>
       </li>
       <li className={s.case}>
         <div className={[s.carte, s.papier, s.petite].join(" ")}>
@@ -172,148 +178,28 @@ function Outils({ d }: { d: DonneesReviser }) {
   );
 }
 
-/** Le Codex, sous son illustration. */
-function Codex() {
+/** Le Codex : sa carte, de la hauteur de celle du cours, avec son aperçu. */
+function Codex({ apercu }: { apercu?: React.ReactNode }) {
   return (
-    <Link href="/codex" className={levable(s.codex)}>
-      <span className={s.codexImage}>
-        <Illustration nom="calculs-abaque" position="50% 45%" decorative className={s.fond} />
-      </span>
-      <span className={s.codexCorps}>
-        <span>
-          <h2 className={"font-brand " + s.lieuTitre}>{RV.codexTitre}</h2>
-          <span className={s.sous}>{RV.codexSous}</span>
-        </span>
-        <span className={encre(s.bouton)} data-palette={PAL.key}>
+    <section className={[s.carte, s.papier, s.codex].join(" ")} aria-labelledby="reviser-codex">
+      <div className={s.codexTete}>
+        <div>
+          <h2 id="reviser-codex" className={"font-brand " + s.lieuTitre}>
+            {RV.codexTitre}
+          </h2>
+          <p className={s.sous}>{RV.codexSous}</p>
+        </div>
+        <Link href="/codex" className={encre(s.bouton)} data-palette={PAL.key}>
           <EncreVive tons={PAL.liquide} />
           {RV.codexAction}
-        </span>
-      </span>
-    </Link>
-  );
-}
-
-function Registre({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
-  const r = d.ratures;
-  const m = d.marquees;
-  const p = d.pointsFaibles;
-  const aRevoir = !!r && r.enCours > 0;
-  return (
-    <section className={s.lieu} aria-label={RV.registre}>
-      {/* le registre : une seule carte, les trois outils en trois lignes à filets (signe · nom, chiffre et geste · aperçu) */}
-      <ul className={s.carte + " " + s.papier + " " + s.registre}>
-        {/* le carnet : deux gestes (l'interrupteur, la mise au propre), la ligne n'est pas un lien */}
-        {/* le bouton vient après l'interrupteur dans le DOM (ordre de tabulation = ordre affiché au
-            téléphone, où il passe en dernier) ; sur ordinateur, il est replacé en bas de la 2e colonne */}
-        <li className={s.ligne + " " + s.ligneCarnet}>
-          <span className={s.carre} aria-hidden>
-            <Icone nom="erreurs" size={20} />
-          </span>
-          <div className={s.lCol}>
-            <h3 className={s.lNom}>{RV.carnetTitre}</h3>
-            {r && aRevoir ? (
-              <p className={s.chiffre + " " + s.lSous}>
-                <b className="t-num">{nombre(r.enCours)}</b>
-                <span>{RV.carnetEnCours(r.enCours)}</span>
-              </p>
-            ) : (
-              <p className={s.texte + " " + s.lSous}>{r ? RV.carnetPropre : RV.carnetSansChiffre}</p>
-            )}
-          </div>
-          <div className={s.lCol + " " + s.lDroite}>
-            <span className={s.rature} aria-hidden lang={r?.derniere ? "en" : undefined}>
-              {r?.derniere ?? RV.carnetNeutre}
-            </span>
-            {r?.calcul && <CalculCarnet enCours={r.enCours} masquees={r.calcul.masquees} apercu={apercu?.sansCalcul} />}
-          </div>
-          {/* rempli de l'encre quand il y a des ratures à revoir ; en filet sinon */}
-          <Link
-            href="/moi?onglet=erreurs"
-            className={(aRevoir ? encre(s.bouton) : s.bouton + " " + s.boutonTrait) + " " + s.lGeste}
-            data-palette={aRevoir ? PAL.key : undefined}
-          >
-            {aRevoir && <EncreVive tons={PAL.liquide} />}
-            {RV.carnetOuvrir}
-          </Link>
-        </li>
-
-        <li>
-          <Link href="/moi?onglet=marquees" className={s.ligne + " " + s.ligneLien}>
-            <span className={s.carre} aria-hidden>
-              <span className={s.signet} />
-            </span>
-            <div className={s.lCol}>
-              <h3 className={s.lNom}>{RV.marqueesTitre}</h3>
-              {m && m.total > 0 && (
-                <span className={s.chiffre + " " + s.lSous}>
-                  <b className="t-num">{nombre(m.total)}</b>
-                  <span>{RV.marqueesGardees(m.total)}</span>
-                </span>
-              )}
-              <span className={s.lien + " " + s.lGeste}>{m && m.total > 0 ? RV.marqueesAction : RV.marqueesOuvrir}</span>
-            </div>
-            <div className={s.lCol + " " + s.lApercu}>
-              {m && m.total > 0 ? (
-                m.apercus.map((q, i) => (
-                  <span key={i} lang="en" className={s.extrait}>
-                    {q}
-                  </span>
-                ))
-              ) : (
-                <span className={s.texte}>{m ? RV.marqueesVide : RV.marqueesSansChiffre}</span>
-              )}
-            </div>
-          </Link>
-        </li>
-
-        <li>
-          <Link href="/moi?onglet=stats#points-faibles" className={s.ligne + " " + s.ligneLien}>
-            <span className={s.carre} aria-hidden>
-              <span className={s.barres}>
-                <i />
-                <i />
-                <i />
-              </span>
-            </span>
-            <div className={s.lCol}>
-              <h3 className={s.lNom}>{RV.faiblesTitre}</h3>
-              <span className={s.texte + " " + s.lSous}>{RV.faiblesSous}</span>
-              <span className={s.lien + " " + s.lGeste}>{RV.faiblesAction}</span>
-            </div>
-            <div className={s.lCol + " " + s.lApercu}>
-              {p && p.etat === "faibles" && p.notions.length > 0 ? (
-                p.notions.map((n) => (
-                  <span key={n.cle} className={s.notion} title={`${n.matiere} · ${n.libelle}`}>
-                    <b>{n.libelle}</b>
-                    {n.pct !== null ? (
-                      <>
-                        <span className={s.pc}>
-                          {n.pct} %<span className="sr-only"> {RV.faiblesPctAide}</span>
-                        </span>
-                        <span className={s.jauge} aria-hidden>
-                          <i style={{ "--p": n.pct / 100 } as React.CSSProperties} />
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className={s.pc}>{RV.faiblesRatures(n.ratures)}</span>
-                        <span className={s.pointille} aria-hidden />
-                      </>
-                    )}
-                  </span>
-                ))
-              ) : (
-                <span className={s.texte}>{!p ? RV.faiblesSansChiffre : p.etat === "peu" ? RV.faiblesPeu : RV.faiblesRien}</span>
-              )}
-            </div>
-          </Link>
-        </li>
-      </ul>
+        </Link>
+      </div>
+      {apercu}
     </section>
   );
 }
 
-export function ReviserView({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
+export function ReviserView({ d, apercu, codex }: { d: DonneesReviser; apercu?: ApercuReviser; /** l'aperçu du Codex, lu en flux */ codex?: React.ReactNode }) {
   return (
     <DomainSpace
       kicker="Réviser"
@@ -326,9 +212,9 @@ export function ReviserView({ d, apercu }: { d: DonneesReviser; apercu?: ApercuR
       }
       suite={
         <div className={s.racine} style={styleDePalette(PAL)}>
+          <Pages />
           <Outils d={d} />
-          <Codex />
-          <Registre d={d} apercu={apercu} />
+          <Codex apercu={codex} />
         </div>
       }
     />

@@ -21,6 +21,7 @@ import { secondesDe } from "@/lib/debrief";
 import { palierBlanc } from "@/lib/trophees";
 import { AnnonceTrophee } from "@/components/trophees/AnnonceTrophee";
 import { FinDeSession } from "@/components/session/FinDeSession";
+import { RideauExamen } from "@/components/arene/Rideaux";
 import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { surTitreSession } from "@/lib/voice";
@@ -184,7 +185,7 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
     }
 
     return (
-      <>
+      <RideauExamen cle={`blanc:${examId}:${rendue?.depuis ?? ""}`} actif={rendue !== null && !demo} score={score} total={total}>
         <FinDeSession
           epreuve={surTitreSession(EPREUVE.mock, total, minutes)}
           titre={title ?? EPREUVE.mock}
@@ -231,7 +232,7 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
             <ReviewSection review={review} defaultOpen={false} source="examen" />
           )}
         </FinDeSession>
-      </>
+      </RideauExamen>
     );
   }
 

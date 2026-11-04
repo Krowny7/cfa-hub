@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
-import { Play } from "lucide-react";
-import { BoutonEnvoi } from "@/components/classement/Encre";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, ChevronDown, Play } from "lucide-react";
+import { BoutonEnvoi, PAL } from "@/components/classement/Encre";
+import { EncreVive } from "@/components/nav/EncreVive";
 import { MIX_DEFAUT } from "@/lib/calc/session";
 import {
   SALLE_DIFFICULTES,
@@ -13,68 +14,77 @@ import {
   SALLE_PART_CALCULS_DEFAUT,
   SALLE_PART_CALCULS_MAX,
   SALLE_PART_CALCULS_MIN,
-  SALLE_SOURCES,
   SALLE_TEMPS_DEFAUT,
   SALLE_TEMPS_PROPOSES,
   SALLE_TOPIC_KEYS,
   SALLE_TYPE_LABELS,
+  ajusterMock,
   chronoGlobalS,
   disponiblesMock,
   dureeEstimee,
   libelleDuree,
   libelleParams,
   paramsParDefaut,
+  questionsSession,
   repartirNombre,
+  sessionJouable,
+  sessionsMock,
   validerParams,
 } from "@/lib/salles/logique";
-import type { MockDisponible, QuestionsDisponibles, SalleChrono, SalleDifficulte, SalleMock, SalleMockOrdre, SalleMockVersion, SalleParams, SalleSource, SalleType, TopicKey } from "@/lib/salles/types";
-import { flechesRadios } from "@/components/salles/radios";
+import type { MockDisponible, QuestionsDisponibles, SalleChrono, SalleDifficulte, SalleMock, SalleMockOrdre, SalleMockVersion, SalleParams, SalleSource, TopicKey } from "@/lib/salles/types";
+import { flechesOnglets, flechesRadios } from "@/components/salles/radios";
 import { MATIERES_COURTES } from "@/lib/voice-classement";
 import { REGLAGES } from "@/lib/voice-salles";
+import a from "@/components/classement/Affronter.module.css";
 import s from "./Salles.module.css";
 
-// Les réglages de l'admin, le formulaire qui lance la partie. Tout se règle
-// ici, avec des valeurs par défaut sensées (10 questions, banque complète, les
-// 10 matières, difficulté mélangée, 45 s) ou, après une première partie, les
-// réglages de la dernière :
-//  - ce qu'on joue : questions, calculs, ou les deux mêlés (avec la part des
-//    calculs) ;
-//  - le nombre (5 à 50), la source des questions (banque complète / examens
-//    blancs), les matières (cases, « Toutes »), la difficulté (facile, moyen,
-//    difficile ou mélangée), le temps par question (15 à 120 s) ;
-//  - le chrono : global (un seul chrono de nombre × temps, correction à la
-//    fin, comme les 30 du jour : proposé d'office, et quand on choisit un mock
-//    officiel) ou par question (correction après chaque question) ;
-//  - un résumé en direct (durée estimée ou chrono total, nombre de questions
-//    disponibles).
+// Les réglages de l'admin, le formulaire qui lance la partie : une question à
+// la fois, dans l'ordre naturel, sous des onglets d'étapes.
+//  - Source : banque complète, questions d'examen, mock officiel ou calculs.
+//  - Banque, questions d'examen, calculs : Matières, puis Combien.
+//  - Mock officiel : Version (d'origine, variantes, les deux, avec leurs
+//    effectifs réels), Sessions, puis Combien. Les variantes n'existent que sur
+//    certaines sessions : les autres le disent et se désactivent (ajusterMock).
+//    Elles ne se jouent qu'ici : les autres sources n'en tirent jamais.
+//  - « Plus d'options » (replié) : le chrono, le temps et le reste.
+// Le résumé d'une ligne et « Lancer la partie » restent sous les yeux à chaque
+// étape : tout a une valeur de départ (10 questions, banque complète, les 10
+// matières, difficulté mélangée, 45 s, ou les réglages de la dernière partie).
+// Un clic de souris sur une source ou une version passe à l'étape suivante ; au
+// clavier, les flèches choisissent sans avancer.
 // Le formulaire ne sait pas lancer lui-même : `onLancer` appelle l'action
 // serveur (app/salles/actions.ts), qui tire les calculs côté serveur. Les
-// effectifs de la banque (par matière) viennent de `chargerDispos` ; sans lui,
-// pas de décompte. Les non-admins voient ReglagesLecture.
+// effectifs viennent de `chargerDispos` et `chargerMocks` ; sans eux, pas de
+// décompte. Les non-admins voient ReglagesLecture.
 
 export type RetourLancement = { ok: true; message?: string } | { ok: false; erreur: string };
 
-const TYPES: { cle: SalleType; nom: string; aide: string }[] = [
-  { cle: "questions", nom: REGLAGES.typeQuestions, aide: REGLAGES.typeQuestionsAide },
-  { cle: "calculs", nom: REGLAGES.typeCalculs, aide: REGLAGES.typeCalculsAide },
-  { cle: "mixte", nom: REGLAGES.typeMixte, aide: REGLAGES.typeMixteAide },
-];
-const SOURCES: { cle: SalleSource; nom: string; aide: string }[] = [
+/** D'où viennent les questions : les trois sources, et les calculs (qui n'ont pas de source). */
+type Origine = SalleSource | "calculs";
+type Etape = keyof typeof REGLAGES.etapes;
+type Option<T extends string> = { cle: T; nom: string; aide?: string; compte?: string; off?: boolean };
+
+const ORIGINES: Option<Origine>[] = [
   { cle: "banque", nom: REGLAGES.sourceBanque, aide: REGLAGES.sourceBanqueAide },
   { cle: "mocks", nom: REGLAGES.sourceMocks, aide: REGLAGES.sourceMocksAide },
   { cle: "examen", nom: REGLAGES.sourceExamen, aide: REGLAGES.sourceExamenAide },
+  { cle: "calculs", nom: REGLAGES.typeCalculs, aide: REGLAGES.typeCalculsAide },
 ];
-const VERSIONS: { cle: SalleMockVersion; nom: string; aide: string }[] = [
+const TYPES: Option<"questions" | "mixte">[] = [
+  { cle: "questions", nom: REGLAGES.typeQuestions, aide: REGLAGES.typeQuestionsAide },
+  { cle: "mixte", nom: REGLAGES.typeMixte, aide: REGLAGES.typeMixteAide },
+];
+const VERSIONS: Option<SalleMockVersion>[] = [
   { cle: "base", nom: REGLAGES.versionBase, aide: REGLAGES.versionBaseAide },
   { cle: "variantes", nom: REGLAGES.versionVariantes, aide: REGLAGES.versionVariantesAide },
   { cle: "tout", nom: REGLAGES.versionTout, aide: REGLAGES.versionToutAide },
 ];
 /** Le chrono global d'abord : c'est le choix de départ (reglagesDeDepart). */
-const CHRONOS: { cle: SalleChrono; nom: string; aide: string }[] = [
+const CHRONOS: Option<SalleChrono>[] = [
   { cle: "global", nom: REGLAGES.chronoGlobal, aide: REGLAGES.chronoGlobalAide },
   { cle: "question", nom: REGLAGES.chronoQuestion, aide: REGLAGES.chronoQuestionAide },
 ];
-const ORDRES: { cle: SalleMockOrdre; nom: string; aide: string }[] = [
+const ORDRES: Option<SalleMockOrdre>[] = [
   { cle: "examen", nom: REGLAGES.ordreExamen, aide: REGLAGES.ordreExamenAide },
   { cle: "melange", nom: REGLAGES.ordreMelange, aide: REGLAGES.ordreMelangeAide },
 ];
@@ -99,6 +109,63 @@ export function reglagesDeDepart(precedents?: Partial<SalleParams> | null): Sall
   const chrono = precedents?.chrono ?? "global";
   const v = validerParams({ ...paramsParDefaut(), ...(precedents ?? {}), chrono });
   return v.ok ? v.params : { ...paramsParDefaut(), chrono: "global" };
+}
+
+/** Un groupe de choix uniques ; `souris` : le choix vient d'un vrai clic, pas du clavier. */
+function Choix<T extends string>({ titre, options, valeur, onChoix, petits = false }: { titre: string; options: Option<T>[]; valeur: T; onChoix: (cle: T, souris: boolean) => void; petits?: boolean }) {
+  // une seule tabulation sur le groupe : le choix coché, ou le premier ouvert si aucun ne l'est
+  const entree = options.some((o) => o.cle === valeur && !o.off) ? valeur : options.find((o) => !o.off)?.cle;
+  return (
+    <div className={[s.choix, petits ? s.choixPetits : ""].filter(Boolean).join(" ")} role="radiogroup" aria-label={titre} onKeyDown={flechesRadios}>
+      {options.map((o) => (
+        <button
+          key={o.cle}
+          type="button"
+          role="radio"
+          aria-checked={o.cle === valeur}
+          tabIndex={o.cle === entree ? 0 : -1}
+          disabled={o.off}
+          className={[s.puce, petits ? s.puceCourte : ""].filter(Boolean).join(" ")}
+          onClick={(e) => onChoix(o.cle, e.detail > 0)}
+        >
+          <b>{o.nom}</b>
+          {o.aide && <span>{o.aide}</span>}
+          {o.compte && <span className={s.puceCompte}>{o.compte}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Un curseur de 5 en 5, sa valeur en grand ; `grand` : le libellé est la question de l'étape. */
+function Curseur({ id, titre, valeur, unite, min, max, texte, grand = false, onChange }: { id: string; titre: string; valeur: number; unite: string; min: number; max: number; texte?: string; grand?: boolean; onChange: (n: number) => void }) {
+  return (
+    <div className={s.bloc}>
+      <div className={s.blocTete}>
+        <label htmlFor={id} className={grand ? s.question : s.libelle}>
+          {titre}
+        </label>
+        <span className={s.valeur}>
+          {valeur} <small>{unite}</small>
+        </span>
+      </div>
+      <input id={id} type="range" className={s.curseur} min={min} max={max} step={5} value={valeur} aria-valuetext={texte} onChange={(e) => onChange(Number(e.target.value))} />
+      <div className={s.graduation} aria-hidden>
+        <span>{min}</span>
+        <span>{max}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Un réglage de « Plus d'options » : son nom et ses choix. */
+function Bloc({ titre, children }: { titre: string; children: React.ReactNode }) {
+  return (
+    <fieldset className={s.bloc}>
+      <legend className={s.libelle}>{titre}</legend>
+      {children}
+    </fieldset>
+  );
 }
 
 export function Reglages({
@@ -128,6 +195,7 @@ export function Reglages({
   const [params, setParams] = useState<SalleParams>(depart);
   const [partMixte, setPartMixte] = useState(depart.type === "mixte" ? depart.partCalculs : SALLE_PART_CALCULS_DEFAUT);
   const [dispos, setDispos] = useState<Partial<Record<SalleSource, QuestionsDisponibles[] | null>>>(demoDispos ?? {});
+  const [etape, setEtape] = useState<Etape>("source");
   const [envoi, setEnvoi] = useState(false);
   const [retour, setRetour] = useState<RetourLancement | null>(null);
 
@@ -137,7 +205,7 @@ export function Reglages({
   };
   // un mock officiel : les sessions choisies, lues une fois (questions seulement)
   const surMock = params.source === "examen" && params.type !== "calculs";
-  const mock = params.mock ?? MOCK_DEFAUT;
+  const origine: Origine = params.type === "calculs" ? "calculs" : params.source;
   const [mocks, setMocks] = useState<MockDisponible[] | null | undefined>(demoMocks);
   useEffect(() => {
     if (!surMock || !chargerMocks || mocks !== undefined) return;
@@ -149,23 +217,52 @@ export function Reglages({
       fini = true;
     };
   }, [surMock, chargerMocks, mocks]);
-  const examensDispo = useMemo(() => [...new Set((mocks ?? []).map((d) => d.examen))].sort(), [mocks]);
-  const lettresMock = useMemo(() => [...new Set(examensDispo.map((e) => e.charAt(5)))], [examensDispo]);
+  const sessions = useMemo(() => sessionsMock(mocks), [mocks]);
+  const mock = useMemo(() => ajusterMock(params.mock ?? MOCK_DEFAUT, mocks), [params.mock, mocks]);
+  const lettresMock = useMemo(() => [...new Set(sessions.map((x) => x.examen.charAt(5)))], [sessions]);
   const dispoMock = surMock ? disponiblesMock(mocks, mock, params.topics) : null;
   const maxPartie = Math.max(SALLE_NOMBRE_MIN, Math.min(SALLE_NOMBRE_MAX_MOCK, dispoMock ?? 90));
   const setMock = (m: Partial<SalleMock>) => set({ mock: { ...mock, ...m } });
-  function basculerExamen(e: string) {
-    const a = new Set(mock.examens);
-    if (a.has(e)) a.delete(e);
-    else a.add(e);
-    setMock({ examens: examensDispo.filter((x) => a.has(x)) });
+
+  // les étapes : celles d'un mock, ou celles des autres sources
+  const etapes: Etape[] = surMock ? ["source", "version", "sessions", "combien"] : ["source", "matieres", "combien"];
+  const courante = etapes.includes(etape) ? etape : "source";
+  const rang = etapes.indexOf(courante);
+  // Suivant, Retour et le clic sur une source font disparaître l'élément qui a le focus : il passe à la nouvelle étape
+  const viser = useRef(false);
+  function aller(e: Etape) {
+    viser.current = true;
+    setEtape(e);
   }
-  function choisirSource(cle: SalleSource) {
-    if (cle !== "examen") return set({ source: cle });
-    // un mock : questions seulement, toutes les matières, le temps du jour J si
-    // rien n'a été réglé, et le chrono global (comme le jour J) ; l'admin peut
-    // encore revenir au chrono par question
-    set({ source: cle, type: "questions", topics: [...SALLE_TOPIC_KEYS], temps: params.temps === SALLE_TEMPS_DEFAUT ? TEMPS_EXAMEN : params.temps, mock, chrono: params.source === "examen" ? params.chrono : "global" });
+  useEffect(() => {
+    if (!viser.current) return;
+    viser.current = false;
+    document.getElementById(`${uid}-${courante}`)?.focus();
+  }, [courante, uid]);
+
+  function choisirOrigine(cle: Origine, souris: boolean) {
+    const temps = surMock && params.temps === TEMPS_EXAMEN ? SALLE_TEMPS_DEFAUT : params.temps;
+    if (cle === "examen") {
+      // un mock : questions seulement, toutes les matières, le temps du jour J si
+      // rien n'a été réglé, et le chrono global (comme le jour J) ; l'admin peut
+      // encore revenir au chrono par question
+      if (!surMock) set({ source: cle, type: "questions", topics: [...SALLE_TOPIC_KEYS], temps: params.temps === SALLE_TEMPS_DEFAUT ? TEMPS_EXAMEN : params.temps, mock, chrono: "global" });
+    } else if (cle === "calculs") {
+      set({ type: "calculs", source: "banque", temps });
+    } else {
+      set({ source: cle, type: params.type === "mixte" ? "mixte" : "questions", temps });
+    }
+    if (souris) aller(cle === "examen" ? "version" : "matieres");
+  }
+  function choisirVersion(version: SalleMockVersion, souris: boolean) {
+    setMock({ version, examens: ajusterMock({ ...mock, version }, mocks).examens });
+    if (souris) aller("sessions");
+  }
+  function basculerExamen(e: string) {
+    const choisies = new Set(mock.examens);
+    if (choisies.has(e)) choisies.delete(e);
+    else choisies.add(e);
+    setMock({ examens: sessions.map((x) => x.examen).filter((x) => choisies.has(x)) });
   }
 
   const reel: SalleParams = surMock
@@ -180,6 +277,7 @@ export function Reglages({
       }
     : {
         ...params,
+        nombre: Math.min(params.nombre, SALLE_NOMBRE_MAX),
         partCalculs: params.type === "calculs" ? 100 : params.type === "mixte" ? partMixte : 0,
         source: params.type === "calculs" || params.source === "examen" ? "banque" : params.source,
         mock: undefined,
@@ -210,10 +308,10 @@ export function Reglages({
   const toutes = reel.topics.length === SALLE_TOPIC_KEYS.length;
 
   function basculerTopic(k: TopicKey) {
-    const a = new Set(params.topics);
-    if (a.has(k)) a.delete(k);
-    else a.add(k);
-    set({ topics: SALLE_TOPIC_KEYS.filter((x) => a.has(x)) });
+    const choisies = new Set(params.topics);
+    if (choisies.has(k)) choisies.delete(k);
+    else choisies.add(k);
+    set({ topics: SALLE_TOPIC_KEYS.filter((x) => choisies.has(x)) });
   }
 
   async function lancer(e: React.FormEvent) {
@@ -236,105 +334,128 @@ export function Reglages({
 
   const dureeS = dureeEstimee(reel);
   const global = reel.chrono === "global";
+
+  // la version du mock : ses effectifs réels, sur les sessions où elle existe
+  const versions = VERSIONS.map((v) => {
+    const jouables = sessions.filter((x) => sessionJouable(x, v.cle));
+    const n = jouables.reduce((t, x) => t + questionsSession(x, v.cle), 0);
+    const off = Boolean(mocks) && jouables.length === 0;
+    return { ...v, off, compte: !mocks ? undefined : off ? REGLAGES.versionAucune : REGLAGES.versionCompte(n, jouables.length) };
+  });
+
+  const raccourcisMatieres = (
+    <div className={s.raccourcis}>
+      <button type="button" className={[s.btn, s.btnDiscret].join(" ")} aria-pressed={toutes} onClick={() => set({ topics: [...SALLE_TOPIC_KEYS] })}>
+        {REGLAGES.topicsToutes}
+      </button>
+      <button type="button" className={[s.btn, s.btnDiscret].join(" ")} onClick={() => set({ topics: [] })}>
+        {REGLAGES.topicsAucune}
+      </button>
+    </div>
+  );
+  const grilleMatieres = (
+    <div className={s.topics}>
+      {SALLE_TOPIC_KEYS.map((k) => {
+        const n = dispoTopic(k);
+        const vide = surMock && n === 0;
+        const on = params.topics.includes(k) && !vide;
+        return (
+          <label key={k} className={s.topic} data-on={on ? "1" : "0"} data-off={vide ? "1" : undefined}>
+            <input type="checkbox" className={s.coche} checked={on} disabled={vide} onChange={() => basculerTopic(k)} />
+            <span className={s.topicNom}>{MATIERES_COURTES[k] ?? k}</span>
+            {nbQuestions > 0 && n !== null && <span className={s.topicDispo} title={`${n}`}>{REGLAGES.dispo(n)}</span>}
+          </label>
+        );
+      })}
+    </div>
+  );
+
+  /** Une étape : sa question et son contenu ; une seule est visible à la fois. */
+  const panneau = (e: Etape, contenu: React.ReactNode, tete: React.ReactNode = <h3 className={s.question}>{REGLAGES.questions[e]}</h3>) => (
+    <div id={`${uid}-${e}`} role="tabpanel" aria-labelledby={`${uid}-onglet-${e}`} tabIndex={-1} hidden={e !== courante} className={s.etape}>
+      {tete}
+      {contenu}
+    </div>
+  );
+
   return (
     <form className={s.reglages} onSubmit={lancer} aria-label={REGLAGES.titre} noValidate>
-      {/* ——— ce qu'on joue ——— */}
-      <fieldset className={s.bloc}>
-        <legend className={s.libelle}>{REGLAGES.type}</legend>
-        <div className={s.choix} role="radiogroup" aria-label={REGLAGES.type} onKeyDown={flechesRadios}>
-          {TYPES.map((t) => (
-            <button key={t.cle} type="button" role="radio" aria-checked={params.type === t.cle} tabIndex={params.type === t.cle ? 0 : -1} className={s.puce} onClick={() => set(params.source === "examen" && t.cle !== "questions" ? { type: t.cle, source: "banque" } : { type: t.cle })}>
-              <b>{t.nom}</b>
-              <span>{t.aide}</span>
+      <div role="tablist" aria-label={REGLAGES.etapesAria} className={a.onglets} onKeyDown={flechesOnglets}>
+        {etapes.map((e) => {
+          const on = e === courante;
+          return (
+            <button
+              key={e}
+              id={`${uid}-onglet-${e}`}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              aria-controls={`${uid}-${e}`}
+              tabIndex={on ? 0 : -1}
+              className={a.onglet + (on ? " rl-encre " + a.encre : "")}
+              data-palette={on ? PAL.key : undefined}
+              onClick={() => setEtape(e)}
+            >
+              {on && <EncreVive tons={PAL.liquide} />}
+              {REGLAGES.etapes[e]}
             </button>
-          ))}
-        </div>
-        {params.type === "mixte" && (
-          <div className={s.bloc}>
-            <div className={s.blocTete}>
-              <label htmlFor={`${uid}-part`} className={s.libelle}>
-                {REGLAGES.partCalculs}
-              </label>
-              <span className={s.valeur}>
-                {partMixte} <small>%</small>
-              </span>
-            </div>
-            <input
-              id={`${uid}-part`}
-              type="range"
-              className={s.curseur}
-              min={SALLE_PART_CALCULS_MIN}
-              max={SALLE_PART_CALCULS_MAX}
-              step={5}
-              value={partMixte}
-              aria-valuetext={`${partMixte} %, ${REGLAGES.partCalculsValeur(nbCalculs, nbQuestions)}`}
-              onChange={(e) => {
-                setPartMixte(Number(e.target.value));
-                setRetour(null);
-              }}
-            />
-            <p className={s.aide}>{REGLAGES.partCalculsValeur(nbCalculs, nbQuestions)}</p>
-          </div>
-        )}
-      </fieldset>
-
-      {/* ——— combien (un mock se règle plus bas) ——— */}
-      {!surMock && (
-      <div className={s.bloc}>
-        <div className={s.blocTete}>
-          <label htmlFor={`${uid}-nombre`} className={s.libelle}>
-            {REGLAGES.nombre}
-          </label>
-          <span className={s.valeur}>
-            {params.nombre} <small>{REGLAGES.nombreUnite}</small>
-          </span>
-        </div>
-        <input
-          id={`${uid}-nombre`}
-          type="range"
-          className={s.curseur}
-          min={SALLE_NOMBRE_MIN}
-          max={SALLE_NOMBRE_MAX}
-          step={5}
-          value={params.nombre}
-          onChange={(e) => set({ nombre: Number(e.target.value) })}
-        />
-        <div className={s.graduation} aria-hidden>
-          <span>{SALLE_NOMBRE_MIN}</span>
-          <span>{SALLE_NOMBRE_MAX}</span>
-        </div>
+          );
+        })}
       </div>
-      )}
 
-      {/* ——— d'où ——— */}
-      <fieldset className={s.bloc}>
-        <legend className={s.libelle}>{REGLAGES.source}</legend>
-        {params.type === "calculs" ? (
-          <p className={s.aide}>{REGLAGES.sourceCalculs}</p>
-        ) : (
-          <div className={s.choix} role="radiogroup" aria-label={REGLAGES.source} onKeyDown={flechesRadios}>
-            {SOURCES.map((o) => (
-              <button key={o.cle} type="button" role="radio" aria-checked={params.source === o.cle} tabIndex={params.source === o.cle ? 0 : -1} className={s.puce} onClick={() => choisirSource(o.cle)}>
-                <b>{o.nom}</b>
-                <span>{o.aide}</span>
-              </button>
-            ))}
-          </div>
+      {panneau("source", <Choix titre={REGLAGES.source} options={ORIGINES} valeur={origine} onChoix={choisirOrigine} />)}
+
+      {!surMock &&
+        panneau(
+          "matieres",
+          <>
+            {grilleMatieres}
+            <p className={s.aide}>{REGLAGES.topicsCompte(reel.topics.length, SALLE_TOPIC_KEYS.length)}</p>
+          </>,
+          <div className={s.blocTete}>
+            <h3 className={s.question}>{REGLAGES.questions.matieres}</h3>
+            {raccourcisMatieres}
+          </div>,
         )}
-        {surMock && <p className={s.aide}>{REGLAGES.sourceExamenType}</p>}
-      </fieldset>
 
-      {/* ——— le mock : sessions, questions, combien, ordre ——— */}
-      {surMock && (
-        <>
-          <div className={s.bloc} role="group" aria-labelledby={`${uid}-sessions`}>
-            <div className={s.blocTete}>
-              <span id={`${uid}-sessions`} className={s.libelle}>
-                {REGLAGES.sessions}
-              </span>
+      {surMock &&
+        panneau(
+          "version",
+          <>
+            {mocks === undefined && <p className={s.aide}>{REGLAGES.chargementMocks}</p>}
+            {mocks === null && <p className={s.erreur}>{REGLAGES.mocksIndispo}</p>}
+            <Choix titre={REGLAGES.version} options={versions} valeur={mock.version} onChoix={choisirVersion} />
+          </>,
+        )}
+
+      {surMock &&
+        panneau(
+          "sessions",
+          <>
+            {mocks === undefined && <p className={s.aide}>{REGLAGES.chargementMocks}</p>}
+            {mocks === null && <p className={s.erreur}>{REGLAGES.mocksIndispo}</p>}
+            {mocks && (
+              <div className={[s.topics, s.sessions].join(" ")}>
+                {sessions.map((x) => {
+                  const jouable = sessionJouable(x, mock.version);
+                  const on = jouable && mock.examens.includes(x.examen);
+                  return (
+                    <label key={x.examen} className={s.topic} data-on={on ? "1" : "0"} data-off={jouable ? undefined : "1"}>
+                      <input type="checkbox" className={s.coche} checked={on} disabled={!jouable} onChange={() => basculerExamen(x.examen)} />
+                      <span className={s.topicNom}>{REGLAGES.sessionNom(x.examen)}</span>
+                      <span className={s.topicDispo}>{jouable ? REGLAGES.sessionCompte(mock.version, x.base, x.variantes) : REGLAGES.sansVariante}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </>,
+          <div className={s.blocTete}>
+            <h3 className={s.question}>{REGLAGES.questions.sessions}</h3>
+            {mock.version === "base" && (
               <div className={s.raccourcis}>
                 {lettresMock.map((l) => {
-                  const duMock = examensDispo.filter((e) => e.charAt(5) === l);
+                  const duMock = sessions.map((x) => x.examen).filter((e) => e.charAt(5) === l);
                   const pile = duMock.length === mock.examens.length && duMock.every((e) => mock.examens.includes(e));
                   return (
                     <button key={l} type="button" className={[s.btn, s.btnDiscret].join(" ")} aria-pressed={pile} onClick={() => setMock({ examens: duMock })}>
@@ -343,204 +464,130 @@ export function Reglages({
                   );
                 })}
               </div>
-            </div>
-            {mocks === undefined && <p className={s.aide}>{REGLAGES.chargementMocks}</p>}
-            {mocks === null && <p className={s.erreur}>{REGLAGES.mocksIndispo}</p>}
-            {mocks && (
-              <div className={[s.topics, s.sessions].join(" ")}>
-                {examensDispo.map((e) => {
-                  const on = mock.examens.includes(e);
-                  const lignes = mocks.filter((d) => d.examen === e);
-                  const base = lignes.reduce((n, d) => n + d.base, 0);
-                  const variantes = lignes.reduce((n, d) => n + d.variantes, 0);
-                  return (
-                    <label key={e} className={s.topic} data-on={on ? "1" : "0"}>
-                      <input type="checkbox" className={s.coche} checked={on} onChange={() => basculerExamen(e)} />
-                      <span className={s.topicNom}>{REGLAGES.sessionNom(e)}</span>
-                      <span className={s.topicDispo}>{REGLAGES.sessionDispo(base, variantes)}</span>
-                    </label>
-                  );
-                })}
-              </div>
             )}
-            <p className={s.aide}>{REGLAGES.sessionsAide}</p>
-          </div>
+          </div>,
+        )}
 
-          <fieldset className={s.bloc}>
-            <legend className={s.libelle}>{REGLAGES.version}</legend>
-            <div className={s.choix} role="radiogroup" aria-label={REGLAGES.version} onKeyDown={flechesRadios}>
-              {VERSIONS.map((o) => (
-                <button key={o.cle} type="button" role="radio" aria-checked={mock.version === o.cle} tabIndex={mock.version === o.cle ? 0 : -1} className={s.puce} onClick={() => setMock({ version: o.cle })}>
-                  <b>{o.nom}</b>
-                  <span>{o.aide}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
+      {surMock
+        ? panneau(
+            "combien",
+            <>
+              <Choix<"tout" | "partie">
+                titre={REGLAGES.etendue}
+                options={[
+                  { cle: "tout", nom: REGLAGES.etendueTout, aide: REGLAGES.etendueToutAide(dispoMock) },
+                  { cle: "partie", nom: REGLAGES.etenduePartie, aide: REGLAGES.etenduePartieAide },
+                ]}
+                valeur={mock.complet ? "tout" : "partie"}
+                onChoix={(c) => setMock({ complet: c === "tout" })}
+              />
+              {!mock.complet && <Curseur id={`${uid}-nombre-mock`} titre={REGLAGES.nombre} valeur={reel.nombre} unite={REGLAGES.nombreUnite} min={SALLE_NOMBRE_MIN} max={maxPartie} onChange={(n) => set({ nombre: n })} />}
+            </>,
+          )
+        : panneau(
+            "combien",
+            <Curseur id={`${uid}-nombre`} titre={REGLAGES.questions.combien} grand valeur={reel.nombre} unite={REGLAGES.nombreUnite} min={SALLE_NOMBRE_MIN} max={SALLE_NOMBRE_MAX} onChange={(n) => set({ nombre: n })} />,
+            null,
+          )}
 
-          <fieldset className={s.bloc}>
-            <legend className={s.libelle}>{REGLAGES.etendue}</legend>
-            <div className={s.choix} role="radiogroup" aria-label={REGLAGES.etendue} onKeyDown={flechesRadios}>
-              <button type="button" role="radio" aria-checked={mock.complet} tabIndex={mock.complet ? 0 : -1} className={s.puce} onClick={() => setMock({ complet: true })}>
-                <b>{REGLAGES.etendueTout}</b>
-                <span>{REGLAGES.etendueToutAide(dispoMock)}</span>
-              </button>
-              <button type="button" role="radio" aria-checked={!mock.complet} tabIndex={mock.complet ? -1 : 0} className={s.puce} onClick={() => setMock({ complet: false })}>
-                <b>{REGLAGES.etenduePartie}</b>
-                <span>{REGLAGES.etenduePartieAide}</span>
-              </button>
-            </div>
-            {!mock.complet && (
-              <div className={s.bloc}>
+      <div className={s.navEtapes}>
+        {rang > 0 && (
+          <button type="button" className={[s.btn, s.btnDiscret].join(" ")} onClick={() => aller(etapes[rang - 1])}>
+            <ArrowLeft size={16} aria-hidden /> {REGLAGES.retour}
+          </button>
+        )}
+        {rang < etapes.length - 1 && (
+          <button type="button" className={[s.btn, s.navSuivant].join(" ")} onClick={() => aller(etapes[rang + 1])}>
+            {REGLAGES.suivant} <ArrowRight size={16} aria-hidden />
+          </button>
+        )}
+      </div>
+
+      {/* ——— le reste, replié : le rythme d'abord ——— */}
+      <details className={s.options}>
+        <summary className={s.optionsTete}>
+          <span>{REGLAGES.plusOptions}</span>
+          <span className={s.optionsResume}>{REGLAGES.optionsResume(global, reel.temps)}</span>
+          <ChevronDown size={16} aria-hidden />
+        </summary>
+        <div className={s.optionsCorps}>
+          <Bloc titre={REGLAGES.chrono}>
+            <Choix titre={REGLAGES.chrono} options={CHRONOS} valeur={params.chrono ?? "question"} onChoix={(c) => set({ chrono: c })} />
+          </Bloc>
+          <Bloc titre={global ? REGLAGES.tempsMoyen : REGLAGES.temps}>
+            <Choix petits titre={global ? REGLAGES.tempsMoyen : REGLAGES.temps} options={SALLE_TEMPS_PROPOSES.map((t) => ({ cle: String(t), nom: REGLAGES.tempsValeur(t) }))} valeur={String(params.temps)} onChoix={(t) => set({ temps: Number(t) })} />
+            {global && <p className={s.aide}>{REGLAGES.chronoTotalDetail(libelleDuree(chronoGlobalS(reel)), reel.nombre, reel.temps)}</p>}
+            {surMock && <p className={s.aide}>{REGLAGES.tempsExamen}</p>}
+            <p className={s.aide}>{global ? REGLAGES.pointsGlobalAide : REGLAGES.pointsAide}</p>
+          </Bloc>
+          {surMock ? (
+            <>
+              <Bloc titre={REGLAGES.ordre}>
+                <Choix titre={REGLAGES.ordre} options={ORDRES} valeur={mock.ordre} onChoix={(o) => setMock({ ordre: o })} />
+              </Bloc>
+              <div className={s.bloc} role="group" aria-labelledby={`${uid}-matieres`}>
                 <div className={s.blocTete}>
-                  <label htmlFor={`${uid}-nombre-mock`} className={s.libelle}>
-                    {REGLAGES.nombre}
-                  </label>
-                  <span className={s.valeur}>
-                    {reel.nombre} <small>{REGLAGES.nombreUnite}</small>
+                  <span id={`${uid}-matieres`} className={s.libelle}>
+                    {REGLAGES.topics}
                   </span>
+                  {raccourcisMatieres}
                 </div>
-                <input
-                  id={`${uid}-nombre-mock`}
-                  type="range"
-                  className={s.curseur}
-                  min={SALLE_NOMBRE_MIN}
-                  max={maxPartie}
-                  step={5}
-                  value={reel.nombre}
-                  onChange={(e) => set({ nombre: Number(e.target.value) })}
-                />
-                <div className={s.graduation} aria-hidden>
-                  <span>{SALLE_NOMBRE_MIN}</span>
-                  <span>{maxPartie}</span>
-                </div>
+                {grilleMatieres}
               </div>
-            )}
-          </fieldset>
-
-          <fieldset className={s.bloc}>
-            <legend className={s.libelle}>{REGLAGES.ordre}</legend>
-            <div className={s.choix} role="radiogroup" aria-label={REGLAGES.ordre} onKeyDown={flechesRadios}>
-              {ORDRES.map((o) => (
-                <button key={o.cle} type="button" role="radio" aria-checked={mock.ordre === o.cle} tabIndex={mock.ordre === o.cle ? 0 : -1} className={s.puce} onClick={() => setMock({ ordre: o.cle })}>
-                  <b>{o.nom}</b>
-                  <span>{o.aide}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        </>
-      )}
-
-      {/* ——— les matières ——— */}
-      <div className={s.bloc} role="group" aria-labelledby={`${uid}-matieres`}>
-        <div className={s.blocTete}>
-          <span id={`${uid}-matieres`} className={s.libelle}>
-            {REGLAGES.topics}
-          </span>
-          <div className={s.raccourcis}>
-            <button type="button" className={[s.btn, s.btnDiscret].join(" ")} aria-pressed={toutes} onClick={() => set({ topics: [...SALLE_TOPIC_KEYS] })}>
-              {REGLAGES.topicsToutes}
-            </button>
-            <button type="button" className={[s.btn, s.btnDiscret].join(" ")} onClick={() => set({ topics: [] })}>
-              {REGLAGES.topicsAucune}
-            </button>
-          </div>
+            </>
+          ) : (
+            <Bloc titre={REGLAGES.difficulte}>
+              <Choix petits titre={REGLAGES.difficulte} options={SALLE_DIFFICULTES.map((d) => ({ cle: d, nom: SALLE_DIFFICULTE_LABELS[d] }))} valeur={params.difficulte} onChoix={(d) => set({ difficulte: d })} />
+              {params.difficulte === "melange" && <p className={s.aide}>{REGLAGES.melangeAide(MIX_DEFAUT.facile, MIX_DEFAUT.moyen, MIX_DEFAUT.difficile)}</p>}
+            </Bloc>
+          )}
+          {!surMock && origine !== "calculs" && (
+            <Bloc titre={REGLAGES.type}>
+              <Choix titre={REGLAGES.type} options={TYPES} valeur={params.type === "mixte" ? "mixte" : "questions"} onChoix={(t) => set({ type: t })} />
+              {params.type === "mixte" && (
+                <>
+                  <Curseur
+                    id={`${uid}-part`}
+                    titre={REGLAGES.partCalculs}
+                    valeur={partMixte}
+                    unite="%"
+                    min={SALLE_PART_CALCULS_MIN}
+                    max={SALLE_PART_CALCULS_MAX}
+                    texte={`${partMixte} %, ${REGLAGES.partCalculsValeur(nbCalculs, nbQuestions)}`}
+                    onChange={(n) => {
+                      setPartMixte(n);
+                      setRetour(null);
+                    }}
+                  />
+                  <p className={s.aide}>{REGLAGES.partCalculsValeur(nbCalculs, nbQuestions)}</p>
+                </>
+              )}
+            </Bloc>
+          )}
         </div>
-        <div className={s.topics}>
-          {SALLE_TOPIC_KEYS.map((k) => {
-            const on = params.topics.includes(k);
-            const n = dispoTopic(k);
-            return (
-              <label key={k} className={s.topic} data-on={on ? "1" : "0"}>
-                <input type="checkbox" className={s.coche} checked={on} onChange={() => basculerTopic(k)} />
-                <span className={s.topicNom}>{MATIERES_COURTES[k] ?? k}</span>
-                {nbQuestions > 0 && n !== null && <span className={s.topicDispo} title={`${n}`}>{REGLAGES.dispo(n)}</span>}
-              </label>
-            );
-          })}
-        </div>
-        <p className={s.aide}>{REGLAGES.topicsCompte(reel.topics.length, SALLE_TOPIC_KEYS.length)}</p>
-      </div>
+      </details>
 
-      {/* ——— la difficulté (sans objet pour un mock) ——— */}
-      {!surMock && (
-      <fieldset className={s.bloc}>
-        <legend className={s.libelle}>{REGLAGES.difficulte}</legend>
-        <div className={[s.choix, s.choixPetits].join(" ")} role="radiogroup" aria-label={REGLAGES.difficulte} onKeyDown={flechesRadios}>
-          {SALLE_DIFFICULTES.map((d) => (
-            <button key={d} type="button" role="radio" aria-checked={params.difficulte === d} tabIndex={params.difficulte === d ? 0 : -1} className={[s.puce, s.puceCourte].join(" ")} onClick={() => set({ difficulte: d })}>
-              <b>{SALLE_DIFFICULTE_LABELS[d]}</b>
-            </button>
-          ))}
+      {/* ——— le résumé et le lancement, toujours sous les yeux ——— */}
+      <div className={s.barre}>
+        <div className={s.recap} aria-live="polite">
+          <p className={s.recapLigne}>{libelleParams(reel)}</p>
+          {!global && <p className={s.aide}>{REGLAGES.duree(libelleDuree(dureeS))}</p>}
+          {reel.topics.length === 0 && <p className={s.erreur}>{REGLAGES.aucuneMatiere}</p>}
+          {surMock && mock.examens.length === 0 && <p className={s.erreur}>{REGLAGES.aucuneSession}</p>}
+          {dispo !== null && dispo === 0 && reel.topics.length > 0 && (!surMock || mock.examens.length > 0) && <p className={s.erreur}>{REGLAGES.aucune}</p>}
+          {dispo !== null && dispo > 0 && dispo < nbQuestions && <p className={s.info}>{REGLAGES.peu(dispo, nbQuestions)}</p>}
+          {besoinSource && dispoSource === undefined && chargerDispos && <p className={s.aide}>{REGLAGES.chargement}</p>}
         </div>
-        {params.difficulte === "melange" && <p className={s.aide}>{REGLAGES.melangeAide(MIX_DEFAUT.facile, MIX_DEFAUT.moyen, MIX_DEFAUT.difficile)}</p>}
-      </fieldset>
-      )}
-
-      {/* ——— le chrono : par question ou global ——— */}
-      <fieldset className={s.bloc}>
-        <legend className={s.libelle}>{REGLAGES.chrono}</legend>
-        <div className={s.choix} role="radiogroup" aria-label={REGLAGES.chrono} onKeyDown={flechesRadios}>
-          {CHRONOS.map((o) => {
-            const on = (params.chrono ?? "question") === o.cle;
-            return (
-              <button key={o.cle} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1} className={s.puce} onClick={() => set({ chrono: o.cle })}>
-                <b>{o.nom}</b>
-                <span>{o.aide}</span>
-              </button>
-            );
-          })}
-        </div>
-        {global && <p className={s.aide}>{REGLAGES.chronoGlobalDetail}</p>}
-      </fieldset>
-
-      {/* ——— le temps (en chrono global : la moyenne par question, le chrono vaut nombre × temps) ——— */}
-      <div className={s.bloc} role="group" aria-labelledby={`${uid}-temps`}>
-        <div className={s.blocTete}>
-          <span id={`${uid}-temps`} className={s.libelle}>
-            {global ? REGLAGES.tempsMoyen : REGLAGES.temps}
-          </span>
-          <span className={s.valeur}>
-            {params.temps} <small>s</small>
-          </span>
-        </div>
-        <div className={[s.choix, s.choixPetits].join(" ")} role="radiogroup" aria-label={global ? REGLAGES.tempsMoyen : REGLAGES.temps} onKeyDown={flechesRadios}>
-          {SALLE_TEMPS_PROPOSES.map((t) => (
-            <button key={t} type="button" role="radio" aria-checked={params.temps === t} tabIndex={params.temps === t ? 0 : -1} className={[s.puce, s.puceCourte].join(" ")} onClick={() => set({ temps: t })}>
-              <b>{REGLAGES.tempsValeur(t)}</b>
-            </button>
-          ))}
-        </div>
-        {global && <p className={s.aide}>{REGLAGES.chronoTotalDetail(libelleDuree(chronoGlobalS(reel)), reel.nombre, reel.temps)}</p>}
-        {surMock && <p className={s.aide}>{REGLAGES.tempsExamen}</p>}
-        <p className={s.aide}>{global ? REGLAGES.pointsGlobalAide : REGLAGES.pointsAide}</p>
-      </div>
-
-      {/* ——— le résumé et le lancement ——— */}
-      <div className={s.recap} aria-live="polite">
-        <p className={s.recapLigne}>{libelleParams(reel)}</p>
-        <p className={s.aide}>{global ? REGLAGES.chronoTotal(libelleDuree(chronoGlobalS(reel))) : REGLAGES.duree(libelleDuree(dureeS))}</p>
-        {reel.topics.length === 0 && <p className={s.erreur}>{REGLAGES.aucuneMatiere}</p>}
-        {surMock && mock.examens.length === 0 && <p className={s.erreur}>{REGLAGES.aucuneSession}</p>}
-        {dispo !== null && dispo === 0 && reel.topics.length > 0 && <p className={s.erreur}>{REGLAGES.aucune}</p>}
-        {dispo !== null && dispo > 0 && dispo < nbQuestions && <p className={s.info}>{REGLAGES.peu(dispo, nbQuestions)}</p>}
-        {besoinSource && dispoSource === undefined && chargerDispos && <p className={s.aide}>{REGLAGES.chargement}</p>}
-        {surMock && mocks === undefined && chargerMocks && <p className={s.aide}>{REGLAGES.chargementMocks}</p>}
-      </div>
-
-      <div className={s.lancement}>
-        <BoutonEnvoi surPeinture className={s.pleinMobile} disabled={envoi || desactive || reel.topics.length === 0 || (surMock && (mock.examens.length === 0 || dispoMock === 0))}>
+        <BoutonEnvoi className={s.pleinMobile} disabled={envoi || desactive || reel.topics.length === 0 || (surMock && (mock.examens.length === 0 || dispoMock === 0))}>
           <Play size={18} aria-hidden /> {envoi ? REGLAGES.lancerEnCours : REGLAGES.lancer}
         </BoutonEnvoi>
-        <p className={s.aide}>{REGLAGES.lancerAide}</p>
         {retour && !retour.ok && (
-          <p role="alert" className={s.erreur}>
+          <p role="alert" className={[s.erreur, s.barreRetour].join(" ")}>
             {retour.erreur}
           </p>
         )}
         {retour && retour.ok && (
-          <p role="status" className={s.info}>
+          <p role="status" className={[s.info, s.barreRetour].join(" ")}>
             {retour.message ?? REGLAGES.lancee}
           </p>
         )}

@@ -70,6 +70,8 @@ export type ContexteDestination = {
 export const ROUTES: ReadonlySet<string> = new Set([
   "/",
   "/atelier",
+  "/cas-pratiques",
+  "/cas-pratiques/[id]",
   "/calculs",
   "/calculs/[matiere]",
   "/calculs/session",
@@ -128,6 +130,7 @@ export const ROUTES: ReadonlySet<string> = new Set([
   "/scratch",
   "/session",
   "/settings",
+  "/terminal",
   "/share/flashcards/[token]",
   "/share/qcm/[token]",
 ]);

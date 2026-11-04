@@ -1,0 +1,470 @@
+/* Le Terminal : une surface qui reste sombre dans les deux thèmes du site, donc des couleurs
+   fixes, posées ici et non les jetons du papier. Le givre de la palette « glace » sert d'unique
+   accent ; hausse et baisse ne marquent que des variations. */
+.terminal {
+  --t-fond: #0e1419;
+  --t-panneau: #131b22;
+  --t-creux: #0a0f13;
+  --t-filet: #24303b;
+  --t-texte: #d7dfe6;
+  --t-doux: #8a98a6;
+  --t-accent: #a9d6ec;
+  --t-hausse: #62d2a0;
+  --t-baisse: #f08a82;
+
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  height: clamp(560px, calc(100svh - 150px), 880px);
+  overflow: hidden;
+  border: 1px solid var(--t-filet);
+  border-radius: 12px;
+  background: var(--t-fond);
+  color: var(--t-texte);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  color-scheme: dark;
+}
+.terminal :where(h1, h2, h3, p, dl, dd, ul) {
+  margin: 0;
+  padding: 0;
+}
+.terminal :where(ul) {
+  list-style: none;
+}
+.terminal :where(button, input):focus-visible {
+  outline: 2px solid var(--t-accent);
+  outline-offset: 1px;
+}
+
+/* ——— la barre, la ligne de commande ——— */
+.barre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--t-filet);
+  background: var(--t-panneau);
+}
+.barre h1 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.fictif {
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--t-accent);
+  color: var(--t-creux);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ligne {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 4px;
+}
+.invite {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--t-accent);
+}
+/* le focus se lit au filet sous la commande, le contour ne ferait que l'encadrer */
+.champ {
+  display: block;
+  border-bottom: 1px solid var(--t-filet);
+}
+.champ:focus-within {
+  border-bottom-color: var(--t-accent);
+}
+.champ input {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--t-texte);
+  caret-color: var(--t-accent);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.terminal .champ input:focus-visible {
+  outline: none;
+}
+.champ input::placeholder {
+  color: var(--t-doux);
+  font-weight: 400;
+  text-transform: none;
+}
+.indice {
+  min-height: 19px;
+  padding: 0 14px 8px 38px;
+  border-bottom: 1px solid var(--t-filet);
+  font-size: 12.5px;
+  color: var(--t-doux);
+}
+.indice[data-erreur="true"] {
+  color: var(--t-baisse);
+}
+
+/* ——— l'écran actif, les exercices à côté ——— */
+.corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+.ecran {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  overflow-y: auto;
+}
+.panneau {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  overflow-y: auto;
+  border-left: 1px solid var(--t-filet);
+  background: var(--t-panneau);
+}
+.titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+.titre h2 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.codeEcran {
+  color: var(--t-accent);
+  font-weight: 700;
+}
+.ecranFictif {
+  font-size: 12px;
+  color: var(--t-doux);
+}
+.sousTitre {
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--t-doux);
+}
+.blocs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 12px 24px;
+}
+.blocs section {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.doux {
+  color: var(--t-doux);
+}
+.hausse {
+  color: var(--t-hausse);
+}
+.baisse {
+  color: var(--t-baisse);
+}
+
+/* les tableaux défilent dans leur cadre */
+.defile {
+  overflow-x: auto;
+}
+.grille {
+  width: 100%;
+  border-collapse: collapse;
+}
+.grille th,
+.grille td {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--t-filet);
+  font-weight: 400;
+  text-align: right;
+  white-space: nowrap;
+}
+.grille th:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+.grille th:last-child,
+.grille td:last-child {
+  padding-right: 0;
+}
+.grille thead th {
+  color: var(--t-doux);
+  font-size: 12px;
+}
+.grille .gauche {
+  text-align: left;
+}
+.lien {
+  min-height: 24px;
+  border: 0;
+  background: none;
+  color: var(--t-accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--t-accent) 40%, transparent);
+  cursor: pointer;
+}
+.lien:hover {
+  text-decoration-color: currentColor;
+}
+.commandes {
+  display: grid;
+  gap: 4px;
+}
+.commandes div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+}
+.commandes dd {
+  color: var(--t-doux);
+}
+.cours {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.cours b {
+  font-size: 24px;
+  font-weight: 600;
+}
+.chiffres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0 24px;
+}
+.chiffres div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--t-filet);
+}
+.chiffres dt {
+  color: var(--t-doux);
+}
+.renvoi {
+  font-size: 12.5px;
+}
+
+/* ——— le graphique : les étiquettes vivent dans la marge de droite ——— */
+.graphique {
+  display: grid;
+  gap: 4px;
+  padding-right: 64px;
+}
+.plot {
+  position: relative;
+  height: 180px;
+  touch-action: pan-y;
+}
+.plot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.plot line {
+  stroke: var(--t-filet);
+  stroke-width: 1;
+}
+.plot polyline {
+  fill: none;
+  stroke: var(--t-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.graduation {
+  position: absolute;
+  left: calc(100% + 8px);
+  font-size: 12px;
+  color: var(--t-doux);
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+.axeX {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--t-doux);
+}
+.reticule {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--t-doux);
+}
+.point {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: var(--t-accent);
+  box-shadow: 0 0 0 2px var(--t-fond);
+}
+.bulle {
+  position: absolute;
+  top: 2px;
+  padding: 2px 7px;
+  border: 1px solid var(--t-filet);
+  border-radius: 3px;
+  background: var(--t-creux);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* ——— le panneau des exercices ——— */
+.panneauTitre {
+  font-size: 14px;
+  font-weight: 700;
+}
+.exercices {
+  display: grid;
+  gap: 16px;
+}
+.exercices li {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.exercices b {
+  font-weight: 600;
+}
+.attendu {
+  padding: 6px 10px;
+  border: 1px solid var(--t-filet);
+  border-radius: 3px;
+  background: var(--t-creux);
+  color: var(--t-accent);
+  font-weight: 700;
+}
+.reponse {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.reponseChamp {
+  display: flex;
+  flex: 1 1 120px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.reponseChamp input {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--t-filet);
+  border-radius: 3px;
+  background: var(--t-creux);
+  color: var(--t-texte);
+  font: inherit;
+  font-size: 16px;
+}
+.action,
+.touche {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--t-filet);
+  border-radius: 3px;
+  background: var(--t-panneau);
+  color: var(--t-texte);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.action:hover:not(:disabled),
+.touche:hover {
+  border-color: var(--t-accent);
+}
+.action:disabled {
+  color: var(--t-doux);
+  cursor: default;
+}
+.discret {
+  width: fit-content;
+  min-height: 28px;
+  border: 0;
+  background: none;
+  color: var(--t-doux);
+  font: inherit;
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ——— la rangée de touches ——— */
+.touches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--t-filet);
+  background: var(--t-panneau);
+}
+.touche[aria-current="true"] {
+  border-color: var(--t-accent);
+  background: var(--t-accent);
+  color: var(--t-creux);
+}
+
+/* étroit : tout s'empile et la page défile ; seuls les tableaux gardent leur cadre */
+@media (max-width: 899px) {
+  .terminal {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+  .corps {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+  .ecran,
+  .panneau {
+    overflow-y: visible;
+  }
+  .panneau {
+    border-top: 1px solid var(--t-filet);
+    border-left: 0;
+  }
+  .indice {
+    padding-left: 14px;
+  }
+  .graphique {
+    padding-right: 56px;
+  }
+  .touche {
+    flex: 1 1 auto;
+  }
+}

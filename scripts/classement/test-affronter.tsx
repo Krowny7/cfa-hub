@@ -118,26 +118,12 @@ console.log("# la carte Les Salles");
 {
   const bientot = rendre(<ClassementView data={data} />);
   check("sans la migration (pas de données) : une ligne dit que les salles arrivent, ni bouton ni champ", bientot.includes('data-salles="bientot"') && bientot.includes("Les Salles arrivent bientôt") && !bientot.includes("Créer une salle") && !bientot.includes("cl-salles-code"));
-  const nonPret = rendre(<ClassementView data={{ ...data, salles: { pret: false, publiques: [], mes: [] } }} />);
+  const nonPret = rendre(<ClassementView data={{ ...data, salles: { pret: false } }} />);
   check("migration absente (pret faux) : le même message", nonPret.includes('data-salles="bientot"') && nonPret.includes("Les Salles arrivent bientôt"));
-  const salles = {
-    pret: true,
-    publiques: [
-      { id: "s1", nom: "Les révisions du jeudi", description: null, adminUsername: "Léa", nbMembres: 8, enCours: true, derniereActivite: ago(0), dejaMembre: false },
-      { id: "s2", nom: "Quant en équipe", description: null, adminUsername: null, nbMembres: 1, enCours: false, derniereActivite: ago(1), dejaMembre: true },
-    ],
-    mes: [{ id: "s2", nom: "Quant en équipe", description: null, code: "K7MX2Q", publique: true, estAdmin: true, nbMembres: 1, enCours: false, derniereActivite: ago(1) }],
-  };
-  const pret = rendre(<ClassementView data={{ ...data, salles }} />);
-  check("la carte prête : « Créer une salle » vers /salles", pret.includes('data-salles="pret"') && />\s*Créer une salle<\/a>/.test(pret) && pret.includes('href="/salles"'));
-  check("le champ de code : un seul, 6 caractères au plus (maxlength 7 avec le tiret), libellé associé", pret.includes('id="cl-salles-code"') && pret.includes('maxLength="7"') || pret.includes('maxlength="7"'));
-  check("les salles publiques : nom, joueurs, partie en cours ou salon ouvert", pret.includes("Les révisions du jeudi") && pret.includes("8 joueurs") && pret.includes("par Léa") && pret.includes("Partie en cours") && pret.includes("Salon ouvert") && pret.includes("1 joueur<"));
-  check("« Rejoindre » sur une salle où l'on n'est pas, « Ouvrir » sur la sienne (lien vers le salon)", pret.includes('aria-label="Rejoindre la salle Les révisions du jeudi"') && pret.includes('href="/salles/s2"') && pret.includes("Ouvrir"));
-  check("tes salles : la tienne, en lien", pret.includes("Tes salles") && pret.includes("1 salle<"));
-  const vide = rendre(<ClassementView data={{ ...data, salles: { pret: true, publiques: [], mes: [] } }} />);
-  check("aucune salle publique : une invitation à créer la première", vide.includes("Aucune salle publique pour l'instant"));
-  const erreur = rendre(<ClassementView data={{ ...data, salles: { pret: true, erreur: true, publiques: [], mes: [] } }} />);
-  check("lecture en échec : la carte tient, avec un message", erreur.includes("n'a pas pu être lue"));
+  const pret = rendre(<ClassementView data={{ ...data, salles: { pret: true } }} />);
+  check("la carte prête : « Voir les salles » vers /salles", pret.includes('data-salles="pret"') && pret.includes("Voir les salles") && pret.includes('href="/salles"'));
+  check("le champ de code : un seul, 6 caractères au plus (maxlength 7 avec le tiret), libellé associé", pret.includes('id="cl-salles-code"') && (pret.includes('maxLength="7"') || pret.includes('maxlength="7"')));
+  check("plus aucune liste de salles sur la carte : elles sont sur /salles", !pret.includes("Tes salles") && !pret.includes("Aucune salle publique"));
 }
 
 console.log("# les onglets du classement général");

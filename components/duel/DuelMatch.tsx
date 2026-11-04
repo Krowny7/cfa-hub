@@ -8,6 +8,8 @@ import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { PARTIE } from "@/lib/voice-z2";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { DuelSide, StakeTile } from "@/components/duel/parts";
+import { EcranVs } from "@/components/arene/EcranVs";
+import { ARENE } from "@/lib/voice-arene";
 import {
   answerDuel,
   clock,
@@ -254,6 +256,20 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
 
   return (
     <div className="grid gap-6 md:gap-8">
+      {/* L'écran VS à l'arrivée sur un duel pas encore commencé : le chrono ne part qu'à « Commencer », qui le retire */}
+      {!demo && !state.me.startedAt && them && (
+        <EcranVs
+          cle={`duel:${state.id}`}
+          joueurs={[
+            { id: state.me.id, pseudo: state.me.username, photo: state.me.avatarUrl, elo: state.me.elo },
+            { id: them.id, pseudo: them.username, photo: them.avatarUrl, elo: them.elo },
+          ]}
+          moiId={state.me.id}
+          maitrise={myMastery}
+          hud={ARENE.hudDuel(n)}
+          actif={phase === "intro"}
+        />
+      )}
       {/* En-tête : toi / chrono / adversaire */}
       <header className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-3.5 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 md:gap-5">

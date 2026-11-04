@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -9,6 +10,7 @@ import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { BackLink } from "@/components/defi/parts";
 import { AtelierEcran } from "@/components/atelier/AtelierEcran";
 import { construirePointsFaibles, lireBanqueQcm, lireBasePointsFaibles } from "@/components/moi/points-faibles-data";
+import { RegistreAtelier } from "@/components/reviser/RegistreAtelier";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import type { NotionProposee } from "@/lib/atelier-seance";
 import { POINTS_FAIBLES } from "@/lib/voice-points-faibles";
@@ -48,6 +50,12 @@ export default async function AtelierPage({ searchParams }: { searchParams?: Pro
   ]);
   const pf = construirePointsFaibles(answers, base, banque, now);
 
+  const registre = (
+    <Suspense fallback={null}>
+      <RegistreAtelier supabase={supabase} admin={admin} userId={userId} />
+    </Suspense>
+  );
+
   const entete = (
     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
       <BackLink href="/entrainement">{ATELIER.retour}</BackLink>
@@ -65,6 +73,7 @@ export default async function AtelierPage({ searchParams }: { searchParams?: Pro
             {ATELIER.bientotAction}
           </Link>
         </section>
+        {registre}
       </div>
     );
   }
@@ -88,6 +97,7 @@ export default async function AtelierPage({ searchParams }: { searchParams?: Pro
     <div className="rl-wide grid gap-5">
       {entete}
       <AtelierEcran proposees={proposees} initiales={initiales} courant={courant.seance} rappels={rappels} traits={traits} />
+      {registre}
     </div>
   );
 }

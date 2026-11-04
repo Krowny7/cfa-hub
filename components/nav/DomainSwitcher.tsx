@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { BarChart3, Check, ChevronDown, Globe2, Landmark, Lock, Plus, ScrollText } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { BarChart3, Check, ChevronDown, Globe2, Landmark, Lock, Plus, ScrollText, SquareTerminal } from "lucide-react";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM, DOMAINS } from "@/lib/domains";
+import { TERMINAL } from "@/lib/voice-terminal";
 
 const ICONS = { BarChart3, ScrollText, Globe2, Landmark } as const;
 
 // Sélecteur Domaine → programme de la barre du haut. Seul Finance · CFA
 // Niveau I est ouvert : les autres domaines sont listés « bientôt », pour que
-// la structure du site soit déjà en place.
+// la structure du site soit déjà en place. Un programme à part (href : le
+// Terminal) a sa ligne sous son domaine, un lien vers sa page.
 export function DomainSwitcher({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -54,16 +57,31 @@ export function DomainSwitcher({ compact = false }: { compact?: boolean }) {
             const DIcon = ICONS[d.icon];
             const current = d.key === CURRENT_DOMAIN.key;
             return (
-              <div key={d.key} role="menuitem" aria-disabled={!d.ready} data-active={current} className={"menu-item cursor-default gap-2.5 " + (current ? "" : "hover:bg-transparent")}>
-                <span className={"grid h-7 w-7 place-items-center rounded-[8px] " + (d.ready ? "bg-white text-black" : "bg-surface-2 text-muted")}>
-                  <DIcon size={15} strokeWidth={2} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className={"text-sm font-semibold " + (d.ready ? "" : "text-muted")}>{d.name}</div>
-                  <div className="text-xs font-normal text-muted">{d.ready ? d.programs.filter((p) => p.ready).map((p) => p.name).join(" · ") : "bientôt"}</div>
+              <Fragment key={d.key}>
+                <div role="menuitem" aria-disabled={!d.ready} data-active={current} className={"menu-item cursor-default gap-2.5 " + (current ? "" : "hover:bg-transparent")}>
+                  <span className={"grid h-7 w-7 place-items-center rounded-[8px] " + (d.ready ? "bg-white text-black" : "bg-surface-2 text-muted")}>
+                    <DIcon size={15} strokeWidth={2} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className={"text-sm font-semibold " + (d.ready ? "" : "text-muted")}>{d.name}</div>
+                    <div className="text-xs font-normal text-muted">{d.ready ? d.programs.filter((p) => p.ready && !p.href).map((p) => p.name).join(" · ") : "bientôt"}</div>
+                  </div>
+                  {current ? <Check size={16} strokeWidth={2.4} /> : <Lock size={14} className="text-muted" />}
                 </div>
-                {current ? <Check size={16} strokeWidth={2.4} /> : <Lock size={14} className="text-muted" />}
-              </div>
+                {d.programs.map((p) =>
+                  p.ready && p.href ? (
+                    <Link key={p.key} href={p.href} role="menuitem" className="menu-item gap-2.5" onClick={() => setOpen(false)}>
+                      <span className="grid h-7 w-7 place-items-center rounded-[8px] bg-surface-2 text-muted">
+                        <SquareTerminal size={15} strokeWidth={2} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold">{p.name}</span>
+                        <span className="block text-xs font-normal text-muted">{TERMINAL.menuSous}</span>
+                      </span>
+                    </Link>
+                  ) : null,
+                )}
+              </Fragment>
             );
           })}
           <div className="menu-sep" />

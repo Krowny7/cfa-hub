@@ -355,12 +355,8 @@ export type CalculPourSalle = {
 
 /**
  * Ce que la carte « Les Salles » de S'affronter reçoit. `pret` faux : la
- * migration n'est pas appliquée (la carte dit que les salles arrivent) ;
- * `erreur` : la migration est là mais la lecture a échoué (listes vides).
+ * migration n'est pas appliquée (la carte dit que les salles arrivent).
  */
 export type EntreeSalles = {
   pret: boolean;
-  erreur?: boolean;
-  publiques: SallePublique[];
-  mes: SalleResume[];
 };
