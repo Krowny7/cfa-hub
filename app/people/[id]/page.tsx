@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ArrowLeft, ChevronRight, Eye, Palette, UserCheck, UserPlus } from "lucide-react";
+import { ChevronRight, Eye, Palette, UserCheck, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { getLeaderboardRank, getMyRating } from "@/lib/rating";
@@ -24,7 +24,6 @@ import { BatonsDuels, FaceAFace } from "@/components/profil/FaceAFace";
 import { Revanche } from "@/components/profil/Revanche";
 import { Journal } from "@/components/profil/Journal";
 import { TamponsCible } from "@/components/profil/Tampons";
-import { DepuisVisite } from "@/components/profil/DepuisVisite";
 import { Visite } from "@/components/profil/Visite";
 import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
 import { FamilleSaisons, SaisonRang, SaisonsJournal } from "@/components/profil/Saisons";
@@ -37,7 +36,7 @@ import { extraitJournal, resumeReponses, resumeTrophees } from "@/lib/profil/blo
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { epreuvesCommunes } from "@/lib/profil/epreuves-communes";
 import { journalDe, type EvenementJournal } from "@/lib/profil/journal";
-import { lireTampons, monRetour } from "@/lib/profil/social";
+import { lireTampons } from "@/lib/profil/social";
 import { lireSaisons } from "@/lib/profil/saisons";
 import { CIBLE_PROFIL, cibleEntree } from "@/lib/profil/tampons";
 import { hrefOnglet, hrefPersonnaliser, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
@@ -82,7 +81,7 @@ async function progression(sb: SupabaseClient, id: string): Promise<ProgressRow[
 // profil d'un autre, Face-à-face. L'onglet est dans l'URL (?onglet=sceaux)
 // et chaque onglet ne lit que ses données. Sur son
 // propre profil : personnaliser, choisir ses sceaux posés (dans leur fiche,
-// avec la base), et « voir comme les autres » (?vue=inconnu ou ?vue=ami) qui
+// avec la base), et « voir comme un ami » (?vue=ami ; par défaut, on se voit comme un inconnu) qui
 // rend la page telle qu'un autre joueur la voit. Le Journal suit le réglage
 // de son propriétaire (tous, amis, moi seul) : fermé, il n'est pas lu.
 // ?personnaliser=1, sur son propre profil : la page se personnalise sur
@@ -108,9 +107,10 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
 
   const isMe = user.id === id;
   if (isMe && sp.personnaliser === "1" && !sp.vue) return <ModePersonnaliser id={id} supabase={supabase} profil={profileData as ProfileRow} rating={ratingData as RatingRow | null} />;
-  // « voir comme les autres » : seulement sur son propre profil
-  const vue = isMe && (sp.vue === "inconnu" || sp.vue === "ami") ? sp.vue : null;
-  const commeMoi = isMe && !vue;
+  // son propre profil se voit comme le voient les autres ; l'œil montre ce qu'en voit un ami
+  const apercuAmi = isMe && sp.vue === "ami";
+  const vue = isMe ? (apercuAmi ? "ami" : "inconnu") : null;
+  const commeMoi = isMe && !apercuAmi;
   // celui qui regarde le profil d'un autre : le face-à-face, ses matières et sa couleur pour comparer
   const autreJoueur = !isMe;
   const onglet = ongletDepuis(sp.onglet, autreJoueur);
@@ -218,7 +218,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       : Promise.resolve(null);
 
   // l'en-tête, commun aux onglets
-  const [leaderboardRank, masteries, { style, pins, journal: visibiliteJournal }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, sceaux, parCible, depuisVisite, saisons] = await Promise.all([
+  const [leaderboardRank, masteries, { style, pins, journal: visibiliteJournal }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, sceaux, parCible, saisons] = await Promise.all([
     getLeaderboardRank(supabase, id),
     maitrisesLues,
     styleLu,
@@ -235,8 +235,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     journalLu,
     sceauxLus,
     tamponsLus,
-    // « Depuis ta dernière visite » : sur mon profil, hors aperçu (la base note le passage)
-    commeMoi ? monRetour(supabase) : Promise.resolve(null),
     // la saison en cours et son palmarès (null sans la migration) ; la lecture clôt les saisons échues
     lireSaisons(supabase, id),
   ]);
@@ -283,7 +281,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     amis: amis ? amis.total : null,
     pic: stats.palierMax,
     // la meilleure série d'encre : celle des stats (une seule série), rien sans la migration
-    serieMeilleure: stats.serieEncre ? stats.meilleureSerie : null,
     provenance: provenances(style, acquisDe(stats, etats, datesPic)),
   };
 
@@ -299,16 +296,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   // les actions : les miennes, celles d'un autre joueur, ou leur aperçu (inertes)
   let actions: React.ReactNode;
   if (commeMoi) {
-    actions = (
-      <>
-        <Link href={hrefPersonnaliser(id)} className="btn btn-primary rl-press" data-leonard="personnaliser">
-          <Palette size={15} aria-hidden /> Personnaliser
-        </Link>
-        <Link href={hrefOnglet(id, onglet, "inconnu")} className="btn btn-secondary rl-press">
-          <Eye size={15} aria-hidden /> Voir comme les autres
-        </Link>
-      </>
-    );
+    actions = null;
   } else if (vue) {
     actions = (
       <>
@@ -367,15 +355,22 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     nomBrut?.nom ? (nomComplet ? "nom visible" : "nom masqué") : null,
   ].filter(Boolean) as string[];
 
-  const retour = (
-    <Link href="/people" className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[color-mix(in_oklab,var(--paper)_82%,transparent)] px-3 py-1.5 text-[13px] font-semibold text-muted backdrop-blur hover:text-white">
-      <ArrowLeft size={14} aria-hidden /> {JOUEURS.retour}
-    </Link>
-  );
+  // sur le bandeau de mon profil : Personnaliser, et l'œil pour voir ce qu'en voit un ami
+  const pastille = "inline-flex w-fit items-center gap-1.5 rounded-full bg-[color-mix(in_oklab,var(--paper)_82%,transparent)] py-1.5 text-[13px] font-semibold text-muted backdrop-blur hover:text-white";
+  const haut = isMe ? (
+    <div className="flex items-center gap-2">
+      <Link href={hrefPersonnaliser(id)} className={pastille + " px-3"} data-leonard="personnaliser">
+        <Palette size={14} aria-hidden /> {JOUEURS.personnaliser}
+      </Link>
+      <Link href={hrefOnglet(id, onglet, apercuAmi ? null : "ami")} className={pastille + " px-2.5"} aria-label={JOUEURS.voirCommeAmi} title={JOUEURS.voirCommeAmi}>
+        <Eye size={14} aria-hidden />
+      </Link>
+    </div>
+  ) : undefined;
 
   const onglets = ongletsDe(autreJoueur).map((cle) => ({
     cle,
-    href: hrefOnglet(id, cle, vue),
+    href: hrefOnglet(id, cle, apercuAmi ? "ami" : null),
     ...(cle === "sceaux" ? { compte: nombre(gagnes), compteLarge: `/${nombre(etats.length)}` } : {}),
   }));
 
@@ -383,8 +378,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const peutTamponner = autreJoueur;
   const tamponsProfil = parCible ? <TamponsCible pour={id} cible={CIBLE_PROFIL} comptes={parCible[CIBLE_PROFIL]} peut={peutTamponner} /> : null;
 
-  // « Depuis ta dernière visite » (mon profil seulement ; null sans la migration)
-  const retourVu = (className?: string) => (depuisVisite ? <DepuisVisite retour={depuisVisite} elo={elo} mastery={mastery} place={leaderboardRank} className={className} /> : null);
 
   let panneau: React.ReactNode;
   if (onglet === "sceaux") {
@@ -413,7 +406,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       <div className="card flex max-w-[640px] flex-col gap-1 p-5 sm:p-6">
         <p className="m-0 text-[15px] font-semibold">{JOURNAL.ferme}</p>
         <p className="t-small m-0">{visibiliteJournal === "private" ? JOURNAL.fermePrive(display) : JOURNAL.fermeAmis(display)}</p>
-        {vue && <p className="t-micro m-0 mt-1">{JOURNAL.fermeApercu}</p>}
+        {apercuAmi && <p className="t-micro m-0 mt-1">{JOURNAL.fermeApercu}</p>}
       </div>
     );
   } else if (onglet === "face-a-face") {
@@ -443,7 +436,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       moi: commeMoi,
       viewerId: user.id,
       // « voir comme les autres » : les écarts disent « toi ± »
-      apercu: !!vue,
+      apercu: apercuAmi,
       // son avatar, son ELO, ses parties, sa maîtrise (l'en-tête) : les comparaisons
       avatarUrl: profile.avatar_url ?? null,
       elo,
@@ -502,42 +495,35 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
           <EnteteJoueur
             d={entete}
             actions={actions}
-            haut={vue ? undefined : retour}
-            kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre}
+            haut={haut}
             rangDe={commeMoi ? "Ton rang" : "Son rang"}
             presence={!commeMoi}
             poses={<SceauxPoses poses={poses} label={choisis ? (commeMoi ? ENTETE.posesChoisisMoi : ENTETE.posesChoisis) : commeMoi ? ENTETE.posesAideMoi : ENTETE.posesAide} />}
             piedRang={piedRang}
             saison={saisons?.courante ? <SaisonRang c={saisons.courante} /> : null}
-            tampons={tamponsProfil}
-            sousRang={retourVu()}
+            tampons={autreJoueur ? tamponsProfil : null}
           />
           {/* les onglets restent collés sous la barre du haut tant que leur panneau défile */}
           <div className="flex flex-col gap-6 md:gap-10">
             <OngletsProfil actif={onglet} onglets={onglets} />
-            {/* téléphone : « Depuis ta dernière visite » sous les onglets (sur ordinateur, sous la carte du rang) */}
-            {retourVu("lg:hidden")}
             {panneau}
           </div>
         </div>
       </ChoixSceaux>
 
-      {/* l'aperçu « comme les autres » : une barre flottante en bas de l'écran,
+      {/* l'aperçu « comme un ami » : une barre flottante en bas de l'écran,
           pour que la page se voie telle quelle, sans bandeau au milieu */}
-      {vue && (
+      {apercuAmi && (
         <div
           role="status"
           className="fixed inset-x-3 z-40 mx-auto flex max-w-[640px] flex-wrap items-center gap-x-3 gap-y-2 rounded-[18px] border border-line-2 bg-[var(--surface)] py-2 pl-4 pr-2 shadow-[var(--shadow-3)] bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-6"
         >
           <Eye size={16} aria-hidden className="shrink-0" />
           <p className="m-0 min-w-0 flex-[1_1_200px] text-[13px] leading-snug">
-            <b className="font-semibold">Aperçu</b> · vu par {vue === "ami" ? "un ami" : "un joueur qui n'est pas ton ami"}
+            <b className="font-semibold">Aperçu</b> · vu par un ami
             {visibles.length ? <span className="text-muted">{` · ${visibles.join(", ")}`}</span> : null}
           </p>
           <div className="flex items-center gap-1.5">
-            <Link href={hrefOnglet(id, onglet, vue === "ami" ? "inconnu" : "ami")} className="btn btn-secondary btn-sm">
-              Comme {vue === "ami" ? "un inconnu" : "un ami"}
-            </Link>
             <Link href={hrefOnglet(id, onglet)} className="btn btn-primary btn-sm">
               Revenir
             </Link>

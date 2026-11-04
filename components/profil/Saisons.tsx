@@ -103,13 +103,10 @@ function FicheSaison({ e, onFermer }: { e: Entree | null; onFermer: () => void }
 /** La saison en cours, au bas de la carte du rang (sur fond sombre). */
 export function SaisonRang({ c }: { c: SaisonCourante }) {
   return (
-    <span className="flex flex-col gap-1">
-      <span className="flex items-baseline justify-between gap-3 text-[13px] font-semibold text-[rgba(255,255,255,.85)]">
-        <span className="min-w-0 truncate">{SAISONS.saison(c.numero, c.nom)}</span>
-        <FinDeSaison fin={c.fin} dernierJour={c.dernierJour} className="shrink-0 font-mono text-[12px] tabular-nums text-[rgba(255,255,255,.62)]" />
-      </span>
-      <span className="text-[12.5px] font-semibold text-[rgba(255,255,255,.62)]">{c.moi ? SAISONS.picEnCours(c.moi.pic, c.moi.eloPic) : SAISONS.sansMatch}</span>
-    </span>
+    <>
+      <span className="truncate text-[11px] font-semibold uppercase tracking-[.08em] text-[rgba(255,255,255,.5)]">{SAISONS.saisonCourt(c.numero)}</span>
+      <FinDeSaison fin={c.fin} dernierJour={c.dernierJour} className="whitespace-nowrap font-mono text-[13px] font-semibold leading-[22px] tabular-nums" />
+    </>
   );
 }
 

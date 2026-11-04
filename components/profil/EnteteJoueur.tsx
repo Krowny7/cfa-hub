@@ -1,6 +1,4 @@
-import { SERIE } from "@/lib/voice-serie";
 import Link from "next/link";
-import { PageHero } from "@/components/ui/Titles";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { RangProfil } from "@/components/profil/RangProfil";
 import { Banniere, CadreSceau, classesProfil as s, styleAccent } from "@/components/profil/Pieces";
@@ -65,8 +63,6 @@ export type EnteteData = {
   amis: number | null;
   /** meilleur palier atteint (index dans TIERS), affiché s'il dépasse l'actuel */
   pic?: number | null;
-  /** la meilleure série d'encre, en jours (absent ou null : rien à montrer) */
-  serieMeilleure?: number | null;
   /** d'où viennent le cadre et la bannière s'ils bougent (« Liquide Diamant, gagné le 12 oct. ») */
   provenance?: { cadre: string | null; banniere: string | null };
 };
@@ -88,7 +84,6 @@ export function EnteteJoueur({
   d,
   actions,
   haut,
-  kicker,
   rangDe,
   apercu = false,
   presence = false,
@@ -96,14 +91,12 @@ export function EnteteJoueur({
   piedRang = null,
   saison = null,
   tampons = null,
-  sousRang = null,
   crayons = null,
 }: {
   d: EnteteData;
   actions?: React.ReactNode;
-  /** posé sur la bannière, en haut à gauche (retour, bandeau d'aperçu) */
+  /** posé sur la bannière, en haut à gauche (Personnaliser et l'œil, sur son profil) */
   haut?: React.ReactNode;
-  kicker?: React.ReactNode;
   /** sur-titre de la carte du rang : « Ton rang » (défaut), « Son rang » */
   rangDe?: string;
   apercu?: boolean;
@@ -117,8 +110,6 @@ export function EnteteJoueur({
   saison?: React.ReactNode;
   /** les tampons du profil (TamponsCible), sous les actions */
   tampons?: React.ReactNode;
-  /** sous la carte du rang, sur ordinateur (« Depuis ta dernière visite ») */
-  sousRang?: React.ReactNode;
   /** Personnaliser : les crayons posés sur la bannière et sur le sceau */
   crayons?: { banniere: React.ReactNode; sceau: React.ReactNode } | null;
 }) {
@@ -200,7 +191,7 @@ export function EnteteJoueur({
               ) : (
                 <>
                   <h1 className={`m-0 font-extrabold leading-[1.1] tracking-[-0.03em] [overflow-wrap:anywhere] lg:hidden ${d.name.length > 12 ? "text-[20px]" : d.name.length > 9 ? "text-[22px]" : "text-[26px]"}`}>{d.name}</h1>
-                  <PageHero kicker={kicker} title={<span className="[overflow-wrap:anywhere]">{d.name}</span>} enso={false} className="w-fit max-w-full max-lg:hidden" />
+                  <h1 className="rl-hero t-hero m-0 font-sans [overflow-wrap:anywhere] max-lg:hidden">{d.name}</h1>
                 </>
               )}
               <TitrePorte titre={d.titre} className="mt-1 max-md:line-clamp-2 max-md:whitespace-normal" />
@@ -237,7 +228,6 @@ export function EnteteJoueur({
             )}
           </div>
           {picNom && !apercu && <p className="m-0 -mt-1.5 text-[13px] font-semibold text-muted lg:hidden">{ENTETE.pic(picNom)}</p>}
-          {d.serieMeilleure ? <p className="m-0 -mt-1.5 text-[13px] font-semibold text-muted" title="Le plus de jours d'affilée à 10 questions ou plus">{SERIE.meilleure(d.serieMeilleure)}</p> : null}
           {d.style.bio && (apercu ? <p className="t-small m-0 max-w-[560px] whitespace-pre-line text-white">{d.style.bio}</p> : <BioRepliable texte={d.style.bio} />)}
           {(actions || d.linkedin) && (
             <div className={"flex flex-wrap items-center gap-2 " + (apercu ? "" : "[&_.btn]:min-h-[44px] max-sm:[&_.btn]:px-3")}>
@@ -256,7 +246,6 @@ export function EnteteJoueur({
         {!apercu && (
           <div className="z-[2] hidden lg:col-span-5 lg:-mt-[84px] lg:flex lg:flex-col lg:gap-4 lg:self-start">
             <RangProfil elo={d.elo} mastery={d.mastery} temps={d.temps} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} saison={saison} pied={piedRang} />
-            {sousRang}
           </div>
         )}
       </div>

@@ -113,6 +113,8 @@ export const JOUEURS = {
   /** profil public */
   retour: "Joueurs",
   kickerMoi: "Ton profil public",
+  personnaliser: "Personnaliser",
+  voirCommeAmi: "Voir comme un ami",
   kickerAutre: "Joueur",
   defier: (nom: string) => `Défier ${nom}`,
   reglages: "Mes réglages",

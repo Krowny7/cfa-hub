@@ -269,7 +269,6 @@ export function Personnaliser({
         <EnteteJoueur
           d={apercu}
           haut={retour}
-          kicker={JOUEURS.kickerMoi}
           rangDe="Ton rang"
           crayons={{
             banniere: <Crayon label={PERSO.modifier(PERSO.zones.banniere)} onClick={() => ouvrir("banniere")} />,
