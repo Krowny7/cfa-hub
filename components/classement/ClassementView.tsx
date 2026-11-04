@@ -7,7 +7,7 @@ import { Amis } from "@/components/classement/Amis";
 import { CarteMaitres } from "@/components/classement/CarteMaitres";
 import { CarteRival } from "@/components/classement/CarteRival";
 import { Bouton, PAL, Sceau } from "@/components/classement/Encre";
-import { BandeForme } from "@/components/classement/BandeForme";
+import { BandePeinte } from "@/components/classement/BandePeinte";
 import { CarteSalles } from "@/components/salles/CarteSalles";
 import { ClassementTabs, type TabKey } from "@/components/classement/ClassementTabs";
 import { HowItWorks } from "@/components/classement/Domains";
@@ -97,8 +97,8 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 // Salle » (l'examen classé, la pièce maîtresse, peinte, à gauche) | la carte du
 // duel (en haut ton ELO et ton insigne, une ligne de rang ; en bas la peinture des
 // duels, le titre « Duels » et sa phrase, le bouton « Lancer un duel », ou « Relever le défi » quand un défi
-// attend) ; (« Ta forme »,
-// BandeForme, est dans l'en-tête, à droite du titre) ; la
+// attend) ; (un bandeau peint,
+// BandePeinte, est dans l'en-tête, à droite du titre) ; la
 // carte « Les Salles » (components/salles/CarteSalles : créer une salle, rejoindre avec
 // un code, les salles publiques ; sans la migration, une ligne dit qu'elles arrivent) ; la
 // rangée « Ton plus grand rival |
@@ -135,8 +135,8 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
             </p>
             <h1 className="t-h1 rl-in m-0">{CL.titre}</h1>
           </div>
-          {/* « Ta forme », à droite du titre : la recherche de joueur est dans la barre du haut */}
-          <BandeForme history={history} />
+          {/* à droite du titre : la recherche de joueur est dans la barre du haut */}
+          <BandePeinte />
         </header>
 
         <div className={s.racine} style={styleDePalette(PAL)}>

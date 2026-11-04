@@ -401,73 +401,39 @@
   min-width: 0;
 }
 
-/* ——— « Ta forme », à droite du titre : la taille de la bande que la recherche occupait ——— */
-.bandeForme {
-  display: flex;
+/* ——— le bandeau peint, à droite du titre : la taille de la bande que la recherche occupait ——— */
+.bandePeinte {
+  position: relative;
   flex: 0 1 400px;
-  align-items: center;
-  gap: 10px;
-  min-height: 50px;
-  padding: 6px 14px 6px 8px;
+  height: 50px;
+  overflow: hidden;
   border: 1px solid var(--pencil-2);
   border-radius: 14px;
-  background: var(--surface);
   box-shadow: var(--shadow-1);
-  color: var(--ink);
 }
-.bandeForme .sceau {
-  width: 32px;
-  height: 32px;
+/* les deux combattants passent à droite de la phrase, assez grands pour se lire */
+.bandePeinte img {
+  transform: scale(1.4);
+  transform-origin: 0% 50%;
 }
-.formeTexte {
-  display: grid;
-  flex: 1 1 auto;
-  min-width: 0;
-  line-height: 1.25;
+.bandePeinte::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(26, 16, 9, 0.62) 0%, rgba(26, 16, 9, 0.42) 42%, rgba(26, 16, 9, 0) 62%);
 }
-.formeTexte b {
-  font-size: 14px;
-}
-.formeTexte span {
-  overflow: hidden;
-  font-size: 12px;
-  color: var(--ink-2);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.formeCases {
-  display: flex;
-  flex: none;
-  gap: 4px;
+.bandePhrase {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  z-index: 1;
   margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.formeCases li {
-  width: 13px;
-  height: 22px;
-  border: 1.5px dashed var(--pencil-2);
-  border-radius: 4px;
-}
-.formeCases li[data-issue] {
-  border: 1.5px solid var(--ink);
-}
-.formeCases li[data-issue="gain"] {
-  background: var(--ink);
-}
-.formeCases li[data-issue="nul"] {
-  background: var(--pencil-2);
-}
-.formeNet {
-  flex: none;
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
+  color: #fff;
+  font-size: 13.5px;
+  line-height: 1;
   white-space: nowrap;
-}
-.formeNet small {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--ink-2);
+  transform: translateY(-50%);
 }
 button.bouton {
   border: 0;

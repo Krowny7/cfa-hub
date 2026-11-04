@@ -10,8 +10,8 @@ import { createClient } from "@/lib/supabase/browser";
 import { CL } from "@/lib/voice-classement";
 import s from "./Barre.module.css";
 
-// La recherche de joueur de la barre du haut : un rond avec la loupe, qui s'ouvre au survol
-// ou au toucher. Dès 2 lettres, les joueurs dont le pseudo correspond, avec leur ELO ; un clic
+// La recherche de joueur de la barre du haut : un champ ouvert sur ordinateur ; sur tablette
+// et téléphone, un rond avec la loupe, qui s'ouvre au survol ou au toucher. Dès 2 lettres, les joueurs dont le pseudo correspond, avec leur ELO ; un clic
 // (ou ↓ ↑ puis Entrée) mène à leur profil. Sans choix, Entrée ouvre la page des joueurs.
 // Échap ou un clic à côté la replient.
 

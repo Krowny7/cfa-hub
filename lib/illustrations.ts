@@ -180,7 +180,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/duel-lice.webp",
     alt: "L'arène d'un Colisée en ruine, deux combattants en duel sur le sable",
     credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-02), choisie par Théo pour La Lice.",
-    emplacement: "/duel : carte « lieu » La Lice, 16:10 sur ordinateur, vignette portrait 88×110 px sur téléphone. Accueil : affiche portrait « La Lice » (AFFICHES.rival). Le duel est vers 50 % de la largeur et 76 % de la hauteur.",
+    emplacement: "S'affronter : bandeau de l'en-tête, 400×50 px. /duel : carte « lieu » La Lice, 16:10 sur ordinateur, vignette portrait 88×110 px sur téléphone. Accueil : affiche portrait « La Lice » (AFFICHES.rival). Le duel est vers 50 % de la largeur et 76 % de la hauteur.",
     prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais et touches visibles, dans l'univers de Léonard de Vinci à Florence vers 1500. Une lice de joute vide sur la piazza Santa Croce, au crépuscule : la barrière de bois peinte qui sépare les deux couloirs, deux lances de tournoi croisées appuyées contre elle, deux heaumes posés sur un tréteau, des bannières ocre et bleu nuit qui flottent, la façade de pierre en arrière-plan. Lumière dorée de fin de journée, longues ombres. Palette chaude : ocre, terre de Sienne brûlée, ambre, brun, touches de bleu-gris. Aucun personnage, aucun texte. Cadrage horizontal 16:10, les lances croisées au centre, pour qu'un recadrage vertical 4:5 les garde. 1600×1000.",
   },
   "mock-grande-salle": {

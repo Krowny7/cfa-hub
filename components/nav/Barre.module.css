@@ -1,6 +1,6 @@
-/* La barre du haut : la loupe qui s'ouvre vers la gauche, dans la place libre de la colonne
-   de droite (rien ne bouge autour, les onglets restent découverts), et le « ! » d'une
-   récompense de quête sur la photo du joueur. */
+/* La barre du haut : la recherche, dans la place libre de la colonne de droite (rien ne bouge
+   autour, les onglets restent découverts), et le « ! » d'une récompense de quête sur la photo
+   du joueur. */
 .recherche {
   position: relative;
   flex: 1 1 0;
@@ -37,6 +37,17 @@
   width: max(180px, min(220px, 100%));
   padding: 0 38px 0 16px;
   cursor: text;
+}
+/* ordinateur : le champ reste ouvert, il meuble la barre ; le rond ne sert que là où la place manque */
+@media (min-width: 1024px) {
+  .champ {
+    width: min(220px, 100%);
+    padding: 0 38px 0 16px;
+    cursor: text;
+  }
+  .champ::placeholder {
+    opacity: 1;
+  }
 }
 /* téléphone : pas d'onglets dans la barre, le champ passe par-dessus le logo */
 @media (max-width: 767px) {

@@ -36,10 +36,8 @@ export const CL = {
   voirExamen: "Voir l'examen",
   ilFaitBouger: "Il fait bouger ton ELO comme un duel.",
   dernierExamen: (score: string, delta: string | null) => `Dernier examen : ${score}${delta ? ` · ${delta} ELO` : ""}.`,
-  /** « Ta forme » (BandeForme), à droite du titre */
-  forme: "Ta forme",
-  formeSous: (n: number) => (n === 0 ? "Pas encore de partie classée" : n === 1 ? "Ta dernière partie" : `Tes ${n} dernières parties`),
-  formeAria: (gains: number, n: number, net: string) => (n === 0 ? "Ta forme : pas encore de partie classée" : `Ta forme : ${gains} sur ${n} parties gagnent de l'ELO, ${net} ELO au total`),
+  /** le bandeau peint à droite du titre (BandePeinte) */
+  bande: "Que le meilleur gagne",
   /** la recherche de joueur de la barre du haut */
   trouverChamp: "Pseudo d'un joueur",
   aucunJoueur: "Aucun joueur à ce pseudo.",
