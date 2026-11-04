@@ -5,7 +5,8 @@
 --
 -- Mêmes règles que les examens blancs (_trophee_blanc) : la première copie de chaque
 -- mock (rejouer la même session ne redonne rien), 30 questions au moins, 60 % ou plus.
--- Une question sans réponse compte comme fausse : le score se lit sur `nb`.
+-- Une question sans réponse compte comme fausse : le score se lit sur `nb`. Une copie
+-- abandonnée (moins de 80 % de questions répondues) ne compte pas comme première copie.
 
 CREATE OR REPLACE FUNCTION _trophees_salles(p_user uuid)
 RETURNS TABLE (source text, palier smallint, quand timestamptz, ref text)
@@ -18,7 +19,7 @@ BEGIN
   END IF;
   RETURN QUERY
     WITH copies AS (
-      SELECT s.params -> 'mock' -> 'examens' AS cle,
+      SELECT s.params -> 'examens' AS cle,
              s.nb AS total,
              coalesce(s.terminee_at, s.fin_at) AS fini,
              (count(*) FILTER (WHERE r.juste))::int AS score
@@ -27,6 +28,7 @@ BEGIN
       WHERE s.params ->> 'source' = 'examen'
         AND (s.statut = 'terminee' OR s.fin_at <= now())
       GROUP BY s.id
+      HAVING count(*) * 10 >= 8 * s.nb
     ),
     premieres AS (
       SELECT DISTINCT ON (c.cle) c.cle, c.total, c.fini, c.score

@@ -12,7 +12,7 @@ import { RUNNER_SALLE } from "@/lib/voice-salles";
 
 export type CopieSalle = { revue: DailyReviewItem[]; numero: number; titre: string };
 
-type LigneSession = { id: string; salle_id: string | null; numero: number; statut: string; fin_at: string | null; params: { mock?: { examens?: string[] } } | null };
+type LigneSession = { id: string; salle_id: string | null; numero: number; statut: string; fin_at: string | null; params: { examens?: string[] } | null };
 type LigneItem = Omit<SalleItem, "choix" | "donnees"> & { choix: string[] | null; bonne_index: number | null; explication: string | null };
 type LigneReponse = { position: number; choix: number | null; valeur: number | null; juste: boolean; points: number; delai_ms: number };
 
@@ -35,5 +35,5 @@ export async function lireCopieSalle(admin: SupabaseClient, sessionId: string, u
     mes,
   );
   if (!revue?.length) return null;
-  return { revue, numero: s.numero, titre: s.params?.mock?.examens?.join(" + ") || RUNNER_SALLE.copieTitre };
+  return { revue, numero: s.numero, titre: s.params?.examens?.join(" + ") || RUNNER_SALLE.copieTitre };
 }
