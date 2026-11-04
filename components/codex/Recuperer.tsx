@@ -57,6 +57,7 @@ export function Recuperer({
   court = false,
   contour = false,
   demo = false,
+  lance = false,
   className = "",
   onFini,
 }: {
@@ -75,6 +76,8 @@ export function Recuperer({
   court?: boolean;
   contour?: boolean;
   demo?: boolean;
+  /** vrai : le geste part dès l'apparition du bloc (« Récolter », menu du joueur) */
+  lance?: boolean;
   className?: string;
   onFini?: () => void;
 }) {
@@ -100,6 +103,14 @@ export function Recuperer({
     },
     [],
   );
+
+  // « Récolter » : un vrai clic sur le bouton du bloc, une fois le panneau ouvert
+  const plein = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!lance) return;
+    const t = window.setTimeout(() => plein.current?.click(), 250);
+    return () => window.clearTimeout(t);
+  }, [lance]);
 
   // la dernière grande fête passée : le bloc se replie
   useEffect(() => {
@@ -306,7 +317,7 @@ export function Recuperer({
       {reste > 0 && <p className="t-micro m-0">{T.autres(reste)}</p>}
       {dejaVerse && <p className="t-micro m-0">{T.dejaVerse}</p>}
       {comptee ?? (
-        <button type="button" className={"btn btn-primary rl-press min-h-[44px] w-full" + (cadre ? " sm:w-fit" : "")} disabled={occupe} aria-busy={phase === "envoi"} onClick={recuperer}>
+        <button ref={plein} type="button" className={"btn btn-primary rl-press min-h-[44px] w-full" + (cadre ? " sm:w-fit" : "")} disabled={occupe} aria-busy={phase === "envoi"} onClick={recuperer}>
           {phase === "envoi" ? T.enCours : dejaVerse ? T.voir : T.tout(xp)}
         </button>
       )}

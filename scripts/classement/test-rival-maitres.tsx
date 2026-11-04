@@ -201,7 +201,7 @@ console.log("# dans la page");
   const sans = rendre(<ClassementView data={data} />);
   check("sans rival ni maîtres : aucune des deux cartes (ni rangée vide)", !sans.includes("Ton plus grand rival") && !sans.includes("Les maîtres de chaque matière"));
   const html = rendre(<ClassementView data={{ ...data, rival, maitres }} />);
-  const ordre = ['id="cl-trouver"', 'id="cl-rival"', 'id="cl-maitres"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
+  const ordre = ['id="cl-forme"', 'id="cl-rival"', 'id="cl-maitres"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
   check("l'ordre : Trouver, rival, maîtres (téléphone : rival puis maîtres), Classement général", ordre.every((x) => x > 0) && ordre.every((x, i) => i === 0 || x > ordre[i - 1]), ordre.join(" < "));
   check("deux cartes dans la rangée : aucune ne prend toute la largeur", !/class="[^"]*\bseule\b/.test(html));
   const rienQueLeRival = rendre(<ClassementView data={{ ...data, rival }} />);

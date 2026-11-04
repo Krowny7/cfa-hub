@@ -7,7 +7,7 @@ import { Amis } from "@/components/classement/Amis";
 import { CarteMaitres } from "@/components/classement/CarteMaitres";
 import { CarteRival } from "@/components/classement/CarteRival";
 import { Bouton, PAL, Sceau } from "@/components/classement/Encre";
-import { RechercheJoueurs } from "@/components/classement/RechercheJoueurs";
+import { BandeForme } from "@/components/classement/BandeForme";
 import { CarteSalles } from "@/components/salles/CarteSalles";
 import { ClassementTabs, type TabKey } from "@/components/classement/ClassementTabs";
 import { HowItWorks } from "@/components/classement/Domains";
@@ -97,8 +97,8 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 // Salle » (l'examen classé, la pièce maîtresse, peinte, à gauche) | la carte du
 // duel (en haut ton ELO et ton insigne, une ligne de rang ; en bas la peinture des
 // duels, le titre « Duels » et sa phrase, le bouton « Lancer un duel », ou « Relever le défi » quand un défi
-// attend) ; (« Trouver un
-// adversaire », RechercheJoueurs, est dans l'en-tête, à droite du titre) ; la
+// attend) ; (« Ta forme »,
+// BandeForme, est dans l'en-tête, à droite du titre) ; la
 // carte « Les Salles » (components/salles/CarteSalles : créer une salle, rejoindre avec
 // un code, les salles publiques ; sans la migration, une ligne dit qu'elles arrivent) ; la
 // rangée « Ton plus grand rival |
@@ -135,8 +135,8 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
             </p>
             <h1 className="t-h1 rl-in m-0">{CL.titre}</h1>
           </div>
-          {/* « Trouver un adversaire », compacte, à droite du titre : un pseudo, des suggestions, son profil */}
-          <RechercheJoueurs demo={data.joueursExemple} compacte />
+          {/* « Ta forme », à droite du titre : la recherche de joueur est dans la barre du haut */}
+          <BandeForme history={history} />
         </header>
 
         <div className={s.racine} style={styleDePalette(PAL)}>
@@ -182,7 +182,7 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
 
         <div className={s.racine} style={styleDePalette(PAL)}>
           {/* ——— « Les Salles » : créer une salle, rejoindre avec un code, les salles publiques ouvertes (fond sombre, DA des Salles) ——— */}
-          <CarteSalles salles={data.salles} demo={data.joueursExemple !== undefined} />
+          <CarteSalles salles={data.salles} />
 
           {/* ——— la rangée « Ton plus grand rival » (5/12) + « Les maîtres de chaque matière » (7/12) ———
               Chacune des deux cartes n'apparaît que si elle a des données (pas de clé admin, rien

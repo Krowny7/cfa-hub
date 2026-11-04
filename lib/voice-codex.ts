@@ -327,7 +327,13 @@ export function romain(n: number): string {
 
 // Le bouton du joueur, dans la barre du haut (components/nav/UserMenu.tsx)
 export const BOUTON_JOUEUR = {
+  profil: "Voir mon profil",
   quetes: "Tes quêtes",
+  recompenses: "Récompenses",
+  aRecolter: (n: number) => `${n} quête${n > 1 ? "s" : ""} à récolter`,
+  recolter: "Récolter",
+  reglages: "Réglages",
+  deconnexion: "Se déconnecter",
   aria: "Mon profil, quêtes et réglages",
-  ariaRecompenses: (n: number) => `Mon profil, ${n} récompense${n > 1 ? "s" : ""} à récupérer`,
+  ariaRecompenses: (n: number) => `Mon profil, ${n} récompense${n > 1 ? "s" : ""} à récolter`,
 };

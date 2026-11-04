@@ -3,12 +3,10 @@ import Link from "next/link";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n/core";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AnneauDuJourLogo } from "@/components/adn/AnneauDuJourLogo";
-import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
-import { OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourEvents";
-import { objectifDuJour } from "@/lib/objectif";
 import { SpaceNav } from "@/components/nav/SpaceNav";
 import { DomainSwitcher } from "@/components/nav/DomainSwitcher";
 import { CommandPalette } from "@/components/nav/CommandPalette";
+import { LogoDuJour } from "@/components/nav/LogoDuJour";
 import { RechercheJoueur } from "@/components/nav/RechercheJoueur";
 import { UserMenu } from "@/components/nav/UserMenu";
 import { LoginLink } from "@/components/nav/LoginLink";
@@ -21,8 +19,8 @@ import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 // Barre du haut : logo vivant (→ accueil), domaine · programme, les quatre
 // espaces en contrôle segmenté (le Codex n'en est plus un : il s'ouvre depuis
 // Moi), puis la recherche de joueur et un seul bouton, la photo du joueur : son menu
-// (Moi, ses quêtes, thème nuit, mode discret, réglages, déconnexion), avec un « ! »
-// quand une récompense de quête est à récupérer. Le panneau des quêtes et la pastille
+// (son profil, ses quêtes, réglages, déconnexion), avec un « ! » quand une récompense
+// de quête est à récolter. Le panneau des quêtes et la pastille
 // de la séance du jour lancée (« Séance 2/3 · Continuer → » ; sur téléphone, une bande
 // au-dessus de la barre d'onglets) sont diffusés en flux. Ctrl K ouvre toujours la
 // palette, sans bouton dans la barre.
@@ -34,19 +32,12 @@ import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 // LOBBY » s'efface de 768 à 1 023 px (l'anneau reste) ; les onglets eux-mêmes
 // s'ajustent à ce qui reste (SpaceNav).
 //
-// Le logo suit la journée : l'anneau se trace au nombre de traits du jour
-// (une lecture légère, en parallèle du rang, avec repli sur le logo plein).
+// Le logo suit la journée : l'anneau se trace au nombre de traits du jour, sur l'objectif
+// du joueur (LogoDuJour, en flux, le logo plein en attendant).
 export async function TopBar() {
   const locale = DEFAULT_LOCALE;
   const { user, profile } = await getSessionUserWithProfile();
-  let traits: number | null = null;
-  let objectif = OBJECTIF_DU_JOUR;
-  if (user) {
-    // l'objectif du jour : celui du plan du joueur (lib/objectif.ts), sinon 40
-    const [lus, plan] = await Promise.all([traitsDuJour(user.id), objectifDuJour(user)]);
-    traits = lus;
-    objectif = plan.objectif;
-  }
+  const logoPlein = <AnneauDuJourLogo repondues={null} size={26} landing />;
 
   return (
     <header
@@ -61,7 +52,13 @@ export async function TopBar() {
         <Link href="/dashboard" className="group rl-press relative whitespace-nowrap text-[14px] sm:text-[15.5px]">
           <span className="inline-flex items-center gap-2.5">
             <span className="sr-only">{t(locale, "appName")}, accueil</span>
-            <AnneauDuJourLogo repondues={traits} objectif={objectif} size={26} landing publie />
+            {user ? (
+              <Suspense fallback={logoPlein}>
+                <LogoDuJour user={user} />
+              </Suspense>
+            ) : (
+              logoPlein
+            )}
             <span aria-hidden className={"font-brand leading-none" + (user ? " md:max-lg:hidden" : "")}>
               RANKED LOBBY
             </span>
@@ -81,7 +78,7 @@ export async function TopBar() {
               <Suspense fallback={null}>
                 <SceauQuetesServeur />
               </Suspense>
-              <UserMenu nom={profile?.username?.trim() || "Moi"} avatarUrl={profile?.avatar_url ?? null} />
+              <UserMenu id={user.id} nom={profile?.username?.trim() || "Moi"} avatarUrl={profile?.avatar_url ?? null} />
               <PresenceHeartbeat />
               {/* le temps actif sur le site (migration_temps_site.sql), à côté du signal de présence */}
               <CompteurTemps />

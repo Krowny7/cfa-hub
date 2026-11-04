@@ -98,10 +98,10 @@ console.log("# la page");
 {
   const html = rendre(<ClassementView data={data} />);
   check("en-tête : « S'affronter · Finance », le titre, plus de pastilles de rang par domaine", html.includes("S'affronter · Finance") && html.includes("Se mesurer aux autres") && !html.includes("Tes rangs par domaine"));
-  const ordre = ['id="cl-trouver"', "Ton rang et La Grande Salle", 'id="cl-salles"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
+  const ordre = ['id="cl-forme"', "Ton rang et La Grande Salle", 'id="cl-salles"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
   check("l'ordre : la recherche dans l'en-tête, le diptyque, la carte Les Salles, Classement général", ordre.every((x) => x > 0) && ordre.every((x, i) => i === 0 || x > ordre[i - 1]), ordre.join(" < "));
   check("le diptyque : « La Grande Salle » d'abord (la pièce maîtresse), puis la carte du duel (repère Léonard)", html.includes('data-leonard="rang"') && html.indexOf('aria-label="La Grande Salle"') < html.indexOf('data-leonard="rang"'));
-  check("la bande de recherche : un formulaire vers /people, le champ q, une liste de suggestions", html.includes('action="/people"') && html.includes('name="q"') && html.includes('role="search"') && html.includes('role="combobox"') && html.includes('aria-controls="cl-trouver-liste"'));
+  check("« Ta forme » à la place de la recherche : les dernières parties, plus de champ dans l'en-tête", html.includes(">Ta forme<") && !html.includes('id="cl-trouver"') && !html.includes('role="search"'));
   check("la carte du duel : ton ELO en haut, la peinture des duels, « Lancer un duel » vers /duel", html.includes("classement-duels") && /1\s?512 <small>ELO<\/small>/.test(html) && html.includes("Lancer un duel") && html.includes('href="/duel"'));
   check("la carte du duel : le titre « Duels » et sa phrase sur la peinture", html.includes(">Duels</h3>") && html.includes("Mesure-toi à un autre joueur"));
   check("la carte du duel : plus d'Autour de toi ni de phrase du rival", !html.includes("Autour de toi") && !html.includes("devant toi"));

@@ -2,31 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Eye, LogOut, Moon, ScrollText, Settings } from "lucide-react";
+import { LogOut, ScrollText, Settings } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
-import { OUVRIR_QUETES, QUETES_A_RECUPERER } from "@/components/codex/quetes-evenements";
-import { BOUTON_JOUEUR } from "@/lib/voice-codex";
-import { useNightTheme } from "@/components/ThemeToggle";
-import { useDiscreetMode } from "@/components/DiscreetToggle";
+import { OUVRIR_QUETES, useRecompenses } from "@/components/codex/quetes-evenements";
 import { signOutAndLeave } from "@/components/SignOutButton";
+import { BOUTON_JOUEUR as T } from "@/lib/voice-codex";
+import s from "./Barre.module.css";
 
-// Le bouton du joueur, à droite de la barre du haut : sa photo, avec un « ! » quand une
-// récompense de quête est à récupérer. Il ouvre Moi, ses quêtes (le panneau de SceauQuetes,
-// voisin dans la barre), les réglages d'affichage (thème nuit, mode discret) et la
-// déconnexion. Aussi présent sur mobile.
-export function UserMenu({ nom, avatarUrl }: { nom: string; avatarUrl: string | null }) {
+// Le bouton du joueur, à droite de la barre du haut : sa photo, avec un « ! » jaune quand une
+// récompense de quête attend. Son menu : son profil, ses quêtes (« Récolter » lance la
+// récupération dans le panneau de SceauQuetes, voisin dans la barre ; sans récompense, la
+// ligne ouvre ce panneau), les réglages (thème nuit et mode discret y sont) et la déconnexion.
+export function UserMenu({ id, nom, avatarUrl }: { id: string; nom: string; avatarUrl: string | null }) {
   const [open, setOpen] = useState(false);
-  const [night, toggleNight] = useNightTheme();
-  const [discreet, toggleDiscreet] = useDiscreetMode();
   const ref = useRef<HTMLDivElement | null>(null);
-  // null : le panneau des quêtes n'a rien dit (pas de Codex, ou pas encore lu)
-  const [quetes, setQuetes] = useState<number | null>(null);
-
-  useEffect(() => {
-    const suivre = (e: Event) => setQuetes((e as CustomEvent<number>).detail);
-    window.addEventListener(QUETES_A_RECUPERER, suivre);
-    return () => window.removeEventListener(QUETES_A_RECUPERER, suivre);
-  }, []);
+  const quetes = useRecompenses();
 
   useEffect(() => {
     if (!open) return;
@@ -44,6 +34,11 @@ export function UserMenu({ nom, avatarUrl }: { nom: string; avatarUrl: string | 
     };
   }, [open]);
 
+  function ouvrirQuetes(recolter: boolean) {
+    setOpen(false);
+    window.dispatchEvent(new CustomEvent(OUVRIR_QUETES, { detail: { recolter } }));
+  }
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -51,13 +46,13 @@ export function UserMenu({ nom, avatarUrl }: { nom: string; avatarUrl: string | 
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={quetes ? BOUTON_JOUEUR.ariaRecompenses(quetes) : BOUTON_JOUEUR.aria}
+        aria-label={quetes ? T.ariaRecompenses(quetes) : T.aria}
         data-leonard="sceau-quetes"
-        className="rl-press relative block rounded-full"
+        className="rl-press relative grid rounded-full"
       >
         <Avatar src={avatarUrl} name={nom} size={38} />
         {!!quetes && (
-          <span aria-hidden className="absolute -right-1 -top-1 grid h-[18px] w-[18px] place-items-center rounded-full bg-[var(--pen)] text-[12px] font-bold leading-none text-white ring-2 ring-[var(--paper)]">
+          <span aria-hidden className={s.signal + " font-brand"}>
             !
           </span>
         )}
@@ -65,50 +60,37 @@ export function UserMenu({ nom, avatarUrl }: { nom: string; avatarUrl: string | 
 
       {open && (
         <div role="menu" className="menu absolute right-0 top-[calc(100%+8px)] origin-top-right z-[60] w-[272px]">
-          <Link href="/moi" role="menuitem" className="menu-item gap-3 py-2.5" onClick={() => setOpen(false)}>
+          <Link href={`/people/${id}`} role="menuitem" className="menu-item gap-3 py-2.5" onClick={() => setOpen(false)}>
             <Avatar src={avatarUrl} name={nom} size={34} />
             <span className="min-w-0 flex-1">
-              <span className="block text-[14.5px] font-semibold leading-tight">{nom}</span>
-              <span className="t-micro block">Profil, rang, stats et erreurs</span>
+              <span className="block truncate text-[14.5px] font-semibold leading-tight">{nom}</span>
+              <span className="t-micro block">{T.profil}</span>
             </span>
           </Link>
           {quetes !== null && (
-            <button
-              type="button"
-              role="menuitem"
-              className="menu-item"
-              onClick={() => {
-                setOpen(false);
-                window.dispatchEvent(new Event(OUVRIR_QUETES));
-              }}
-            >
+            <button type="button" role="menuitem" className="menu-item" onClick={() => ouvrirQuetes(quetes > 0)}>
               <ScrollText size={16} strokeWidth={1.9} className="text-muted" />
-              <span className="flex-1">{BOUTON_JOUEUR.quetes}</span>
-              {quetes > 0 && <span className="rounded-full bg-[var(--pen)] px-1.5 text-[12px] font-bold text-white">{quetes}</span>}
+              {quetes > 0 ? (
+                <>
+                  <span className="min-w-0 flex-1 text-left">
+                    {T.recompenses}
+                    <span className="t-micro block font-normal">{T.aRecolter(quetes)}</span>
+                  </span>
+                  <span className="btn btn-primary btn-sm pointer-events-none">{T.recolter}</span>
+                </>
+              ) : (
+                T.quetes
+              )}
             </button>
           )}
           <div className="menu-sep" />
-          <button type="button" role="menuitemcheckbox" aria-checked={night} className="menu-item" onClick={toggleNight}>
-            <Moon size={16} strokeWidth={1.9} className="text-muted" />
-            <span className="flex-1">Thème nuit</span>
-            <span aria-hidden className={"switch" + (night ? " is-on" : "")} />
-          </button>
-          <button type="button" role="menuitemcheckbox" aria-checked={discreet} className="menu-item" onClick={toggleDiscreet}>
-            <Eye size={16} strokeWidth={1.9} className="text-muted" />
-            <span className="flex-1">
-              Mode discret
-              <span className="t-micro block font-normal">Pour réviser en public</span>
-            </span>
-            <span aria-hidden className={"switch" + (discreet ? " is-on" : "")} />
-          </button>
-          <div className="menu-sep" />
           <Link href="/moi?onglet=reglages" role="menuitem" className="menu-item" onClick={() => setOpen(false)}>
             <Settings size={16} strokeWidth={1.9} className="text-muted" />
-            Réglages
+            {T.reglages}
           </Link>
           <button type="button" role="menuitem" className="menu-item text-muted" onClick={signOutAndLeave}>
             <LogOut size={16} strokeWidth={1.9} />
-            Se déconnecter
+            {T.deconnexion}
           </button>
         </div>
       )}

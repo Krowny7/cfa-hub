@@ -11,8 +11,7 @@ const DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "
 /**
  * Le logo vivant de la barre du haut : l'anneau du logo suit la journée,
  * comme les Glyphs de Nothing. Le pinceau s'arrête au nombre de traits du
- * jour ; à l'objectif, c'est le logo exact, et le correcteur y pose son
- * petit sceau rouge dans l'ouverture (règle 3 : il corrige et il valide).
+ * jour ; à l'objectif, c'est le logo exact.
  * Sans réponse aujourd'hui : la piste et la goutte, prêtes.
  *
  * Props :
@@ -46,8 +45,6 @@ export function AnneauDuJourLogo({
   publie?: boolean;
 }) {
   const [n, setN] = useState<number | null>(repondues);
-  // le sceau ne se tamponne que si la journée devient tenue sous nos yeux
-  const [vientDeTenir, setVientDeTenir] = useState(false);
   const day = useRef<string>("");
   const maskId = "rl-logo-" + useId().replace(/[^a-zA-Z0-9]/g, "");
 
@@ -73,12 +70,7 @@ export function AnneauDuJourLogo({
     };
     const onTrait = (e: Event) => {
       const k = Number((e as CustomEvent<{ n?: number }>).detail?.n ?? 1);
-      if (k > 0)
-        setN((v) => {
-          const before = base(v);
-          if (before < objectif && before + k >= objectif) setVientDeTenir(true);
-          return before + k;
-        });
+      if (k > 0) setN((v) => base(v) + k);
     };
     const onAnneau = (e: Event) => {
       const r = Number((e as CustomEvent<{ repondues?: number }>).detail?.repondues);
@@ -93,7 +85,7 @@ export function AnneauDuJourLogo({
       window.removeEventListener(EVT_TRAIT, onTrait);
       window.removeEventListener(EVT_ANNEAU, onAnneau);
     };
-  }, [vivant, objectif]);
+  }, [vivant]);
 
   const g = Math.max(1, objectif);
   const known = n !== null;
@@ -142,13 +134,6 @@ export function AnneauDuJourLogo({
         {(vide || tenu || !known) && <use href={INK.logoSplat} fill="currentColor" />}
         {/* rien encore : la goutte posée au départ du trait */}
         {vide && <circle cx={122} cy={32} r={14} fill="currentColor" />}
-        {/* le sceau du correcteur, dans l'ouverture : journée tenue */}
-        {tenu && (
-          <g className={vientDeTenir ? "rl-stamp" : undefined} style={{ transformOrigin: "60px 62px", transformBox: "view-box" }}>
-            <rect x={38} y={40} width={44} height={44} rx={8} transform="rotate(-11 60 62)" fill="var(--pen)" />
-            <rect x={47} y={49} width={26} height={26} rx={4} transform="rotate(-11 60 62)" fill="none" stroke="var(--paper)" strokeWidth={5} />
-          </g>
-        )}
       </svg>
       {known && <span className="sr-only">{`, ${v.aria}`}</span>}
       {known && (

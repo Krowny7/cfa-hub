@@ -1,4 +1,3 @@
-import type { DuelPlayerCard } from "@/lib/duels";
 import type { EntreeSalles } from "@/lib/salles/types";
 // Données reçues par les composants de l'espace Classement (props
 // sérialisables : la page serveur les charge, la page d'aperçu les invente).
@@ -106,8 +105,6 @@ export type AmiRow = {
 };
 
 export type ClassementData = {
-  /** aperçus seulement : les joueurs que la bande de recherche propose, sans base */
-  joueursExemple?: DuelPlayerCard[];
   me: MyRank;
   history: RatingEvent[];
   board: BoardRow[];

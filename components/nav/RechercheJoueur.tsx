@@ -8,10 +8,12 @@ import { Avatar } from "@/components/classement/Avatar";
 import { searchDuelPlayers, type DuelPlayerCard } from "@/lib/duels";
 import { createClient } from "@/lib/supabase/browser";
 import { CL } from "@/lib/voice-classement";
+import s from "./Barre.module.css";
 
-// La recherche de joueur de la barre du haut : dès 2 lettres, les joueurs dont le pseudo
-// correspond, avec leur ELO ; un clic (ou ↓ ↑ puis Entrée) mène à leur profil. Sans choix,
-// Entrée ouvre la page des joueurs. Masquée sur téléphone : la place va au reste de la barre.
+// La recherche de joueur de la barre du haut : un rond avec la loupe, qui s'ouvre au survol
+// ou au toucher. Dès 2 lettres, les joueurs dont le pseudo correspond, avec leur ELO ; un clic
+// (ou ↓ ↑ puis Entrée) mène à leur profil. Sans choix, Entrée ouvre la page des joueurs.
+// Échap ou un clic à côté la replient.
 
 const DELAI = 250;
 const MAX = 6;
@@ -25,6 +27,7 @@ export function RechercheJoueur() {
   const [ouvert, setOuvert] = useState(false);
   const [actif, setActif] = useState(-1);
   const zone = useRef<HTMLFormElement>(null);
+  const champ = useRef<HTMLInputElement>(null);
   const client = useRef<SupabaseClient | null>(null);
 
   useEffect(() => {
@@ -50,17 +53,22 @@ export function RechercheJoueur() {
     };
   }, [q]);
 
+  function replier() {
+    setOuvert(false);
+    setQ("");
+    champ.current?.blur();
+  }
+
   useEffect(() => {
     const ailleurs = (e: MouseEvent) => {
-      if (zone.current && !zone.current.contains(e.target as Node)) setOuvert(false);
+      if (zone.current && !zone.current.contains(e.target as Node)) replier();
     };
     document.addEventListener("mousedown", ailleurs);
     return () => document.removeEventListener("mousedown", ailleurs);
   }, []);
 
   function aller(p: DuelPlayerCard) {
-    setOuvert(false);
-    setQ("");
+    replier();
     router.push(`/people/${p.userId}`);
   }
 
@@ -76,32 +84,34 @@ export function RechercheJoueur() {
       e.preventDefault();
       aller(res[actif]);
     } else if (e.key === "Escape") {
-      setOuvert(false);
+      replier();
     }
   }
 
   const montrer = ouvert && q.trim().length >= 2 && !(cherche && res.length === 0);
 
   return (
-    <form ref={zone} action="/people" method="get" role="search" className="relative hidden md:block">
-      <Search size={15} strokeWidth={1.9} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+    <form ref={zone} action="/people" method="get" role="search" className={s.recherche}>
       <input
+        ref={champ}
         name="q"
         type="search"
         autoComplete="off"
         value={q}
         placeholder={CL.trouverChamp}
         aria-label={CL.trouverChamp}
+        data-plein={q ? "" : undefined}
+        className={s.champ}
         onChange={(e) => {
           setQ(e.target.value);
           setOuvert(true);
         }}
         onFocus={() => setOuvert(true)}
         onKeyDown={onKey}
-        className="h-[38px] w-[176px] rounded-xl border border-line bg-surface pl-[34px] pr-3 text-[13.5px] transition-[width] duration-200 focus:w-[220px] xl:w-[200px] [&::-webkit-search-cancel-button]:hidden"
       />
+      <Search size={16} strokeWidth={1.9} aria-hidden className={s.loupe + " text-muted"} />
       {montrer && (
-        <div className="menu absolute right-0 top-[calc(100%+8px)] z-[60] w-[280px]">
+        <div className="menu absolute right-0 top-[calc(100%+8px)] z-[60] w-[min(280px,calc(100vw-96px))]">
           {res.length === 0 ? (
             <p className="t-small m-0 px-3 py-2">{CL.aucunJoueur}</p>
           ) : (

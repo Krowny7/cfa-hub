@@ -35,7 +35,7 @@ export function Bouton({
   );
 }
 
-/** Le même bouton d'encre, pour envoyer un formulaire (la bande « Trouver un adversaire ») ou, avec `type="button"`, pour agir d'un clic. */
+/** Le même bouton d'encre, pour envoyer un formulaire ou, avec `type="button"`, pour agir d'un clic. */
 export function BoutonEnvoi({
   children,
   surPeinture = false,

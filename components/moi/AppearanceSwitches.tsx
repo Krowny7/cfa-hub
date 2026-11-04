@@ -53,8 +53,8 @@ function ToutMontrer() {
   );
 }
 
-// Thème nuit et mode discret en interrupteurs (mêmes réglages que les
-// boutons de la barre du haut, mémorisés sur cet appareil), puis Léonard :
+// Thème nuit et mode discret en interrupteurs (leur seule place une fois
+// connecté, mémorisés sur cet appareil), puis Léonard :
 // ses apparitions et ses animations (il se tait de lui-même en mode discret).
 export function AppearanceSwitches() {
   const [night, toggleNight] = useNightTheme();

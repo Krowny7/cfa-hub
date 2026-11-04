@@ -7,7 +7,7 @@ import { Feuille } from "@/components/ui/Feuille";
 import { useEtatNav } from "@/components/nav/DevoileContext";
 import { codexPanneau, codexSeanceLancer, codexVus, codexXp } from "@/lib/codex/actions";
 import { EVENEMENT_CODEX_POINT, panneauAcquitte, type Panneau, type SuitePanneau } from "@/lib/codex/panneau";
-import { OUVRIR_QUETES, QUETES_A_RECUPERER } from "@/components/codex/quetes-evenements";
+import { OUVRIR_QUETES, direRecompenses } from "@/components/codex/quetes-evenements";
 import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
 import { CODEX } from "@/lib/voice-codex";
 import { AvecMots } from "@/components/ui/Mot";
@@ -40,7 +40,7 @@ import s from "./Encre.module.css";
 // sans bruit à l'ouverture (codexVus). Le jour J : « Bonne chance », rien d'autre.
 // `demo` : aperçus (aucune action serveur) ; `ouvert` : ouvert d'emblée ; `integre` : dans
 // la barre du haut, sans sceau visible : le bouton du joueur (UserMenu) ouvre le panneau et
-// porte le « ! » (quetes-evenements.ts).
+// porte le « ! » (quetes-evenements.ts) ; son « Récolter » lance Récupérer dès l'ouverture.
 
 // identifiants fixes (un seul sceau par barre) : pas de useId, rien à désaccorder à l'hydratation
 const uid = "rl-sceau-quetes-";
@@ -54,6 +54,7 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
   // chaque ouverture remonte « Récupérer » à neuf ; `recupere` : il a fini son geste ici (il dit lui-même « Fait aujourd'hui »)
   const [ouvertures, setOuvertures] = useState(0);
   const [recupere, setRecupere] = useState(false);
+  const [recolter, setRecolter] = useState(false);
   const [etroit, setEtroit] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [occupe, demarrer] = useTransition();
@@ -119,13 +120,16 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
   ouvrirIci.current = ouvrir;
   useEffect(() => {
     if (!integre) return;
-    const demande = () => ouvrirIci.current();
+    const demande = (e: Event) => {
+      setRecolter((e as CustomEvent<{ recolter?: boolean }>).detail?.recolter === true);
+      ouvrirIci.current();
+    };
     window.addEventListener(OUVRIR_QUETES, demande);
     return () => window.removeEventListener(OUVRIR_QUETES, demande);
   }, [integre]);
   const aDire = panneau.disponible && !panneau.jourJ ? panneau.recuperer.n : 0;
   useEffect(() => {
-    if (integre) window.dispatchEvent(new CustomEvent(QUETES_A_RECUPERER, { detail: aDire }));
+    if (integre) direRecompenses(aDire);
   }, [integre, aDire]);
 
   // popover : Échap, clic à côté, focus dans le panneau
@@ -208,7 +212,7 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
       ) : (
         <>
           {/* toujours monté : il garde ses quêtes pendant le geste, même quand le panneau relu n'en a plus */}
-          <Recuperer key={ouvertures} items={rec.items} total={{ n: rec.n, xp: rec.xp }} jour={panneau.jour} fait={fait} sobre={panneau.sobre} cadre={false} demo={demo} onFini={() => setRecupere(true)} />
+          <Recuperer key={ouvertures} items={rec.items} total={{ n: rec.n, xp: rec.xp }} jour={panneau.jour} fait={fait} sobre={panneau.sobre} cadre={false} demo={demo} lance={recolter} onFini={() => setRecupere(true)} />
           {seance && (
             <div className={s.zone}>
               <p className="t-eyebrow m-0">{CODEX.aujourdhui.suite}</p>

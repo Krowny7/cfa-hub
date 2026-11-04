@@ -168,9 +168,10 @@ export type ObjectifDuJour = {
 /**
  * L'objectif du jour du joueur : le plan s'il a fixé un total et une date à
  * venir, sinon le défaut (40). Ne lit rien de lourd sans objectif fixé. Au
- * moindre souci, ou au-delà de `timeoutMs`, le défaut.
+ * moindre souci, ou au-delà de `timeoutMs`, le défaut. L'attente est longue : la
+ * première lecture du jour est lourde, et le logo (LogoDuJour) la lit en flux.
  */
-export const objectifDuJour = cache(async (user: Pick<User, "id" | "user_metadata"> | null, timeoutMs = 1500): Promise<ObjectifDuJour> => {
+export const objectifDuJour = cache(async (user: Pick<User, "id" | "user_metadata"> | null, timeoutMs = 12_000): Promise<ObjectifDuJour> => {
   const defaut: ObjectifDuJour = { objectif: OBJECTIF_DU_JOUR, meta: null, examen: null, plan: null };
   if (!user) return defaut;
   const meta = lireObjectifMeta(user.user_metadata);
