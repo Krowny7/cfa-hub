@@ -202,7 +202,8 @@
   flex-direction: column;
   justify-content: flex-end;
   min-width: 0;
-  min-height: 440px;
+  /* un plancher : sur ordinateur, la hauteur vient du cadre (.rl-cadre) */
+  min-height: 400px;
   overflow: hidden;
   isolation: isolate;
   /* le fond le temps que la peinture arrive */

@@ -21,6 +21,15 @@
    ========================================================================== */
 
 :root {
+  /* Le cadre de la première partie des pages (.rl-cadre) : c'est ici qu'on règle ses dimensions.
+     --cadre-debut : où commence le contenu d'une page (la barre du haut et sa marge) ;
+     --cadre-marge : le vide gardé sous le premier bloc, en bas de l'écran ;
+     --cadre-min, --cadre-max : les bornes, pour les écrans très bas ou très hauts. */
+  --cadre-debut: 93px;
+  --cadre-marge: 27px;
+  --cadre-min: 520px;
+  --cadre-max: 720px;
+  --cadre-hauteur: clamp(var(--cadre-min), calc(100svh - var(--cadre-debut) - var(--cadre-marge)), var(--cadre-max));
   --paper: #f6f6f3;
   --paper-2: #efefeb;
   --surface: #ffffff;
@@ -1644,6 +1653,23 @@ html[data-discreet="1"] .rl-inverse {
   @media (min-width: 768px) {
     .rl-page {
       gap: 64px;
+    }
+  }
+  /* Le cadre de la première partie d'une page : l'en-tête, puis le premier bloc, qui prend
+     toute la hauteur qui reste jusqu'au bas du cadre. Ses dimensions se règlent avec
+     --cadre-* sur :root. Sur ordinateur seulement : au-dessous, chacun garde sa hauteur. */
+  .rl-cadre {
+    display: flex;
+    flex-direction: column;
+    gap: inherit;
+    min-width: 0;
+  }
+  .rl-cadre > :last-child {
+    flex: 1 1 auto;
+  }
+  @media (min-width: 1100px) {
+    .rl-cadre {
+      min-height: var(--cadre-hauteur);
     }
   }
   .rl-section {

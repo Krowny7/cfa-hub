@@ -479,6 +479,10 @@ export function EntrainementView({ d }: { d: EntrainementData }) {
       lead={
         <div className={s.racine} style={styleDePalette(PAL)}>
           <Diptyque />
+        </div>
+      }
+      suite={
+        <div className={s.racine} style={styleDePalette(PAL)}>
           <div className={s.rangee}>
             <div className={s.colonneEclair}>
               <Eclair d={d} />

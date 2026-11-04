@@ -107,9 +107,9 @@ console.log("# la page");
   check("la carte du duel : plus d'Autour de toi ni de phrase du rival", !html.includes("Autour de toi") && !html.includes("devant toi"));
   check("plus de carte « Duels » (en cours, à revoir) : retirée à la demande de l'utilisateur", !html.includes('id="cl-duels"') && !html.includes("Tous tes duels"));
   check("La Grande Salle : l'examen, ses inscrits, le bouton d'inscription", html.includes("Je m'inscris") && html.includes("14 inscrits") && html.includes("L'examen classé"));
-  check("l'arc électrique n'est là que s'il y a de l'enjeu (palier à 38 points, pas de défi reçu : non)", compte(diptyqueDe(html), /data-arc="contour"/g) === 0);
+  check("pas d'arc électrique sur le diptyque", compte(diptyqueDe(html), /data-arc="contour"/g) === 0);
   const enjeu = rendre(<ClassementView data={{ ...data, openDuels: [duel("d9", { status: "pending", incoming: true, opponentName: "Hugo", ...attente })] }} />);
-  check("l'arc électrique avec un défi reçu qui attend", compte(diptyqueDe(enjeu), /data-arc="contour"/g) === 1);
+  check("pas d'arc électrique non plus avec un défi reçu qui attend", compte(diptyqueDe(enjeu), /data-arc="contour"/g) === 0);
   check("l'emplacement du lot 2 est vide (ni rival, ni maîtres)", !html.includes("Ton plus grand rival") && !html.includes("Les maîtres de chaque matière"));
 }
 

@@ -19,6 +19,9 @@ Toujours écrire à l'utilisateur en français.
 - Thème nuit : `--noir` devient clair. Une surface qui doit rester sombre prend une couleur fixe (ex. `#1a120b`).
 - Une carte lente ne doit pas disparaître : Suspense + squelette, deux essais et filet de 15 s (components/accueil/lobby/plafond.ts).
 
+## Mise en page
+- La première partie d'une page (accueil, S'entraîner, S'affronter, Moi) : l'en-tête et le premier bloc dans `.rl-cadre`. Ses dimensions se règlent avec `--cadre-*` en haut de app/globals.css, jamais page par page.
+
 ## Direction artistique
 Règles dans .claude/rules/da-encre.md, chargées quand on touche aux composants ou aux styles.
 

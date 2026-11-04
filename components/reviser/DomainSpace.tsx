@@ -19,6 +19,7 @@ export function DomainSpace({
   title,
   lead,
   children,
+  suite,
 }: {
   kicker: string;
   /** icône de l'espace, devant la ligne de contexte (components/adn/icons) */
@@ -26,6 +27,8 @@ export function DomainSpace({
   title: string;
   lead: React.ReactNode;
   children?: React.ReactNode;
+  /** la suite de la page, juste sous le premier bloc : l'en-tête et `lead` forment alors le cadre de la page (.rl-cadre) */
+  suite?: React.ReactNode;
 }) {
   const [ix, setIx] = useState(0);
   const domain = DOMAINS[ix];
@@ -35,7 +38,8 @@ export function DomainSpace({
 
   return (
     <div className="rl-wide rl-page">
-      <div className="flex flex-col gap-7 md:gap-10">
+      <div className="flex flex-col gap-5">
+      <div className={"flex flex-col gap-7 md:gap-10" + (suite ? " rl-cadre" : "")}>
         <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
           <div className="flex min-w-0 flex-col gap-3">
             <p className="t-small flex items-center gap-2 font-semibold">
@@ -70,6 +74,8 @@ export function DomainSpace({
             </div>
           </section>
         )}
+      </div>
+      {domain.ready && suite}
       </div>
 
       {domain.ready && children}

@@ -38,6 +38,7 @@ export function SyntheseView({ s: d, constance }: { s: SyntheseMoi; /** « Ta co
   return (
     <div className={"rl-wide rl-page " + s.cadre}>
       <div className={s.racine} style={styleDePalette(PAL)}>
+        <div className="rl-cadre">
         <header className={s.entete}>
           <div className={s.enteteTexte}>
             <p className={s.fil}>
@@ -63,6 +64,7 @@ export function SyntheseView({ s: d, constance }: { s: SyntheseMoi; /** « Ta co
         <div className={s.rangee}>
           <Objectif className={s.c8} objectif={d.objectif} note={d.note} jn={d.joueur.jn} />
           <CarteJoueur className={s.c4} j={d.joueur} />
+        </div>
         </div>
 
         {d.matieres && <TesMatieres matieres={d.matieres} globale={d.globale} notions={d.notions} sourceNotions={d.sourceNotions} />}

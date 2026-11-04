@@ -74,6 +74,7 @@ export function LobbyView({ l, differees }: { l: Lobby; differees?: CartesDiffer
       <div className={s.racine} style={styleDePalette(PAL)}>
         {/* le logo vivant de la barre du haut se recale sur la journée lue ici */}
         <AnneauDuJourSync repondues={j.repondues} />
+        <div className="rl-cadre">
         <Entete e={l.entete} />
 
         {/* 2. les 30 du jour (ou, à défaut, les 5) et leur classement | les 5 et les traits ;
@@ -105,6 +106,7 @@ export function LobbyView({ l, differees }: { l: Lobby; differees?: CartesDiffer
             )}
           </div>
         )}
+        </div>
 
         {/* 3. la carte du jour | ton rival | l'affiche (la peinture qui remplace la ligue) ;
             sans l'un des deux, l'affiche reste à côté de l'autre ; sans les deux, rien */}

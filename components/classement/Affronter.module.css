@@ -196,8 +196,8 @@
   display: grid;
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   gap: 4px;
-  /* 482 px sous un en-tête bas : il finit au même niveau que le diptyque de S'entraîner (même marge en bas de l'écran) */
-  min-height: 482px;
+  /* un plancher : sur ordinateur, la hauteur vient du cadre (.rl-cadre) */
+  min-height: 400px;
   border: 1px solid var(--pencil-2);
   border-radius: 20px;
   background: var(--paper);
@@ -307,7 +307,7 @@
   justify-content: flex-end;
   gap: 10px;
   min-width: 0;
-  min-height: 482px;
+  min-height: 400px;
   padding: 0 44px 36px;
   isolation: isolate;
   overflow: hidden;

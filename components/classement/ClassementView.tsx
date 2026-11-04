@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Icone } from "@/components/adn/icons";
-import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { Illustration } from "@/components/ui/Illustration";
 import { PeintureAnimee } from "@/components/ui/PeintureAnimee";
 import { RankBadge } from "@/components/ui/RankBadge";
@@ -98,7 +97,7 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 // Salle » (l'examen classé, la pièce maîtresse, peinte, à gauche) | la carte du
 // duel (en haut ton ELO et ton insigne, une ligne de rang ; en bas la peinture des
 // duels, le titre « Duels » et sa phrase, le bouton « Lancer un duel », ou « Relever le défi » quand un défi
-// attend ; l'arc électrique court autour quand il y a de l'enjeu) ; (« Trouver un
+// attend) ; (« Trouver un
 // adversaire », RechercheJoueurs, est dans l'en-tête, à droite du titre) ; la
 // carte « Les Salles » (components/salles/CarteSalles : créer une salle, rejoindre avec
 // un code, les salles publiques ; sans la migration, une ligne dit qu'elles arrivent) ; la
@@ -117,10 +116,6 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
   const enPlacement = me.gamesPlayed < PLACEMENT_GAMES;
   const rangNom = enPlacement ? "Placement" : `${rank.tier.name}${rank.division ? " " + rank.division : ""}`;
   const defi = openDuels.find((d) => d.incoming && d.status === "pending") ?? null;
-  // de l'enjeu : un défi reçu qui attend, ou le palier suivant à 30 points d'ELO ou moins
-  // (pas en placement, ni quand la maîtrise bloque le palier) : l'arc électrique court sur la carte
-  const palierProche = !enPlacement && !rank.lockedBy && rank.next !== null && rank.pointsToNext !== null && rank.pointsToNext <= 30;
-  const enjeu = defi !== null || palierProche;
 
   const events = history.slice(-SHOWN);
   const total = events.length ? events[events.length - 1].eloAfter - events[0].eloBefore : 0;
@@ -129,7 +124,8 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
 
   return (
     <div className="rl-wide rl-page">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
+        <div className="rl-cadre gap-6">
         {/* un en-tête bas (titre de section, écarts resserrés) : les cartes du dessous prennent la hauteur */}
         <header className={s.entete} style={styleDePalette(PAL)}>
           <div className="flex min-w-0 flex-col gap-2">
@@ -180,9 +176,11 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
                 )}
               </div>
             </article>
-            {enjeu && <ArcElectrique palier={rank.tierIndex} rayon={20} />}
           </section>
+        </div>
+        </div>
 
+        <div className={s.racine} style={styleDePalette(PAL)}>
           {/* ——— « Les Salles » : créer une salle, rejoindre avec un code, les salles publiques ouvertes (fond sombre, DA des Salles) ——— */}
           <CarteSalles salles={data.salles} demo={data.joueursExemple !== undefined} />
 
