@@ -135,6 +135,15 @@
   gap: 4px;
   width: 54px;
 }
+/* un clic sur un visage mène à son profil */
+.joueurLien {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
+}
 .pseudo {
   max-width: 100%;
   overflow: hidden;

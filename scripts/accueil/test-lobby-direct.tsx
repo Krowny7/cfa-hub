@@ -529,12 +529,12 @@ async function main() {
     check("le cadre, le HUD et le point vert viennent du socle", html.includes('class="carte hud carte place"') && html.includes('class="live" aria-hidden="true"'));
     check("l'instant de chaque fait", html.includes("à l&#x27;instant") && html.includes("il y a 2 min"));
     check("le point vert est décoratif", html.includes('class="live" aria-hidden="true"'));
-    check("aucun lien ni bouton : une carte à lire", !html.includes("<a ") && !html.includes("<button"));
+    check("aucun bouton, et les seuls liens mènent aux profils des joueurs en ligne", !html.includes("<button") && compte(html, /<a /g) === compte(html, /<a [^>]*href="/people//g));
     check("aucun liquide, aucune encre", !html.includes("rl-encre") && !html.includes("data-palette"));
 
     // la rangée des joueurs en ligne
     check("la rangée des joueurs en ligne est une liste nommée, dans la même grille que les chiffres et le fil", html.includes('<ul class="joueurs" aria-label="Les joueurs en ligne">') && compte(html, /<li class="joueur( moi)?"/g) === 7);
-    check("toi en premier, en gras (« moi »), nommé « Toi », initiales sur rond plein, à 40 px", html.includes('<li class="joueur moi" title="Toi"><span class="av avN" style="width:40px;height:40px;font-size:14px" aria-hidden="true">T</span><span class="pseudo">Toi</span></li>') && html.indexOf("joueur moi") < html.indexOf('title="Hugo B."'));
+    check("toi en premier, en gras (« moi »), nommé « Toi », initiales sur rond plein, à 40 px", /<li class="joueur moi" title="Toi"><a [^>]*href="/people/[^"]+"[^>]*><span class="av avN" style="width:40px;height:40px;font-size:14px" aria-hidden="true">T</span><span class="pseudo">Toi</span></a></li>/.test(html) && html.indexOf("joueur moi") < html.indexOf('title="Hugo B."'));
     check("tes amis juste après (Hugo puis Sarah), lus « ami » aux lecteurs d'écran", html.indexOf('title="Hugo B."') < html.indexOf('title="Sarah T."') && html.indexOf('title="Sarah T."') < html.indexOf('title="Inès K."') && compte(html, />, ami</g) === 2);
     check("sans photo : les initiales dans le rond du socle (Inès : IK)", html.includes('<span class="av" style="width:40px;height:40px;font-size:14px" aria-hidden="true">IK</span>'));
     check("avec photo : l'image du site (Avatar), décorative, à la taille du rond ; plus d'initiales pour Lucas", compte(html, /<img /g) === 1 && html.includes(`<img src="${PHOTO_LUCAS}"`) && html.includes('alt=""') && html.includes('width="40" height="40"') && html.includes('class="av avPhoto"') && !html.includes('font-size:14px" aria-hidden="true">LM'));

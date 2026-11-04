@@ -2,6 +2,7 @@ import type { Segment } from "@/lib/voice-moi";
 import { DIRECT } from "@/lib/voice-accueil-lobby-direct";
 import { chiffresDe } from "./modele-direct";
 import type { EnDirectLobby } from "./types";
+import Link from "next/link";
 import { Visage } from "./Visage";
 import l from "./Lobby.module.css";
 import s from "./EnDirect.module.css";
@@ -84,11 +85,13 @@ export function EnDirect({ d, className }: { d: EnDirectLobby; className?: strin
           <ul className={s.joueurs} aria-label={DIRECT.joueurs}>
             {d.joueurs.map((j) => (
               <li key={j.id} className={classes(s.joueur, j.moi && s.moi)} title={j.moi ? DIRECT.toi : j.nom}>
-                <Visage nom={j.nom} initiales={j.initiales} avatarUrl={j.avatarUrl} taille={40} sombre={j.moi} />
-                <span className={s.pseudo}>
-                  {j.prenom}
-                  {j.ami && <span className="sr-only">{DIRECT.ami}</span>}
-                </span>
+                <Link href={"/people/" + j.id} className={s.joueurLien}>
+                  <Visage nom={j.nom} initiales={j.initiales} avatarUrl={j.avatarUrl} taille={40} sombre={j.moi} />
+                  <span className={s.pseudo}>
+                    {j.prenom}
+                    {j.ami && <span className="sr-only">{DIRECT.ami}</span>}
+                  </span>
+                </Link>
               </li>
             ))}
             {d.plus > 0 && (
