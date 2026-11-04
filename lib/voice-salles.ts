@@ -357,6 +357,13 @@ export const EXAMEN = {
 
 /** L'écran de jeu du chrono global, calqué sur les 30 du jour (components/salles/RunnerSalle.tsx). */
 export const RUNNER_SALLE = {
+  chatTitre: "Chat",
+  chatVide: "Pas encore de message.",
+  chatChamp: "Écris un message",
+  chatEnvoyer: "Envoyer",
+  chatToi: "Toi",
+  chatAnonyme: "Un joueur",
+  chatHors: "Le chat ne répond pas. La partie continue.",
   precedente: "Question précédente",
   cases: "Toutes les questions",
   code: "Code de la salle",

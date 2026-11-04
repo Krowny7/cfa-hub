@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
+import { ChatSalle } from "@/components/salles/ChatSalle";
 import { Ticks, type TickMark } from "@/components/defi/parts";
 import type { PropsPartieExamen } from "@/components/salles/PartieExamen";
 import { duelTopicLabel } from "@/lib/duels";
@@ -255,11 +256,11 @@ export function RunnerSalle({
         </div>
       )}
 
-      {/* à droite : toutes les cases (aller à n'importe quelle question) et l'avancement des autres */}
-      <aside className="grid gap-4 lg:sticky lg:top-[180px]">
+      {/* à droite : toutes les cases (aller à n'importe quelle question), l'avancement des autres et le chat */}
+      <aside className="grid gap-4 lg:sticky lg:top-[180px] lg:max-h-[calc(100svh-190px)] lg:overflow-y-auto">
         <section className="card-quiet grid gap-3 p-4" aria-label={RUNNER_SALLE.cases}>
           <p className="t-micro m-0">{RUNNER_SALLE.cases}</p>
-          <ol className="m-0 grid max-h-[320px] list-none grid-cols-[repeat(auto-fill,minmax(36px,1fr))] gap-1.5 overflow-y-auto p-0">
+          <ol className="m-0 grid max-h-[200px] list-none grid-cols-[repeat(auto-fill,minmax(36px,1fr))] gap-1.5 overflow-y-auto p-0">
             {Array.from({ length: nb }, (_, i) => {
               const fait = retenues.has(i);
               const ici = i === courante && !rendue;
@@ -305,6 +306,7 @@ export function RunnerSalle({
             </ul>
           </section>
         )}
+        {membres.length > 1 && <ChatSalle canal={session.id} moi={{ userId: moi.userId, nom: membres.find((j) => j.userId === moi.userId)?.username ?? RUNNER_SALLE.chatAnonyme }} />}
       </aside>
       </div>
     </div>
