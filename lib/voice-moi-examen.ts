@@ -82,6 +82,11 @@ export const EXA = {
     legendeRythme: (date: string) => `À ton rythme : 70${NBSP}% vers le ${date}`,
     legendeApres: `À ton rythme : 70${NBSP}% après l'examen`,
     legendeSeuil: `seuil 70${NBSP}%`,
+    constanceTitre: "Ta constance",
+    constanceAria: "L'écart type de tes scores aux 30 du jour, semaine après semaine",
+    constancePhrase: (ecart: string, tendance: string | null): Segment[] => ["Écart type de tes 30 du jour : ", { b: `${ecart}${NBSP}points` }, ".", ...(tendance ? [` ${tendance}`] : [])],
+    constanceTendance: (resserre: boolean, ecart: string) => (resserre ? `Tes scores se resserrent (−${ecart} en 4 semaines).` : `Tes scores s'écartent (+${ecart} en 4 semaines).`),
+    constanceStable: "Tes scores restent aussi réguliers.",
     superposer: "Superposer une matière",
     aucune: "Aucune",
     aria: (depuis: number, vers: number, semaines: number, projection: string | null, superposee: string | null) =>

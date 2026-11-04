@@ -437,6 +437,20 @@ export function legendeSuperposee(court: string, serie: readonly (number | null)
   return EXA.progression.legendeSuperposee(court, Math.round(v[0]), v.length > 1 ? Math.round(v[v.length - 1]) : null);
 }
 
+/** Un écart de moins d'un demi-point sur 4 semaines : stable. */
+const CONSTANCE_ECART_MIN = 0.5;
+
+/** « Écart type de tes 30 du jour : 6,2 points. Tes scores se resserrent (−1,4 en 4 semaines). » ; null sans mesure. */
+export function phraseConstance(c: (number | null)[]): Segment[] | null {
+  const mesures = c.filter((x): x is number => x !== null);
+  if (!mesures.length) return null;
+  const dernier = mesures[mesures.length - 1];
+  const avant = mesures.length > 1 ? mesures[Math.max(0, mesures.length - 5)] : null;
+  const ecart = avant === null ? null : arrondi1(dernier - avant);
+  const tendance = ecart === null ? null : Math.abs(ecart) < CONSTANCE_ECART_MIN ? EXA.progression.constanceStable : EXA.progression.constanceTendance(ecart < 0, virgule(Math.abs(ecart)));
+  return EXA.progression.constancePhrase(virgule(dernier), tendance);
+}
+
 /** Les puces de la superposition : « Aucune » puis les dix matières (dans l'ordre de `progression.matieres`), en noms très courts. */
 export const PUCES_MATIERES: readonly { cle: string; libelle: string; court: string }[] = TOPICS.map((t) => ({ cle: t.key, libelle: MINIS_FR[t.key] ?? t.label, court: COURTS_FR[t.key] ?? t.label }));
 

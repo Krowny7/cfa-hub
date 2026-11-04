@@ -347,6 +347,23 @@ button.boutonPetit {
   display: grid;
   gap: 6px;
 }
+/* Ta constance : l'écart type des 30 du jour, une petite courbe et sa phrase */
+.constance {
+  display: grid;
+  gap: 6px;
+}
+.constanceTrace {
+  display: block;
+  width: 100%;
+  height: 40px;
+  overflow: visible;
+}
+.constancePhrase {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
 .pucesListe {
   display: flex;
   flex-wrap: wrap;
