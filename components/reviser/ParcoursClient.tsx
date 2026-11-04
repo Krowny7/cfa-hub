@@ -1,5 +1,6 @@
 "use client";
 
+import { Illustration } from "@/components/ui/Illustration";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { COURS_PROGRAMME, MINUTES_COURS, ONDE, carteCours, heuresMinutes, mmss } from "@/components/reviser/parcours";
@@ -46,6 +47,8 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
 
   return (
     <li className={"card-ink " + s.carte + " " + s.c1} data-leonard="cours">
+      <Illustration nom="reviser-bibliotheque" position="50% 30%" decorative eager className={s.fond} />
+      <span className={s.c1Voile} aria-hidden />
       <div className={s.haut}>
         <span className={"rl-encre " + s.etape + " " + s.encre + " t-num"} data-palette={PAL.key} aria-hidden>
           <EncreVive tons={PAL.liquide} echelle={48} />

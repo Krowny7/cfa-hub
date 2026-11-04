@@ -100,16 +100,6 @@ function FicheSaison({ e, onFermer }: { e: Entree | null; onFermer: () => void }
   );
 }
 
-/** La saison en cours, au bas de la carte du rang (sur fond sombre). */
-export function SaisonRang({ c }: { c: SaisonCourante }) {
-  return (
-    <>
-      <span className="truncate text-[11px] font-semibold uppercase tracking-[.08em] text-[rgba(255,255,255,.5)]">{SAISONS.saisonCourt(c.numero)}</span>
-      <FinDeSaison fin={c.fin} dernierJour={c.dernierJour} className="whitespace-nowrap font-mono text-[13px] font-semibold leading-[22px] tabular-nums" />
-    </>
-  );
-}
-
 /** La carte « Saisons » du Journal : la saison en cours, puis le palmarès. */
 export function SaisonsJournal({ saisons }: { saisons: Saisons }) {
   const [fiche, setFiche] = useState<Entree | null>(null);

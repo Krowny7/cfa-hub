@@ -112,6 +112,8 @@ export const ROUTES: ReadonlySet<string> = new Set([
   "/moi/profil",
   "/official-exams",
   "/onboarding",
+  "/page-blanche",
+  "/page-blanche/[matiere]",
   "/people",
   "/people/[id]",
   "/practice",

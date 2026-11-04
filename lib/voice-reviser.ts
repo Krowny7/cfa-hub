@@ -46,6 +46,15 @@ export const RV = {
   fcTitre: "Flashcards",
   fcSous: (parMatiere: number | null) => (parMatiere ? `${nombre(parMatiere)} cartes par matière` : "Termes, formules, pièges"),
   fcCarteTete: "À RETENIR",
+  pbTitre: "La page blanche",
+  pbSous: "Récite tes formules sur papier",
+  videosTitre: "Vidéos résumé",
+  videosSous: "Une matière en quelques minutes",
+  videosBientot: "Bientôt",
+  codexTitre: "Le Codex",
+  codexSous: "Tes quêtes, tes sceaux et tout ce qui reste à conquérir.",
+  codexAction: "Ouvrir le Codex",
+  registre: "Ton suivi",
 
   // l'Atelier : revoir mes erreurs
   atelier: "L'Atelier",

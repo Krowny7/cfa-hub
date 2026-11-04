@@ -23,10 +23,9 @@ import { Collection } from "@/components/profil/Collection";
 import { BatonsDuels, FaceAFace } from "@/components/profil/FaceAFace";
 import { Revanche } from "@/components/profil/Revanche";
 import { Journal } from "@/components/profil/Journal";
-import { TamponsCible } from "@/components/profil/Tampons";
 import { Visite } from "@/components/profil/Visite";
 import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
-import { FamilleSaisons, SaisonRang, SaisonsJournal } from "@/components/profil/Saisons";
+import { FamilleSaisons, SaisonsJournal } from "@/components/profil/Saisons";
 import { ChoixSceaux } from "@/components/profil/ChoixSceaux";
 import { ModePersonnaliser } from "@/components/profil/ModePersonnaliser";
 import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, relationAvec, statsProfil, styleLuDe, type Relation } from "@/lib/profil/donnees";
@@ -36,9 +35,7 @@ import { extraitJournal, resumeReponses, resumeTrophees } from "@/lib/profil/blo
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { epreuvesCommunes } from "@/lib/profil/epreuves-communes";
 import { journalDe, type EvenementJournal } from "@/lib/profil/journal";
-import { lireTampons } from "@/lib/profil/social";
 import { lireSaisons } from "@/lib/profil/saisons";
-import { CIBLE_PROFIL, cibleEntree } from "@/lib/profil/tampons";
 import { hrefOnglet, hrefPersonnaliser, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
 import { aPortee, posesDe, sceauxGagnes, vusParUnAutre } from "@/lib/profil/sceaux";
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
@@ -201,12 +198,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     const [lu, rel] = await Promise.all([styleLu, relationLue]);
     return lireTuilesNeuves({ id, sb: supabase, admin, moi: isMe, besoins, ouvert: journalOuvert(lu.journal, rel), elo: ratingData?.elo ?? DEFAULT_ELO });
   })();
-  // les tampons du profil et, sur le Journal, ceux de ses entrées (null sans la migration)
-  const tamponsLus = (async () => {
-    const j = await journalLu;
-    const entrees = j && onglet === "journal" ? j.evenements.map(cibleEntree).filter((c): c is string => !!c) : [];
-    return lireTampons(supabase, id, [CIBLE_PROFIL, ...entrees]);
-  })();
 
   // les épreuves faites par nous deux, sur l'onglet Face-à-face seulement : client admin, les scores et rien
   // d'autre ; nos duels viennent de la même lecture que l'en-tête (faceAFace est mis en cache par requête)
@@ -218,7 +209,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       : Promise.resolve(null);
 
   // l'en-tête, commun aux onglets
-  const [leaderboardRank, masteries, { style, pins, journal: visibiliteJournal }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, sceaux, parCible, saisons] = await Promise.all([
+  const [leaderboardRank, masteries, { style, pins, journal: visibiliteJournal }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, sceaux, saisons] = await Promise.all([
     getLeaderboardRank(supabase, id),
     maitrisesLues,
     styleLu,
@@ -234,7 +225,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     lecturesOnglet,
     journalLu,
     sceauxLus,
-    tamponsLus,
     // la saison en cours et son palmarès (null sans la migration) ; la lecture clôt les saisons échues
     lireSaisons(supabase, id),
   ]);
@@ -375,8 +365,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   }));
 
   // tamponner : sur le profil d'un autre ; sur le mien (et dans l'aperçu), les comptes seulement
-  const peutTamponner = autreJoueur;
-  const tamponsProfil = parCible ? <TamponsCible pour={id} cible={CIBLE_PROFIL} comptes={parCible[CIBLE_PROFIL]} peut={peutTamponner} /> : null;
 
 
   let panneau: React.ReactNode;
@@ -386,19 +374,12 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     const famille = saisons && (saisons.palmares.length || courante) ? [{ cle: "saisons", nom: SAISONS.titre, contenu: <FamilleSaisons palmares={saisons.palmares} courante={courante} /> }] : [];
     panneau = <Collection etats={etats} portee={commeMoi ? aPortee(etats) : []} proprietaire={commeMoi} enPlus={famille} />;
   } else if (onglet === "journal") {
-    const piedEntree = parCible
-      ? (e: EvenementJournal) => {
-          const cible = cibleEntree(e);
-          return cible ? <TamponsCible key={cible} pour={id} cible={cible} comptes={parCible[cible]} peut={peutTamponner} variante="entree" /> : null;
-        }
-      : undefined;
     panneau = journal ? (
       <Journal
         journal={journal}
         mastery={mastery}
         moi={commeMoi}
         moiId={user.id}
-        piedEntree={piedEntree}
         saisons={saisons && (saisons.courante || saisons.palmares.length) ? <SaisonsJournal saisons={saisons} /> : null}
       />
     ) : (
@@ -500,8 +481,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
             presence={!commeMoi}
             poses={<SceauxPoses poses={poses} label={choisis ? (commeMoi ? ENTETE.posesChoisisMoi : ENTETE.posesChoisis) : commeMoi ? ENTETE.posesAideMoi : ENTETE.posesAide} />}
             piedRang={piedRang}
-            saison={saisons?.courante ? <SaisonRang c={saisons.courante} /> : null}
-            tampons={autreJoueur ? tamponsProfil : null}
           />
           {/* les onglets restent collés sous la barre du haut tant que leur panneau défile */}
           <div className="flex flex-col gap-6 md:gap-10">

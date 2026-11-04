@@ -23,7 +23,7 @@ const VISIBLES = 6;
 
 const ICONE: Record<Exclude<EvenementJournal["type"], "sceau">, IconeNom> = { victoire: "duel", palier: "classement", serie: "serie" };
 
-function Entree({ e, moiId, pied }: { e: EvenementJournal; moiId: string | null; pied: React.ReactNode }) {
+function Entree({ e, moiId }: { e: EvenementJournal; moiId: string | null }) {
   let titre: React.ReactNode;
   let detail: React.ReactNode = null;
   let chiffre: React.ReactNode = null;
@@ -81,7 +81,6 @@ function Entree({ e, moiId, pied }: { e: EvenementJournal; moiId: string | null;
           </span>
           {detail ? <> {detail}</> : null}
         </p>
-        {pied}
       </div>
     </li>
   );
@@ -92,7 +91,6 @@ export function Journal({
   mastery,
   moi,
   moiId,
-  piedEntree,
   saisons,
 }: {
   journal: DonneesJournal;
@@ -100,8 +98,6 @@ export function Journal({
   moi: boolean;
   /** celui qui regarde : son nom dans le fil devient « toi » */
   moiId: string | null;
-  /** sous une entrée du fil : ses tampons */
-  piedEntree?: (e: EvenementJournal) => React.ReactNode;
   /** la carte des saisons (SaisonsJournal) : après le fil (téléphone), sous le carnet (ordinateur) */
   saisons?: React.ReactNode;
 }) {
@@ -151,7 +147,7 @@ export function Journal({
           <>
             <ul className="m-0 list-none p-0">
               {premiers.map((e) => (
-                <Entree key={e.cle} e={e} moiId={moiId} pied={piedEntree?.(e)} />
+                <Entree key={e.cle} e={e} moiId={moiId} />
               ))}
             </ul>
             {suite.length > 0 && (
@@ -159,7 +155,7 @@ export function Journal({
                 <summary className="t-small cursor-pointer list-none py-2 font-semibold text-white group-open:hidden">{JOURNAL.autres(suite.length)}</summary>
                 <ul className="m-0 list-none border-t border-line p-0">
                   {suite.map((e) => (
-                    <Entree key={e.cle} e={e} moiId={moiId} pied={piedEntree?.(e)} />
+                    <Entree key={e.cle} e={e} moiId={moiId} />
                   ))}
                 </ul>
               </details>

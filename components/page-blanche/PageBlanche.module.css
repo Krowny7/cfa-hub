@@ -1,0 +1,223 @@
+/* La page blanche : le choix de la matière, puis la feuille, sur le papier du site. */
+.bandeau {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow: var(--shadow-1);
+}
+.matieres {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.matiere {
+  display: grid;
+  gap: 8px;
+  height: 100%;
+  padding: 18px;
+  border: 1px solid var(--pencil-2);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  color: inherit;
+  text-decoration: none;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+@media (hover: hover) {
+  .matiere:hover {
+    transform: translateY(-3px);
+  }
+}
+.matiere b {
+  font-size: 16px;
+  line-height: 1.2;
+}
+.reste {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.jauge {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--paper-2);
+}
+.jauge i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--ink);
+}
+.compte {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+
+.colonne {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 820px;
+  margin-inline: auto;
+}
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.tete {
+  display: grid;
+  gap: 6px;
+}
+.bilan {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.feuille {
+  padding: 26px 30px 30px;
+  border: 1px solid var(--pencil-2);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.numero {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.titreCopie {
+  margin: 0 0 16px;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+.lignes {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* une ligne de copie : le nom, et le filet où il n'y a rien à lire */
+.ligneVide {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-height: 46px;
+  padding-bottom: 6px;
+  font-size: 15.5px;
+  font-weight: 600;
+}
+.ligneVide::after {
+  content: "";
+  flex: 1;
+  min-width: 40px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid var(--pencil-2);
+}
+
+.ligneCorrige {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ligneCorrige:last-child {
+  border-bottom: 0;
+}
+.contenu {
+  min-width: 0;
+  overflow-x: auto;
+}
+.nom {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.formule {
+  font-size: 16px;
+}
+.texteReponse {
+  font-size: 14.5px;
+}
+.note {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.choix {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+.rouge,
+.vert {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.rouge {
+  color: #b4371f;
+}
+.vert {
+  color: #2f7d4f;
+}
+.rouge[aria-pressed="true"] {
+  border-color: #b4371f;
+  background: #b4371f;
+  color: #fff;
+}
+.vert[aria-pressed="true"] {
+  border-color: #2f7d4f;
+  background: #2f7d4f;
+  color: #fff;
+}
+
+.barre {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--pencil-2);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+@media (max-width: 767px) {
+  .feuille {
+    padding: 18px 16px 20px;
+  }
+  /* au-dessus de la barre d'onglets du téléphone */
+  .barre {
+    bottom: 92px;
+  }
+}

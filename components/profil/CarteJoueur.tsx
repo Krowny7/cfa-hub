@@ -79,7 +79,8 @@ function Contenu({ c }: { c: CarteData }) {
           <span className="relative z-[1] shrink-0">
             <CadreSceau frame={c.style.frame} name={c.nom} avatarUrl={c.avatarUrl} size={72} />
           </span>
-          <div className="min-w-0 flex-1 pb-0.5">
+          {/* le texte reste sous le bandeau, même avec un titre porté et la présence */}
+          <div className="min-w-0 flex-1 pb-0.5 pt-[32px]">
             <p className="m-0 truncate text-[21px] font-extrabold leading-tight tracking-[-0.02em]">{c.nom}</p>
             <TitrePorte titre={c.titre} />
             {!c.moi && (

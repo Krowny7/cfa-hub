@@ -22,7 +22,6 @@ export const SAISONS = {
   titre: "Saisons",
   /** « Saison 1 · Novembre 2026 » */
   saison: (numero: number, nom: string) => `Saison ${nombre(numero)} · ${nom}`,
-  saisonCourt: (numero: number) => `Saison ${nombre(numero)}`,
   /** « S1 » */
   court: (numero: number) => `S${nombre(numero)}`,
   periode,

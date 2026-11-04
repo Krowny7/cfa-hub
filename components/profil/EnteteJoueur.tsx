@@ -89,8 +89,6 @@ export function EnteteJoueur({
   presence = false,
   poses = null,
   piedRang = null,
-  saison = null,
-  tampons = null,
   crayons = null,
 }: {
   d: EnteteData;
@@ -106,10 +104,6 @@ export function EnteteJoueur({
   poses?: React.ReactNode;
   /** le pied de la carte du rang, sur ordinateur (bilan du face-à-face) */
   piedRang?: React.ReactNode;
-  /** la saison en cours, dans la carte du rang (ordinateur) */
-  saison?: React.ReactNode;
-  /** les tampons du profil (TamponsCible), sous les actions */
-  tampons?: React.ReactNode;
   /** Personnaliser : les crayons posés sur la bannière et sur le sceau */
   crayons?: { banniere: React.ReactNode; sceau: React.ReactNode } | null;
 }) {
@@ -239,13 +233,12 @@ export function EnteteJoueur({
               )}
             </div>
           )}
-          {tampons && !apercu && <div className="pt-1">{tampons}</div>}
           {poses && !apercu && <div className={"pt-1 lg:pt-2" + (cadreAnime || banniereAnimee ? " rl-calme-tel" : "")}>{poses}</div>}
         </div>
 
         {!apercu && (
           <div className="z-[2] hidden lg:col-span-5 lg:-mt-[84px] lg:flex lg:flex-col lg:gap-4 lg:self-start">
-            <RangProfil elo={d.elo} mastery={d.mastery} temps={d.temps} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} saison={saison} pied={piedRang} />
+            <RangProfil elo={d.elo} mastery={d.mastery} temps={d.temps} place={d.place} gamesPlayed={d.gamesPlayed} pied={piedRang} />
           </div>
         )}
       </div>
