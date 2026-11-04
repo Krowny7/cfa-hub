@@ -324,3 +324,10 @@ export function romain(n: number): string {
   for (const [v, s] of t) while (n >= v) { r += s; n -= v; }
   return r || String(n);
 }
+
+// Le bouton du joueur, dans la barre du haut (components/nav/UserMenu.tsx)
+export const BOUTON_JOUEUR = {
+  quetes: "Tes quêtes",
+  aria: "Mon profil, quêtes et réglages",
+  ariaRecompenses: (n: number) => `Mon profil, ${n} récompense${n > 1 ? "s" : ""} à récupérer`,
+};

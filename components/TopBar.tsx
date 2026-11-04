@@ -9,24 +9,23 @@ import { objectifDuJour } from "@/lib/objectif";
 import { SpaceNav } from "@/components/nav/SpaceNav";
 import { DomainSwitcher } from "@/components/nav/DomainSwitcher";
 import { CommandPalette } from "@/components/nav/CommandPalette";
+import { RechercheJoueur } from "@/components/nav/RechercheJoueur";
 import { UserMenu } from "@/components/nav/UserMenu";
 import { LoginLink } from "@/components/nav/LoginLink";
 import { NavProgress } from "@/components/ui/motion/NavProgress";
-import { rankFor, DEFAULT_ELO } from "@/lib/ranks";
-import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
-import { createClient } from "@/lib/supabase/server";
 import { PresenceHeartbeat } from "@/components/presence/PresenceHeartbeat";
 import { CompteurTemps } from "@/components/temps/CompteurTemps";
 import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 
 // Barre du haut : logo vivant (→ accueil), domaine · programme, les quatre
 // espaces en contrôle segmenté (le Codex n'en est plus un : il s'ouvre depuis
-// Moi), puis la recherche, le sceau des quêtes (sa pastille « à récupérer » et
-// son panneau « Aujourd'hui ») et la pastille de la séance du jour lancée
-// (« Séance 2/3 · Continuer → » ; sur téléphone, une bande au-dessus de la
-// barre d'onglets), diffusés en flux, et le badge de rang du joueur, qui ouvre
-// son menu (Moi, thème nuit, mode discret, réglages, déconnexion).
+// Moi), puis la recherche de joueur et un seul bouton, la photo du joueur : son menu
+// (Moi, ses quêtes, thème nuit, mode discret, réglages, déconnexion), avec un « ! »
+// quand une récompense de quête est à récupérer. Le panneau des quêtes et la pastille
+// de la séance du jour lancée (« Séance 2/3 · Continuer → » ; sur téléphone, une bande
+// au-dessus de la barre d'onglets) sont diffusés en flux. Ctrl K ouvre toujours la
+// palette, sans bouton dans la barre.
 // Translucide et collante, avec un léger flou. Un trait d'encre court sous la
 // barre pendant qu'une page se fait attendre (NavProgress).
 // Le logo mène à l'accueil (la barre du bas a aussi son onglet « Accueil »).
@@ -39,27 +38,13 @@ import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 // (une lecture légère, en parallèle du rang, avec repli sur le logo plein).
 export async function TopBar() {
   const locale = DEFAULT_LOCALE;
-  const { user } = await getSessionUserWithProfile();
-  let tier = rankFor(DEFAULT_ELO).tierIndex;
+  const { user, profile } = await getSessionUserWithProfile();
   let traits: number | null = null;
   let objectif = OBJECTIF_DU_JOUR;
   if (user) {
-    const rank = (async () => {
-      try {
-        const supabase = await createClient();
-        // Même calcul que /classement : la maîtrise peut verrouiller les paliers hauts.
-        const [{ data }, topics] = await Promise.all([
-          supabase.from("ratings").select("elo").eq("user_id", user.id).maybeSingle(),
-          getTopicMastery(supabase, user.id),
-        ]);
-        tier = rankFor((data as { elo?: number } | null)?.elo ?? DEFAULT_ELO, programMastery(topics)).tierIndex;
-      } catch {
-        // badge par défaut
-      }
-    })();
     // l'objectif du jour : celui du plan du joueur (lib/objectif.ts), sinon 40
-    let plan: Awaited<ReturnType<typeof objectifDuJour>>;
-    [traits, plan] = await Promise.all([traitsDuJour(user.id), objectifDuJour(user), rank]);
+    const [lus, plan] = await Promise.all([traitsDuJour(user.id), objectifDuJour(user)]);
+    traits = lus;
     objectif = plan.objectif;
   }
 
@@ -91,11 +76,12 @@ export async function TopBar() {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <CommandPalette />
+              <RechercheJoueur />
+              <CommandPalette sansBouton />
               <Suspense fallback={null}>
                 <SceauQuetesServeur />
               </Suspense>
-              <UserMenu tier={tier} />
+              <UserMenu nom={profile?.username?.trim() || "Moi"} avatarUrl={profile?.avatar_url ?? null} />
               <PresenceHeartbeat />
               {/* le temps actif sur le site (migration_temps_site.sql), à côté du signal de présence */}
               <CompteurTemps />

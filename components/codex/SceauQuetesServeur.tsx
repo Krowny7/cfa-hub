@@ -21,7 +21,7 @@ export async function SceauQuetesServeur() {
     if (!panneau.disponible) return null;
     return (
       <>
-        <SceauQuetes initial={panneau} xp={xp} />
+        <SceauQuetes initial={panneau} xp={xp} integre />
         <PastilleSeance initial={panneau.seance} jour={panneau.jour} />
       </>
     );

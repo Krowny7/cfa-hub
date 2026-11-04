@@ -101,7 +101,8 @@ function matches(e: Entry, q: string) {
     .every((w) => hay.includes(w));
 }
 
-export function CommandPalette() {
+/** @param sansBouton pas de bouton dans la barre : Ctrl K seul ouvre la palette */
+export function CommandPalette({ sansBouton = false }: { sansBouton?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -182,16 +183,18 @@ export function CommandPalette() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Rechercher (raccourci Ctrl+K)"
-        className="icon-btn flex w-auto items-center gap-2 px-[10px] text-muted lg:pr-1.5"
-      >
-        <Search size={16} strokeWidth={1.9} />
-        <span className="hidden text-[13px] font-medium xl:inline">Rechercher</span>
-        <kbd className="kbd hidden lg:inline-flex">{mac ? "⌘K" : "Ctrl K"}</kbd>
-      </button>
+      {!sansBouton && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Rechercher (raccourci Ctrl+K)"
+          className="icon-btn flex w-auto items-center gap-2 px-[10px] text-muted lg:pr-1.5"
+        >
+          <Search size={16} strokeWidth={1.9} />
+          <span className="hidden text-[13px] font-medium xl:inline">Rechercher</span>
+          <kbd className="kbd hidden lg:inline-flex">{mac ? "⌘K" : "Ctrl K"}</kbd>
+        </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-[80] grid items-start justify-items-center px-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label="Recherche">

@@ -7,6 +7,7 @@ import { Feuille } from "@/components/ui/Feuille";
 import { useEtatNav } from "@/components/nav/DevoileContext";
 import { codexPanneau, codexSeanceLancer, codexVus, codexXp } from "@/lib/codex/actions";
 import { EVENEMENT_CODEX_POINT, panneauAcquitte, type Panneau, type SuitePanneau } from "@/lib/codex/panneau";
+import { OUVRIR_QUETES, QUETES_A_RECUPERER } from "@/components/codex/quetes-evenements";
 import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
 import { CODEX } from "@/lib/voice-codex";
 import { AvecMots } from "@/components/ui/Mot";
@@ -37,12 +38,14 @@ import s from "./Encre.module.css";
 // d'une page à l'autre) et quand le Codex bouge (fin d'un outil, Récupérer :
 // EVENEMENT_CODEX_POINT). Les récompenses versées d'office sont acquittées
 // sans bruit à l'ouverture (codexVus). Le jour J : « Bonne chance », rien d'autre.
-// `demo` : aperçus (aucune action serveur) ; `ouvert` : ouvert d'emblée.
+// `demo` : aperçus (aucune action serveur) ; `ouvert` : ouvert d'emblée ; `integre` : dans
+// la barre du haut, sans sceau visible : le bouton du joueur (UserMenu) ouvre le panneau et
+// porte le « ! » (quetes-evenements.ts).
 
 // identifiants fixes (un seul sceau par barre) : pas de useId, rien à désaccorder à l'hydratation
 const uid = "rl-sceau-quetes-";
 
-export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouvert: ouvertDepart = false }: { initial: Panneau; xp?: number | null; demo?: boolean; ouvert?: boolean }) {
+export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouvert: ouvertDepart = false, integre = false }: { initial: Panneau; xp?: number | null; demo?: boolean; ouvert?: boolean; integre?: boolean }) {
   const { codex, poserRevoir } = useEtatNav();
   const router = useRouter();
   const [panneau, setPanneau] = useState(initial);
@@ -110,6 +113,20 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
       },
     );
   };
+
+  // dans la barre : le bouton du joueur ouvre le panneau et dit s'il y a une récompense
+  const ouvrirIci = useRef(ouvrir);
+  ouvrirIci.current = ouvrir;
+  useEffect(() => {
+    if (!integre) return;
+    const demande = () => ouvrirIci.current();
+    window.addEventListener(OUVRIR_QUETES, demande);
+    return () => window.removeEventListener(OUVRIR_QUETES, demande);
+  }, [integre]);
+  const aDire = panneau.disponible && !panneau.jourJ ? panneau.recuperer.n : 0;
+  useEffect(() => {
+    if (integre) window.dispatchEvent(new CustomEvent(QUETES_A_RECUPERER, { detail: aDire }));
+  }, [integre, aDire]);
 
   // popover : Échap, clic à côté, focus dans le panneau
   useEffect(() => {
@@ -247,8 +264,8 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
 
   return (
     // data-jour-j : Léonard ne surgit pas le jour de l'examen (il lit cet attribut, V3 §7.4)
-    <div className={s.ancre} data-jour-j={panneau.jourJ || undefined}>
-      <button
+    <div className={s.ancre} style={integre ? { width: 0, height: 40 } : undefined} data-jour-j={panneau.jourJ || undefined}>
+      {!integre && <button
         ref={bouton}
         type="button"
         className={s.bouton}
@@ -265,7 +282,7 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
             {pastille}
           </span>
         )}
-      </button>
+      </button>}
       {ouvert && !etroit && (
         <div ref={boite} id={`${uid}panneau`} role="dialog" aria-labelledby={`${uid}titre`} className={s.panneau}>
           {contenu}
