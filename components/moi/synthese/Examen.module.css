@@ -347,7 +347,7 @@ button.boutonPetit {
   display: grid;
   gap: 6px;
 }
-/* Ta constance : une phrase, puis un tableau qui se lit de gauche à droite */
+/* Ta volatilité : une phrase, puis un tableau qui se lit de gauche à droite */
 .constance {
   display: grid;
   gap: 8px;
@@ -393,7 +393,7 @@ button.boutonPetit {
 }
 .constanceTable tbody td {
   height: 26px;
-  min-width: 44px;
+  min-width: 38px;
   border-radius: 5px;
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 12.5px;

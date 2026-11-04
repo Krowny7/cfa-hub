@@ -82,19 +82,18 @@ export const EXA = {
     legendeRythme: (date: string) => `À ton rythme : 70${NBSP}% vers le ${date}`,
     legendeApres: `À ton rythme : 70${NBSP}% après l'examen`,
     legendeSeuil: `seuil 70${NBSP}%`,
-    constanceTitre: "Ta constance",
-    /** la phrase du haut : l'écart moyen de la première et de la dernière période mesurées */
+    constanceTitre: "Ta volatilité",
+    /** la phrase du haut : la volatilité de la première et de la dernière semaine mesurées */
     constancePhrase: {
-      mieux: (avant: string, maintenant: string) => `Tes résultats sont de plus en plus constants : ils variaient de ${avant}${NBSP}points d'une semaine à l'autre, c'est ${maintenant}${NBSP}points maintenant.`,
-      moins: (avant: string, maintenant: string) => `Tes résultats sont moins constants qu'avant : ils variaient de ${avant}${NBSP}points d'une semaine à l'autre, c'est ${maintenant}${NBSP}points maintenant.`,
-      stable: (_avant: string, maintenant: string) => `Ta constance ne change pas : tes résultats varient d'environ ${maintenant}${NBSP}points d'une semaine à l'autre.`,
+      mieux: (avant: string, maintenant: string) => `Ta volatilité baisse : de ${avant} à ${maintenant}${NBSP}points, tes résultats sont de plus en plus constants.`,
+      moins: (avant: string, maintenant: string) => `Ta volatilité monte : de ${avant} à ${maintenant}${NBSP}points, tes résultats sont moins constants.`,
+      stable: (_avant: string, maintenant: string) => `Ta volatilité ne bouge pas : environ ${maintenant}${NBSP}points d'une semaine à l'autre.`,
     },
-    constanceAttente: "Encore quelques semaines de réponses, et tu pourras comparer ta constance d'un mois à l'autre.",
+    constanceAttente: "Encore quelques semaines de réponses, et tu pourras suivre ta volatilité.",
     constanceVide: "Elle se mesure à partir de 3 semaines avec au moins 5 réponses dans une matière.",
-    constancePeriodes: ["Il y a 3 mois", "Il y a 2 mois", "Le mois dernier", "Ce mois-ci"],
-    constanceMoyenne: "Moyenne",
-    constanceVerdict: { mieux: "↘ plus stable", moins: "↗ moins stable", stable: "= stable" },
-    constanceSous: "En points de réussite, l'écart type d'une semaine à l'autre : plus le chiffre baisse, plus tes résultats sont constants.",
+    constanceMoyenne: "Volatilité",
+    constanceVerdict: { mieux: "↘ en baisse", moins: "↗ en hausse", stable: "= stable" },
+    constanceSous: "Chaque case : l'écart type de ta réussite hebdomadaire sur les 4 semaines avant cette date, en points. Plus il baisse, plus tes résultats sont constants.",
     superposer: "Superposer une matière",
     aucune: "Aucune",
     aria: (depuis: number, vers: number, semaines: number, projection: string | null, superposee: string | null) =>

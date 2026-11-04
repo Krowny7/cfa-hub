@@ -5,10 +5,9 @@ import { EXA } from "@/lib/voice-moi-examen";
 import s from "@/components/moi/synthese/Synthese.module.css";
 import m from "@/components/moi/synthese/Examen.module.css";
 
-// « Ta constance », dans la carte Ta progression : une phrase qui dit si tes résultats
-// deviennent plus constants, puis un tableau qui se lit de gauche à droite (une ligne
-// par matière, une colonne par période de 4 semaines, le verdict au bout). Plus la case
-// est foncée, plus tes résultats ont varié. Lu après la page (Suspense dans
+// « Ta volatilité », dans la carte Ta progression : une phrase qui dit si elle baisse,
+// puis un tableau qui se lit de gauche à droite (une ligne par matière, une colonne par
+// semaine, le verdict au bout). Plus la case est foncée, plus tes résultats ont varié. Lu après la page (Suspense dans
 // app/moi/page.tsx) : la lecture des réponses, longue, ne retarde pas le reste de Moi.
 // Composant serveur, sans état.
 
@@ -47,9 +46,9 @@ export function ConstanceTableau({ v }: { v: ConstanceVue }) {
               <thead>
                 <tr>
                   <td />
-                  {EXA.progression.constancePeriodes.map((p) => (
-                    <th key={p} scope="col">
-                      {p}
+                  {v.dates.map((d) => (
+                    <th key={d} scope="col">
+                      {d}
                     </th>
                   ))}
                   <td />
