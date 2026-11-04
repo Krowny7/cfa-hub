@@ -356,7 +356,7 @@ export function carnetDe(e: { jours: [string, number][]; aujourdhui: string; sta
   return { jours: e.jours, aujourdhui: e.aujourdhui, serie: e.stats.serie, record: e.stats.meilleureSerie, seuil: e.stats.serieEncre ? seuilJour : null };
 }
 
-export type CaseVue = { jour: string; niveau: 0 | 1 | 2 | 3 | 4; avenir: boolean; auj: boolean; ancien: boolean; titre: string | null };
+export type CaseVue = { jour: string; niveau: 0 | 1 | 2 | 3 | 4; avenir: boolean; auj: boolean; ancien: boolean; titre: string | null; eclair: boolean; examen: boolean };
 export type MoisVue = { texte: string | null; ancien: boolean };
 export type CarnetVue = { cases: CaseVue[]; mois: MoisVue[]; joursEncre: number; serie: number; record: number };
 
@@ -382,22 +382,37 @@ export function moisCarnet(aujourdhui: string): MoisVue[] {
   return noms.map((texte, w) => ({ texte, ancien: w < SEMAINES_ANCIENNES }));
 }
 
-/** La grille des 52 semaines (364 cases, lundi en haut), les mois et les chiffres du haut. */
+/** Les jours en éclairs : les plus productifs de la grille. */
+const NB_ECLAIRS = 5;
+/** Au-delà de cet écart, l'examen reste hors de la grille : elle ne sacrifie pas tout le passé. */
+const SEMAINES_AVENIR = 26;
+
+/**
+ * La grille des 52 semaines (364 cases, lundi en haut), les mois et les chiffres du haut. Un examen à venir fait
+ * glisser la grille pour qu'elle finisse sur sa semaine : toujours 52 colonnes, les jours d'ici là sont vides.
+ */
 export function carnetVue(c: CarnetLobby, auj: AujourdhuiCarnet | null): CarnetVue {
-  const cases = casesCarnet(c.jours, c.aujourdhui);
+  const avance = c.examen && c.examen > c.aujourdhui && c.examen <= decaleJour(c.aujourdhui, SEMAINES_AVENIR * 7);
+  const fin = avance ? (c.examen as string) : c.aujourdhui;
+  // le jour en cours : les traits répondus à l'instant priment sur ce que la grille a lu
+  const cases = casesCarnet(c.jours, fin).map((x) => ({ ...x, avenir: x.jour > c.aujourdhui, n: x.jour === c.aujourdhui && auj ? Math.max(x.n, auj.traits) : x.n }));
+  const meilleurs = new Set(
+    cases
+      .filter((x) => x.n > 0)
+      .sort((a, b) => b.n - a.n || b.jour.localeCompare(a.jour))
+      .slice(0, NB_ECLAIRS)
+      .map((x) => x.jour),
+  );
   const jours = cases.map((x, i): CaseVue => {
     const estAuj = x.jour === c.aujourdhui;
-    // le jour en cours : les traits répondus à l'instant priment sur ce que la grille a lu
-    const n = estAuj && auj ? Math.max(x.n, auj.traits) : x.n;
+    const examen = x.jour === c.examen;
+    const quand = `${PARC.carnet.semaine[new Date(x.jour + "T12:00:00Z").getUTCDay()]} ${dateCourte(x.jour)}`;
     // l'infobulle (au survol) : chaque jour passé, même vide, avec le jour de la semaine et s'il est un jour d'encre
-    const titre = x.avenir
-      ? null
-      : estAuj && auj
-        ? PARC.carnet.aujourdhuiCase(auj.traits, auj.objectif, auj.traits >= auj.objectif)
-        : PARC.carnet.case(`${PARC.carnet.semaine[new Date(x.jour + "T12:00:00Z").getUTCDay()]} ${dateCourte(x.jour)}`, n, c.seuil);
-    return { jour: x.jour, niveau: niveau(n), avenir: x.avenir, auj: estAuj, ancien: Math.floor(i / 7) < SEMAINES_ANCIENNES, titre };
+    const titre = examen ? PARC.carnet.examenCase(quand) : x.avenir ? null : estAuj && auj ? PARC.carnet.aujourdhuiCase(auj.traits, auj.objectif, auj.traits >= auj.objectif) : PARC.carnet.case(quand, x.n, c.seuil);
+    return { jour: x.jour, niveau: niveau(x.n), avenir: x.avenir, auj: estAuj, ancien: Math.floor(i / 7) < SEMAINES_ANCIENNES, titre, eclair: meilleurs.has(x.jour), examen };
   });
-  return { cases: jours, mois: moisCarnet(c.aujourdhui), joursEncre: joursDEncre(cases, c.seuil ?? 1), serie: c.serie, record: c.record };
+  // les jours d'encre se comptent sur les 52 dernières semaines, même quand la grille a glissé
+  return { cases: jours, mois: moisCarnet(fin), joursEncre: joursDEncre(casesCarnet(c.jours, c.aujourdhui), c.seuil ?? 1), serie: c.serie, record: c.record };
 }
 
 /** La phrase sous la grille, sur la case cerclée. */

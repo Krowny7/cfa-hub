@@ -1,7 +1,9 @@
 import { LayoutGrid } from "lucide-react";
 import { nombre } from "@/lib/voice";
 import { PARC } from "@/lib/voice-accueil-lobby-parcours";
+import { PALIER_ECLAIR } from "./CarteCinq";
 import k from "./CarnetJours.module.css";
+import { EclairsCarnet } from "./EclairsCarnet";
 import { carnetVue, legendeCarnet, type AujourdhuiCarnet } from "./modele-parcours";
 import type { CarnetLobby } from "./types";
 
@@ -10,7 +12,8 @@ import type { CarnetLobby } from "./types";
 // niveaux, même seuil d'un jour d'encre), en cinq gris du plus sombre au plus clair,
 // avec « 34 jours d'encre sur 52 semaines », la série et le record. La case cerclée,
 // c'est aujourd'hui, et son infobulle dit où en est la journée. La grille est fluide ;
-// au téléphone, les 18 dernières semaines seulement. Aucune encre. Le carnet est
+// au téléphone, les 18 dernières semaines seulement. Les cinq meilleurs jours ont un
+// éclair tout autour (EclairsCarnet), le jour de l'examen est rouge. Aucune encre. Le carnet est
 // toujours posé : ses données sont celles du joueur, même vide. Composant serveur,
 // sans état ; les 364 cases sont de simples <i>.
 //   - carnet : les jours, la série, le record, le seuil (CarnetLobby) ;
@@ -80,9 +83,10 @@ export function CarnetJours({ carnet, aujourdhui, className }: { carnet: CarnetL
         </div>
         <div className={k.cases} role="img" aria-label={PARC.carnet.aria(v.joursEncre, v.serie, v.record)}>
           {v.cases.map((c) => (
-            <i key={c.jour} data-n={c.niveau} data-f={c.avenir ? "" : undefined} data-auj={c.auj ? "" : undefined} data-ancien={c.ancien ? "" : undefined} data-t={c.titre ?? undefined} />
+            <i key={c.jour} data-n={c.niveau} data-f={c.avenir ? "" : undefined} data-auj={c.auj ? "" : undefined} data-ancien={c.ancien ? "" : undefined} data-eclair={c.eclair ? "" : undefined} data-examen={c.examen ? "" : undefined} data-t={c.titre ?? undefined} />
           ))}
         </div>
+        <EclairsCarnet palier={PALIER_ECLAIR} />
       </div>
       <div className={k.pied}>
         <span>{legendeCarnet(aujourdhui)}</span>

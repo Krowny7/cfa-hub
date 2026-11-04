@@ -392,6 +392,14 @@ const CARNET: CarnetLobby = { jours: JOURS, aujourdhui: AUJ, serie: 9, record: 1
   const suivant = mois.findIndex((m, i) => i > premier && m.texte);
   check("le premier mois, coupé, n'est écrit que s'il reste trois colonnes avant le suivant", premier > 0 || suivant >= 3, `${premier} ${suivant}`);
   check("le premier mois écrit est novembre 2024, le dernier octobre (la dernière semaine commence le 27 octobre)", noms[0] === "nov." && noms[noms.length - 1] === "oct.", noms.join(" "));
+  {
+    const j = (n: number) => new Date(Date.parse(AUJ + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+    const c = carnetVue({ jours: [-1, -2, -3, -4, -5, -6, -7].map((n, i) => [j(n), 100 - i] as [string, number]), aujourdhui: AUJ, serie: 0, record: 0, seuil: 10, examen: j(10) }, null);
+    const ex = c.cases.find((x) => x.examen);
+    check("les éclairs : les 5 jours les plus productifs, pas un de plus", c.cases.filter((x) => x.eclair).map((x) => x.jour).sort().join() === [-5, -4, -3, -2, -1].map(j).join());
+    check("l'examen à venir : la grille va jusqu'à lui, toujours 364 cases, son infobulle le dit", c.cases.length === 364 && ex?.jour === j(10) && ex.avenir && (ex.titre ?? "").includes("jour de l'examen"));
+    check("un examen trop loin reste hors de la grille", !carnetVue({ jours: [], aujourdhui: AUJ, serie: 0, record: 0, seuil: 10, examen: j(300) }, null).cases.some((x) => x.examen));
+  }
   check("le carnet vide : 364 cases au niveau 0, 0 jour d'encre", (() => { const c = carnetVue({ jours: [], aujourdhui: AUJ, serie: 0, record: 0, seuil: 10 }, null); return c.cases.length === 364 && c.joursEncre === 0 && c.cases.every((x) => x.niveau === 0); })());
   check("carnetDe : la série d'encre donne le seuil de 10, l'ancien calcul une question", carnetDe({ jours: [], aujourdhui: AUJ, stats: { serie: 4, meilleureSerie: 7, serieEncre: true } }, 10).seuil === 10 && carnetDe({ jours: [], aujourdhui: AUJ, stats: { serie: 4, meilleureSerie: 7 } }, 10).seuil === null && carnetDe({ jours: [], aujourdhui: AUJ, stats: { serie: 4, meilleureSerie: 7 } }, 10).record === 7);
   check("la phrase sous la grille : générale sans journée, précise avec", legendeCarnet(null) === "La case cerclée, c'est aujourd'hui." && legendeCarnet({ traits: 26, objectif: 40 }) === "La case cerclée, c'est aujourd'hui : 26 traits sur 40, pas encore tenue.");

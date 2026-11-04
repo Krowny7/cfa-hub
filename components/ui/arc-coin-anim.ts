@@ -46,7 +46,7 @@ function pente(i: number, j: number, x: number, y: number): number {
   return Math.cos(a) * x + Math.sin(a) * y;
 }
 const lisse = (f: number) => f * f * f * (f * (f * 6 - 15) + 10);
-function bruit(x: number, y: number): number {
+export function bruit(x: number, y: number): number {
   const i = Math.floor(x);
   const j = Math.floor(y);
   const fx = x - i;
@@ -100,7 +100,7 @@ function vague(t: number, l: number): ((s: number) => number) | null {
   return (s) => force * Math.exp(-(((s - pos) / sig) ** 2));
 }
 
-function rgb(hex: string): [number, number, number] {
+export function rgb(hex: string): [number, number, number] {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   const n = m ? parseInt(m[1], 16) : 0x9ff0ff;
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];

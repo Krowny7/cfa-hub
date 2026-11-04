@@ -19,7 +19,7 @@ import s from "./Lobby.module.css";
 
 const ID = "lobby-cinq";
 /** Platine : l'aura de ce palier est cyan clair, bleu-blanc, lisible sur le noir de la carte. */
-const PALIER_ECLAIR = 3;
+export const PALIER_ECLAIR = 3;
 
 export function CarteCinq({ c, className }: { c: CarteCinqLobby; className?: string }) {
   const C = LOBBY.cinq;

@@ -216,7 +216,15 @@ export type NouveauteRelance = { type: "relance"; cle: string; jour: string; jou
 export type NouveauLobby = Nouveaute | NouveauteRelance;
 /** `avatarUrl` : la photo de profil de l'ami (null : ses initiales). */
 export type AmisLobby = { total: number; enLigne: number | null; visages: { id: string; nom: string; initiales: string; avatarUrl: string | null; enLigne: boolean }[]; demandes: number };
-export type CarnetLobby = { jours: [string, number][]; aujourdhui: string; serie: number; record: number; seuil: number | null };
+export type CarnetLobby = {
+  jours: [string, number][];
+  aujourdhui: string;
+  serie: number;
+  record: number;
+  seuil: number | null;
+  /** le jour de l'examen, « 2026-11-12 » : sa case est rouge, et la grille va jusqu'à lui s'il est à venir */
+  examen?: string | null;
+};
 
 export type Lobby = {
   entete: EnteteLobby;

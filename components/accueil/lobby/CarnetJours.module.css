@@ -92,6 +92,7 @@
 
 /* la grille : colonne des jours | mois au-dessus des cases */
 .grille {
+  position: relative;
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
   column-gap: 8px;
@@ -155,6 +156,22 @@
 /* à venir : rien */
 .cases > [data-f] {
   background: transparent;
+}
+/* le jour de l'examen : la seule case rouge */
+.cases > [data-examen] {
+  background: #d9412f;
+}
+/* les éclairs des cinq meilleurs jours : une toile sur toute la grille, sous l'infobulle */
+.eclairs {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+:global(html[data-discreet="1"]) .eclairs {
+  display: none;
 }
 /* aujourd'hui : cerclé */
 .cases > [data-auj] {

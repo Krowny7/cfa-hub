@@ -328,7 +328,7 @@ titre("# les variantes");
 titre("# l'assemblage : les variantes qui retirent des cartes (la rangée se recompose)");
 {
   const perso = rendre("perso");
-  check("personnage du vainqueur : posé comme enfant direct de l'enveloppe (vqAvecPerso), une image décorative, chargée à la demande", perso.includes("vqAvecPerso") && /<\/section><img class="perso"[^>]*alt=""[^>]*loading="lazy"/.test(perso) && perso.includes("/illustrations/accueil-duel.webp"));
+  check("personnage du vainqueur : posé comme enfant direct de l'enveloppe (vqAvecPerso), une image décorative, chargée à la demande", perso.includes("vqAvecPerso") && /<\/section><span class="persoCadre"[^>]*><img class="perso"[^>]*alt=""[^>]*loading="lazy"/.test(perso) && perso.includes("/illustrations/accueil-duel.webp"));
 
   const sansAdmin = rendre("sansAdmin");
   check("sans clé de service : ni lobby en direct ni rival ; les amis disent combien ils sont (la présence ne se lit pas)", !sansAdmin.includes("En ce moment dans le lobby") && !sansAdmin.includes('id="lobby-rival-titre"') && /<b[^>]*>14<[/]b><span>amis<[/]span>/.test(sansAdmin) && !sansAdmin.includes("en ligne sur 14"));
@@ -567,7 +567,7 @@ titre("# la version téléphone : les règles du CSS (il ne se charge pas ici)")
   const arc = readFileSync(join(process.cwd(), "components/ui/ArcElectrique.module.css"), "utf8");
   check("ArcElectrique : sans clic (pointer-events: none), coupé en mode discret, posé avec prefers-reduced-motion et data-rl-motion=off", /\.arc\s*\{[^}]*pointer-events: none/.test(arc) && /html\[data-discreet="1"\]\)\s*\.arc\s*\{\s*display: none/.test(arc) && /html\[data-rl-motion="off"\]\)\s*\.arc\s*\{\s*animation: none/.test(arc) && /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.arc\s*\{\s*animation: none/.test(arc));
   const direct = readFileSync(join(process.cwd(), "components/accueil/lobby/EnDirect.module.css"), "utf8");
-  check("le personnage du vainqueur est masqué sous 760 px, par requête de conteneur (la largeur de la page, pas celle de l'écran)", /@container \(max-width: 760px\)\s*\{\s*\.perso\s*\{\s*display: none/.test(direct) && !/@media \(max-width: 760px\)/.test(direct));
+  check("le personnage du vainqueur est masqué sous 760 px, par requête de conteneur (la largeur de la page, pas celle de l'écran)", /@container \(max-width: 760px\)\s*\{\s*\.persoCadre\s*\{\s*display: none/.test(direct) && !/@media \(max-width: 760px\)/.test(direct));
   const carnet = readFileSync(join(process.cwd(), "components/accueil/lobby/CarnetJours.module.css"), "utf8");
   check("le carnet au téléphone : 18 semaines (les anciennes cachées), plus de libellés de jours", /@container \(max-width: 760px\)[\s\S]*\.jours\s*\{\s*display: none/.test(carnet) && /\[data-ancien\]\s*,[\s\S]*\{\s*display: none/.test(carnet));
   const parcours = readFileSync(join(process.cwd(), "components/accueil/lobby/Parcours.module.css"), "utf8");
@@ -625,7 +625,7 @@ titre("# les fichiers : îlots clients et garde-fous (tout le dossier du lobby)"
   const sources = fichiers.map((f) => [f, readFileSync(join(dossier, f), "utf8")] as const);
   const clients = sources.filter(([, c]) => /^["']use client["']/.test(c.trimStart()));
   check("les îlots clients du dossier : aucun Intl, aucun toLocaleString", clients.every(([, c]) => !/\bIntl\b|toLocaleString|toLocaleDateString|toLocaleTimeString/.test(c)), clients.map(([f]) => f).join());
-  check("les îlots clients attendus : le classement, la relance, la carte du jour (et rien d'autre)", JSON.stringify(clients.map(([f]) => f).sort()) === JSON.stringify(["BoutonRelance.tsx", "CarteDuJourIle.tsx", "ClassementTrente.tsx"]), clients.map(([f]) => f).join());
+  check("les îlots clients attendus : le classement, la relance, la carte du jour, les éclairs du carnet (et rien d'autre)", JSON.stringify(clients.map(([f]) => f).sort()) === JSON.stringify(["BoutonRelance.tsx", "CarteDuJourIle.tsx", "ClassementTrente.tsx", "EclairsCarnet.tsx"]), clients.map(([f]) => f).join());
   const lectures = sources.filter(([f]) => /^(lecture-|donnees|actions-)/.test(f) && f.endsWith(".ts"));
   check("les lectures ne sont jamais importées par un îlot client (seules ses actions serveur le sont)", clients.every(([, c]) => !/from "(\.\/|@\/components\/accueil\/lobby\/)(lecture-|donnees)/.test(c)) && lectures.length >= 5);
   const autres = [...fichiers.map((f) => join(dossier, f)), ...readdirSync(join(process.cwd(), "lib")).filter((f) => f.startsWith("voice-accueil-lobby")).map((f) => join(process.cwd(), "lib", f)), join(process.cwd(), "scripts/accueil/lobby-exemple.ts"), join(process.cwd(), "app/dashboard/page.tsx"), join(process.cwd(), "app/dashboard/loading.tsx"), join(process.cwd(), "migration_accueil.sql")];

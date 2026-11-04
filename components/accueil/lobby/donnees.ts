@@ -197,7 +197,7 @@ export async function lireLobby(ctx: CtxLecture): Promise<AccueilLu> {
       // les relances reçues d'abord, puis les nouvelles des amis
       nouveau: fusionnerNouveau(nouveauAmis, relances ? relances.map(nouveauteRelance) : null),
       amis,
-      carnet,
+      carnet: carnet && { ...carnet, examen },
     },
   });
   return { lobby, differees };

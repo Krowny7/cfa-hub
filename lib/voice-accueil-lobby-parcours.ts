@@ -163,6 +163,7 @@ export const PARC = {
     /** le jour de la semaine devant la date de l'infobulle (getUTCDay : dimanche d'abord) */
     semaine: ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"] as readonly string[],
     /** la case du jour : « aujourd'hui · 26 traits sur 40, pas encore tenue » */
+    examenCase: (quand: string) => `${quand} · jour de l'examen`,
     aujourdhuiCase: (traits: number, objectif: number, tenu: boolean) => `aujourd'hui · ${pluriel(traits, "trait", "traits")} sur ${nombre(objectif)}${tenu ? ", journée tenue" : ", pas encore tenue"}`,
     /** sous la grille : « La case cerclée, c'est aujourd'hui : 26 traits sur 40, pas encore tenue. » */
     legendeAujourdhui: (traits: number, objectif: number, tenu: boolean) =>
