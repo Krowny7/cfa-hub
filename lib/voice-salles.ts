@@ -357,6 +357,7 @@ export const EXAMEN = {
 
 /** L'écran de jeu du chrono global, calqué sur les 30 du jour (components/salles/RunnerSalle.tsx). */
 export const RUNNER_SALLE = {
+  copieTitre: "Partie de Salle",
   chatTitre: "Chat",
   chatVide: "Pas encore de message.",
   chatChamp: "Écris un message",

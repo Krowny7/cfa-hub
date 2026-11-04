@@ -54,8 +54,8 @@ check("l'en-tête : « Moi · Theo » et « Où tu en es »", base.includes("Moi
 {
   const nav = base.slice(base.indexOf('aria-label="Ton compte"'), base.indexOf("</nav>"));
   check(
-    "les quatre liens discrets : Réglages, Mes pièces, Personnaliser, Carnet",
-    nav.includes('href="/moi?onglet=reglages"') && nav.includes('href="/moi?onglet=pieces"') && nav.includes(`href="/people/${ID_EXEMPLE}?personnaliser=1"`) && nav.includes('href="/moi?onglet=erreurs"') && compte(nav, /<a /g) === 4,
+    "les cinq liens discrets : Réglages, Mes pièces, Personnaliser, Carnet, Activités",
+    nav.includes('href="/moi?onglet=reglages"') && nav.includes('href="/moi?onglet=pieces"') && nav.includes(`href="/people/${ID_EXEMPLE}?personnaliser=1"`) && nav.includes('href="/moi?onglet=erreurs"') && nav.includes('href="/moi?onglet=activites"') && compte(nav, /<a /g) === 5,
     nav.slice(0, 300),
   );
 }

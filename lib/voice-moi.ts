@@ -96,7 +96,7 @@ const enLettres = (n: number) => ["zéro", "un", "deux", "trois", "quatre", "cin
 export const SYN = {
   fil: (nom: string) => `Moi · ${nom}`,
   titre: "Où tu en es",
-  compte: { label: "Ton compte", reglages: "Réglages", pieces: "Mes pièces", personnaliser: "Personnaliser", carnet: "Carnet" },
+  compte: { activites: "Activités", label: "Ton compte", reglages: "Réglages", pieces: "Mes pièces", personnaliser: "Personnaliser", carnet: "Carnet" },
 
   // ── Ton objectif ──
   obj: {
@@ -353,4 +353,12 @@ export const MINIS_FR: Record<string, string> = {
   derivatives: "Dérivés",
   alternatives: "Altern.",
   portfolio: "Portef.",
+};
+
+/** Moi › Activités : tes séances passées et le lien vers chaque copie. */
+export const ACTIVITES = {
+  titre: "Tes activités",
+  sous: "Tes séances, de la plus récente à la plus ancienne, avec ton score. Rouvre une copie pour la relire.",
+  vide: "Rien pour l'instant : tes séances s'afficheront ici.",
+  voir: "Voir ma copie",
 };

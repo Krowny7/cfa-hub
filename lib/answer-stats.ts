@@ -393,7 +393,7 @@ function dailyClosed(a: DailyAttemptRow, limitS: number | null | undefined, now:
 }
 
 /** Une partie de Salle est finie : terminée (ou arrêtée), ou son heure de fin est passée (le serveur la close à la prochaine visite). */
-function salleFinie(s: SalleSessionRow, now: number) {
+export function salleFinie(s: Pick<SalleSessionRow, "statut" | "fin_at">, now: number) {
   if (s.statut === "terminee") return true;
   const fin = s.fin_at ? new Date(s.fin_at).getTime() : NaN;
   return Number.isFinite(fin) && fin <= now;
@@ -653,7 +653,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   for (const [id, g] of bySalle) {
     const s = partiesFinies.get(id)!;
     const pid = `sa:${id}`;
-    passages.set(pid, { source: "salle", label: "Salle", at: s.fin_at ?? "", href: s.salle_id ? `/salles/${s.salle_id}` : null });
+    passages.set(pid, { source: "salle", label: "Salle", at: s.fin_at ?? "", href: `/salles/copie/${s.id}` });
     perSet("salle", pid, g.questions);
     for (const [subject, [n, ok]] of g.calculs)
       contribs.push({ source: "salle", passage: pid, target: { kind: "bucket", subject, themeKey: "salle-calc", label: "Calculs en Salle", tag: null, order: 1850 }, n, ok });

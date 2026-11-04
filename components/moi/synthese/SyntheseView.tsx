@@ -55,6 +55,8 @@ export function SyntheseView({ s: d, constance }: { s: SyntheseMoi; /** « Ta co
             <Link href={hrefPersonnaliser(d.joueur.id)}>{SYN.compte.personnaliser}</Link>
             <span aria-hidden>·</span>
             <Link href="/moi?onglet=erreurs">{SYN.compte.carnet}</Link>
+            <span aria-hidden>·</span>
+            <Link href="/moi?onglet=activites">{SYN.compte.activites}</Link>
           </nav>
         </header>
 
