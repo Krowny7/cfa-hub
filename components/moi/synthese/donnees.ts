@@ -20,7 +20,6 @@ import {
   notionsDepuisPointsFaibles,
   objectifSynthese,
   progressionSynthese,
-  type Copie30,
   rangSynthese,
   rythmeDe,
   tempsSynthese,
@@ -106,18 +105,10 @@ async function lireNotions(supabase: SupabaseClient, syn: { notions: Record<stri
  * @param admin le client de service (tryAdmin) ; null : les trophées sans « dernier gagné », et ni historique, ni activité, ni calcul, ni rythme, ni moyennes
  * @param now l'instant de la requête (ms)
  */
-/** Les copies des 30 du jour des six derniers mois (les séries de 5 sont écartées : même format, écart type comparable). */
-async function lireCopies30(supabase: SupabaseClient, id: string, now: number): Promise<Copie30[]> {
-  const depuis = jourParis(now - 190 * 864e5);
-  const { data, error } = await supabase.from("daily_attempts").select("day,score,total").eq("user_id", id).gte("day", depuis).not("finished_at", "is", null).gte("total", 20);
-  if (error || !data) return [];
-  return data.map((c) => ({ jour: String(c.day).slice(0, 10), pct: (100 * Number(c.score)) / Number(c.total) }));
-}
-
 export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClient | null, user: Pick<User, "id" | "user_metadata">, now: number): Promise<SyntheseMoi> {
   const id = user.id;
   const dates = datesSynthese(now);
-  const [profil, maitrise, mesures, etat, classe, joueurs, temps, codex, questions, cartes, trophees, examen, syn, ryt, act, copies30] = await Promise.all([
+  const [profil, maitrise, mesures, etat, classe, joueurs, temps, codex, questions, cartes, trophees, examen, syn, ryt, act] = await Promise.all([
     lireProfil(supabase, id).catch(() => null),
     getMaitrise(supabase, id).catch(() => null),
     getTopicMastery(supabase, id).catch(() => null),
@@ -139,7 +130,6 @@ export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClie
     lireRythme(admin, id).catch(() => null),
     // les réponses depuis 3, 30, 60 et 90 jours (migration_moi_activite.sql) : null sans clé de service ou sans la migration
     lireActivite(admin, id, dates).catch(() => null),
-    lireCopies30(supabase, id, now).catch((): Copie30[] => []),
   ]);
   const rang = rangSynthese({
     elo: classe?.elo ?? DEFAULT_ELO,
@@ -177,7 +167,7 @@ export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClie
     sourceNotions: source,
     calcul: syn ? calculSynthese(mesuresCalculDe(syn.calcul), maitrise?.matieres) : null,
     rythme: rythmeDe(ryt),
-    progression: progressionSynthese(histo, maitrise, aujourdhui, examen, copies30),
+    progression: progressionSynthese(histo, maitrise, aujourdhui, examen),
     trophees,
   };
 }

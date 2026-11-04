@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLeaderboardRank, getMyRating } from "@/lib/rating";
@@ -6,6 +7,8 @@ import { levelInfoFromXp } from "@/lib/leveling";
 import type { GroupRow } from "@/components/GroupSettings";
 import { MoiView } from "@/components/moi/MoiView";
 import { OngletParAncre } from "@/components/moi/Clients";
+import { getAnswerStats } from "@/lib/answer-stats";
+import { ConstanceAttente, ConstanceMatieres } from "@/components/moi/synthese/ConstanceMatieres";
 import { lireSynthese } from "@/components/moi/synthese/donnees";
 import { SyntheseView } from "@/components/moi/synthese/SyntheseView";
 import { SettingsPanel } from "@/components/moi/SettingsPanel";
@@ -57,7 +60,14 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     return (
       <>
         <OngletParAncre />
-        <SyntheseView s={await lireSynthese(supabase, admin, user, now)} />
+        <SyntheseView
+          s={await lireSynthese(supabase, admin, user, now)}
+          constance={
+            <Suspense fallback={<ConstanceAttente />}>
+              <ConstanceMatieres lire={() => getAnswerStats(admin ?? supabase, user.id, { privileged: !!admin, now })} now={now} />
+            </Suspense>
+          }
+        />
       </>
     );
   }

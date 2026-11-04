@@ -16,7 +16,6 @@ import {
   legendeSuperposee,
   lectureCourbe,
   lectureMatiere,
-  phraseConstance,
   phraseGains,
   projection,
   traceSuperpose,
@@ -32,36 +31,11 @@ import m from "@/components/moi/synthese/Examen.module.css";
 // chacune des 12 dernières semaines puis d'aujourd'hui, sur un fond de zones, la
 // projection au rythme des 4 dernières semaines (« 70 % vers le 12 déc. »),
 // la superposition d'une matière (puces ; l'active porte le vrai liquide), ta
-// constance (l'écart type des 30 du jour) et la phrase « Ce que ça veut dire ». Îlot client : le seul état est la matière
+// constance par matière (`constance`, lue après la page) et la phrase « Ce que ça veut dire ». Îlot client : le seul état est la matière
 // superposée (l'index dans `progression.matieres`, null pour « Aucune »). Sous
 // 3 points : un état vide qui invite à répondre.
 
 const ID = "syn-progression";
-
-/** « Ta constance » : l'écart type des 30 du jour, en phrase et en petite courbe (plus elle descend, plus tu es régulier). */
-function Constance({ valeurs }: { valeurs: (number | null)[] }) {
-  const phrase = phraseConstance(valeurs);
-  if (!phrase) return null;
-  const haut = Math.max(...valeurs.map((v) => v ?? 0), 1) * 1.15;
-  const x = (i: number) => (valeurs.length > 1 ? 3 + (i / (valeurs.length - 1)) * 294 : 150);
-  const y = (v: number) => 37 - (v / haut) * 34;
-  const pts = valeurs.flatMap((v, i) => (v === null ? [] : [[x(i), y(v)] as const]));
-  const fin = pts[pts.length - 1];
-  return (
-    <div className={m.constance}>
-      <p className={`${s.eyebrow} ${m.eyebrowPetit}`}>{EXA.progression.constanceTitre}</p>
-      {pts.length > 1 && (
-        <svg viewBox="0 0 300 40" preserveAspectRatio="none" className={m.constanceTrace} role="img" aria-label={EXA.progression.constanceAria}>
-          <polyline points={pts.map(([a, b]) => `${a},${b}`).join(" ")} fill="none" stroke="var(--ink)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-          <line x1={fin[0]} y1={fin[1]} x2={fin[0] + 0.01} y2={fin[1]} stroke="var(--ink)" strokeWidth={7} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        </svg>
-      )}
-      <p className={m.constancePhrase}>
-        <Phrase segments={phrase} />
-      </p>
-    </div>
-  );
-}
 
 /**
  * @param aujourdhui le jour (AAAA-MM-JJ, Paris) : sans lui, pas de date de projection ni de dates au-delà d'aujourd'hui
@@ -75,6 +49,7 @@ export function Progression({
   examen,
   ilYa30 = null,
   superposeeAuDepart = null,
+  constance,
   className,
 }: {
   progression: ProgressionSynthese;
@@ -82,6 +57,8 @@ export function Progression({
   examen: string | null;
   ilYa30?: number | null;
   superposeeAuDepart?: number | null;
+  /** le bloc « Ta constance par matière » (composant serveur, dans son Suspense) */
+  constance?: React.ReactNode;
   className?: string;
 }) {
   const [sup, setSup] = useState<number | null>(superposeeAuDepart);
@@ -171,7 +148,7 @@ export function Progression({
           })}
         </div>
       </div>
-      {progression.constance && <Constance valeurs={progression.constance} />}
+      {constance}
       <p className={`${s.pied} ${m.bas}`}>
         <b>{EXA.pied}</b> {lecture}
       </p>

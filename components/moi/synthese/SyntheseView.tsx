@@ -34,7 +34,7 @@ function TraitDEncre() {
   );
 }
 
-export function SyntheseView({ s: d }: { s: SyntheseMoi }) {
+export function SyntheseView({ s: d, constance }: { s: SyntheseMoi; /** « Ta constance par matière », lue après la page */ constance?: React.ReactNode }) {
   return (
     <div className={"rl-wide rl-page " + s.cadre}>
       <div className={s.racine} style={styleDePalette(PAL)}>
@@ -76,6 +76,7 @@ export function SyntheseView({ s: d }: { s: SyntheseMoi }) {
           aujourdhui={d.progression?.aujourdhui ?? null}
           examen={d.progression?.examen ?? null}
           ilYa30={d.globale?.ilYa?.[30] ?? null}
+          constance={constance}
         />
 
         {d.trophees && <Trophees t={d.trophees} />}

@@ -3,7 +3,7 @@ import { TOPICS } from "@/lib/practiceTopics";
 import { subjectByKey } from "@/components/reviser/catalog";
 import type { Notion as NotionCatalogue } from "@/lib/notions";
 import { MIN_REPONSES, RECENT_REPONSES } from "@/lib/points-faibles";
-import { decaleJour, joursEntre } from "@/lib/objectif-calc";
+import { joursEntre } from "@/lib/objectif-calc";
 import type { EtatObjectif } from "@/lib/objectif";
 import { PLACEMENT_GAMES, TIERS, TOP_TIER, rankFor, versDivisionSuivante } from "@/lib/ranks";
 import { depuisQuand, type ResumeTemps } from "@/lib/temps-site";
@@ -780,28 +780,7 @@ export function rythmeDe(brut: unknown): RythmeSynthese | null {
  * @param aujourdhui le jour d'aujourd'hui (AAAA-MM-JJ, Paris)
  * @param examen le jour de l'examen (AAAA-MM-JJ) ; un examen passé est oublié (null)
  */
-/** Une copie des 30 du jour : son jour (AAAA-MM-JJ) et son score en %. */
-export type Copie30 = { jour: string; pct: number };
-/** L'écart type se lit sur les copies des 4 semaines avant chaque date, à partir de 4 copies. */
-const CONSTANCE_JOURS = 28;
-const CONSTANCE_MIN = 4;
-
-/** L'écart type d'échantillon, à un chiffre après la virgule. */
-export function ecartType(v: number[]): number {
-  const moy = v.reduce((a, b) => a + b, 0) / v.length;
-  return Math.round(Math.sqrt(v.reduce((a, b) => a + (b - moy) ** 2, 0) / (v.length - 1)) * 10) / 10;
-}
-
-/** L'écart type des scores à chaque date, null sous CONSTANCE_MIN copies dans la fenêtre. */
-export function constanceDe(copies: Copie30[], jours: string[]): (number | null)[] {
-  return jours.map((fin) => {
-    const debut = decaleJour(fin, -CONSTANCE_JOURS);
-    const v = copies.filter((c) => c.jour > debut && c.jour <= fin).map((c) => c.pct);
-    return v.length >= CONSTANCE_MIN ? ecartType(v) : null;
-  });
-}
-
-export function progressionSynthese(histo: PointHistorique[] | null, m: Maitrise | null, aujourdhui: string, examen: string | null = null, copies30: Copie30[] = []): ProgressionSynthese | null {
+export function progressionSynthese(histo: PointHistorique[] | null, m: Maitrise | null, aujourdhui: string, examen: string | null = null): ProgressionSynthese | null {
   if (!histo || !m) return null;
   const aVenir = examen && examen >= aujourdhui ? examen : null;
   const semaines = histo.slice(RANG_SEMAINE, RANG_SEMAINE + SEMAINES_COURBE).reverse();
@@ -816,7 +795,6 @@ export function progressionSynthese(histo: PointHistorique[] | null, m: Maitrise
     matieres: TOPICS.map((t) => gardees.map((s) => s[t.key]?.pct ?? null)),
     aujourdhui,
     examen: aVenir,
-    constance: constanceDe(copies30, jours.slice(premier)),
   };
 }
 

@@ -174,8 +174,6 @@ export type ProgressionSynthese = {
   aujourdhui: string;
   /** le jour de l'examen (AAAA-MM-JJ) ; null sans date ou une fois passé */
   examen: string | null;
-  /** l'écart type (en points) des scores aux 30 du jour sur les 4 semaines avant chaque date, même longueur que `points` ; null : moins de 4 copies. Absent : pas de copies lues */
-  constance?: (number | null)[];
 };
 
 export type TropheesSynthese = {

@@ -17,10 +17,13 @@ export function RangeeExamen({
   aujourdhui,
   examen,
   ilYa30 = null,
+  constance,
 }: {
   calcul: CalculSynthese | null;
   rythme: RythmeSynthese | null;
   progression: ProgressionSynthese | null;
+  /** le bloc « Ta constance par matière », posé dans la carte Ta progression */
+  constance?: React.ReactNode;
   /** le jour d'aujourd'hui (AAAA-MM-JJ, Paris) : dater la projection de la courbe */
   aujourdhui: string | null;
   /** le jour de l'examen (AAAA-MM-JJ) ; null sans date ou une fois passé */
@@ -34,7 +37,7 @@ export function RangeeExamen({
     <div className={m.rangee} data-n={n}>
       {calcul && <CalculTheorie calcul={calcul} className={m.c3} />}
       {rythme && <Rythme rythme={rythme} className={m.c4} />}
-      {progression && <Progression progression={progression} aujourdhui={aujourdhui} examen={examen} ilYa30={ilYa30} className={m.c5} />}
+      {progression && <Progression progression={progression} aujourdhui={aujourdhui} examen={examen} ilYa30={ilYa30} constance={constance} className={m.c5} />}
     </div>
   );
 }
