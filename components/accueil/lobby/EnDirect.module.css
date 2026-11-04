@@ -182,27 +182,29 @@
   }
 }
 
-/* le personnage du vainqueur : il sort du haut de la bande, posé en bas à droite.
-   L'enveloppe (« vqw » de LobbyView) est relative ; l'image est un enfant direct. */
-.perso {
+/* le personnage du vainqueur, posé à droite : son cadre finit au bas de la bande (le bas de l'image est coupé) et
+   dépasse de 30 px au-dessus, dans l'écart entre les rangées (le haut de l'image sort de la bande, sans être coupé).
+   L'enveloppe (« vqw » de LobbyView) est relative ; le cadre est un enfant direct. */
+.persoCadre {
   position: absolute;
-  right: 34px;
+  top: -30px;
+  right: 16px;
   bottom: 1px;
   z-index: 2;
-  display: block;
-  width: auto;
-  height: calc(100% + 40px);
-  max-width: 216px;
-  object-fit: contain;
-  object-position: 50% 100%;
+  width: 300px;
+  overflow: hidden;
   pointer-events: none;
-  transform-origin: 50% 100%;
-  transform: translateY(var(--decalage, 0%)) scale(var(--echelle, 1));
-  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.4));
+}
+.perso {
+  display: block;
+  width: 100%;
+  height: 170%;
+  object-fit: contain;
+  object-position: 50% 0;
 }
 /* téléphone : pas de place pour lui à côté du texte (on suit la largeur de la page, comme le reste du lobby) */
 @container (max-width: 760px) {
-  .perso {
+  .persoCadre {
     display: none;
   }
 }

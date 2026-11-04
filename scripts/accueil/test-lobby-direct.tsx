@@ -571,10 +571,10 @@ async function main() {
     const perso = renderToStaticMarkup(<PersoVainqueur perso={{ src: ADRESSE, taille: 115, pos: 40 }} />);
     check("perso : une image décorative (alt vide), chargée à la demande, sans glisser", perso.includes('alt=""') && perso.includes('loading="lazy"') && perso.includes('decoding="async"') && perso.includes('draggable="false"'));
     check("perso : l'adresse telle quelle", perso.includes(`src="${ADRESSE}"`));
-    check("perso : cadrage de la bannière verticale (échelle 1.15, décalage −5 %)", perso.includes("--echelle:1.15") && perso.includes("--decalage:-5.0%"), perso.slice(0, 260));
+    check("perso : un cadre fixe, le même pour tous (il ne suit plus la bannière verticale)", perso.includes('class="persoCadre"') && perso.includes('class="perso"') && !perso.includes("--echelle"));
     check("perso : la classe du lot", perso.includes('class="perso"'));
     const persoClasse = renderToStaticMarkup(<PersoVainqueur perso={{ src: "/x.png", taille: 100, pos: 50 }} className="autre" />);
-    check("perso : classe de placement ajoutée", persoClasse.includes('class="perso autre"') && persoClasse.includes("--decalage:0.0%"));
+    check("perso : classe de placement ajoutée au cadre", persoClasse.includes('class="persoCadre autre"'));
   }
 
   // ── 7. les fichiers du lot ───────────────────────────────────────────────
