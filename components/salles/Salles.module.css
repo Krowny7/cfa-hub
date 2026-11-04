@@ -797,6 +797,26 @@
   background: transparent;
   box-shadow: none;
 }
+/* sur le papier, les jetons de la scène passent aux couleurs du site (jour et nuit) : le texte clair prévu pour
+   l'encre noire y serait invisible, sur le jeu comme sur l'écran de fin */
+.jetons[data-sobre="1"] {
+  --sl-fond: var(--surface);
+  --sl-panneau: var(--surface);
+  --sl-panneau-2: var(--paper-2);
+  --sl-ligne: var(--pencil-2);
+  --sl-trait: var(--pencil-2);
+  --sl-voile: color-mix(in srgb, var(--ink) 5%, transparent);
+  --sl-puits: color-mix(in srgb, var(--ink) 6%, transparent);
+  --sl-metal: var(--ink);
+  --sl-metal-2: color-mix(in srgb, var(--ink) 50%, transparent);
+  --sl-texte: var(--ink);
+  --sl-texte-2: var(--ink-2);
+  --sl-encre: var(--surface);
+}
+/* sur le papier, le sceau d'initiales n'a plus besoin de son fond clair */
+.jetons[data-sobre="1"] span[role="img"][aria-label^="Sceau"] {
+  background: transparent;
+}
 
 /* ——— pendant une partie, l'en-tête se fait discret : le jeu prend la place ——— */
 .racine[data-salon="partie"] .entete {
