@@ -2,27 +2,27 @@ import { TOPICS } from "@/lib/practiceTopics";
 import { MINIS_FR } from "@/lib/voice-moi";
 import type { AnswerSubject } from "@/lib/answer-stats";
 
-// Ta constance par matière : l'écart type de ta réussite d'une semaine à l'autre. Pur,
-// sans accès à la base. Les séances de chaque matière (toutes sources : 30 du jour, Salles,
-// duels, QCM…) sont regroupées par semaine glissante ; une semaine compte à partir de
-// SEMAINE_MIN réponses, sinon une poignée de questions ferait tout varier.
+// Ta constance, mois après mois : pour chaque matière et chaque période de 4 semaines,
+// l'écart type de ta réussite d'une semaine à l'autre. Pur, sans accès à la base. Les
+// séances (toutes sources : 30 du jour, Salles, duels, QCM…) sont regroupées par semaine
+// glissante ; une semaine compte à partir de SEMAINE_MIN réponses, sinon une poignée de
+// questions ferait tout varier. La ligne « Moyenne » dit si tu deviens plus constant.
 
 const JOUR_MS = 86400000;
-const SEMAINES = 12;
-/** Une moitié de la fenêtre : l'évolution compare les 6 dernières semaines aux 6 d'avant. */
-const MOITIE = SEMAINES / 2;
+/** Les périodes, de la plus ancienne à l'actuelle (l'ordre des colonnes). */
+const PERIODES = 4;
+const SEMAINES_PERIODE = 4;
 const SEMAINE_MIN = 5;
-/** Sous 3 semaines mesurées, un écart type ne veut rien dire. */
+/** Sous 3 semaines mesurées dans une période, un écart type ne veut rien dire. */
 const MESURES_MIN = 3;
+/** La moyenne d'une période demande au moins ce nombre de matières mesurées. */
+const MATIERES_MIN = 2;
+/** Sous ce changement (en points), la constance est stable. */
+const ECART_STABLE = 1;
 
-export type ConstanceMatiere = {
-  cle: string;
-  nom: string;
-  /** l'écart type en points de réussite sur 12 semaines ; null : pas assez de semaines mesurées */
-  ecart: number | null;
-  /** l'écart type des 6 dernières semaines moins celui des 6 d'avant ; négatif : plus régulier. null : pas de quoi comparer */
-  evolution: number | null;
-};
+export type Tendance = "mieux" | "moins" | "stable" | null;
+export type ConstanceLigne = { cle: string; nom: string; periodes: (number | null)[]; tendance: Tendance };
+export type ConstanceVue = { moyenne: ConstanceLigne; lignes: ConstanceLigne[] };
 
 const arrondi1 = (x: number) => Math.round(x * 10) / 10;
 
@@ -33,27 +33,44 @@ export function ecartType(v: number[]): number | null {
   return arrondi1(Math.sqrt(v.reduce((a, b) => a + (b - moy) ** 2, 0) / (v.length - 1)));
 }
 
-/** La réussite (%) de chaque semaine mesurée, de la plus récente (rang 0) à la plus ancienne ; null : pas assez de réponses cette semaine-là. */
+/** La réussite (%) de chaque semaine, de la plus récente (rang 0) à la plus ancienne ; null : pas assez de réponses cette semaine-là. */
 export function reussiteParSemaine(seances: { n: number; ok: number; at: string }[], now: number): (number | null)[] {
-  const semaines = Array.from({ length: SEMAINES }, () => ({ n: 0, ok: 0 }));
+  const semaines = Array.from({ length: PERIODES * SEMAINES_PERIODE }, () => ({ n: 0, ok: 0 }));
   for (const s of seances) {
     const rang = Math.floor((now - Date.parse(s.at)) / (7 * JOUR_MS));
-    if (rang < 0 || rang >= SEMAINES) continue;
+    if (rang < 0 || rang >= semaines.length) continue;
     semaines[rang].n += s.n;
     semaines[rang].ok += s.ok;
   }
   return semaines.map((w) => (w.n >= SEMAINE_MIN ? (100 * w.ok) / w.n : null));
 }
 
-const mesurees = (v: (number | null)[]) => v.filter((x): x is number => x !== null);
+/** La première et la dernière période mesurées ; null sous deux mesures. */
+export function extremes(periodes: (number | null)[]): { debut: number; fin: number } | null {
+  const v = periodes.filter((x): x is number => x !== null);
+  return v.length < 2 ? null : { debut: v[0], fin: v[v.length - 1] };
+}
 
-/** Les dix matières, de la plus régulière à la moins régulière ; celles qu'on ne peut pas mesurer ferment la liste. */
-export function constanceMatieres(sujets: Pick<AnswerSubject, "key" | "seances">[], now: number): ConstanceMatiere[] {
-  const lignes = TOPICS.map((t): ConstanceMatiere => {
+function tendanceDe(periodes: (number | null)[]): Tendance {
+  const e = extremes(periodes);
+  if (!e) return null;
+  if (Math.abs(e.fin - e.debut) < ECART_STABLE) return "stable";
+  return e.fin < e.debut ? "mieux" : "moins";
+}
+
+/** Les matières mesurées (ordre du programme) et leur moyenne, période par période. */
+export function constanceVue(sujets: Pick<AnswerSubject, "key" | "seances">[], now: number): ConstanceVue {
+  const lignes = TOPICS.map((t): ConstanceLigne => {
     const semaines = reussiteParSemaine(sujets.find((s) => s.key === t.key)?.seances ?? [], now);
-    const recent = ecartType(mesurees(semaines.slice(0, MOITIE)));
-    const avant = ecartType(mesurees(semaines.slice(MOITIE)));
-    return { cle: t.key, nom: MINIS_FR[t.key] ?? t.key, ecart: ecartType(mesurees(semaines)), evolution: recent !== null && avant !== null ? arrondi1(recent - avant) : null };
+    const periodes = Array.from({ length: PERIODES }, (_, p) => {
+      const debut = (PERIODES - 1 - p) * SEMAINES_PERIODE;
+      return ecartType(semaines.slice(debut, debut + SEMAINES_PERIODE).filter((x): x is number => x !== null));
+    });
+    return { cle: t.key, nom: MINIS_FR[t.key] ?? t.key, periodes, tendance: tendanceDe(periodes) };
+  }).filter((l) => l.periodes.some((x) => x !== null));
+  const periodes = Array.from({ length: PERIODES }, (_, p) => {
+    const v = lignes.flatMap((l) => (l.periodes[p] === null ? [] : [l.periodes[p] as number]));
+    return v.length >= MATIERES_MIN ? arrondi1(v.reduce((a, b) => a + b, 0) / v.length) : null;
   });
-  return lignes.sort((a, b) => (a.ecart ?? Infinity) - (b.ecart ?? Infinity));
+  return { moyenne: { cle: "moyenne", nom: "", periodes, tendance: tendanceDe(periodes) }, lignes };
 }

@@ -82,11 +82,19 @@ export const EXA = {
     legendeRythme: (date: string) => `À ton rythme : 70${NBSP}% vers le ${date}`,
     legendeApres: `À ton rythme : 70${NBSP}% après l'examen`,
     legendeSeuil: `seuil 70${NBSP}%`,
-    constanceTitre: "Ta constance par matière",
-    constanceSous: "L'écart de ta réussite d'une semaine à l'autre, sur 12 semaines, en points. Plus il est bas, plus tu es régulier. ↘ : plus régulier que les 6 semaines d'avant.",
+    constanceTitre: "Ta constance",
+    /** la phrase du haut : l'écart moyen de la première et de la dernière période mesurées */
+    constancePhrase: {
+      mieux: (avant: string, maintenant: string) => `Tes résultats sont de plus en plus constants : ils variaient de ${avant}${NBSP}points d'une semaine à l'autre, c'est ${maintenant}${NBSP}points maintenant.`,
+      moins: (avant: string, maintenant: string) => `Tes résultats sont moins constants qu'avant : ils variaient de ${avant}${NBSP}points d'une semaine à l'autre, c'est ${maintenant}${NBSP}points maintenant.`,
+      stable: (_avant: string, maintenant: string) => `Ta constance ne change pas : tes résultats varient d'environ ${maintenant}${NBSP}points d'une semaine à l'autre.`,
+    },
+    constanceAttente: "Encore quelques semaines de réponses, et tu pourras comparer ta constance d'un mois à l'autre.",
     constanceVide: "Elle se mesure à partir de 3 semaines avec au moins 5 réponses dans une matière.",
-    constancePlus: "Plus régulier que les 6 semaines d'avant",
-    constanceMoins: "Moins régulier que les 6 semaines d'avant",
+    constancePeriodes: ["Il y a 3 mois", "Il y a 2 mois", "Le mois dernier", "Ce mois-ci"],
+    constanceMoyenne: "Moyenne",
+    constanceVerdict: { mieux: "↘ plus stable", moins: "↗ moins stable", stable: "= stable" },
+    constanceSous: "En points de réussite, l'écart type d'une semaine à l'autre : plus le chiffre baisse, plus tes résultats sont constants.",
     superposer: "Superposer une matière",
     aucune: "Aucune",
     aria: (depuis: number, vers: number, semaines: number, projection: string | null, superposee: string | null) =>

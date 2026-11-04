@@ -347,58 +347,70 @@ button.boutonPetit {
   display: grid;
   gap: 6px;
 }
-/* Ta constance par matière : une ligne par matière (nom, barre, écart type, évolution) */
+/* Ta constance : une phrase, puis un tableau qui se lit de gauche à droite */
 .constance {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 .constanceAttente {
   min-height: 300px;
 }
+.constancePhrase {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
 .constanceSous {
   margin: 0;
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.45;
   color: var(--ink-2);
 }
-.constanceListe {
-  display: grid;
-  gap: 3px;
-  margin: 2px 0 0;
-  padding: 0;
-  list-style: none;
+.constanceCadre {
+  overflow-x: auto;
 }
-.constanceListe > li {
-  display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) 54px 46px;
-  align-items: center;
-  gap: 8px;
-  min-height: 22px;
+.constanceTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
   font-size: 13px;
 }
-.constanceListe b {
+.constanceTable thead th {
+  padding: 0 2px 2px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ink-2);
+  text-align: center;
+}
+.constanceTable tbody th {
+  padding-right: 6px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+.constanceTable tbody td {
+  height: 26px;
+  min-width: 44px;
+  border-radius: 5px;
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 12.5px;
-  font-weight: 600;
-  text-align: right;
+  text-align: center;
 }
-.constanceBarre {
-  height: 6px;
-  overflow: hidden;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--ink) 9%, transparent);
-}
-.constanceBarre > i {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: var(--ink);
-}
-.constanceEvol {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12px;
+.constanceTable tbody td.constanceVerdict {
+  padding-left: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
   color: var(--ink-2);
+  text-align: left;
   white-space: nowrap;
+}
+.constanceTable tr[data-forte] th,
+.constanceTable tr[data-forte] td {
+  font-weight: 700;
+  color: var(--ink);
 }
 .pucesListe {
   display: flex;
