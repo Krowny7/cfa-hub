@@ -121,6 +121,7 @@ export const ROUTES: ReadonlySet<string> = new Set([
   "/revoir",
   "/salles",
   "/salles/[id]",
+  "/salles/copie/[id]",
   "/salles/rejoindre",
   "/scratch",
   "/session",
