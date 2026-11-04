@@ -47,7 +47,7 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
 
   return (
     <li className={"card-ink " + s.carte + " " + s.c1} data-leonard="cours">
-      <Illustration nom="reviser-bibliotheque" position="50% 30%" decorative eager className={s.fond} />
+      <Illustration nom="reviser-bibliotheque" position="50% 62%" decorative eager className={s.fond} />
       <span className={s.c1Voile} aria-hidden />
       <div className={s.haut}>
         <span className={"rl-encre " + s.etape + " " + s.encre + " t-num"} data-palette={PAL.key} aria-hidden>

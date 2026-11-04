@@ -61,7 +61,8 @@ export const RV = {
   codexSeanceFinie: "La séance du jour est faite.",
   codexARecuperer: (n: number) => (n > 0 ? `À récupérer · ${nombre(n)}` : "À récupérer"),
   codexRien: "Rien à récupérer pour l'instant.",
-  codexFait: (n: number) => `Fait aujourd'hui : ${nombre(n)}`,
+  codexRevoir: "À revoir aujourd'hui",
+  codexFaitJour: "Fait aujourd'hui",
   registre: "Ton suivi",
 
   // l'Atelier : revoir mes erreurs

@@ -83,13 +83,10 @@ export const ILLUSTRATIONS = {
   },
   "reviser-bibliotheque": {
     src: "/illustrations/reviser-bibliotheque.webp",
-    alt: "La Bibliothèque : grande salle de lecture voûtée, plafond peint et doré, galeries de livres",
-    credit: "Image peinte pour Ranked Lobby (2026-10-13), fournie par l'utilisateur.",
-    emplacement:
-      "Réviser : le bandeau de La Bibliothèque en tête de page, pleine largeur (jusqu'à 1 240 px de large, 230 px de haut ; 190 px au téléphone), cadré à 50 % 30 % ; les cartes du parcours mordent sur son bas. Le fichier actuel (960×760) y est agrandi, flou sur grand écran : livrer une version large, 2400×900 px au moins (même nom, même format).",
-    prompt:
-      STYLE +
-      "Sujet : la bibliothèque-cabinet d'étude de l'atelier de Léonard vers 1500. Hautes étagères de bois sombre chargées de livres reliés de cuir et de rouleaux, un lutrin avec un grand livre ouvert, une table couverte de carnets, un compas et un globe, une fenêtre en plein cintre à gauche d'où entre une lumière dorée et rasante de fin de journée, poussière qui flotte dans le rayon. Palette chaude : ocre, terre de Sienne brûlée, brun, or, quelques bleus froids dans les ombres. Aucun personnage, aucun texte lisible, pas de cadre. Format panoramique 8:3, 2400×900 px au moins ; l'essentiel dans le tiers supérieur et au centre, le bas calme et sombre (des cartes le recouvrent, le titre s'y pose à gauche), rien d'important dans les 10 % de chaque bord. Pour garder la scène de l'image actuelle (salle de lecture voûtée, plafond peint et doré, galeries de livres), l'étendre sur les côtés plutôt que de la repeindre.",
+    alt: "L'intérieur d'une bibliothèque monumentale ouverte sur la mer au soleil levant ; deux samouraïs sur une passerelle de pierre",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-04), choisie par Théo pour la carte Cours complets.",
+    emplacement: "Réviser : fond de la carte Cours complets, cadrée pour garder les deux personnages au-dessus du lecteur. Accueil : affiche par défaut des scores.",
+    prompt: "Reprends exactement la technique, la lumière et le style de la peinture jointe (huile au couteau, empâtements, décor de jeu vidéo). L'intérieur d'une bibliothèque monumentale, rayonnages de bois sombre jusqu'au plafond, échelles et balcons, lumière dorée. Deux samouraïs minuscules, l'un à écharpe vermillon, sur une passerelle au centre droit.",
   },
   "reviser-casier-medaillon": {
     src: "/illustrations/reviser-casier-medaillon.webp",

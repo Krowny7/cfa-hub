@@ -52,6 +52,16 @@ export function ContenuApercuCodex({ p, xp }: { p: Panneau; xp: number | null })
             <p className={s.apercuSous}>{RV.codexSeanceFinie}</p>
           )}
         </div>
+        <dl className={s.apercuChiffres}>
+          <div>
+            <dt>{RV.codexRevoir}</dt>
+            <dd className="t-num">{nombre(p.revoir?.aujourdhui ?? 0)}</dd>
+          </div>
+          <div>
+            <dt>{RV.codexFaitJour}</dt>
+            <dd className="t-num">{nombre(p.fait.n)}</dd>
+          </div>
+        </dl>
       </div>
       <div className={s.apercuBloc}>
         <p className={s.eyebrow}>{RV.codexARecuperer(rec.n)}</p>
@@ -67,7 +77,6 @@ export function ContenuApercuCodex({ p, xp }: { p: Panneau; xp: number | null })
         ) : (
           <p className={s.apercuSous}>{RV.codexRien}</p>
         )}
-        {p.fait.n > 0 && <p className={s.apercuSous}>{RV.codexFait(p.fait.n)}</p>}
       </div>
     </div>
   );
