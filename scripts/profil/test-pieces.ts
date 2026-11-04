@@ -227,19 +227,20 @@ async function main() {
     check("lignesCiblees : palier = trophyTier (1, 2–3, 4–6, 7 et plus)", egal(lignesCiblees([1, 3, 6, 7].map((t) => ({ topic_count: t, trophy_count: "2" }))).map((l) => l.palier), [1, 2, 3, 4]));
 
     check(
-      "palierCiblee : trophyTier plafonné par la taille (29/30 et 59/60 questions, 6/7 matières)",
+      "palierCiblee : l'échelle commune, null sous 60 %, plafonnée par la taille (29 et 59 questions)",
       egal(
-        [[1, 10], [4, 29], [4, 30], [7, 59], [7, 60], [6, 60], [2, 29], [0, 100], [7, NaN]].map(([m, t]) => palierCiblee(m, t)),
-        [1, 2, 3, 3, 4, 3, 2, 1, 2],
+        [[5, 10], [6, 10], [7, 10], [26, 29], [27, 30], [53, 59], [54, 60]].map(([s, t]) => palierCiblee(s, t, 1)),
+        [null, 1, 2, 2, 3, 3, 4],
       ),
     );
     check(
-      "palierCiblee : le plafond ne touche que les séances rendues depuis la mise en ligne v3",
-      palierCiblee(7, 54, "2026-10-17T21:59:59Z") === 4 &&
-        palierCiblee(7, 54, "2026-10-17T22:00:00Z") === 3 &&
-        palierCiblee(4, 29, "2026-10-01T10:00:00Z") === 3 &&
-        palierCiblee(4, 29, "2026-10-20T10:00:00Z") === 2 &&
-        palierCiblee(7, 59, "pas une date") === 3,
+      "palierCiblee : une séance d'avant l'échelle garde son palier par matières s'il est plus haut, jamais sous 70 %",
+      palierCiblee(42, 60, 7, "2026-10-20T10:00:00Z") === 4 &&
+        palierCiblee(42, 60, 7, "2026-11-06T10:00:00Z") === 2 &&
+        palierCiblee(38, 54, 7, "2026-10-17T21:59:59Z") === 4 &&
+        palierCiblee(38, 54, 7, "2026-10-17T22:00:00Z") === 3 &&
+        palierCiblee(33, 60, 7, "2026-10-20T10:00:00Z") === null &&
+        palierCiblee(36, 60, 7, "2026-10-20T10:00:00Z") === 1,
     );
     const sql = [
       { source: "ciblee", palier: 4, n: "2" },
@@ -254,7 +255,7 @@ async function main() {
         [7, 3, 2, 1, 0, 0],
       ),
     );
-    const paliersAttendus: Record<SourceTrophee, number[]> = { ciblee: [1, 2, 3, 4], blanc: [1, 2, 3, 4], trente: [1, 2, 3, 4], cinq: [1], drill: [1, 2], fiche: [3, 4], atelier: [1, 2], duel: [1], revoir: [1, 2] };
+    const paliersAttendus: Record<SourceTrophee, number[]> = { ciblee: [1, 2, 3, 4], blanc: [1, 2, 3, 4], trente: [1, 2, 3, 4], cinq: [1], drill: [1, 2], fiche: [3, 4], atelier: [1, 2, 3, 4], duel: [1], revoir: [1, 2] };
     check(
       "SOURCES_TROPHEE : chaque source a un nom, un lien et la règle de ses seuls paliers (V3 §2.2)",
       ORDRE_SOURCES_TROPHEE.every((s) => {

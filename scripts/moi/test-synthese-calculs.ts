@@ -168,7 +168,7 @@ titre("# dernier gagné");
   const d = dernierGagne(lignes);
   check("le plus récent ; à égalité, le palier le plus haut (diamant, Examen blanc) ; lignes invalides écartées", d?.source === "blanc" && d.palier === 4 && d.nom === "Trophée de diamant · Examen blanc", JSON.stringify(d));
   const or = dernierGagne([{ source: "trente", palier: 3, n: 1, dernier: "2026-10-29T09:30:00Z" }]);
-  check("la règle du palier suit : « 27/30 ou plus »", or?.nom === "Trophée d'or · Les 30 du jour" && or.regle === "27/30 ou plus", JSON.stringify(or));
+  check("la règle du palier suit : « 24/30 ou plus »", or?.nom === "Trophée d'or · Les 30 du jour" && or.regle === "24/30 ou plus", JSON.stringify(or));
   check("sans date (repli sans trophees_joueur) : aucun dernier", dernierGagne([{ source: "ciblee", palier: 1, n: 3 }]) === null && dernierGagne([]) === null);
 }
 

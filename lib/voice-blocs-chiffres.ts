@@ -61,8 +61,8 @@ export const BLOCS_CHIFFRES = {
   trophees: "Trophées",
   parPalier: "Trophées par palier",
   // les textes de la Salle des trophées, quand il n'y a rien
-  aucunMoiComplet: "Aucun trophée pour l'instant : 5/5 aux 5 du jour, ou une séance d'entraînement ciblé réussie à 70 %, et le premier est à toi.",
-  aucunMoi: "Aucun trophée pour l'instant : réussis une séance d'entraînement ciblé à 70 % pour gagner le premier.",
+  aucunMoiComplet: "Aucun trophée pour l'instant : 5/5 aux 5 du jour, ou une séance d'entraînement ciblé réussie à 60 %, et le premier est à toi.",
+  aucunMoi: "Aucun trophée pour l'instant : réussis une séance d'entraînement ciblé à 60 % pour gagner le premier.",
   /** l'infobulle d'un métal : « Or · Inès 4 » */
   metalSeul: (metal: string, nom: string, n: number) => `${metal} · ${nom} ${nombre(n)}`,
 } as const;

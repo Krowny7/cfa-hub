@@ -351,7 +351,8 @@ export function PracticeSession({
   if (phase === "builder") {
     const measured = TOPICS.filter((t) => mastery[t.key] !== null && mastery[t.key] !== undefined);
     const weak = measured.filter((t) => (mastery[t.key] as number) < WEAK_BELOW).map((t) => t.key);
-    const palier = palierCiblee(previewMatieres, previewCount);
+    // le palier visé : celui d'une copie parfaite, donc le plafond de sa taille
+    const palier = palierCiblee(previewCount, previewCount, previewMatieres) ?? 1;
     const history = showAllHistory ? pastSessions : pastSessions.slice(0, 6);
     const canChart = pastSessions.length >= 2;
     const last5 = pastSessions.slice(0, 5);
@@ -537,7 +538,7 @@ export function PracticeSession({
                   {history.map((s) => {
                     const pct = pctOf(s.score, s.total);
                     const passed = pct >= PASS_THRESHOLD;
-                    const palierS = nomPalier(palierCiblee(s.topics.length, s.total, s.completed_at)).toLowerCase();
+                    const palierS = nomPalier(palierCiblee(s.score, s.total, s.topics.length, s.completed_at) ?? 1).toLowerCase();
                     const expanded = expandedHistoryId === s.id;
                     const rev = historyReviews[s.id];
                     return (
@@ -630,7 +631,8 @@ export function PracticeSession({
     const pct = total > 0 ? Math.round((score / total) * 100) : null;
     const passed = pct !== null && pct >= PASS_THRESHOLD;
     // le trophée de la séance, connu sur place (même règle qu'en base : plafond par taille) ; l'annonce le montre tout de suite
-    const gagne: TropheeGagne[] = passed ? [{ source: "ciblee", palier: palierCiblee(tirees.length, total), ref: topicsSummary(tirees, 3) }] : [];
+    const palierFin = palierCiblee(score, total, tirees.length);
+    const gagne: TropheeGagne[] = palierFin ? [{ source: "ciblee", palier: palierFin, ref: topicsSummary(tirees, 3) }] : [];
     const many = new Set(review.map((q) => q.topic ?? "")).size > 1;
     const minutes = lastDuration ? Math.max(1, Math.round(lastDuration / 60)) : null;
     const meta = xpAwarded > 0 ? texteGain(xpAwarded, xpMult) : "";

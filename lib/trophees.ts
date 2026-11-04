@@ -42,10 +42,10 @@ export const SOURCES_TROPHEE: Record<SourceTrophee, { nom: string; regle: Partia
   ciblee: {
     nom: "Entraînement ciblé",
     regle: {
-      1: "une séance réussie à 70 % ou plus",
-      2: "2 matières ou plus, à 70 % ou plus",
-      3: "4 matières ou plus, à 70 % ou plus, sur 30 questions ou plus",
-      4: "7 matières ou plus, à 70 % ou plus, sur 60 questions ou plus",
+      1: "60 % ou plus",
+      2: "70 % ou plus",
+      3: "80 % ou plus, sur 30 questions ou plus",
+      4: "90 % ou plus, sur 60 questions ou plus",
     },
     lien: "/practice",
   },
@@ -55,11 +55,11 @@ export const SOURCES_TROPHEE: Record<SourceTrophee, { nom: string; regle: Partia
       1: "60 % ou plus à la première copie (30 questions au moins)",
       2: "70 % ou plus",
       3: "80 % ou plus",
-      4: "90 % ou plus, sur 90 questions ou plus",
+      4: "90 % ou plus",
     },
     lien: "/mock-exams",
   },
-  trente: { nom: "Les 30 du jour", regle: { 1: "21/30 ou plus", 2: "24/30 ou plus", 3: "27/30 ou plus", 4: "30/30" }, lien: "/defi" },
+  trente: { nom: "Les 30 du jour", regle: { 1: "18/30 ou plus", 2: "21/30 ou plus", 3: "24/30 ou plus", 4: "27/30 ou plus" }, lien: "/defi" },
   cinq: { nom: "Les 5 du jour", regle: { 1: "5/5" }, lien: "/defi/cinq" },
   drill: {
     nom: "Page de drill",
@@ -71,26 +71,39 @@ export const SOURCES_TROPHEE: Record<SourceTrophee, { nom: string; regle: Partia
     regle: { 3: "toutes les pages de drill de la fiche à 80 % ou plus (meilleur passage)", 4: "toutes les pages de drill de la fiche à 100 %" },
     lien: "/fiches",
   },
-  atelier: { nom: "L'Atelier", regle: { 1: "70 % ou plus et 3 ratures rayées", 2: "80 % ou plus et 5 ratures rayées" }, lien: "/atelier" },
+  atelier: { nom: "L'Atelier", regle: { 1: "60 % ou plus et 3 ratures rayées", 2: "70 % ou plus et 3 ratures rayées", 3: "80 % ou plus et 3 ratures rayées", 4: "90 % ou plus et 3 ratures rayées" }, lien: "/atelier" },
   duel: { nom: "Duel sans faute", regle: { 1: "un duel gagné avec la mention « Sans-faute »" }, lien: "/duel" },
   // /revoir renvoie à la reprise du carnet tant que la section §3b n'est pas collée
   revoir: { nom: "À revoir", regle: { 1: "90 % ou plus sur 15 questions ou plus, rendue en entier", 2: "100 % sur 25 questions ou plus, rendue en entier" }, lien: "/revoir" },
 };
 
+/** L'échelle commune : 60 % bronze, 70 % argent, 80 % or, 90 % diamant ; null en dessous. Même règle que _trophee_pct en base. */
+export function palierPourcentage(score: number, total: number): PalierTrophee | null {
+  if (!(total > 0) || score * 10 < 6 * total) return null;
+  if (score * 10 >= 9 * total) return 4;
+  if (score * 10 >= 8 * total) return 3;
+  if (score * 10 >= 7 * total) return 2;
+  return 1;
+}
+
+/** La mise en ligne de l'échelle commune : une séance ciblée plus ancienne garde son palier par matières s'il est plus haut. */
+const ECHELLE_DEPUIS_MS = Date.parse("2026-11-05T00:00:00+01:00");
+
 /**
- * Le palier d'une séance d'entraînement ciblé réussie (70 % ou plus) : celui
- * de trophyTier selon le nombre de matières, plafonné par la taille de la
- * séance (moins de 30 questions : l'argent au plus ; moins de 60 : l'or au
- * plus). Même règle que _trophee_ciblee en base, pour la fin de séance.
- * Le plafond ne touche que les séances rendues depuis PLAFOND_CIBLEE_DEPUIS :
- * une séance plus ancienne garde le palier qu'elle affichait (rien de gagné
- * n'est repris). Sans date (fin de séance), la séance est nouvelle.
+ * Le palier d'une séance d'entraînement ciblé : l'échelle commune, plafonnée par la taille
+ * de la séance (moins de 30 questions : l'argent au plus ; moins de 60 : l'or au plus).
+ * null sous 60 %. Même règle que _trophee_ciblee_pct en base. Une séance rendue avant
+ * l'échelle commune garde son ancien palier s'il est plus haut : rien de gagné n'est repris.
  */
-export function palierCiblee(matieres: number, total: number, rendueLe?: string | null): PalierTrophee {
-  const brut = PALIER_DU_TIER[trophyTier(Math.max(1, Math.floor(matieres) || 1)).key] ?? 1;
-  if (rendueLe && avantPlafondCiblee(rendueLe)) return brut;
+export function palierCiblee(score: number, total: number, matieres: number, rendueLe?: string | null): PalierTrophee | null {
+  const pct = palierPourcentage(score, total);
+  if (pct === null) return null;
   const plafond: PalierTrophee = total >= 60 ? 4 : total >= 30 ? 3 : 2;
-  return Math.min(brut, plafond) as PalierTrophee;
+  const nouveau = Math.min(pct, plafond) as PalierTrophee;
+  if (!rendueLe || Date.parse(rendueLe) >= ECHELLE_DEPUIS_MS || score * 10 < 7 * total) return nouveau;
+  const brut = PALIER_DU_TIER[trophyTier(Math.max(1, Math.floor(matieres) || 1)).key] ?? 1;
+  const ancien = avantPlafondCiblee(rendueLe) ? brut : Math.min(brut, plafond);
+  return Math.max(nouveau, ancien) as PalierTrophee;
 }
 
 /**
@@ -109,17 +122,12 @@ export function avantPlafondCiblee(rendueLe: string): boolean {
 }
 
 /**
- * Le palier d'une première copie d'examen blanc : 60 % bronze, 70 % argent,
- * 80 % or, 90 % diamant sur 90 questions ou plus (l'or sinon) ; rien sous
+ * Le palier d'une première copie d'examen blanc : l'échelle commune ; rien sous
  * 60 % ni sous 30 questions. Même règle que _trophee_blanc en base, pour
  * l'annonce sous la copie rendue.
  */
 export function palierBlanc(score: number, total: number): PalierTrophee | null {
-  if (!(total >= 30) || score * 10 < 6 * total) return null;
-  if (score * 10 >= 9 * total && total >= 90) return 4;
-  if (score * 10 >= 8 * total) return 3;
-  if (score * 10 >= 7 * total) return 2;
-  return 1;
+  return total >= 30 ? palierPourcentage(score, total) : null;
 }
 
 /** Une ligne de la Salle : n trophées d'une source à un palier (dernier : le plus récent, s'il est connu). */

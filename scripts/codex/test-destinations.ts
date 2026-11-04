@@ -286,8 +286,8 @@ console.log("\n# le fil rouge (V3 §1.5) : chaque palier figé mène quelque par
   const dix3 = destinationDe(paliers.find((q) => q.id === "fil:trophees:4")!, {}, v3);
   const or3 = destinationDe(paliers.find((q) => q.id === "fil:trophees:1")!, {}, v3);
   const lien = (href?: string) => lireLienPractice((k) => new URL("https://x" + (href ?? "/")).searchParams.get(k));
-  check("« Un diamant », « 10 diamants » : 60 questions mêlées, de quoi donner un diamant", dia3?.href === "/practice?topic=all&n=60&poids=1" && dix3?.href === dia3?.href && palierCiblee(TOPICS.length, lien(dia3?.href).taille ?? 0) === 4, `${dia3?.href} | ${dix3?.href}`);
-  check("« Un trophée d'or » : 30 questions mêlées suffisent (or)", or3?.href === "/practice?topic=all&n=30&poids=1" && palierCiblee(TOPICS.length, lien(or3?.href).taille ?? 0) === 3, or3?.href);
+  check("« Un diamant », « 10 diamants » : 60 questions mêlées, de quoi donner un diamant", dia3?.href === "/practice?topic=all&n=60&poids=1" && dix3?.href === dia3?.href && palierCiblee(lien(dia3?.href).taille ?? 0, lien(dia3?.href).taille ?? 0, TOPICS.length) === 4, `${dia3?.href} | ${dix3?.href}`);
+  check("« Un trophée d'or » : 30 questions mêlées suffisent (or)", or3?.href === "/practice?topic=all&n=30&poids=1" && palierCiblee(lien(or3?.href).taille ?? 0, lien(or3?.href).taille ?? 0, TOPICS.length) === 3, or3?.href);
   const essai: ContexteDestination = { ...contexteDestination(base({ contenu: PROGRAMME_ESSAI.matieres() })), programme: PROGRAMME_ESSAI.cle, outils: PROGRAMME_ESSAI.outils };
   const horsOutils = paliers.map((q) => [q.id, destinationDe(q, {}, essai)] as const).filter(([, d]) => !d || !["cinq", "eclair", "revoir", "codex", "profil", "classement"].includes(d.outil));
   check("dans l'arbre d'essai : aucun palier ne mène à un outil absent", horsOutils.length === 0, horsOutils.map(([id, d]) => `${id} ${d?.outil} ${d?.href}`).join(" | "));

@@ -182,7 +182,7 @@ export const SYN = {
   trophees: {
     titre: "Salle des trophées",
     compte: (n: number) => `${pluriel(n, "trophée gagné", "trophées gagnés")}`,
-    vide: "Aucun trophée encore : 5/5 aux 5 du jour, ou une séance ciblée à 70 %.",
+    vide: "Aucun trophée encore : 5/5 aux 5 du jour, ou une séance ciblée à 60 %.",
     dernier: "Dernier gagné",
     /** sans migration_v3_profil.sql §2 : seul l'entraînement ciblé est compté */
     partiel: "Les autres trophées arrivent avec la prochaine mise à jour.",

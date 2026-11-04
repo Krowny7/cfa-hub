@@ -135,8 +135,8 @@ async function main() {
   check("ReviewSection sans débrief : inchangée (ni ancre ni causes)", !nu.includes("revue-") && !nu.includes("data-debrief") && nu.includes("Question q2"));
 
   // ── le trophée de la copie rendue (annoncé sous la copie) ───────────
-  check("palierBlanc : 29 questions rien, 17/30 rien, 18/30 bronze, 70 % argent, 80 % or, 90 % diamant sur 90, 100 % sur 89 or",
-    palierBlanc(29, 29) === null && palierBlanc(17, 30) === null && palierBlanc(18, 30) === 1 && palierBlanc(70, 100) === 2 && palierBlanc(80, 100) === 3 && palierBlanc(81, 90) === 4 && palierBlanc(89, 89) === 3);
+  check("palierBlanc : 29 questions rien, 17/30 rien, 18/30 bronze, 70 % argent, 80 % or, 90 % diamant, quelle que soit la longueur",
+    palierBlanc(29, 29) === null && palierBlanc(17, 30) === null && palierBlanc(18, 30) === 1 && palierBlanc(70, 100) === 2 && palierBlanc(80, 100) === 3 && palierBlanc(81, 90) === 4 && palierBlanc(89, 89) === 4);
 
   // ── Fete : les quatre tailles ───────────────────────────────────────
   const rien = () => undefined;

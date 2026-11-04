@@ -85,9 +85,9 @@ check("tirerSeance : matière sans question → non servie", egal(tirerSeance({ 
 check("melanger : une permutation", egal([...melanger([1, 2, 3, 4, 5], alea)].sort(), [1, 2, 3, 4, 5]));
 
 // ── le plafond par taille, vu du constructeur et de la fin de séance ──
-check("plafond : l'épreuve du jour (10 matières, 30 questions) → or, jamais diamant", palierCiblee(matieresServies(repartir(30, TOUTES, { poids: true })).length, 30) === 3);
-check("plafond : 10 matières en demi-examen (90) → diamant ; 7 matières sur 55 questions → or", palierCiblee(10, 90) === 4 && palierCiblee(7, 55) === 3);
-check("plafond : une matière, 15 questions → bronze ; 3 matières, 25 questions → argent", palierCiblee(1, 15) === 1 && palierCiblee(3, 25) === 2);
+check("plafond : l'épreuve du jour (10 matières, 30 questions), parfaite → or, jamais diamant", palierCiblee(30, 30, matieresServies(repartir(30, TOUTES, { poids: true })).length) === 3);
+check("plafond : 90 questions parfaites → diamant ; 55 questions parfaites → or", palierCiblee(90, 90, 10) === 4 && palierCiblee(55, 55, 7) === 3);
+check("plafond : 15 questions à 60 % → bronze ; 25 questions parfaites → argent", palierCiblee(9, 15, 1) === 1 && palierCiblee(25, 25, 3) === 2);
 
 // ── noms et annonce ──
 check("nomPalier", egal([1, 2, 3, 4].map((p) => nomPalier(p as 1 | 2 | 3 | 4)), ["Bronze", "Argent", "Or", "Diamant"]));
