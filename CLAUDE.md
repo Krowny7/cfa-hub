@@ -17,7 +17,7 @@ Toujours écrire à l'utilisateur en français.
   Ne jamais écrire de chemin absolu Windows dans un fichier du dépôt : le passer en argument.
 - Tracés d'encre : toujours `<use href>` via InkDefs. Un SVG d'encre recopié en ligne donne des pages de 600 Ko et l'erreur d'hydratation #418.
 - Thème nuit : `--noir` devient clair. Une surface qui doit rester sombre prend une couleur fixe (ex. `#1a120b`).
-- Une carte lente ne doit pas disparaître : Suspense + squelette, filet de 6 s (components/accueil/lobby/plafond.ts).
+- Une carte lente ne doit pas disparaître : Suspense + squelette, deux essais et filet de 15 s (components/accueil/lobby/plafond.ts).
 
 ## Direction artistique
 Règles dans .claude/rules/da-encre.md, chargées quand on touche aux composants ou aux styles.

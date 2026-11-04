@@ -114,8 +114,6 @@ const VAINQUEUR: VainqueurDuJour = {
   total: 30,
   seconds: 700,
   players: 131,
-  tier: 3,
-  placement: false,
   bannerUrl: null,
 };
 

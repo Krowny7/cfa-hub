@@ -8,7 +8,7 @@ import { lireAmis, lireCarnet, lireDeblocage, lireGrandeSalle, lireQuete, lireSc
 import { lireRelancesRecues, lireRivalActivite } from "@/components/accueil/lobby/lecture-rival";
 import { construireLobby, dejaVenu } from "@/components/accueil/lobby/modele";
 import { fusionnerNouveau, nouveauteRelance } from "@/components/accueil/lobby/modele-parcours";
-import { FILET_CARTES_MS, FILET_MS, plafonner } from "@/components/accueil/lobby/plafond";
+import { FILET_CARTES_MS, FILET_MS, plafonnerAvecReprise } from "@/components/accueil/lobby/plafond";
 import type { CartesDifferees, CtxLecture, Lobby } from "@/components/accueil/lobby/types";
 import { getDailyBoard, getTodayDaily, shiftDay, type TodayDaily } from "@/lib/daily";
 import { lireSobre } from "@/lib/codex/sobre";
@@ -84,24 +84,25 @@ export async function lireLobby(ctx: CtxLecture): Promise<AccueilLu> {
   const id = user.id;
   // la journée d'abord : l'objectif en dépend (la courbe se recale sur les questions du jour)
   const activite = loadActivity(sb, id, now).catch(() => null);
-  // le classement du jour, lu une fois ; le vainqueur d'hier, puis son personnage
-  const classementAuj = getDailyBoard(sb, jour, LIGNES_CLASSEMENT).catch(() => null);
-  const vainqueurLu = lireVainqueurDuJour(sb, admin, id, jour).catch(() => null);
+  // le classement du jour, lu une fois ; le dernier vainqueur, puis son personnage
+  const classementAuj = plafonnerAvecReprise(() => getDailyBoard(sb, jour, LIGNES_CLASSEMENT));
+  const vainqueurLu = plafonnerAvecReprise(() => lireVainqueurDuJour(sb, id, jour));
   // le profil, lu une fois : le salut, et ton visage « Toi » dans le lobby en direct
   const profilLu = lireProfil(sb, id).catch(() => null);
   // les cinq cartes lentes : les lectures partent maintenant, en même temps que le reste, mais la page ne les attend
-  // pas (elles ne rejettent jamais : plafonner rend null sur un échec ou au-delà du filet)
+  // pas (elles ne rejettent jamais : deux essais, puis null sur un échec ou au-delà du filet)
   const differees: Required<CartesDifferees> = {
-    enDirect: plafonner(
-      Promise.all([classementAuj, profilLu]).then(([b, p]) =>
-        lireEnDirect(ctx, { classements: { trente: b }, moi: p ? { nom: p.username?.trim() || null, avatarUrl: p.avatar_url } : undefined }),
-      ),
+    enDirect: plafonnerAvecReprise(
+      () =>
+        Promise.all([classementAuj, profilLu]).then(([b, p]) =>
+          lireEnDirect(ctx, { classements: { trente: b }, moi: p ? { nom: p.username?.trim() || null, avatarUrl: p.avatar_url } : undefined }),
+        ),
       FILET_CARTES_MS,
     ),
-    rival: plafonner(lireRivalActivite(ctx), FILET_CARTES_MS),
-    carteDuJour: plafonner(lireCarteDuJourEnCache({ sb, user, jour }), FILET_CARTES_MS),
-    deblocage: plafonner(lireDeblocage(ctx), FILET_CARTES_MS),
-    quete: plafonner(lireQuete(ctx), FILET_CARTES_MS),
+    rival: plafonnerAvecReprise(() => lireRivalActivite(ctx), FILET_CARTES_MS),
+    carteDuJour: plafonnerAvecReprise(() => lireCarteDuJourEnCache({ sb, user, jour }), FILET_CARTES_MS),
+    deblocage: plafonnerAvecReprise(() => lireDeblocage(ctx), FILET_CARTES_MS),
+    quete: plafonnerAvecReprise(() => lireQuete(ctx), FILET_CARTES_MS),
   };
   const [
     profil,
@@ -129,14 +130,14 @@ export async function lireLobby(ctx: CtxLecture): Promise<AccueilLu> {
   ] = await Promise.all([
     profilLu,
     lireXp(sb).catch(() => [] as XpDay[]),
-    getTodayDaily(sb, id).catch(() => null),
-    getTodayDaily(sb, id, "cinq").catch(() => null),
+    plafonnerAvecReprise(() => getTodayDaily(sb, id)),
+    plafonnerAvecReprise(() => getTodayDaily(sb, id, "cinq")),
     classementAuj,
-    getDailyBoard(sb, shiftDay(jour, -1), 5).catch(() => null),
+    plafonnerAvecReprise(() => getDailyBoard(sb, shiftDay(jour, -1), 5)),
     activite,
     activite.then((a) => etatObjectif(user, a?.today ?? 0)).catch(() => null),
     vainqueurLu,
-    vainqueurLu.then((v) => (v ? plafonner(lirePersoVainqueur(ctx, v.userId), FILET_MS) : null)).catch(() => null),
+    vainqueurLu.then((v) => (v ? plafonnerAvecReprise(() => lirePersoVainqueur(ctx, v.userId), FILET_MS) : null)).catch(() => null),
     lireNote(sb, id).catch(() => null),
     getRatingHistory(sb, id, 1).catch(() => []),
     countPlayers(sb).catch(() => null),
@@ -144,12 +145,12 @@ export async function lireLobby(ctx: CtxLecture): Promise<AccueilLu> {
     lireSerieEncre(sb).catch(() => null),
     dateExamen(id).catch(() => null),
     // les autres cartes des lots 2 à 5, chacune avec son filet
-    plafonner(lireScores(ctx), FILET_MS),
-    plafonner(lireGrandeSalle(ctx), FILET_MS),
-    plafonner(nouveautesAmis(sb, admin, id), FILET_MS),
-    plafonner(lireRelancesRecues(ctx), FILET_MS),
-    plafonner(lireAmis(ctx), FILET_MS),
-    plafonner(lireCarnet(ctx), FILET_MS),
+    plafonnerAvecReprise(() => lireScores(ctx), FILET_MS),
+    plafonnerAvecReprise(() => lireGrandeSalle(ctx), FILET_MS),
+    plafonnerAvecReprise(() => nouveautesAmis(sb, admin, id), FILET_MS),
+    plafonnerAvecReprise(() => lireRelancesRecues(ctx), FILET_MS),
+    plafonnerAvecReprise(() => lireAmis(ctx), FILET_MS),
+    plafonnerAvecReprise(() => lireCarnet(ctx), FILET_MS),
   ]);
 
   // la journée : les réponses du jour, avec une copie ouverte ou rendue recalée (withLiveDaily)

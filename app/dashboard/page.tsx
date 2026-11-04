@@ -7,6 +7,8 @@ import { LobbyView } from "@/components/accueil/lobby/LobbyView";
 import { parisDay } from "@/components/accueil/queries";
 
 export const metadata = { title: "Accueil · Ranked Lobby" };
+// la marge du flux : les cartes lues en continu ont jusqu'à FILET_CARTES_MS (plafond.ts) pour arriver
+export const maxDuration = 30;
 
 // L'accueil « Le lobby » : la page ne fait que trouver le joueur et le client de
 // service, puis laisse components/accueil/lobby lire (UN Promise.all, chaque

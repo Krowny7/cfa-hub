@@ -121,17 +121,15 @@ export type CarteTraitsLobby = {
 /** Le personnage du vainqueur (lot 2) : son image, sa taille et sa position dans la bannière. */
 export type PersoVainqueur = { src: string; taille: number; pos: number };
 
-/** Le vainqueur des 30 d'hier, en bandeau peint. */
+/** Le dernier vainqueur des 30, en bandeau peint. */
 export type BandeVainqueurLobby = {
   nom: string;
   moi: boolean;
   /** « 29/30 en 11 min 40 s, devant 130 joueurs » */
   ligne: Segment[];
-  /** « Platine », « Placement » */
-  palier: string;
   /** l'image de sa bannière ; null : la peinture du site (accueil-bandeau) */
   fond: string | null;
-  /** « Le classement d'hier » : la page du jour d'hier */
+  /** le bouton « Profil » : son profil */
   href: string;
   /** rempli au lot 2 (null : pas de personnage) */
   perso: PersoVainqueur | null;

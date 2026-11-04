@@ -149,9 +149,9 @@ export const LOBBY = {
     texteIndispo: "Pas de défi pour l'instant.",
   },
 
-  /** le vainqueur des 30 d'hier */
+  /** le dernier vainqueur des 30 */
   vainqueur: {
-    surTitre: "Vainqueur des 30 d'hier",
+    surTitre: "Dernier vainqueur des 30 du jour",
     toi: "Toi",
     /** « 29/30 en 11 min 40 s, devant 130 joueurs » (le gagnant n'est pas compté ; seul, il le dit) */
     devant: (joueurs: number) => (joueurs <= 1 ? "seul en lice" : `devant ${pluriel(joueurs - 1, "joueur", "joueurs")}`),
@@ -161,8 +161,7 @@ export const LOBBY = {
       const m = Math.floor((s % 3600) / 60);
       return h > 0 ? `${h}${NBSP}h${NBSP}${String(m).padStart(2, "0")}` : `${m}${NBSP}min${NBSP}${String(s % 60).padStart(2, "0")}${NBSP}s`;
     },
-    placement: "Placement",
-    classementHier: "Le classement d'hier →",
+    profil: "Profil",
   },
 
   /** ton rang et ta phase de révision */

@@ -1,14 +1,13 @@
-import Link from "next/link";
 import { Trophy } from "lucide-react";
-import { Phrase, SceauUni } from "@/components/accueil/lobby/Encre";
+import { Contour, Phrase, SceauUni } from "@/components/accueil/lobby/Encre";
 import type { BandeVainqueurLobby } from "@/components/accueil/lobby/types";
 import { Illustration } from "@/components/ui/Illustration";
 import { LOBBY } from "@/lib/voice-accueil-lobby";
 import s from "./Lobby.module.css";
 
-// Le vainqueur des 30 d'hier : une bande peinte (sa bannière de profil, sinon
-// la peinture du site), son pseudo, son score et son temps, son palier en
-// puce, le lien vers le classement d'hier. Plus de liseré liquide : l'encre est
+// Le dernier vainqueur des 30 : une bande peinte (sa bannière de profil, sinon
+// la peinture du site), son pseudo, son score et son temps, le bouton vers
+// son profil. Plus de liseré liquide : l'encre est
 // réservée aux boutons. Le personnage qu'il a envoyé (lot 2) sort du haut du
 // cadre : `perso` est un nœud posé comme ENFANT DIRECT de l'enveloppe `.vqw`,
 // à côté de la bande (elle coupe ce qui dépasse) ; sans personnage, la bande
@@ -42,10 +41,9 @@ export function BandeVainqueur({ v, perso, className }: { v: BandeVainqueurLobby
           <Phrase segments={v.ligne} />
         </p>
         <p className={s.vqPied}>
-          <span className={s.puce}>{v.palier}</span>
-          <Link href={v.href} className={s.lienc}>
-            {V.classementHier}
-          </Link>
+          <Contour href={v.href} className={s.sm + " " + s.contourC}>
+            {V.profil}
+          </Contour>
         </p>
       </section>
       {perso}

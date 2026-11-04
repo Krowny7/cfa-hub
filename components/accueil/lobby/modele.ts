@@ -18,7 +18,7 @@ import type {
 import { dayHref, rankLine, reviewHref, shiftDay, timeLeftLabel, type DailyBoard, type DailyBoardRow, type TodayDaily } from "@/lib/daily";
 import { phaseDe } from "@/lib/codex/catalogue";
 import { joursEntre } from "@/lib/objectif-calc";
-import { PLACEMENT_GAMES, TIERS } from "@/lib/ranks";
+import { PLACEMENT_GAMES } from "@/lib/ranks";
 import { libelleMult, type SerieEncre } from "@/lib/serie-encre";
 import type { VainqueurDuJour } from "@/lib/vainqueur-du-jour";
 import { NBSP, nombre, pctScore, titreAccueil, ENCRE, type EtatJour } from "@/lib/voice";
@@ -289,7 +289,7 @@ export function carteTraits(o: {
   };
 }
 
-// ── Le vainqueur d'hier ──────────────────────────────────────────────────
+// ── Le dernier vainqueur ──────────────────────────────────────────────────
 
 export function bandeVainqueur(v: VainqueurDuJour): BandeVainqueurLobby {
   const V = LOBBY.vainqueur;
@@ -297,9 +297,8 @@ export function bandeVainqueur(v: VainqueurDuJour): BandeVainqueurLobby {
     nom: v.isMe ? V.toi : v.name,
     moi: v.isMe,
     ligne: [{ b: `${v.score}/${v.total}` }, " en ", { b: V.duree(v.seconds) }, `, ${V.devant(v.players)}`],
-    palier: v.placement ? V.placement : TIERS[Math.max(0, Math.min(TIERS.length - 1, v.tier))].name,
     fond: v.bannerUrl,
-    href: dayHref(v.day),
+    href: `/people/${v.userId}`,
     perso: null,
   };
 }

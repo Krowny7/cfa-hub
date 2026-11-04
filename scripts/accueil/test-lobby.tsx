@@ -169,8 +169,8 @@ titre("# le modèle : les cases des 5, le rang, les phases, le salut, J-n");
   check("sans migration : ni joker ni palier ; le soir, le bouton garde la série (« Encore 3 questions »)", s0.joker === null && s0.serie?.mult === null && s0.action?.libelle === "Encore 3 questions", JSON.stringify(s0.action));
 
   const v = bandeVainqueur(base.vainqueur!);
-  check("le vainqueur : Marie L., 29/30 en 11 min 40 s, devant 130 joueurs, Platine, page d'hier, pas de personnage", v.nom === "Marie L." && !v.moi && JSON.stringify(v.ligne) === JSON.stringify([{ b: "29/30" }, " en ", { b: `11${NB}min${NB}40${NB}s` }, ", devant 130 joueurs"]) && v.palier === "Platine" && v.href === "/defi/2026-10-30" && v.perso === null, JSON.stringify(v.ligne));
-  check("le vainqueur, c'est toi : « Toi » ; en placement, « Placement »", bandeVainqueur({ ...base.vainqueur!, isMe: true }).nom === "Toi" && bandeVainqueur({ ...base.vainqueur!, placement: true }).palier === "Placement");
+  check("le vainqueur : Marie L., 29/30 en 11 min 40 s, devant 130 joueurs, son profil, pas de personnage", v.nom === "Marie L." && !v.moi && JSON.stringify(v.ligne) === JSON.stringify([{ b: "29/30" }, " en ", { b: `11${NB}min${NB}40${NB}s` }, ", devant 130 joueurs"]) && v.href === `/people/${base.vainqueur!.userId}` && v.perso === null, JSON.stringify(v.ligne));
+  check("le vainqueur, c'est toi : « Toi »", bandeVainqueur({ ...base.vainqueur!, isMe: true }).nom === "Toi");
 
   const r = carteRang({ elo: 1478, gamesPlayed: 18, mastery: 52, place: 7, joueurs: 412, dernier: 12, jn: 110 });
   check("le rang : Platine II, 1 478 ELO · 7e sur 412 joueurs · +12 au dernier duel", r.palier === "Platine II" && r.chiffres.map((x) => `${x.val} ${x.lib}`).join("|") === `1${NB}478 ELO|7e sur 412 joueurs|+12 au dernier duel`, JSON.stringify(r.chiffres));
@@ -205,7 +205,7 @@ const html = rendre("base");
   const cinqHtml = html.slice(html.lastIndexOf("<section", html.indexOf('id="lobby-cinq"')), html.indexOf("</section>", html.indexOf('id="lobby-cinq"')));
   check("les 5 : l'arc du coin (canvas aria-hidden, classe coin), posé en dernier dans la carte, une seule fois sur la page, plus d'ancien éclair", /<canvas aria-hidden="true" data-arc="coin" class="coin "><\/canvas>/.test(cinqHtml) && cinqHtml.indexOf('data-arc="coin"') > cinqHtml.indexOf("Jouer les 5 du jour") && compte(cinqHtml, /data-arc=/g) === 1 && compte(html, /data-arc="coin"/g) === 1 && !html.includes('data-arc="eclair"') && !html.includes("eclairCinq"), cinqHtml.slice(-260));
   check("les 5 : l'arc ne porte ni lien ni bouton ni texte (rien à lire, rien à cliquer)", !/data-arc="coin"[^>]*(href|onclick|tabindex|role=)/.test(cinqHtml));
-  check("le vainqueur : Marie L., 29/30, 11 min 40 s, devant 130 joueurs, Platine, « Le classement d'hier → »", html.includes("Vainqueur des 30 d'hier") && html.includes(`11${NB}min${NB}40${NB}s`) && html.includes("devant 130 joueurs") && html.includes('class="puce">Platine<') && html.includes("Le classement d'hier →") && html.includes('href="/defi/2026-10-30"'));
+  check("le vainqueur : Marie L., 29/30, 11 min 40 s, devant 130 joueurs, le bouton Profil, plus de palier ni de lien d'hier", html.includes("Dernier vainqueur des 30 du jour") && html.includes(`11${NB}min${NB}40${NB}s`) && html.includes("devant 130 joueurs") && html.includes(`href="/people/${base.vainqueur!.userId}"`) && html.includes(">Profil<") && !html.includes("Le classement d'hier"));
   check("le rang : Platine II, 1 478, 7e sur 412 joueurs, +12, « Plus que 22 ELO avant Platine I »", html.includes("Platine II") && html.includes(`<b>1${NB}478</b>`) && html.includes("<b>7e</b>") && html.includes("sur 412 joueurs") && html.includes("<b>+12</b>") && html.includes(`22${NB}ELO</b> avant Platine I`));
   check("la phase : « phase 1 sur 3 » à J-110, Découverte active, trois étapes", html.includes("phase 1 sur 3") && html.includes("Ta phase de révision") && compte(html, /class="ph phOn"/g) === 1 && compte(html, /class="ph /g) + compte(html, /class="ph"/g) === 3);
   check("le vainqueur sans personnage : pas de place réservée (vqAvecPerso absent)", !html.includes("vqAvecPerso"));
@@ -375,7 +375,7 @@ titre("# du nouveau : les relances d'abord, cinq lignes au plus");
 titre("# le filet des lectures lentes");
 const attente = <T,>(ms: number, v: T) => new Promise<T>((fin) => setTimeout(() => fin(v), ms));
 const finAsync = (async () => {
-  check("les filets : 4 s pour les cartes lues avec la page, 6 s (au moins 4) pour les cinq cartes lues après elle ; plus de plafond de 1,5 s", FILET_MS === 4000 && FILET_CARTES_MS >= 4000 && FILET_CARTES_MS >= FILET_MS);
+  check("les filets : 8 s pour les cartes lues avec la page, 15 s pour les cinq cartes lues après elle", FILET_MS === 8000 && FILET_CARTES_MS === 15000);
   check("une lecture rapide rend sa valeur", (await plafonner(attente(5, "ok"), 200)) === "ok");
   const t0 = Date.now();
   check("une lecture trop lente rend null à l'heure, sans l'attendre", (await plafonner(attente(400, "tard"), 30)) === null && Date.now() - t0 < 300, String(Date.now() - t0));
