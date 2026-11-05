@@ -29,7 +29,7 @@ function ApercuSalles({ apercu }: { apercu: NonNullable<EntreeSalles["apercu"]> 
               <Link href={x.mienne ? `/salles/${x.id}` : "/salles"}>
                 <i className={[s.point, x.enCours ? s.pointVif : ""].filter(Boolean).join(" ")} aria-hidden />
                 <b title={x.nom}>{x.nom}</b>
-                <span>{SALLES.joueurs(x.nbMembres)}</span>
+                <span>{SALLES.presents(x.nbPresents)}</span>
               </Link>
             </li>
           ))}

@@ -58,6 +58,13 @@ const boolOuNull = (v: unknown) => (v === null || v === undefined ? null : Boole
 const topicOuNull = (v: unknown): TopicKey | null => (typeof v === "string" && (SALLE_TOPIC_KEYS as string[]).includes(v) ? (v as TopicKey) : null);
 const niveauOuNull = (v: unknown): SalleNiveau | null => (v === "facile" || v === "moyen" || v === "difficile" ? v : null);
 
+/** Je suis sur la page de la salle (ou je la quitte, avec `parti`). Renvoie qui est là. */
+export async function signalerPresence(supabase: SupabaseClient, salleId: string, parti = false): Promise<string[]> {
+  const { data, error } = await supabase.rpc("salle_presence", { p_salle_id: salleId, p_parti: parti });
+  if (error) throw error;
+  return Array.isArray(data) ? data.map(String) : [];
+}
+
 function toResume(r: Raw): SalleResume {
   return {
     id: String(r.id),
@@ -67,6 +74,7 @@ function toResume(r: Raw): SalleResume {
     publique: Boolean(r.publique),
     estAdmin: Boolean(r.est_admin),
     nbMembres: num(r.nb_membres),
+    nbPresents: num(r.nb_presents),
     enCours: Boolean(r.en_cours),
     derniereActivite: String(r.derniere_activite ?? ""),
   };
@@ -79,6 +87,7 @@ function toPublique(r: Raw): SallePublique {
     description: str(r.description),
     adminUsername: str(r.admin_username),
     nbMembres: num(r.nb_membres),
+    nbPresents: num(r.nb_presents),
     enCours: Boolean(r.en_cours),
     derniereActivite: String(r.derniere_activite ?? ""),
     dejaMembre: Boolean(r.deja_membre),

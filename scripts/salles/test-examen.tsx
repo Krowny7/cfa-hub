@@ -51,6 +51,7 @@ const compte = (html: string, re: RegExp) => (html.match(re) ?? []).length;
 {
   const deux = [{ userId: "moi", username: "Moi", avatarUrl: null }, { userId: "lui", username: "Lui", avatarUrl: null }];
   const avant = avancementJoueurs({ session: { params: {}, avancement: [] } as never, membres: deux, moiId: "moi", mesRepondues: 0 });
+  check("un joueur absent qui n'a rien répondu n'apparaît pas", avancementJoueurs({ session: { params: {}, avancement: [] } as never, membres: deux, moiId: "moi", mesRepondues: 0, presents: new Set(["moi"]) }).length === 1);
   check("un joueur qui n'a encore rien répondu apparaît, à 0", avant.length === 2 && avant.some((j) => j.userId === "lui" && j.n === 0 && !j.moi));
 }
 /** La balise ouvrante du bouton qui contient `texte`. */

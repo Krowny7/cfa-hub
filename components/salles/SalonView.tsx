@@ -7,6 +7,7 @@ import { ChatSalle } from "@/components/salles/ChatSalle";
 import { CodePartage } from "@/components/salles/CodePartage";
 import { JeuAttente } from "@/components/salles/JeuAttente";
 import { Membres } from "@/components/salles/Membres";
+import { usePresents } from "@/components/salles/presence";
 import { ReglagesLecture } from "@/components/salles/Reglages";
 import { Stage, TetePanneau } from "@/components/salles/Stage";
 import { estChronoGlobal } from "@/lib/salles/examen";
@@ -50,6 +51,10 @@ export function SalonView({
   hors?: boolean;
 }) {
   const { salle, moi, membres, nbMembres, session, historique } = donnees;
+  // seuls ceux qui sont sur la page : avoir rejoint un jour ne suffit pas
+  const presents = usePresents();
+  const ici = presents ? membres.filter((m) => m.userId === moi.userId || presents.has(m.userId)) : membres;
+  const nbIci = presents ? ici.length : nbMembres;
   const [occupe, setOccupe] = useState(false);
   const admin = membres.find((m) => m.estAdmin);
   const nomAdmin = admin?.username?.trim() || "Un joueur";
@@ -91,7 +96,7 @@ export function SalonView({
               {salle.publique ? SALLES.salleOuverte : SALLES.sallePrivee}
             </span>
             <span className={s.etiquette}>
-              <b>{fmtInt(nbMembres)}</b> {nbMembres > 1 ? "joueurs" : "joueur"}
+              <b>{fmtInt(nbIci)}</b> {nbIci > 1 ? "joueurs" : "joueur"}
             </span>
             <span className={s.etiquette}>
               {SALLES.adminLe} <b>{nomAdmin}</b>
@@ -113,8 +118,8 @@ export function SalonView({
       ) : (
         <div className={s.grille}>
           <div className={s.colonne}>
-            <Membres membres={membres} moiId={moi.userId} total={nbMembres} />
-            {nbMembres > 1 && (
+            <Membres membres={ici} moiId={moi.userId} total={nbIci} />
+            {nbIci > 1 && (
               <section className={s.panneau} aria-labelledby="salle-chat">
                 <TetePanneau id="salle-chat" icone={<MessageCircle size={16} />}>
                   {RUNNER_SALLE.chatTitre}

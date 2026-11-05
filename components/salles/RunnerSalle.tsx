@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresents } from "@/components/salles/presence";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
@@ -45,9 +46,10 @@ export function RunnerSalle({
   const repondues = retenues.size;
   const blanches = nb - repondues;
   const bas = chronoBas(restantMs, totalMs);
-  const autres = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: repondues, moiRendu: rendue }).filter((j) => !j.moi);
+  const presents = usePresents();
+  const autres = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: repondues, moiRendu: rendue, presents }).filter((j) => !j.moi);
   // seul dans la salle : ni chat ni autres joueurs, la question prend toute la place
-  const aCote = membres.length > 1 || autres.length > 0;
+  const aCote = (presents ? presents.size > 1 : membres.length > 1) || autres.length > 0;
 
   const aller = useCallback(
     (p: number) => {

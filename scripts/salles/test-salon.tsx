@@ -8,6 +8,8 @@
 // valeurs par défaut, résumé, « Plus d'options », mocks et variantes), la carte
 // peinte de S'affronter, les lignes de /salles, le champ de code et la route
 // /salles dans la navigation.
+import { SALLES } from "@/lib/voice-salles";
+import { PresentsContext } from "@/components/salles/presence";
 import "../codex/sans-css";
 import fs from "node:fs";
 import path from "node:path";
@@ -228,12 +230,12 @@ console.log("# entrer dans une salle");
   check("créer : nom, privée par défaut, publique au choix, description facultative", creer.includes("Nom de la salle") && /aria-checked="true"[^>]*><b>[^]*?Privée/.test(creer) && /aria-checked="false"[^>]*><b>[^]*?Publique/.test(creer) && creer.includes("Créer la salle"));
   check("/salles appartient à l'espace S'affronter, avec ses pages", activeSpace("/salles") === "classement" && activeSpace("/salles/abc") === "classement" && activeSpace("/salles/rejoindre") === "classement");
   check("les routes connues : /salles, /salles/[id], /salles/rejoindre", ROUTES.has("/salles") && ROUTES.has("/salles/[id]") && ROUTES.has("/salles/rejoindre"));
-  const publique = rendre(<ul><LigneSallePublique salle={{ id: "p1", nom: "Quant", description: null, adminUsername: "Léa", nbMembres: 3, enCours: true, derniereActivite: "", dejaMembre: false }} demo /></ul>);
-  check("/salles : une salle publique (nom, joueurs, admin, partie en cours, Rejoindre)", publique.includes("Quant") && publique.includes("3 joueurs · par Léa") && publique.includes("Partie en cours") && publique.includes('aria-label="Rejoindre la salle Quant"'));
-  const miennePublique = rendre(<ul><LigneSallePublique salle={{ id: "p2", nom: "Fixed", description: null, adminUsername: null, nbMembres: 1, enCours: false, derniereActivite: "", dejaMembre: true }} /></ul>);
+  const publique = rendre(<ul><LigneSallePublique salle={{ id: "p1", nom: "Quant", description: null, adminUsername: "Léa", nbMembres: 3, nbPresents: 3, enCours: true, derniereActivite: "", dejaMembre: false }} demo /></ul>);
+  check("/salles : une salle publique (nom, joueurs, admin, partie en cours, Rejoindre)", publique.includes("Quant") && publique.includes("3 présents · par Léa") && publique.includes("Partie en cours") && publique.includes('aria-label="Rejoindre la salle Quant"'));
+  const miennePublique = rendre(<ul><LigneSallePublique salle={{ id: "p2", nom: "Fixed", description: null, adminUsername: null, nbMembres: 1, nbPresents: 1, enCours: false, derniereActivite: "", dejaMembre: true }} /></ul>);
   check("/salles : déjà membre, « Ouvrir » mène au salon", miennePublique.includes('href="/salles/p2"') && miennePublique.includes("Salon ouvert") && !miennePublique.includes("Rejoindre"));
-  const mienne = rendre(<ul><LigneMaSalle salle={{ id: "m1", nom: "Les miens", description: null, code: "K7MX2Q", publique: false, estAdmin: true, nbMembres: 2, enCours: false, derniereActivite: "" }} /></ul>);
-  check("/salles : tes salles (joueurs, privée, code, admin, Ouvrir)", mienne.includes("2 joueurs · Privée · K7M-X2Q · Admin") && mienne.includes('href="/salles/m1"'));
+  const mienne = rendre(<ul><LigneMaSalle salle={{ id: "m1", nom: "Les miens", description: null, code: "K7MX2Q", publique: false, estAdmin: true, nbMembres: 2, nbPresents: 2, enCours: false, derniereActivite: "" }} /></ul>);
+  check("/salles : tes salles (joueurs, privée, code, admin, Ouvrir)", mienne.includes("2 présents · Privée · K7M-X2Q · Admin") && mienne.includes('href="/salles/m1"'));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
@@ -258,6 +260,15 @@ console.log("# la peau du site");
   const bientot = rendre(<CarteSalles salles={{ pret: false }} />);
   check("sans la migration : la peinture et une ligne, ni bouton ni champ", bientot.includes('data-salles="bientot"') && bientot.includes("/illustrations/salles-entree.webp") && bientot.includes("Les Salles arrivent bientôt") && !bientot.includes("<a ") && !bientot.includes("<input"));
   const salon = rendre(<SalonView donnees={donnees(3, "u0")} reglages={<Reglages onLancer={noop} />} />);
+  check("seuls les joueurs présents s'affichent, et on se voit toujours soi-même", (() => {
+    const html = rendre(
+      <PresentsContext.Provider value={new Set(["u1"])}>
+        <SalonView donnees={donnees(3, "u0")} reglages={<Reglages onLancer={noop} />} />
+      </PresentsContext.Provider>,
+    );
+    return (html.match(/<b>2<\/b>/g) ?? []).length >= 1 && !html.includes("<b>3</b>");
+  })());
+  check("une salle sans personne est inactive", rendre(<ul><LigneMaSalle salle={{ id: "m9", nom: "Vide", description: null, code: "ABC123", publique: false, estAdmin: false, nbMembres: 4, nbPresents: 0, enCours: false, derniereActivite: "" }} /></ul>).includes(SALLES.inactive));
   check("la salle d'attente a son chat dès qu'on est deux, pas quand on est seul", salon.includes('aria-labelledby="salle-chat"') && !rendre(<SalonView donnees={donnees(1, "u0")} reglages={<Reglages onLancer={noop} />} />).includes('aria-labelledby="salle-chat"'));
   check("le salon se pose sur le papier du site, l'écran de jeu par question garde son encre", salon.includes('data-salon="attente" data-sobre="1"') && !rendre(<SalonView donnees={donnees(3, "u0", { session: { ...session, statut: "en_cours", phase: "question" } })} partie={<p>Jeu</p>} />).includes("data-sobre"));
   const enJeu = rendre(<SalonView donnees={donnees(3, "u0", { session: { ...session, statut: "en_cours", phase: "question", chrono: "global" } })} partie={<p>Jeu</p>} />);

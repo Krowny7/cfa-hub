@@ -16,10 +16,10 @@ export async function lireEntreeSalles(supabase: SupabaseClient): Promise<Entree
   if (!mes.ok || !publiques.ok) return { pret, apercu: null };
 
   const salles = new Map<string, ApercuSalle & { activite: string }>();
-  for (const s of publiques.data) salles.set(s.id, { id: s.id, nom: s.nom, nbMembres: s.nbMembres, enCours: s.enCours, mienne: s.dejaMembre, activite: s.derniereActivite });
-  for (const s of mes.data) salles.set(s.id, { id: s.id, nom: s.nom, nbMembres: s.nbMembres, enCours: s.enCours, mienne: true, activite: s.derniereActivite });
+  for (const s of publiques.data) salles.set(s.id, { id: s.id, nom: s.nom, nbPresents: s.nbPresents, enCours: s.enCours, mienne: s.dejaMembre, activite: s.derniereActivite });
+  for (const s of mes.data) salles.set(s.id, { id: s.id, nom: s.nom, nbPresents: s.nbPresents, enCours: s.enCours, mienne: true, activite: s.derniereActivite });
 
-  const toutes = [...salles.values()].sort((a, b) => Number(b.enCours) - Number(a.enCours) || Number(b.mienne) - Number(a.mienne) || b.activite.localeCompare(a.activite));
+  const toutes = [...salles.values()].sort((a, b) => Number(b.enCours) - Number(a.enCours) || b.nbPresents - a.nbPresents || Number(b.mienne) - Number(a.mienne) || b.activite.localeCompare(a.activite));
   return {
     pret,
     apercu: {

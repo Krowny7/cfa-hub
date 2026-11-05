@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresents } from "@/components/salles/presence";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCheck, FileCheck, Hourglass, Lock, Users } from "lucide-react";
 import { EcranVs } from "@/components/arene/EcranVs";
@@ -214,7 +215,8 @@ function JeuExamen({
   const item = items.find((i) => i.position === courante) ?? null;
   const retenue = retenues.get(courante) ?? null;
   const bas = chronoBas(restantMs, totalMs);
-  const joueurs = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: nbRepondues, moiRendu: rendue });
+  const presents = usePresents();
+  const joueurs = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: nbRepondues, moiRendu: rendue, presents });
   const autres = joueurs.length > 1;
   const visibles = joueurs.slice(0, MAX_AVANCEMENT);
   if (!visibles.some((j) => j.moi)) {

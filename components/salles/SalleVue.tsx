@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { PartieSalle } from "@/components/salles/PartieSalle";
 import { Reglages, type RetourLancement } from "@/components/salles/Reglages";
 import { SalonView, type ActionsSalon } from "@/components/salles/SalonView";
+import { PresentsContext, useSuiviPresence } from "@/components/salles/presence";
 import { Stage } from "@/components/salles/Stage";
 import { useEtatSalle } from "@/components/salles/useEtatSalle";
 import { lancerPartie } from "@/app/salles/actions";
@@ -33,6 +34,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
   const client = useRef<SupabaseClient | null>(null);
   const sb = useCallback(() => (client.current ??= createClient()), []);
   const { etat, rafraichir } = suivi;
+  const presents = useSuiviPresence(salleId, etat.nbMembres);
   // la partie vue en cours pendant cette visite, et la dernière dont on a fermé l'écran de fin
   const [vueEnCours, setVueEnCours] = useState<string | null>(null);
   const [fermee, setFermee] = useState<string | null>(null);
@@ -135,6 +137,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
   const finAffichee = session !== null && session.statut === "terminee" && fermee !== session.id && (vueEnCours === session.id || finRecente(session.finAt, etat.serverNow));
   const partieAffichee = session !== null && (active || finAffichee);
   return (
+    <PresentsContext.Provider value={presents}>
     <SalonView
       donnees={etat}
       hors={suivi.hors}
@@ -152,5 +155,6 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
         ) : null
       }
     />
+    </PresentsContext.Provider>
   );
 }

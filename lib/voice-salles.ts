@@ -36,6 +36,8 @@ export const SALLES = {
   rejoindreNom: (nom: string) => `Rejoindre la salle ${nom}`,
   ouvrirNom: (nom: string) => `Ouvrir la salle ${nom}`,
   joueurs: (n: number) => `${n} ${n > 1 ? "joueurs" : "joueur"}`,
+  presents: (n: number) => (n === 0 ? "Personne" : `${n} ${n > 1 ? "présents" : "présent"}`),
+  inactive: "Inactive",
   partieEnCours: "Partie en cours",
   salonOuvert: "Salon ouvert",
   parAdmin: (pseudo: string) => `par ${pseudo}`,

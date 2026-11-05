@@ -94,6 +94,8 @@ export type SalleResume = {
   publique: boolean;
   estAdmin: boolean;
   nbMembres: number;
+  /** ceux qui sont sur la page en ce moment ; à zéro, la salle est inactive */
+  nbPresents: number;
   /** une partie est en attente ou en cours */
   enCours: boolean;
   derniereActivite: string;
@@ -106,6 +108,7 @@ export type SallePublique = {
   description: string | null;
   adminUsername: string | null;
   nbMembres: number;
+  nbPresents: number;
   enCours: boolean;
   derniereActivite: string;
   dejaMembre: boolean;
@@ -357,7 +360,7 @@ export type CalculPourSalle = {
 export type ApercuSalle = {
   id: string;
   nom: string;
-  nbMembres: number;
+  nbPresents: number;
   enCours: boolean;
   mienne: boolean;
 };

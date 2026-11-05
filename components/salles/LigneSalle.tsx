@@ -6,14 +6,15 @@ import { SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 
 // Une salle dans les listes de /salles : son nom, une ligne de détails, partie en
-// cours ou salon ouvert, et à droite « Ouvrir » ou « Rejoindre ». Composant sans
+// cours, salon ouvert ou salle inactive (personne sur la page), et à droite « Ouvrir » ou
+// « Rejoindre ». Seuls comptent les joueurs présents. Composant sans
 // état ; `demo` (aperçus) coupe le bouton.
 
-function Etat({ enCours }: { enCours: boolean }) {
+function Etat({ enCours, presents }: { enCours: boolean; presents: number }) {
   return (
     <span className={[s.etat, enCours ? s.etatVif : ""].filter(Boolean).join(" ")}>
       <i className={[s.point, enCours ? s.pointVif : ""].filter(Boolean).join(" ")} aria-hidden />
-      {enCours ? SALLES.partieEnCours : SALLES.salonOuvert}
+      {enCours ? SALLES.partieEnCours : presents > 0 ? SALLES.salonOuvert : SALLES.inactive}
     </span>
   );
 }
@@ -32,10 +33,10 @@ export function LigneSallePublique({ salle, demo = false }: { salle: SallePubliq
       <div className={s.ligneNom}>
         <b title={salle.nom}>{salle.nom}</b>
         <span>
-          {SALLES.joueurs(salle.nbMembres)}
+          {SALLES.presents(salle.nbPresents)}
           {salle.adminUsername ? ` · ${SALLES.parAdmin(salle.adminUsername)}` : ""}
         </span>
-        <Etat enCours={salle.enCours} />
+        <Etat enCours={salle.enCours} presents={salle.nbPresents} />
       </div>
       {salle.dejaMembre ? <Ouvrir id={salle.id} nom={salle.nom} /> : <BoutonRejoindre salleId={salle.id} nom={salle.nom} demo={demo} />}
     </li>
@@ -48,10 +49,10 @@ export function LigneMaSalle({ salle }: { salle: SalleResume }) {
       <div className={s.ligneNom}>
         <b title={salle.nom}>{salle.nom}</b>
         <span>
-          {SALLES.joueurs(salle.nbMembres)} · {salle.publique ? SALLES.publique : SALLES.privee} · {formaterCode(salle.code)}
+          {SALLES.presents(salle.nbPresents)} · {salle.publique ? SALLES.publique : SALLES.privee} · {formaterCode(salle.code)}
           {salle.estAdmin ? ` · ${SALLES.admin}` : ""}
         </span>
-        <Etat enCours={salle.enCours} />
+        <Etat enCours={salle.enCours} presents={salle.nbPresents} />
       </div>
       <Ouvrir id={salle.id} nom={salle.nom} />
     </li>

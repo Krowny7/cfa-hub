@@ -243,17 +243,19 @@ export function avancementJoueurs(opts: {
   moiId: string;
   mesRepondues: number;
   moiRendu?: boolean;
+  /** ceux qui sont sur la page ; `null` : on ne sait pas encore */
+  presents?: ReadonlySet<string> | null;
 }): AvancementJoueur[] {
-  const { session, membres, moiId, mesRepondues, moiRendu = false } = opts;
+  const { session, membres, moiId, mesRepondues, moiRendu = false, presents = null } = opts;
   const parId = new Map(membres.map((m) => [m.userId, m]));
   const lignes = new Map<string, AvancementJoueur>();
   for (const a of avancementBrut(session)) {
     const m = parId.get(a.userId);
     lignes.set(a.userId, { userId: a.userId, username: m?.username ?? null, avatarUrl: m?.avatarUrl ?? null, n: a.n, rendu: a.rendu, moi: a.userId === moiId });
   }
-  // le serveur ne cite que ceux qui ont déjà répondu : les autres membres partent de zéro
+  // le serveur ne cite que ceux qui ont déjà répondu : les autres joueurs présents partent de zéro
   for (const m of membres) {
-    if (!lignes.has(m.userId)) lignes.set(m.userId, { userId: m.userId, username: m.username ?? null, avatarUrl: m.avatarUrl ?? null, n: 0, rendu: false, moi: m.userId === moiId });
+    if (!lignes.has(m.userId) && (!presents || presents.has(m.userId))) lignes.set(m.userId, { userId: m.userId, username: m.username ?? null, avatarUrl: m.avatarUrl ?? null, n: 0, rendu: false, moi: m.userId === moiId });
   }
   const moiM = parId.get(moiId);
   const moi = lignes.get(moiId);
