@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Swords } from "lucide-react";
 import { TetePanneau } from "@/components/salles/Stage";
-import { echarpeDe, peindreArene, poseDe } from "@/components/salles/jeu-dessin";
+import { TENUE_MANNEQUIN, peindreArene, peindreEclat, peindreOmbre, peindrePantin, peindrePoussiere, peindreTrace, tenueDe, type Eclat, type Humeur, type Poussiere, type Tenue } from "@/components/salles/jeu-dessin";
 import { COUPS, HAUTEUR, LARGEUR, SANS_ENTREE, VIES, avancer, coupActif, dernierDebout, elimine, meneur, nouveauCombattant, subir, touche, type Combattant, type Entrees, type TypeCoup } from "@/lib/salles/jeu-combat";
+import { VIE_TRACE, animer, nouveauPantin, type Pantin, type Vue } from "@/lib/salles/jeu-pantin";
 import type { SalleMembre } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
 import { SALLES } from "@/lib/voice-salles";
@@ -16,8 +17,8 @@ import s from "./Salles.module.css";
 // passe par un canal Realtime (broadcast), et la carte disparaît au lancement. Chacun simule
 // son personnage ; qui frappe prévient sa cible, qui applique le coup chez elle. Seul dans la
 // salle, on s'entraîne sur un mannequin. Le clavier ne répond que quand la carte a le focus.
+// Les personnages sont animés par le code (lib/salles/jeu-pantin), l'arène est une peinture.
 
-const TAILLE = 4.6;
 const ENVOI_MS = 66;
 const ABSENT_MS = 5000;
 const NOUVELLE_MANCHE_MS = 4000;
@@ -25,16 +26,17 @@ const MANNEQUIN = "mannequin";
 
 type Vu = Combattant & { cx: number; cy: number; vu: number };
 type Goutte = { x: number; y: number; vx: number; vy: number; vie: number; r: number; teinte: string };
+type Acteur = { id: string; vue: Vue; invincible: number; degats: number; nom: string; tenue: Tenue };
 type Ligne = { id: string; degats: number; vies: number };
 
 const nomDe = (m: SalleMembre | undefined) => m?.username?.trim() || "Un joueur";
 
 /** Un état reçu du canal, s'il a la bonne forme. */
-function etatLu(p: unknown): (Pick<Combattant, "x" | "y" | "vx" | "vy" | "dir" | "degats" | "vies" | "coup"> & { id: string }) | null {
-  const m = p as { id?: unknown; x?: unknown; y?: unknown; vx?: unknown; vy?: unknown; d?: unknown; g?: unknown; v?: unknown; c?: unknown; t?: unknown } | null;
+function etatLu(p: unknown): (Pick<Combattant, "x" | "y" | "vx" | "vy" | "sol" | "etourdi" | "dir" | "degats" | "vies" | "coup"> & { id: string }) | null {
+  const m = p as { id?: unknown; x?: unknown; y?: unknown; vx?: unknown; vy?: unknown; d?: unknown; g?: unknown; v?: unknown; c?: unknown; t?: unknown; s?: unknown; e?: unknown } | null;
   if (!m || typeof m.id !== "string" || typeof m.x !== "number" || typeof m.y !== "number" || typeof m.g !== "number" || typeof m.v !== "number") return null;
   const type = m.c === "leger" || m.c === "fort" ? m.c : null;
-  return { id: m.id, x: m.x, y: m.y, vx: Number(m.vx) || 0, vy: Number(m.vy) || 0, dir: m.d === -1 ? -1 : 1, degats: m.g, vies: m.v, coup: type ? { type, t: Number(m.t) || 0 } : null };
+  return { id: m.id, x: m.x, y: m.y, vx: Number(m.vx) || 0, vy: Number(m.vy) || 0, sol: m.s === 1, etourdi: Number(m.e) || 0, dir: m.d === -1 ? -1 : 1, degats: m.g, vies: m.v, coup: type ? { type, t: Number(m.t) || 0 } : null };
 }
 
 export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: string; membres: SalleMembre[] }) {
@@ -55,8 +57,15 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
   const moi = useRef<Combattant>(nouveauCombattant(rang));
   const autres = useRef(new Map<string, Vu>());
   const mannequin = useRef<Combattant>(nouveauCombattant(rang + 1));
+  const pantins = useRef(new Map<string, Pantin>());
   const gouttes = useRef<Goutte[]>([]);
+  const poussiere = useRef<Poussiere[]>([]);
+  const eclats = useRef<Eclat[]>([]);
   const secousse = useRef(0);
+  /** l'arrêt sur image après un coup, en secondes */
+  const gel = useRef(0);
+  /** qui on vient de toucher nous-mêmes : son état reçu ensuite ne relance pas les effets */
+  const touchesRecentes = useRef(new Map<string, number>());
   const finDeManche = useRef<string | null>(null);
 
   const envoyer = (event: string, payload: Record<string, unknown>) => {
@@ -65,9 +74,25 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
 
   const eclabousser = (x: number, y: number, dir: number, force: number) => {
     for (let i = 0; i < 8 + force * 10; i++) {
-      gouttes.current.push({ x, y: y - 34, vx: dir * (60 + Math.random() * 300) + (Math.random() - 0.5) * 160, vy: -80 - Math.random() * 260, vie: 0.35 + Math.random() * 0.4, r: 2 + Math.random() * 5, teinte: i % 4 === 0 ? "#c9402a" : "#1a120b" });
+      gouttes.current.push({ x, y: y - 40, vx: dir * (60 + Math.random() * 300) + (Math.random() - 0.5) * 160, vy: -80 - Math.random() * 260, vie: 0.35 + Math.random() * 0.4, r: 1.5 + Math.random() * 3, teinte: i % 4 === 0 ? "#c9402a" : "#1a120b" });
     }
     secousse.current = Math.min(10, 3 + force * 6);
+  };
+
+  /** Tout ce qui fait sentir un coup : l'encre, l'étoile, le flash et l'arrêt sur image. */
+  const marquerCoup = (id: string, x: number, y: number, dir: number, fort: boolean) => {
+    eclabousser(x, y, dir, fort ? 1 : 0.4);
+    eclats.current.push({ x, y: y - 42, vie: 0.13, max: 0.13, fort, tourne: Math.random() * Math.PI });
+    gel.current = fort ? 0.09 : 0.05;
+    const p = pantins.current.get(id);
+    if (p) p.flash = 0.08;
+  };
+
+  const soulever = (x: number, y: number, n: number, force: number) => {
+    for (let i = 0; i < n; i++) {
+      const sens = i % 2 === 0 ? 1 : -1;
+      poussiere.current.push({ x: x + sens * Math.random() * 12, y: y - 2, vx: sens * (20 + Math.random() * 90) * force, vy: -10 - Math.random() * 34, r: 3 + Math.random() * 4, vie: 0.3, max: 0.3 });
+    }
   };
 
   const relancer = () => {
@@ -86,8 +111,10 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         const p = etatLu(payload);
         if (!p || p.id === moiId || !ids.current.has(p.id)) return;
         const avant = autres.current.get(p.id);
-        if (avant && p.degats > avant.degats) eclabousser(p.x, p.y, p.vx >= 0 ? 1 : -1, 0.4);
-        autres.current.set(p.id, { ...nouveauCombattant(0), ...p, cx: avant?.cx ?? p.x, cy: avant?.cy ?? p.y, vu: Date.now() });
+        if (avant && p.degats > avant.degats && Date.now() - (touchesRecentes.current.get(p.id) ?? 0) > 500) marquerCoup(p.id, p.x, p.y, p.vx >= 0 ? 1 : -1, p.degats - avant.degats >= COUPS.fort.degats);
+        // le coup en cours : on garde notre horloge, plus fluide que les messages reçus
+        const memeCoup = avant?.coup && p.coup && avant.coup.type === p.coup.type && avant.coup.t > p.coup.t;
+        autres.current.set(p.id, { ...nouveauCombattant(0), ...p, coup: memeCoup ? (avant?.coup ?? null) : p.coup, cx: avant?.cx ?? p.x, cy: avant?.cy ?? p.y, vu: Date.now() });
       });
       c.on("broadcast", { event: "coup" }, ({ payload }) => {
         const p = payload as { de?: unknown; cible?: unknown; type?: unknown; dir?: unknown } | null;
@@ -95,7 +122,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         const dir = p.dir === -1 ? -1 : 1;
         const avant = moi.current;
         moi.current = subir(avant, p.type as TypeCoup, dir);
-        if (moi.current !== avant) eclabousser(avant.x, avant.y, dir, p.type === "fort" ? 1 : 0.4);
+        if (moi.current !== avant) marquerCoup(moiId, avant.x, avant.y, dir, p.type === "fort");
       });
       c.on("broadcast", { event: "fin" }, ({ payload }) => {
         const g = (payload as { gagnant?: unknown } | null)?.gagnant;
@@ -125,6 +152,15 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     let dernierTableau = 0;
     const dejaTouches = new Set<string>();
     let coupVu: unknown = null;
+    const sage = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const tenues = new Map<string, Tenue>();
+    const tenue = (id: string) => {
+      const connue = tenues.get(id);
+      if (connue) return connue;
+      const neuve = id === MANNEQUIN ? TENUE_MANNEQUIN : tenueDe(id, id === moiId);
+      tenues.set(id, neuve);
+      return neuve;
+    };
 
     const boucle = (t: number) => {
       image = requestAnimationFrame(boucle);
@@ -132,9 +168,12 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         avant = t;
         return;
       }
-      const dt = Math.min(0.033, (t - avant) / 1000);
+      const brut = Math.max(0, Math.min(0.033, (t - avant) / 1000));
       avant = t;
       const maintenant = Date.now();
+      // l'arrêt sur image : le temps du jeu s'arrête un instant, pas celui des effets
+      const dt = gel.current > 0 && !sage ? 0 : brut;
+      gel.current = Math.max(0, gel.current - brut);
 
       const k = touches.current;
       const a = appuis.current;
@@ -150,13 +189,21 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           autres.current.delete(id);
           continue;
         }
-        o.x += o.vx * dt;
-        o.y += o.vy * dt;
-        o.cx += (o.x - o.cx) * Math.min(1, dt * 16);
-        o.cy += (o.y - o.cy) * Math.min(1, dt * 16);
+        o.x += o.vx * brut;
+        o.y += o.vy * brut;
+        o.cx += (o.x - o.cx) * Math.min(1, brut * 16);
+        o.cy += (o.y - o.cy) * Math.min(1, brut * 16);
+        o.etourdi = Math.max(0, o.etourdi - brut);
+        if (o.coup) {
+          const avance = o.coup.t + brut;
+          o.coup = avance >= COUPS[o.coup.type].total ? null : { ...o.coup, t: avance };
+        }
       }
       const estSeul = autres.current.size === 0;
-      if (estSeul) mannequin.current = avancer(mannequin.current.vies <= 0 ? nouveauCombattant(rang + 1) : mannequin.current, SANS_ENTREE, dt);
+      if (estSeul) {
+        const pantin = mannequin.current.vies <= 0 ? nouveauCombattant(rang + 1) : mannequin.current;
+        mannequin.current = avancer({ ...pantin, dir: pantin.etourdi > 0 ? pantin.dir : m.x < pantin.x ? -1 : 1 }, SANS_ENTREE, dt);
+      }
 
       // le coup : une seule touche par cible et par coup
       if (m.coup !== coupVu) {
@@ -169,19 +216,20 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           dejaTouches.add(MANNEQUIN);
           const cible = mannequin.current;
           mannequin.current = subir(cible, type, m.dir);
-          if (mannequin.current !== cible) eclabousser(cible.x, cible.y, m.dir, type === "fort" ? 1 : 0.4);
+          if (mannequin.current !== cible) marquerCoup(MANNEQUIN, cible.x, cible.y, m.dir, type === "fort");
         }
         for (const [id, o] of autres.current) {
           if (dejaTouches.has(id) || elimine(o) || !touche(m, { x: o.cx, y: o.cy })) continue;
           dejaTouches.add(id);
           envoyer("coup", { de: moiId, cible: id, type, dir: m.dir });
-          eclabousser(o.cx, o.cy, m.dir, type === "fort" ? 1 : 0.4);
+          touchesRecentes.current.set(id, maintenant);
+          marquerCoup(id, o.cx, o.cy, m.dir, type === "fort");
         }
       }
 
       if (t - dernierEnvoi > ENVOI_MS) {
         dernierEnvoi = t;
-        envoyer("etat", { id: moiId, x: Math.round(m.x), y: Math.round(m.y), vx: Math.round(m.vx), vy: Math.round(m.vy), d: m.dir, g: m.degats, v: m.vies, c: m.coup?.type ?? "", t: m.coup?.t ?? 0 });
+        envoyer("etat", { id: moiId, x: Math.round(m.x), y: Math.round(m.y), vx: Math.round(m.vx), vy: Math.round(m.vy), s: m.sol ? 1 : 0, e: Math.round(m.etourdi * 100) / 100, d: m.dir, g: m.degats, v: m.vies, c: m.coup?.type ?? "", t: m.coup?.t ?? 0 });
       }
 
       // la fin de la manche, décidée par le meneur
@@ -205,56 +253,80 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         setLignes(joueurs.map((j) => ({ id: j.id, vies: j.vies, degats: j.id === moiId ? m.degats : (autres.current.get(j.id)?.degats ?? 0) })));
       }
 
+      // qui est sur la scène, et où en est chaque pantin
+      const scene: Acteur[] = [];
+      for (const [id, o] of autres.current) if (!elimine(o)) scene.push({ id, vue: { ...o, x: o.cx, y: o.cy }, invincible: 0, degats: o.degats, nom: nomDe(noms.current.get(id)), tenue: tenue(id) });
+      if (estSeul) scene.push({ id: MANNEQUIN, vue: mannequin.current, invincible: mannequin.current.invincible, degats: mannequin.current.degats, nom: SALLES.jeuMannequin, tenue: tenue(MANNEQUIN) });
+      if (!elimine(m)) scene.push({ id: moiId, vue: m, invincible: m.invincible, degats: m.degats, nom: nomDe(noms.current.get(moiId)), tenue: tenue(moiId) });
+      for (const id of pantins.current.keys()) if (!scene.some((j) => j.id === id)) pantins.current.delete(id);
+      for (const j of scene) {
+        const { x, y, vx, vy, dir, etourdi } = j.vue;
+        let p = pantins.current.get(j.id);
+        if (!p) {
+          p = nouveauPantin(j.vue);
+          pantins.current.set(j.id, p);
+        }
+        const ev = animer(p, j.vue, j.id === moiId || j.id === MANNEQUIN ? dt : brut);
+        if (ev.atterri > 240) soulever(x, y, 6, 1 + ev.atterri / 900);
+        if (ev.decolle) soulever(x, y, 4, 0.7);
+        if (ev.pas) soulever(x - dir * 10, y, 1, 0.5);
+        if (etourdi > 0 && Math.hypot(vx, vy) > 560 && dt > 0) gouttes.current.push({ x, y: y - 36, vx: -vx * 0.12, vy: -vy * 0.12, vie: 0.3, r: 1.5 + Math.random() * 3, teinte: "#1a120b" });
+      }
+
       // l'image
-      const choc = secousse.current;
-      secousse.current = Math.max(0, choc - dt * 40);
+      const choc = sage ? 0 : secousse.current;
+      secousse.current = Math.max(0, secousse.current - brut * 40);
       c.setTransform(1, 0, 0, 1, (Math.random() - 0.5) * choc, (Math.random() - 0.5) * choc);
       peindreArene(c);
-      const scene: { id: string; f: Pick<Combattant, "x" | "y" | "dir" | "coup" | "invincible" | "vx" | "degats">; nom: string }[] = [];
-      if (!elimine(m)) scene.push({ id: moiId, f: m, nom: nomDe(noms.current.get(moiId)) });
-      for (const [id, o] of autres.current) if (!elimine(o)) scene.push({ id, f: { ...o, x: o.cx, y: o.cy, invincible: 0 }, nom: nomDe(noms.current.get(id)) });
-      if (estSeul) scene.push({ id: MANNEQUIN, f: mannequin.current, nom: SALLES.jeuMannequin });
+      for (const j of scene) peindreOmbre(c, j.vue.x, j.vue.y);
 
-      c.imageSmoothingEnabled = false;
       for (const j of scene) {
-        const { x, y, dir, coup, invincible, vx } = j.f;
-        c.globalAlpha = invincible > 0 && Math.floor(t / 90) % 2 === 0 ? 0.45 : 1;
-        const pas = Math.abs(vx) > 30 ? (Math.floor(t / 110) % 2) + 1 : 0;
-        const echarpe = j.id === MANNEQUIN ? "#8d8579" : echarpeDe(j.id, j.id === moiId);
-        c.drawImage(poseDe(dir > 0 ? "droite" : "gauche", pas, echarpe), x - 8 * TAILLE, y - 15 * TAILLE, 16 * TAILLE, 16 * TAILLE);
+        const p = pantins.current.get(j.id);
+        if (!p) continue;
+        const humeur: Humeur = j.vue.etourdi > 0 ? "mal" : j.vue.coup ? "colere" : "calme";
+        c.globalAlpha = j.invincible > 0 && Math.floor(t / 90) % 2 === 0 ? 0.5 : 1;
+        peindrePantin(c, p, j.tenue, humeur);
         c.globalAlpha = 1;
-        if (coup) {
-          const info = COUPS[coup.type];
-          if (coup.t >= info.debut && coup.t <= info.fin + 0.04) {
-            c.strokeStyle = coup.type === "fort" ? "#d8432a" : "#f4ead2";
-            c.lineWidth = coup.type === "fort" ? 11 : 7;
-            c.lineCap = "round";
-            c.beginPath();
-            c.arc(x + dir * 16, y - 36, info.portee * 0.72, dir > 0 ? -1 : Math.PI - 0.6, dir > 0 ? 0.6 : Math.PI + 1);
-            c.stroke();
-          }
-        }
+        peindreTrace(c, p.trace, VIE_TRACE);
       }
+
+      poussiere.current = poussiere.current.filter((g) => g.vie > 0);
+      for (const g of poussiere.current) {
+        g.vie -= brut;
+        g.x += g.vx * brut;
+        g.y += g.vy * brut;
+      }
+      peindrePoussiere(c, poussiere.current);
+
       gouttes.current = gouttes.current.filter((g) => g.vie > 0);
       for (const g of gouttes.current) {
-        g.vie -= dt;
-        g.vy += 1100 * dt;
-        g.x += g.vx * dt;
-        g.y += g.vy * dt;
+        g.vie -= brut;
+        g.vy += 1100 * brut;
+        g.x += g.vx * brut;
+        g.y += g.vy * brut;
         c.fillStyle = g.teinte;
-        c.fillRect(g.x, g.y, g.r, g.r);
+        c.beginPath();
+        c.arc(g.x, g.y, g.r, 0, Math.PI * 2);
+        c.fill();
       }
-      c.font = "600 22px system-ui, sans-serif";
+
+      eclats.current = eclats.current.filter((e) => e.vie > 0);
+      for (const e of eclats.current) {
+        e.vie -= brut;
+        peindreEclat(c, e);
+      }
+
+      c.font = "600 20px system-ui, sans-serif";
       c.textAlign = "center";
       c.lineJoin = "round";
       c.lineWidth = 5;
       for (const j of scene) {
-        const y = j.f.y - 17 * TAILLE;
-        const texte = `${j.nom.slice(0, 12)} ${Math.round(j.f.degats)} %`;
+        const y = Math.max(22, j.vue.y - 92);
+        const texte = `${j.nom.slice(0, 12)} ${Math.round(j.degats)} %`;
         c.strokeStyle = "rgba(26, 18, 11, 0.85)";
-        c.strokeText(texte, j.f.x, y);
+        c.strokeText(texte, j.vue.x, y);
         c.fillStyle = "#fff";
-        c.fillText(texte, j.f.x, y);
+        c.fillText(texte, j.vue.x, y);
       }
     };
     image = requestAnimationFrame(boucle);

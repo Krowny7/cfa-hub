@@ -34,12 +34,14 @@ check("un second saut est possible en l'air", double.vy < 0 && double.sauts === 
 const triple = avancer(double, { ...SANS_ENTREE, saut: true }, DT);
 check("pas de troisième saut", triple.sauts === 0 && triple.vy > double.vy);
 
-const haut = pose({ x: 335, y: 300, vy: 0, sol: false });
+const planche = PLATEFORMES[1];
+const milieu = planche.x + planche.l / 2;
+const haut = pose({ x: milieu, y: planche.y - 20, vy: 0, sol: false });
 const pose2 = jouer(haut, {}, 30);
-check("on se pose sur une plateforme en tombant", pose2.sol && pose2.y === 320);
-check("on la traverse en appuyant vers le bas", jouer(pose2, { bas: true }, 20).y > 320);
-const dessous = pose({ x: 335, y: 380, vy: -700, sol: false });
-check("on la traverse en sautant par-dessous", jouer(dessous, {}, 20).y < 320);
+check("on se pose sur une plateforme en tombant", pose2.sol && pose2.y === planche.y);
+check("on la traverse en appuyant vers le bas", jouer(pose2, { bas: true }, 20).y > planche.y);
+const dessous = pose({ x: milieu, y: planche.y + 60, vy: -700, sol: false });
+check("on la traverse en sautant par-dessous", jouer(dessous, {}, 20).y < planche.y);
 
 const att = avancer(f, { ...SANS_ENTREE, leger: true }, DT);
 check("un coup démarre, et il ne porte pas tout de suite", !!att.coup && !coupActif(att));
@@ -62,6 +64,8 @@ check("étourdi, on ne peut plus agir", (() => {
   return s.vy >= 0 && s.coup === null;
 })());
 
+const sommet = (vy: number) => (vy * vy) / (2 * 1900);
+check("un saut suffit pour la planche du côté, deux pour celle du haut", sommet(745) > PLATEFORMES[0].y - PLATEFORMES[1].y && sommet(745) + sommet(660) > PLATEFORMES[0].y - PLATEFORMES[3].y);
 check("le bord de l'arène est loin de la plateforme", !horsArene({ x: 100, y: 400 }) && horsArene({ x: -200, y: 300 }) && horsArene({ x: 500, y: 800 }));
 const ejecte = avancer(pose({ x: -139, vx: -900, y: 300, sol: false, degats: 90 }), SANS_ENTREE, DT);
 check("sortir de l'arène coûte une vie, et remet à 0 %", ejecte.vies === VIES - 1 && ejecte.degats === 0 && ejecte.invincible > 0);

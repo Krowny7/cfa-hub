@@ -14,8 +14,8 @@ const CHUTE_RAPIDE = 1250;
 const COURSE = 300;
 const ACCELERATION = 2600;
 const FREIN_AU_SOL = 2400;
-const SAUT = -660;
-const SAUT_EN_L_AIR = -600;
+const SAUT = -745;
+const SAUT_EN_L_AIR = -660;
 const SAUTS = 2;
 const INVINCIBLE = 2;
 /** Au-delà, c'est la sortie de l'arène. */
@@ -24,11 +24,12 @@ const MARGE_HAUT = 260;
 
 export type Plateforme = { x: number; y: number; l: number; traversable: boolean };
 
+/** Calées sur la peinture (public/salles/arene.webp) : la grande estrade et les trois planches. */
 export const PLATEFORMES: Plateforme[] = [
-  { x: 192, y: 440, l: 640, traversable: false },
-  { x: 250, y: 320, l: 170, traversable: true },
-  { x: 604, y: 320, l: 170, traversable: true },
-  { x: 432, y: 215, l: 160, traversable: true },
+  { x: 158, y: 340, l: 708, traversable: false },
+  { x: 212, y: 210, l: 168, traversable: true },
+  { x: 646, y: 210, l: 168, traversable: true },
+  { x: 436, y: 100, l: 154, traversable: true },
 ];
 
 export type TypeCoup = "leger" | "fort";
@@ -65,7 +66,7 @@ const REAPPARITIONS = [240, 784, 512, 335, 689];
 /** Où un joueur apparaît : des places différentes selon son rang dans la salle. */
 export function nouveauCombattant(rang: number): Combattant {
   const x = REAPPARITIONS[rang % REAPPARITIONS.length];
-  return { x, y: 430, vx: 0, vy: 0, sol: false, sauts: SAUTS, dir: x < LARGEUR / 2 ? 1 : -1, degats: 0, vies: VIES, coup: null, etourdi: 0, invincible: INVINCIBLE };
+  return { x, y: 330, vx: 0, vy: 0, sol: false, sauts: SAUTS, dir: x < LARGEUR / 2 ? 1 : -1, degats: 0, vies: VIES, coup: null, etourdi: 0, invincible: INVINCIBLE };
 }
 
 export const elimine = (f: Combattant) => f.vies <= 0;
