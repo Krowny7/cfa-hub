@@ -1429,6 +1429,19 @@
   width: 100%;
   max-width: 560px;
 }
+/* « Ouvrir les cours » en bas à droite, le reste de la carte descend en bas à gauche */
+.tete .c1 > .bouton {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+}
+@container (max-width: 700px) {
+  .tete .c1 > .bouton {
+    position: relative;
+    right: auto;
+    bottom: auto;
+  }
+}
 button.play {
   flex: none;
   border: 0;
