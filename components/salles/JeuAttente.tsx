@@ -4,21 +4,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Gamepad2 } from "lucide-react";
 import { TetePanneau } from "@/components/salles/Stage";
-import { TAILLE_CARTE, echarpeDe, peindreCour, peindreRouleau, peindreSamourai } from "@/components/salles/jeu-dessin";
-import { ETAT_VIDE, MANCHE, ROULEAUX_MAX, avancer, caseDeRouleau, centreDe, classement, depart, directionDe, etatLu, meneur, prendre, rouleauAPortee, type Direction, type EtatJeu, type Point } from "@/lib/salles/jeu-attente";
+import { echarpeDe, peindreRouleau, poseDe } from "@/components/salles/jeu-dessin";
+import { ETAT_VIDE, HAUTEUR, LARGEUR, MANCHE, POTEAUX, ROULEAUX_MAX, avancer, classement, depart, directionDe, echelle, etatLu, lieuDeRouleau, meneur, prendre, rouleauAPortee, type Direction, type EtatJeu, type Point } from "@/lib/salles/jeu-attente";
 import type { SalleMembre } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
 import { SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 
-// La petite carte de la salle d'attente : chacun promène son samouraï dans la cour et ramasse
+// La petite carte de la salle d'attente : chacun promène son samouraï dans le dojo et ramasse
 // les rouleaux. Tout passe par un canal Realtime (broadcast), rien en base et rien dans le
 // chemin de la partie : la carte disparaît quand la partie commence. Le joueur au plus petit
 // identifiant mène le jeu : lui seul pose les rouleaux et tient les scores. Le clavier ne
 // répond que quand la carte a le focus, pour ne pas gêner la page ni le chat.
 
-/** Pixels du canevas par pixel de carte : assez pour des noms nets, le CSS l'ajuste à la carte. */
-const ZOOM = 4;
+/** Pixels d'image par pixel de sprite, au milieu de la salle. */
+const TAILLE_SPRITE = 4;
 const ENVOI_MS = 120;
 const VIE_MS = 2000;
 const ABSENT_MS = 7000;
@@ -106,15 +106,8 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     const el = toile.current;
     const c = el?.getContext("2d");
     if (!el || !c) return;
-    c.imageSmoothingEnabled = false;
-    const cours = [0, 1].map((phase) => {
-      const f = document.createElement("canvas");
-      f.width = TAILLE_CARTE.largeur;
-      f.height = TAILLE_CARTE.hauteur;
-      const fc = f.getContext("2d");
-      if (fc) peindreCour(fc, phase);
-      return f;
-    });
+    const fond = new Image();
+    fond.src = "/salles/dojo.webp";
     let image = 0;
     let avant = performance.now();
     let dernierEnvoi = 0;
@@ -200,9 +193,9 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           }
         } else if (j.rouleaux.length < ROULEAUX_MAX && t - dernierePose > POSE_MS) {
           dernierePose = t;
-          const k2 = caseDeRouleau(j.rouleaux, Math.random());
+          const k2 = lieuDeRouleau(j.rouleaux, Math.random());
           if (k2) {
-            const n = { ...j, rouleaux: [...j.rouleaux, { id: `${Math.round(t)}`, c: k2.c, l: k2.l }] };
+            const n = { ...j, rouleaux: [...j.rouleaux, { id: `${Math.round(t)}`, x: k2.x, y: k2.y }] };
             poser(n);
             envoyer("etat", n);
           }
@@ -213,32 +206,53 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         }
       }
 
-      // l'image : la cour, les rouleaux, puis les joueurs du plus haut au plus bas
-      c.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
-      c.drawImage(cours[Math.floor(t / 700) % 2], 0, 0);
+      // l'image : le dojo, les rouleaux, les joueurs du fond vers le devant, puis les poteaux
+      // qui passent devant ceux qui sont derrière
+      c.fillStyle = "#120d09";
+      c.fillRect(0, 0, LARGEUR, HAUTEUR);
+      if (fond.complete && fond.naturalWidth) c.drawImage(fond, 0, 0, LARGEUR, HAUTEUR);
       const sec = t / 1000;
-      for (const r of jeu.current.rouleaux) {
-        const p = centreDe(r);
-        peindreRouleau(c, p.x, p.y, sec);
-      }
+      for (const r of jeu.current.rouleaux) peindreRouleau(c, r.x, r.y, 3 * echelle(r.y), sec);
       const pas = (marche: boolean) => (marche ? (Math.floor(t / 160) % 2) + 1 : 0);
       const scene = [
         { id: moiId, x: m.x, y: m.y, direction: m.direction, marche: m.marche },
         ...[...autres.current].map(([id, a]) => ({ id, x: a.cx, y: a.cy, direction: a.direction, marche: a.marche })),
       ].sort((a, b) => a.y - b.y);
-      for (const j of scene) peindreSamourai(c, j.x, j.y, j.direction, pas(j.marche), echarpeDe(j.id, j.id === moiId));
+      c.imageSmoothingEnabled = false;
+      for (const j of scene) {
+        const k = TAILLE_SPRITE * echelle(j.y);
+        const saut = pas(j.marche) ? k : 0;
+        c.fillStyle = "rgba(26, 18, 11, 0.3)";
+        c.beginPath();
+        c.ellipse(j.x, j.y, 6 * k, 2 * k, 0, 0, Math.PI * 2);
+        c.fill();
+        c.drawImage(poseDe(j.direction, pas(j.marche), echarpeDe(j.id, j.id === moiId)), j.x - 8 * k, j.y - 15 * k - saut, 16 * k, 16 * k);
+      }
+      c.imageSmoothingEnabled = true;
+      if (fond.complete && fond.naturalWidth) {
+        for (const poteau of POTEAUX) {
+          if (!scene.some((j) => j.y < poteau.base && Math.abs(j.x - poteau.contour[0].x) < 90)) continue;
+          c.save();
+          c.beginPath();
+          poteau.contour.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)));
+          c.closePath();
+          c.clip();
+          c.drawImage(fond, 0, 0, LARGEUR, HAUTEUR);
+          c.restore();
+        }
+      }
 
-      c.setTransform(1, 0, 0, 1, 0, 0);
-      c.font = "600 21px system-ui, sans-serif";
+      c.font = "600 24px system-ui, sans-serif";
       c.textAlign = "center";
       c.lineJoin = "round";
       c.lineWidth = 5;
       for (const j of scene) {
         const nom = nomDe(noms.current.get(j.id)).slice(0, 14);
-        c.strokeStyle = "rgba(26, 18, 11, 0.8)";
-        c.strokeText(nom, j.x * ZOOM, (j.y - 18) * ZOOM);
+        const y = j.y - 17 * TAILLE_SPRITE * echelle(j.y);
+        c.strokeStyle = "rgba(26, 18, 11, 0.85)";
+        c.strokeText(nom, j.x, y);
         c.fillStyle = "#fff";
-        c.fillText(nom, j.x * ZOOM, (j.y - 18) * ZOOM);
+        c.fillText(nom, j.x, y);
       }
     };
     image = requestAnimationFrame(boucle);
@@ -256,7 +270,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
 
   const viser = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
-    cible.current = { x: ((e.clientX - r.left) / r.width) * TAILLE_CARTE.largeur, y: ((e.clientY - r.top) / r.height) * TAILLE_CARTE.hauteur };
+    cible.current = { x: ((e.clientX - r.left) / r.width) * LARGEUR, y: ((e.clientY - r.top) / r.height) * HAUTEUR };
   };
 
   const scores = classement(etat.scores).slice(0, 4);
@@ -280,7 +294,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           onKeyDown={(e) => touche(e, true)}
           onKeyUp={(e) => touche(e, false)}
         >
-          <canvas ref={toile} width={TAILLE_CARTE.largeur * ZOOM} height={TAILLE_CARTE.hauteur * ZOOM} onPointerDown={viser} />
+          <canvas ref={toile} width={LARGEUR} height={HAUTEUR} onPointerDown={viser} />
           {!actif && <span className={s.jeuAide}>{SALLES.jeuAide}</span>}
           {etat.gagnant && <span className={s.jeuManche}>{SALLES.jeuManche(nomDe(parId.get(etat.gagnant)))}</span>}
         </div>

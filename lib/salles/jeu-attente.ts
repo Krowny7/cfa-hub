@@ -1,54 +1,65 @@
-// Le mini-jeu de la salle d'attente : la cour du dojo, vue de dessus. Chacun promène son
-// samouraï et ramasse les rouleaux ; le premier à MANCHE en gagne la manche. Rien en base :
-// les positions et les scores passent par un canal Realtime (components/salles/JeuAttente).
-// Ce module ne garde que les règles, sans navigateur, pour les tester.
+// Le mini-jeu de la salle d'attente : l'intérieur du dojo (public/salles/dojo.webp), vu de
+// haut en perspective. Chacun promène son samouraï et ramasse les rouleaux ; le premier à
+// MANCHE gagne la manche. Rien en base : les positions et les scores passent par un canal
+// Realtime (components/salles/JeuAttente). Ce module ne garde que les règles, sans navigateur,
+// pour les tester. Toutes les coordonnées sont celles de l'image, pieds du joueur compris.
 
-export const TUILE = 16;
+export const LARGEUR = 1024;
+export const HAUTEUR = 572;
 
-/** T arbre, H dojo, R rocher et ~ eau bloquent ; le reste se traverse. */
-export const CARTE = [
-  "TTTTTTTTTTTTTTT",
-  "T..f....HHH...T",
-  "T.......HHH.f.T",
-  "T..~~.....=...T",
-  "T..~~..=====..T",
-  "T.f....=...R..T",
-  "T......=....f.T",
-  "TTTTTTTTTTTTTTT",
-];
-
-export const COLONNES = CARTE[0].length;
-export const LIGNES = CARTE.length;
-export const LARGEUR = COLONNES * TUILE;
-export const HAUTEUR = LIGNES * TUILE;
-
-/** Pixels de carte par seconde. */
-export const VITESSE = 62;
+/** Pixels d'image par seconde ; en profondeur, on avance moins vite à l'écran. */
+export const VITESSE = 170;
+const PROFONDEUR = 0.72;
 export const ROULEAUX_MAX = 3;
 /** Les rouleaux à ramasser pour gagner la manche. */
 export const MANCHE = 10;
 /** La distance à laquelle les pieds du joueur ramassent un rouleau. */
-const PORTEE = 11;
-/** La demi-largeur et la demi-hauteur de la place que prennent les pieds. */
-const PIEDS_X = 5;
-const PIEDS_Y = 3;
-
-const BLOQUANT = new Set(["T", "H", "R", "~"]);
+const PORTEE = 34;
+/** La place que prennent les pieds : on ne frôle ni les murs ni les poteaux. */
+const PIEDS = 13;
 
 export type Direction = "bas" | "haut" | "gauche" | "droite";
 export type Point = { x: number; y: number };
-export type Rouleau = { id: string; c: number; l: number };
+export type Rouleau = { id: string; x: number; y: number };
 
-export const estBloquee = (x: number, y: number): boolean => {
-  const c = Math.floor(x / TUILE);
-  const l = Math.floor(y / TUILE);
-  if (l < 0 || l >= LIGNES || c < 0 || c >= COLONNES) return true;
-  return BLOQUANT.has(CARTE[l][c]);
-};
+const miroir = (p: Point): Point => ({ x: LARGEUR - p.x, y: p.y });
 
-/** Les pieds tiennent-ils ici ? `p` : le milieu des pieds. */
-const libre = (p: Point) =>
-  !estBloquee(p.x - PIEDS_X, p.y - PIEDS_Y) && !estBloquee(p.x + PIEDS_X, p.y - PIEDS_Y) && !estBloquee(p.x - PIEDS_X, p.y + PIEDS_Y) && !estBloquee(p.x + PIEDS_X, p.y + PIEDS_Y);
+/** Le sol où l'on marche : le fond est étroit, le devant large. */
+const SOL_HAUT = 215;
+const SOL_BAS = 448;
+const bordGauche = (y: number) => 255 - ((y - SOL_HAUT) / (SOL_BAS - SOL_HAUT)) * 130;
+
+/** Les meubles : [gauche, haut, droite, bas]. */
+const MEUBLES: [number, number, number, number][] = [
+  [270, 0, 345, 232],
+  [680, 0, 750, 232],
+  [745, 0, 800, 238],
+  [860, 425, 930, 500],
+  [110, 395, 170, 500],
+  [805, 255, 870, 345],
+];
+
+/** Les deux rangées de poteaux à bannières : on en fait le tour par le devant de la salle. */
+const BARRIERE_GAUCHE: [Point, Point] = [
+  { x: 378, y: 205 },
+  { x: 323, y: 412 },
+];
+const BARRIERES: [Point, Point][] = [BARRIERE_GAUCHE, [miroir(BARRIERE_GAUCHE[0]), miroir(BARRIERE_GAUCHE[1])]];
+
+function distanceAuSegment(p: Point, [a, b]: [Point, Point]): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+
+export function estBloquee(x: number, y: number): boolean {
+  if (y < SOL_HAUT || y > SOL_BAS) return true;
+  const g = bordGauche(y);
+  if (x < g || x > LARGEUR - g) return true;
+  if (MEUBLES.some(([l, h, r, b]) => x > l && x < r && y > h && y < b)) return true;
+  return BARRIERES.some((s) => distanceAuSegment({ x, y }, s) < PIEDS);
+}
 
 /** Un pas : chaque axe à part, pour glisser le long d'un obstacle au lieu de s'y coller. */
 export function avancer(p: Point, dx: number, dy: number, dt: number): Point {
@@ -56,9 +67,9 @@ export function avancer(p: Point, dx: number, dy: number, dt: number): Point {
   if (n === 0) return p;
   const pas = (VITESSE * dt) / n;
   const enX = { x: p.x + dx * pas, y: p.y };
-  const apresX = libre(enX) ? enX : p;
-  const enY = { x: apresX.x, y: apresX.y + dy * pas };
-  return libre(enY) ? enY : apresX;
+  const apresX = estBloquee(enX.x, enX.y) ? p : enX;
+  const enY = { x: apresX.x, y: apresX.y + dy * pas * PROFONDEUR };
+  return estBloquee(enY.x, enY.y) ? apresX : enY;
 }
 
 /** Vers où regarde un joueur qui se déplace ainsi. */
@@ -68,29 +79,76 @@ export function directionDe(dx: number, dy: number, avant: Direction): Direction
   return dy > 0 ? "bas" : "haut";
 }
 
-const CASES_LIBRES: { c: number; l: number }[] = CARTE.flatMap((ligne, l) => [...ligne].flatMap((t, c) => (BLOQUANT.has(t) ? [] : [{ c, l }])));
+/** La perspective : les personnages rapetissent vers le fond de la salle. */
+export const echelle = (y: number): number => 0.78 + (Math.max(0, Math.min(1, (y - SOL_HAUT) / (SOL_BAS - SOL_HAUT))) * 0.36);
 
-/** Où un joueur apparaît : une case libre qui dépend de lui, pour ne pas s'empiler. */
+const POINTS_LIBRES: Point[] = [];
+for (let y = SOL_HAUT + 10; y < SOL_BAS; y += 24) {
+  for (let x = 130; x < LARGEUR - 130; x += 34) {
+    if (!estBloquee(x, y)) POINTS_LIBRES.push({ x, y });
+  }
+}
+
+/** Où un joueur apparaît : un point libre qui dépend de lui, pour ne pas s'empiler. */
 export function depart(userId: string): Point {
   let h = 0;
   for (const ch of userId) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const k = CASES_LIBRES[h % CASES_LIBRES.length];
-  return { x: k.c * TUILE + TUILE / 2, y: k.l * TUILE + TUILE / 2 };
+  return POINTS_LIBRES[h % POINTS_LIBRES.length];
 }
 
-/** Une case libre pour un nouveau rouleau, loin des rouleaux déjà posés ; `hasard` : entre 0 et 1. */
-export function caseDeRouleau(rouleaux: Rouleau[], hasard: number): { c: number; l: number } | null {
-  const prises = new Set(rouleaux.map((r) => `${r.c}:${r.l}`));
-  const cases = CASES_LIBRES.filter((k) => !prises.has(`${k.c}:${k.l}`));
-  return cases.length ? cases[Math.min(cases.length - 1, Math.floor(hasard * cases.length))] : null;
+/** Un point libre pour un nouveau rouleau, loin des autres ; `hasard` : entre 0 et 1. */
+export function lieuDeRouleau(rouleaux: Rouleau[], hasard: number): Point | null {
+  const points = POINTS_LIBRES.filter((p) => rouleaux.every((r) => Math.hypot(r.x - p.x, r.y - p.y) > 70));
+  return points.length ? points[Math.min(points.length - 1, Math.floor(hasard * points.length))] : null;
 }
-
-export const centreDe = (r: Rouleau): Point => ({ x: r.c * TUILE + TUILE / 2, y: r.l * TUILE + TUILE / 2 });
 
 /** Le rouleau à portée de ces pieds, s'il y en a un. */
 export function rouleauAPortee(p: Point, rouleaux: Rouleau[]): Rouleau | null {
-  return rouleaux.find((r) => Math.hypot(centreDe(r).x - p.x, centreDe(r).y - p.y) <= PORTEE) ?? null;
+  return rouleaux.find((r) => Math.hypot(r.x - p.x, r.y - p.y) <= PORTEE) ?? null;
 }
+
+/**
+ * Ce qui passe devant un joueur placé derrière : le contour de chaque groupe de poteaux, à
+ * repeindre par-dessus quand les pieds du joueur sont plus haut que `base`.
+ */
+const POTEAUX_GAUCHE: { base: number; contour: Point[] }[] = [
+  {
+    base: 262,
+    contour: [
+      { x: 368, y: 105 },
+      { x: 385, y: 105 },
+      { x: 385, y: 222 },
+      { x: 376, y: 224 },
+      { x: 376, y: 262 },
+      { x: 353, y: 262 },
+      { x: 353, y: 146 },
+    ],
+  },
+  {
+    base: 350,
+    contour: [
+      { x: 333, y: 207 },
+      { x: 353, y: 200 },
+      { x: 363, y: 262 },
+      { x: 362, y: 292 },
+      { x: 352, y: 298 },
+      { x: 352, y: 350 },
+      { x: 334, y: 350 },
+    ],
+  },
+  {
+    base: 412,
+    contour: [
+      { x: 313, y: 257 },
+      { x: 334, y: 250 },
+      { x: 342, y: 346 },
+      { x: 336, y: 412 },
+      { x: 309, y: 412 },
+    ],
+  },
+];
+
+export const POTEAUX = [...POTEAUX_GAUCHE, ...POTEAUX_GAUCHE.map((p) => ({ base: p.base, contour: p.contour.map(miroir) }))];
 
 /** Le meneur de jeu : le plus petit identifiant présent. Lui seul pose les rouleaux et tient les scores. */
 export const meneur = (ids: string[]): string | null => [...ids].sort()[0] ?? null;
@@ -110,9 +168,7 @@ export function prendre(e: EtatJeu, joueur: string, rouleau: string): EtatJeu {
 export function etatLu(p: unknown, ids: ReadonlySet<string>): EtatJeu | null {
   const e = p as Partial<EtatJeu> | null;
   if (!e || !Array.isArray(e.rouleaux) || typeof e.scores !== "object" || e.scores === null) return null;
-  const rouleaux = e.rouleaux
-    .filter((r): r is Rouleau => !!r && typeof r.id === "string" && Number.isInteger(r.c) && Number.isInteger(r.l) && r.l >= 0 && r.l < LIGNES && r.c >= 0 && r.c < COLONNES)
-    .slice(0, ROULEAUX_MAX);
+  const rouleaux = e.rouleaux.filter((r): r is Rouleau => !!r && typeof r.id === "string" && Number.isFinite(r.x) && Number.isFinite(r.y) && !estBloquee(r.x, r.y)).slice(0, ROULEAUX_MAX);
   const scores = Object.fromEntries(Object.entries(e.scores).filter(([id, n]) => ids.has(id) && Number.isFinite(n)));
   return { rouleaux, scores, gagnant: typeof e.gagnant === "string" && ids.has(e.gagnant) ? e.gagnant : null };
 }
