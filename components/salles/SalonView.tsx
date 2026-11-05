@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, Globe, History, Lock, LogOut, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Clock, Globe, History, Lock, LogOut, MessageCircle, SlidersHorizontal, Trash2 } from "lucide-react";
 import { fmtInt } from "@/components/classement/format";
+import { ChatSalle } from "@/components/salles/ChatSalle";
 import { CodePartage } from "@/components/salles/CodePartage";
 import { JeuAttente } from "@/components/salles/JeuAttente";
 import { Membres } from "@/components/salles/Membres";
@@ -113,6 +114,16 @@ export function SalonView({
         <div className={s.grille}>
           <div className={s.colonne}>
             <Membres membres={membres} moiId={moi.userId} total={nbMembres} />
+            {nbMembres > 1 && (
+              <section className={s.panneau} aria-labelledby="salle-chat">
+                <TetePanneau id="salle-chat" icone={<MessageCircle size={16} />}>
+                  {RUNNER_SALLE.chatTitre}
+                </TetePanneau>
+                <div className={s.panneauCorps}>
+                  <ChatSalle nu canal={salle.id} moi={{ userId: moi.userId, nom: membres.find((j) => j.userId === moi.userId)?.username ?? RUNNER_SALLE.chatAnonyme }} />
+                </div>
+              </section>
+            )}
             <JeuAttente canal={salle.id} moiId={moi.userId} membres={membres} />
           </div>
           <div className={s.colonne}>

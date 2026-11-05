@@ -258,6 +258,7 @@ console.log("# la peau du site");
   const bientot = rendre(<CarteSalles salles={{ pret: false }} />);
   check("sans la migration : la peinture et une ligne, ni bouton ni champ", bientot.includes('data-salles="bientot"') && bientot.includes("/illustrations/salles-entree.webp") && bientot.includes("Les Salles arrivent bientôt") && !bientot.includes("<a ") && !bientot.includes("<input"));
   const salon = rendre(<SalonView donnees={donnees(3, "u0")} reglages={<Reglages onLancer={noop} />} />);
+  check("la salle d'attente a son chat dès qu'on est deux, pas quand on est seul", salon.includes('aria-labelledby="salle-chat"') && !rendre(<SalonView donnees={donnees(1, "u0")} reglages={<Reglages onLancer={noop} />} />).includes('aria-labelledby="salle-chat"'));
   check("le salon se pose sur le papier du site, l'écran de jeu par question garde son encre", salon.includes('data-salon="attente" data-sobre="1"') && !rendre(<SalonView donnees={donnees(3, "u0", { session: { ...session, statut: "en_cours", phase: "question" } })} partie={<p>Jeu</p>} />).includes("data-sobre"));
   const enJeu = rendre(<SalonView donnees={donnees(3, "u0", { session: { ...session, statut: "en_cours", phase: "question", chrono: "global" } })} partie={<p>Jeu</p>} />);
   check("le chrono global : le papier, une simple ligne, ni en-tête ni pied", enJeu.includes('data-sobre="1"') && !enJeu.includes("nomSalle") && !enJeu.includes("Quitter la salle"));

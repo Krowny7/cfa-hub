@@ -5,8 +5,10 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/browser";
 import { RUNNER_SALLE } from "@/lib/voice-salles";
 
-// Le chat d'une partie de Salle, dans la colonne de droite. Les messages passent par
-// un canal Realtime (broadcast) : rien en base, rien dans le chemin du jeu. Si le canal
+// Le chat d'une Salle : dans la colonne de droite d'une partie (canal : la partie) et dans
+// la salle d'attente (canal : la salle, `nu` : sans sa carte, posé dans un panneau du salon).
+// Les messages passent par un canal Realtime (broadcast) : rien en base, rien dans le
+// chemin du jeu. Si le canal
 // ne répond pas, le chat le dit et la partie continue. Chacun garde ses messages le temps
 // de l'onglet (sessionStorage), pour les retrouver après un rechargement ; qui arrive
 // après coup ne voit pas ce qui a été dit avant. Le champ est un <input> : les raccourcis
@@ -28,7 +30,7 @@ function lu(p: unknown): Message | null {
   return { id: m.id.slice(0, 40), de: m.de.slice(0, 40), nom: m.nom.slice(0, NOM_MAX), texte: m.texte.slice(0, LONGUEUR_MAX) };
 }
 
-export function ChatSalle({ canal, moi }: { canal: string; moi: { userId: string; nom: string } }) {
+export function ChatSalle({ canal, moi, nu = false }: { canal: string; moi: { userId: string; nom: string }; nu?: boolean }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [texte, setTexte] = useState("");
   const [etat, setEtat] = useState<"ouverture" | "ouvert" | "hors">("ouverture");
@@ -94,8 +96,8 @@ export function ChatSalle({ canal, moi }: { canal: string; moi: { userId: string
   }
 
   return (
-    <section className="card-quiet grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 p-4" aria-label={RUNNER_SALLE.chatTitre}>
-      <p className="t-micro m-0">{RUNNER_SALLE.chatTitre}</p>
+    <section className={"grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 " + (nu ? "" : "card-quiet p-4")} aria-label={RUNNER_SALLE.chatTitre}>
+      {!nu && <p className="t-micro m-0">{RUNNER_SALLE.chatTitre}</p>}
       {messages.length > 0 ? (
         <ol ref={liste} aria-live="polite" className="m-0 grid max-h-[150px] list-none gap-1 overflow-y-auto p-0 text-[13px] leading-snug">
           {messages.map((m) => (
