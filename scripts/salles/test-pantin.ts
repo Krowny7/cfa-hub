@@ -1,6 +1,6 @@
 // L'animation du mini-jeu : npx tsx --tsconfig ./tsconfig.json scripts/salles/test-pantin.ts
 import { COUPS, SANS_ENTREE, avancer, nouveauCombattant, subir, type Combattant, type Entrees } from "@/lib/salles/jeu-combat";
-import { LAME, VIE_TRACE, animer, frappe, nouveauPantin, type Pantin, type Point } from "@/lib/salles/jeu-pantin";
+import { LAME, RAYON_TETE, VIE_TRACE, animer, frappe, nouveauPantin, type Pantin, type Point } from "@/lib/salles/jeu-pantin";
 
 let echecs = 0;
 function check(nom: string, ok: boolean, detail = "") {
@@ -31,6 +31,10 @@ const pret = () => {
   const s = p.squelette;
   check("au repos, les deux pieds touchent le sol", Math.abs(s.piedAvant.y - f.y) < 0.6 && Math.abs(s.piedArriere.y - f.y) < 0.6);
   check("la tête est au-dessus du bassin, le sabre devant", s.tete.y < s.hanche.y && s.bout.x > s.hanche.x);
+  const hauteur = f.y - (s.tete.y - RAYON_TETE);
+  const tetes = hauteur / (RAYON_TETE * 2);
+  check("un adulte d'environ six têtes, à peu près la taille d'avant", tetes > 5.2 && tetes < 6.3 && hauteur > 68 && hauteur < 84, `${tetes.toFixed(1)} têtes, ${hauteur.toFixed(1)} px`);
+  check("les fourreaux partent de la taille, vers l'arrière", s.fourreau.hanche[1].x < s.hanche.x && s.fourreau.travers[1].x < s.hanche.x);
   const y0 = p.squelette.hanche.y;
   let bas = y0;
   let haut = y0;
@@ -56,6 +60,28 @@ const pret = () => {
   check("les jambes gardent leur longueur en courant", Math.max(...longueurs) - Math.min(...longueurs) < 1);
   check("un pied se lève, et les pas se comptent", piedLeve && pas >= 3, `${pas} pas`);
   check("en courant, le sabre traîne derrière", p.squelette.bout.x < p.squelette.hanche.x);
+}
+
+{
+  // la lame ne doit jamais couper la tête, ni au saut ni sur un coup fort parti du sol
+  const distance = (a: Point, b: Point, q: Point) => {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const k = Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(a.x + dx * k - q.x, a.y + dy * k - q.y);
+  };
+  const { p, f } = pret();
+  let saut = Infinity;
+  jouer(f, p, (i) => ({ saut: i === 0 }), 40, () => {
+    if (p.tour === 0) saut = Math.min(saut, distance(p.squelette.garde, p.squelette.bout, p.squelette.tete));
+  });
+  check("au saut, la lame reste loin de la tête", saut > RAYON_TETE, `${saut.toFixed(1)} px`);
+  const { p: q, f: g } = pret();
+  let coup = Infinity;
+  jouer(g, q, (i) => (i === 0 ? { fort: true } : {}), 34, () => {
+    coup = Math.min(coup, distance(q.squelette.garde, q.squelette.bout, q.squelette.tete));
+  });
+  check("sur le coup fort, la lame passe au-dessus de la tête", coup > RAYON_TETE, `${coup.toFixed(1)} px`);
 }
 
 {
@@ -106,10 +132,10 @@ for (const type of ["leger", "fort"] as const) {
   const coup = subir({ ...f, degats: 100 }, "fort", -1);
   jouer(coup, p, () => ({}), 8);
   check("un gros coup fait vriller le corps", Math.abs(p.tour) > 0.5);
-  const avant = p.echarpe[3].x;
+  const avant = p.pans[0][3].x;
   const loin = { ...coup, x: coup.x + 400, y: 120 };
   animer(p, loin, DT);
-  check("une réapparition ne déchire pas l'écharpe", ecart(p.echarpe[0], p.echarpe[1]) < 12 && Math.abs(p.echarpe[3].x - avant) > 200);
+  check("une réapparition ne déchire pas l'écharpe", ecart(p.pans[0][0], p.pans[0][1]) < 12 && Math.abs(p.pans[0][3].x - avant) > 200);
 }
 
 {
@@ -126,10 +152,10 @@ for (const type of ["leger", "fort"] as const) {
     if (hasard() < 0.01) g = subir({ ...g, invincible: 0 }, hasard() < 0.5 ? "leger" : "fort", hasard() < 0.5 ? 1 : -1);
     if (g.vies <= 0) g = { ...g, vies: 3 };
     animer(p, g, hasard() < 0.05 ? 0 : DT);
-    const points = Object.values(p.squelette).filter((v): v is Point => typeof v === "object");
+    const points = Object.values(p.squelette).filter((v): v is Point => typeof v === "object" && "x" in v);
     if (!points.every((q) => Number.isFinite(q.x) && Number.isFinite(q.y))) sain = false;
     if (ecart(p.squelette.bout, p.squelette.mainAvant) > LAME * 1.5) sain = false;
-    for (let k = 1; k < p.echarpe.length; k++) echarpeMax = Math.max(echarpeMax, ecart(p.echarpe[k - 1], p.echarpe[k]));
+    for (const pan of p.pans) for (let k = 1; k < pan.length; k++) echarpeMax = Math.max(echarpeMax, ecart(pan[k - 1], pan[k]));
   }
   check("6000 images au hasard : aucun point perdu, aucune lame étirée", sain);
   check("et l'écharpe garde sa longueur", echarpeMax < 40, `${echarpeMax.toFixed(1)} px au plus`);

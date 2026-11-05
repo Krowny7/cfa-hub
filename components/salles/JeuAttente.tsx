@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Swords } from "lucide-react";
 import { TetePanneau } from "@/components/salles/Stage";
-import { TENUE_MANNEQUIN, peindreArene, peindreEclat, peindreOmbre, peindrePantin, peindrePoussiere, peindreTrace, tenueDe, type Eclat, type Humeur, type Poussiere, type Tenue } from "@/components/salles/jeu-dessin";
+import { TENUE_MANNEQUIN, peindreArene, peindreEclat, peindreOmbre, peindrePantin, peindrePoussiere, peindreTrace, tenueDe, type Eclat, type Poussiere, type Tenue } from "@/components/salles/jeu-dessin";
 import { COUPS, HAUTEUR, LARGEUR, SANS_ENTREE, VIES, avancer, coupActif, dernierDebout, elimine, meneur, nouveauCombattant, subir, touche, type Combattant, type Entrees, type TypeCoup } from "@/lib/salles/jeu-combat";
 import { VIE_TRACE, animer, nouveauPantin, type Pantin, type Vue } from "@/lib/salles/jeu-pantin";
 import type { SalleMembre } from "@/lib/salles/types";
@@ -53,6 +53,8 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
   ids.current = new Set(parId.keys());
   const noms = useRef(parId);
   noms.current = parId;
+  /** la place de chaque adversaire présent : elle fait sa tenue, et ne change pas tant qu'il reste */
+  const places = useRef(new Map<string, number>());
   const rang = Math.max(0, membres.findIndex((m) => m.userId === moiId));
   const moi = useRef<Combattant>(nouveauCombattant(rang));
   const autres = useRef(new Map<string, Vu>());
@@ -153,14 +155,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     const dejaTouches = new Set<string>();
     let coupVu: unknown = null;
     const sage = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const tenues = new Map<string, Tenue>();
-    const tenue = (id: string) => {
-      const connue = tenues.get(id);
-      if (connue) return connue;
-      const neuve = id === MANNEQUIN ? TENUE_MANNEQUIN : tenueDe(id, id === moiId);
-      tenues.set(id, neuve);
-      return neuve;
-    };
+    const tenue = (id: string): Tenue => (id === MANNEQUIN ? TENUE_MANNEQUIN : tenueDe(id === moiId ? null : (places.current.get(id) ?? 0)));
 
     const boucle = (t: number) => {
       image = requestAnimationFrame(boucle);
@@ -198,6 +193,14 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           const avance = o.coup.t + brut;
           o.coup = avance >= COUPS[o.coup.type].total ? null : { ...o.coup, t: avance };
         }
+      }
+      for (const id of places.current.keys()) if (!autres.current.has(id)) places.current.delete(id);
+      for (const id of autres.current.keys()) {
+        if (places.current.has(id)) continue;
+        const prises = new Set(places.current.values());
+        let libre = 0;
+        while (prises.has(libre)) libre++;
+        places.current.set(id, libre);
       }
       const estSeul = autres.current.size === 0;
       if (estSeul) {
@@ -283,10 +286,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
       for (const j of scene) {
         const p = pantins.current.get(j.id);
         if (!p) continue;
-        const humeur: Humeur = j.vue.etourdi > 0 ? "mal" : j.vue.coup ? "colere" : "calme";
-        c.globalAlpha = j.invincible > 0 && Math.floor(t / 90) % 2 === 0 ? 0.5 : 1;
-        peindrePantin(c, p, j.tenue, humeur);
-        c.globalAlpha = 1;
+        peindrePantin(c, p, j.tenue, j.invincible > 0 && Math.floor(t / 90) % 2 === 0);
         peindreTrace(c, p.trace, VIE_TRACE);
       }
 
@@ -321,7 +321,8 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
       c.lineJoin = "round";
       c.lineWidth = 5;
       for (const j of scene) {
-        const y = Math.max(22, j.vue.y - 92);
+        // tout en haut de l'arène, le nom passe sous les pieds pour ne pas couvrir la tête
+        const y = j.vue.y - 92 < 22 ? j.vue.y + 26 : j.vue.y - 92;
         const texte = `${j.nom.slice(0, 12)} ${Math.round(j.degats)} %`;
         c.strokeStyle = "rgba(26, 18, 11, 0.85)";
         c.strokeText(texte, j.vue.x, y);
