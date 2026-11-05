@@ -5,6 +5,7 @@ import { DomainSpace } from "@/components/reviser/DomainSpace";
 import { CarteCoursComplets } from "@/components/reviser/ParcoursClient";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import type { DonneesReviser, EtatFiche } from "@/components/reviser/parcours";
+import { InkRing } from "@/components/ink/InkRing";
 import { Illustration } from "@/components/ui/Illustration";
 import { TOTAL_FORMULES } from "@/lib/formules";
 import type { EcouteCours } from "@/lib/course-ecoute";
@@ -144,7 +145,13 @@ function Outils({ d }: { d: DonneesReviser }) {
           <img src="/atelier/etabli-1024.webp" alt="" width={1024} height={572} loading="lazy" decoding="async" draggable={false} className={s.fond + " " + s.sombreNuit} />
           <span className={s.c1Voile} aria-hidden />
           <h3 className={s.c1Titre}>{RV.atelier}</h3>
-          <span className={s.atelierSous}>{r && r.enCours > 0 ? `${nombre(r.enCours)} ${RV.carnetEnCours(r.enCours)}` : RV.atelierSous}</span>
+          {r && r.enCours > 0 ? (
+            <span className={s.atelierSous}>
+              <b className="t-num">{nombre(r.enCours)}</b> {RV.carnetEnCours(r.enCours)}
+            </span>
+          ) : (
+            <span className={s.atelierSous}>{RV.atelierSous}</span>
+          )}
           <span className={encre(s.bouton)} data-palette={PAL.key}>
             <EncreVive tons={PAL.liquide} />
             {RV.atelierAction}
@@ -152,23 +159,28 @@ function Outils({ d }: { d: DonneesReviser }) {
         </Link>
       </li>
       <li className={s.case}>
-        <Link href="/page-blanche" className={levable(s.petite)}>
-          <h3 className={s.petiteTitre}>{RV.pbTitre}</h3>
-          <span className={s.nb + " t-num"}>{nombre(TOTAL_FORMULES)}</span>
-          <span className={s.sous}>{RV.pbSous}</span>
-          <span className={s.visuel + " " + s.peinture} aria-hidden>
-            <Illustration nom="reviser-page-blanche" position="50% 72%" decorative />
+        <Link href="/page-blanche" className={[s.carte, s.levable, s.outil, s.outilClair].join(" ")}>
+          <Illustration nom="reviser-page-blanche" position="50% 62%" decorative className={s.fond} />
+          <span className={s.outilTexte}>
+            <h3 className={"font-brand " + s.outilTitre}>{RV.pbTitre}</h3>
+            <span>{RV.pbSous}</span>
           </span>
+          <span className={s.outilChiffre + " t-num"}>{nombre(TOTAL_FORMULES)}</span>
         </Link>
       </li>
       <li className={s.case}>
-        <div className={[s.carte, s.papier, s.petite].join(" ")}>
-          <h3 className={s.petiteTitre}>{RV.videosTitre}</h3>
-          <span className={s.bientot}>{RV.videosBientot}</span>
-          <span className={s.sous}>{RV.videosSous}</span>
-          <span className={s.visuel + " " + s.ecran} aria-hidden>
-            <i />
+        <div className={[s.carte, s.outil, s.outilSombre].join(" ")}>
+          <InkRing size={230} className="rl-deco pointer-events-none absolute -right-[40px] top-1/2 -z-[1] -translate-y-1/2 text-[#fff] opacity-[0.08]" />
+          <span className={s.outilLecture} aria-hidden>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 4l14 8-14 8z" />
+            </svg>
           </span>
+          <span className={s.outilTexte}>
+            <h3 className={"font-brand " + s.outilTitre}>{RV.videosTitre}</h3>
+            <span>{RV.videosSous}</span>
+          </span>
+          <span className={s.outilEtiquette}>{RV.videosBientot}</span>
         </div>
       </li>
     </ul>

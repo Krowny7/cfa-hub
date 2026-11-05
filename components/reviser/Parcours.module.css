@@ -1631,12 +1631,73 @@ button.onde {
 .outils > :first-child {
   grid-row: 1 / span 2;
 }
-.outils .petite {
-  grid-template-rows: auto auto minmax(0, 1fr);
-}
-.outils .visuel {
+/* les deux petites cartes : pleines, le titre en bas à gauche comme les grandes */
+.outil {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
   height: 100%;
-  min-height: 66px;
+  min-height: 200px;
+  padding: 18px 20px;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: var(--shadow-1);
+}
+/* la peinture de la page blanche est claire : le texte sombre, jour et nuit, en haut pour laisser les personnages */
+.outilClair {
+  align-items: flex-start;
+  background: #efeeea;
+  color: #1a120b;
+}
+.outilSombre {
+  background: #1a120b;
+  color: #fff;
+}
+.outilTexte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+.outilTitre {
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+.outilChiffre {
+  flex: none;
+  font-size: 26px;
+  line-height: 1;
+}
+.outilEtiquette {
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--pal-4) 40%, transparent);
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pal-4);
+}
+.outilLecture {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--pal-3);
+  color: var(--pal-1);
+  transform: translate(-50%, -50%);
+}
+.outilLecture svg {
+  width: 20px;
+  height: 20px;
 }
 .atelierCarte {
   position: relative;
@@ -1663,6 +1724,10 @@ button.onde {
 .atelierSous {
   font-size: 14.5px;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+.atelierSous b {
+  font-size: 24px;
+  line-height: 1;
 }
 .atelierCarte .bouton {
   position: absolute;
