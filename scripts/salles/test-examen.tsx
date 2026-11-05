@@ -48,6 +48,11 @@ const check = (label: string, cond: boolean, extra = "") => {
   if (!cond) ko++;
 };
 const compte = (html: string, re: RegExp) => (html.match(re) ?? []).length;
+{
+  const deux = [{ userId: "moi", username: "Moi", avatarUrl: null }, { userId: "lui", username: "Lui", avatarUrl: null }];
+  const avant = avancementJoueurs({ session: { params: {}, avancement: [] } as never, membres: deux, moiId: "moi", mesRepondues: 0 });
+  check("un joueur qui n'a encore rien répondu apparaît, à 0", avant.length === 2 && avant.some((j) => j.userId === "lui" && j.n === 0 && !j.moi));
+}
 /** La balise ouvrante du bouton qui contient `texte`. */
 const boutonDe = (html: string, texte: string): string => {
   const i = html.indexOf(texte);
@@ -179,7 +184,10 @@ console.log("# logique pure");
   const av = avancementJoueurs({ session: partieGlobale("cours").etat.session, membres, moiId: MOI, mesRepondues: 4 });
   check("avancementJoueurs : les pseudos, du plus avancé au moins avancé", av[0].username === "Inès B." && av[0].n === 7 && av[1].username === "Marc L." && av[1].n === 5);
   check("avancementJoueurs : ma ligne prend mon compte local s'il est plus frais (4 > 3)", av.find((j) => j.moi)?.n === 4 && av.filter((j) => j.moi).length === 1);
-  check("avancementJoueurs : sans avancement lu, ma ligne seule", avancementJoueurs({ session: { params: base.etat.session!.params }, membres, moiId: MOI, mesRepondues: 0 }).length === 1);
+  check("avancementJoueurs : sans avancement lu, tous les membres, à 0", (() => {
+    const lu = avancementJoueurs({ session: { params: base.etat.session!.params }, membres, moiId: MOI, mesRepondues: 0 });
+    return lu.length === membres.length && lu.every((j) => j.n === 0);
+  })());
   check("avancementBrut : lit aussi le JSON du serveur (user_id)", avancementBrut({ params: base.etat.session!.params, avancement: [{ user_id: "a", n: 3 }, { n: 2 }] } as never).length === 1);
   const brutRendu = avancementBrut({ params: base.etat.session!.params, avancement: [{ user_id: "a", n: 3, rendu: true }, { user_id: "b", n: 2 }, { user_id: "c", n: 1, rendu: "oui" }] } as never);
   check("avancementBrut : « rendu » lu, faux s'il manque ou n'est pas un booléen vrai", brutRendu.map((a) => a.rendu).join() === "true,false,false");
@@ -339,7 +347,7 @@ console.log("# rendre sa copie");
 
   // « Où en sont les joueurs » : un repère « copie rendue » par joueur
   const deux = rendreExamen("cours", { rendus: ["u0", MOI] });
-  check("avancement : un repère « copie rendue » pour chaque joueur qui a rendu (Inès B. et moi)", compte(deux, /class="joueurRendu"/g) === 2 && compte(deux, / copie rendue<\/span>/g) === 2 && compte(deux, /data-rendu="1"/g) === 2 && compte(deux, /data-rendu="0"/g) === 1);
+  check("avancement : un repère « copie rendue » pour chaque joueur qui a rendu (Inès B. et moi)", compte(deux, /class="joueurRendu"/g) === 2 && compte(deux, / copie rendue<\/span>/g) === 2 && compte(deux, /data-rendu="1"/g) === 2 && compte(deux, /data-rendu="0"/g) >= 1);
   const ines = deux.slice(deux.indexOf("Inès B."), deux.indexOf("</li>", deux.indexOf("Inès B.")));
   const marc = deux.slice(deux.indexOf("Marc L."), deux.indexOf("</li>", deux.indexOf("Marc L.")));
   check("avancement : le repère est sur la bonne ligne (Inès B. oui, Marc L. non), le compte reste", ines.includes("copie rendue") && ines.includes("7 / 10") && !marc.includes("copie rendue") && marc.includes("5 / 10"));

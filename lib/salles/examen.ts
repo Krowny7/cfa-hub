@@ -251,6 +251,10 @@ export function avancementJoueurs(opts: {
     const m = parId.get(a.userId);
     lignes.set(a.userId, { userId: a.userId, username: m?.username ?? null, avatarUrl: m?.avatarUrl ?? null, n: a.n, rendu: a.rendu, moi: a.userId === moiId });
   }
+  // le serveur ne cite que ceux qui ont déjà répondu : les autres membres partent de zéro
+  for (const m of membres) {
+    if (!lignes.has(m.userId)) lignes.set(m.userId, { userId: m.userId, username: m.username ?? null, avatarUrl: m.avatarUrl ?? null, n: 0, rendu: false, moi: m.userId === moiId });
+  }
   const moiM = parId.get(moiId);
   const moi = lignes.get(moiId);
   lignes.set(moiId, {
