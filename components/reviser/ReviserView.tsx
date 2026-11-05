@@ -128,7 +128,7 @@ function Pages() {
         </span>
       </Link>
       <div className={s.peche} aria-hidden>
-        <Illustration nom="practice-studiolo" position="50% 60%" decorative className={s.fond} />
+        <Illustration nom="reviser-peche" position="50% 50%" decorative className={s.fond} />
       </div>
     </div>
   );

@@ -239,6 +239,13 @@ export const ILLUSTRATIONS = {
     emplacement: "/calculs et /calculs/[matiere] : médaillon rond dans la bande d'encre (68 px sur ordinateur, 56 px sur téléphone), 1024×1024 px conseillés, sujet centré.",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : un grand volant d'inertie en bois et fer forgé, tiré des machines de Léonard de Vinci, posé sur l'établi de son atelier à Florence vers 1500. Lumière dorée de fin de journée venant de la gauche, palette chaude (ocre, terre de Sienne brûlée, brun noisette, ivoire, touches de vert sauge). Cadrage carré, sujet parfaitement centré avec une marge régulière pour un recadrage en cercle, fond sombre et chaud peu détaillé. Sans personnage, sans texte, sans cadre ni bordure. Format 1:1, 1024×1024.",
   },
+  "reviser-peche": {
+    src: "/illustrations/reviser-peche.webp",
+    alt: "Deux samouraïs pêchent côte à côte sur une pierre plate, au bord d'une rivière turquoise, entre de hauts pitons de roche",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-05), d'après le prompt ci-dessous, avec la peinture des 30 du jour jointe comme référence de décor ; choisie par Théo.",
+    emplacement: "/reviser : la carte à droite des one-pagers, environ 820×280 px sur ordinateur.",
+    prompt: "Utilise l'image jointe comme référence de décor et d'ambiance uniquement. Peinture à l'huile au couteau, décor de jeu vidéo. Deux samouraïs ninjas pêchent ensemble, tranquillement, assis côte à côte sur une large pierre plate au bord d'une rivière turquoise, de dos, presque entièrement noirs, l'un à capuche et écharpe vermillon, l'autre à chignon, avec une canne en bambou chacun, leurs sabres posés à côté d'eux, un panier en osier et une tasse de thé fumante. Format panoramique 3:1, personnages bien visibles au centre droit, aucun texte.",
+  },
   "practice-studiolo": {
     src: "/illustrations/practice-studiolo.webp",
     alt: "Une mer de glace entre des arches d'iceberg, deux samouraïs en duel sur un radeau de glace",
