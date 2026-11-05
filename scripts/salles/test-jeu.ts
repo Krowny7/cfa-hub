@@ -64,6 +64,46 @@ check("étourdi, on ne peut plus agir", (() => {
   return s.vy >= 0 && s.coup === null;
 })());
 
+// le dash
+const lance = avancer(f, { ...SANS_ENTREE, dash: true, droite: true }, DT);
+check("le dash part vite, bien au-delà de la course", lance.dash > 0 && lance.vx > 700 && lance.dir === 1);
+check("il finit, et on retombe à la vitesse de course", (() => {
+  const c = jouer(lance, {}, 14);
+  return c.dash === 0 && Math.abs(c.vx) <= 300;
+})());
+check("il parcourt plus de chemin que la course sur le même temps", jouer(lance, {}, 9).x - f.x > 90);
+check("il ne se relance pas tout de suite, puis il revient", (() => {
+  const c = jouer(lance, {}, 12);
+  return avancer(c, { ...SANS_ENTREE, dash: true }, DT).dash === 0 && avancer(jouer(c, {}, 40), { ...SANS_ENTREE, dash: true }, DT).dash > 0;
+})());
+check("sans direction, il part du côté où l'on regarde", avancer(pose({ dir: -1 }), { ...SANS_ENTREE, dash: true }, DT).vx < 0);
+check("le début du dash esquive un coup, pas sa fin", subir(lance, "fort", 1).degats === lance.degats && subir(jouer(lance, {}, 8), "fort", 1).degats > 0);
+check("en l'air, le dash file à plat et ne sert qu'une fois", (() => {
+  const a = avancer(jouer(saute, {}, 4), { ...SANS_ENTREE, dash: true }, DT);
+  const b = jouer(a, {}, 50);
+  return a.vy === 0 && !a.dashAir && avancer({ ...a, dash: 0, recharge: 0, sol: false }, { ...SANS_ENTREE, dash: true }, DT).dash === 0 && b.dashAir;
+})());
+check("sonné, pas de dash", avancer(pose({ etourdi: 0.3 }), { ...SANS_ENTREE, dash: true }, DT).dash === 0);
+check("le dash annule la fin d'un coup, pas le moment où il porte", (() => {
+  const a = avancer(f, { ...SANS_ENTREE, leger: true }, DT);
+  return avancer(jouer(a, {}, 6), { ...SANS_ENTREE, dash: true }, DT).dash === 0 && avancer(jouer(a, {}, 12), { ...SANS_ENTREE, dash: true }, DT).dash > 0;
+})());
+
+// les combos
+const presse = (c: Combattant, e: Partial<Entrees>) => avancer(c, { ...SANS_ENTREE, ...e }, DT);
+const chaine = (n: number, e: Partial<Entrees>) => {
+  let c = presse(f, { leger: true });
+  for (let i = 0; i < n; i++) c = presse(jouer(c, {}, 11), e);
+  return c;
+};
+check("léger, puis suite, puis final", chaine(1, { leger: true }).coup?.type === "suite" && chaine(2, { leger: true }).coup?.type === "final");
+check("le coup fort peut conclure l'enchaînement", chaine(1, { fort: true }).coup?.type === "fort");
+check("une touche pressée un peu tôt est gardée pour la suite", jouer(presse(jouer(presse(f, { leger: true }), {}, 5), { leger: true }), {}, 8).coup?.type === "suite");
+check("après le final, on attend la fin du coup", presse(jouer(chaine(2, { leger: true }), {}, 16), { leger: true }).coup?.type === "final");
+check("sans toucher à rien, on repart du léger", presse(jouer(presse(f, { leger: true }), {}, 40), { leger: true }).coup?.type === "leger");
+check("la cible reste sonnée le temps du coup suivant", COUPS.leger.etourdi > COUPS.leger.fin - COUPS.leger.debut + COUPS.suite.debut && COUPS.suite.etourdi > COUPS.suite.fin - COUPS.suite.debut + COUPS.final.debut);
+check("le final projette bien plus loin que le léger", subir(pose(), "final", 1).vx > subir(pose(), "leger", 1).vx * 2);
+
 const sommet = (vy: number) => (vy * vy) / (2 * 1900);
 check("un saut suffit pour la planche du côté, deux pour celle du haut", sommet(745) > PLATEFORMES[0].y - PLATEFORMES[1].y && sommet(745) + sommet(660) > PLATEFORMES[0].y - PLATEFORMES[3].y);
 check("le bord de l'arène est loin de la plateforme", !horsArene({ x: 100, y: 400 }) && horsArene({ x: -200, y: 300 }) && horsArene({ x: 500, y: 800 }));

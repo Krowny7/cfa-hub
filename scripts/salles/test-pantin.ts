@@ -1,6 +1,6 @@
 // L'animation du mini-jeu : npx tsx --tsconfig ./tsconfig.json scripts/salles/test-pantin.ts
 import { COUPS, SANS_ENTREE, avancer, nouveauCombattant, subir, type Combattant, type Entrees } from "@/lib/salles/jeu-combat";
-import { LAME, RAYON_TETE, VIE_TRACE, animer, frappe, nouveauPantin, type Pantin, type Point } from "@/lib/salles/jeu-pantin";
+import { LAME, RAYON_TETE, VIE_SILLAGE, VIE_TRACE, animer, frappe, nouveauPantin, squeletteDe, type Pantin, type Point } from "@/lib/salles/jeu-pantin";
 
 let echecs = 0;
 function check(nom: string, ok: boolean, detail = "") {
@@ -102,6 +102,27 @@ const pret = () => {
   check("on retombe droit", p.tour === 0 && Math.abs(p.pose.etire - 1) < 0.01);
 }
 
+for (const type of ["suite", "final"] as const) {
+  const { p, f } = pret();
+  const c = COUPS[type];
+  let portee = 0;
+  for (let t = c.debut; t <= c.fin; t += 0.01) portee = Math.max(portee, squeletteDe(frappe(p.base, type, t, true), f.x, f.y, 1, 0).bout.x - f.x);
+  check(`${type} : la lame va aussi loin que le coup touche`, portee >= c.portee, `${Math.round(portee)} px pour ${c.portee}`);
+}
+
+{
+  const { p, f } = pret();
+  let sillage = 0;
+  let penche = 0;
+  const g = jouer(f, p, (i) => (i === 0 ? { dash: true, droite: true } : {}), 9, () => {
+    sillage = Math.max(sillage, p.sillage.length);
+    penche = Math.max(penche, p.pose.buste);
+  });
+  check("le dash penche le corps et laisse un sillage", penche > 0.6 && sillage >= 3, `${sillage} silhouettes`);
+  jouer(g, p, () => ({}), Math.ceil(VIE_SILLAGE * 60) + 12);
+  check("le sillage s'efface", p.sillage.length === 0);
+}
+
 for (const type of ["leger", "fort"] as const) {
   const { p, f } = pret();
   const c = COUPS[type];
@@ -147,7 +168,7 @@ for (const type of ["leger", "fort"] as const) {
   let echarpeMax = 0;
   let g = f;
   for (let i = 0; i < 6000; i++) {
-    const e: Entrees = { gauche: hasard() < 0.4, droite: hasard() < 0.4, bas: hasard() < 0.1, saut: hasard() < 0.06, leger: hasard() < 0.05, fort: hasard() < 0.03 };
+    const e: Entrees = { gauche: hasard() < 0.4, droite: hasard() < 0.4, bas: hasard() < 0.1, dash: false, saut: hasard() < 0.06, leger: hasard() < 0.05, fort: hasard() < 0.03 };
     g = avancer(g, e, DT);
     if (hasard() < 0.01) g = subir({ ...g, invincible: 0 }, hasard() < 0.5 ? "leger" : "fort", hasard() < 0.5 ? 1 : -1);
     if (g.vies <= 0) g = { ...g, vies: 3 };

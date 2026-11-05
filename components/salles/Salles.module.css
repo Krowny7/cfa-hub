@@ -1180,7 +1180,7 @@
 /* ——— le mini-jeu de la salle d'attente : le canevas s'ajuste à la carte, les touches n'existent qu'au doigt ——— */
 .jeuTouches {
   display: none;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 6px;
   touch-action: none;
 }

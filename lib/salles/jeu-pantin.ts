@@ -29,7 +29,7 @@ export type Pose = {
 export type PortFourreau = "hanche" | "dos" | "travers";
 
 /** Ce qu'il faut savoir d'un combattant pour l'animer. */
-export type Vue = Pick<Combattant, "x" | "y" | "vx" | "vy" | "sol" | "dir" | "coup" | "etourdi">;
+export type Vue = Pick<Combattant, "x" | "y" | "vx" | "vy" | "sol" | "dir" | "coup" | "etourdi" | "dash">;
 
 export type Squelette = {
   hanche: Point;
@@ -82,6 +82,12 @@ export type Pantin = {
   pans: Maillon[][];
   reste: number;
   trace: Trace[];
+  /** la pose d'où l'on repart quand un coup est enchaîné ou annulé, et le temps de ce raccord */
+  relais: Pose | null;
+  relaisT: number;
+  /** les silhouettes laissées derrière soi pendant un dash */
+  sillage: { s: Squelette; age: number }[];
+  sillageT: number;
 };
 
 type Maillon = { x: number; y: number; px: number; py: number };
@@ -105,6 +111,9 @@ const PAS_ECHARPE = 1 / 60;
 /** La force qui ramène un maillon sur sa ligne : plus elle est faible, plus l'écharpe traîne. */
 const RAPPEL = 0.2;
 export const VIE_TRACE = 0.13;
+export const VIE_SILLAGE = 0.2;
+const SILLAGE_PAS = 0.026;
+const RELAIS_S = 0.07;
 const SALTO_S = 0.36;
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -213,29 +222,62 @@ function touche(recul: number): Pose {
   };
 }
 
+/** Le dash : tout le corps part devant, ras du sol, et la lame traîne derrière. */
+function fonce(): Pose {
+  return {
+    hanche: { x: 7, y: -25 },
+    buste: 1.02,
+    tete: -0.85,
+    piedAvant: { x: 27, y: -1 },
+    piedArriere: { x: -31, y: -7 },
+    mainAvant: { x: -15, y: 9 },
+    mainArriere: { x: -20, y: 5 },
+    sabre: 2.75,
+    etire: 1.04,
+  };
+}
+
+/** Chaque coup : la pose armée, la pose frappée, ce que font les jambes au sol, et le temps tenu. */
+const GESTES: Record<TypeCoup, { arme: Partial<Pose>; coup: Partial<Pose>; solArme: Partial<Pose>; solCoup: Partial<Pose>; tenue: number }> = {
+  leger: {
+    arme: { buste: 0.02, tete: 0, mainAvant: { x: 4, y: -16 }, mainArriere: { x: 8, y: -11 }, sabre: -1.95 },
+    coup: { buste: 0.5, tete: -0.4, mainAvant: { x: 25, y: 4 }, mainArriere: { x: -13, y: 9 }, sabre: 0.42 },
+    solArme: { hanche: { x: -2, y: -30 }, piedArriere: { x: -14, y: 0 } },
+    solCoup: { hanche: { x: 7, y: -29 }, piedAvant: { x: 24, y: 0 }, piedArriere: { x: -13, y: 0 } },
+    tenue: 0.03,
+  },
+  // le revers : la lame remonte d'où elle vient
+  suite: {
+    arme: { buste: 0.36, tete: -0.2, mainAvant: { x: 20, y: 6 }, mainArriere: { x: -10, y: 8 }, sabre: 0.7 },
+    coup: { buste: 0.12, tete: -0.1, mainAvant: { x: 19, y: -17 }, mainArriere: { x: -12, y: 4 }, sabre: -1.25 },
+    solArme: { hanche: { x: 5, y: -28.5 }, piedAvant: { x: 22, y: 0 }, piedArriere: { x: -13, y: 0 } },
+    solCoup: { hanche: { x: 3, y: -31 }, piedAvant: { x: 18, y: 0 }, piedArriere: { x: -15, y: 0 } },
+    tenue: 0.03,
+  },
+  // la pointe, de tout le corps
+  final: {
+    arme: { buste: -0.22, tete: 0.1, mainAvant: { x: 4, y: -21 }, mainArriere: { x: 9, y: -17 }, sabre: -2.5 },
+    coup: { buste: 0.72, tete: -0.6, mainAvant: { x: 30, y: -2 }, mainArriere: { x: -16, y: 8 }, sabre: 0.04 },
+    solArme: { hanche: { x: -6, y: -27 }, piedArriere: { x: -18, y: 0 } },
+    solCoup: { hanche: { x: 16, y: -25 }, piedAvant: { x: 38, y: 0 }, piedArriere: { x: -20, y: 0 } },
+    tenue: 0.08,
+  },
+  fort: {
+    arme: { buste: -0.34, tete: 0.14, mainAvant: { x: 11, y: -22 }, mainArriere: { x: 15, y: -19 }, sabre: -2.75 },
+    coup: { buste: 0.82, tete: -0.62, mainAvant: { x: 25, y: 10 }, mainArriere: { x: 21, y: 15 }, sabre: 0.98 },
+    solArme: { hanche: { x: -7, y: -27.5 }, piedArriere: { x: -17, y: 0 } },
+    solCoup: { hanche: { x: 13, y: -26 }, piedAvant: { x: 34, y: 0 }, piedArriere: { x: -16, y: 0 } },
+    tenue: 0.09,
+  },
+};
+
 /** Le coup en cours, posé sur ce que fait déjà le corps : on arme, on frappe, on revient. */
 export function frappe(base: Pose, type: TypeCoup, t: number, sol: boolean): Pose {
   const c = COUPS[type];
-  const fort = type === "fort";
-  const arme: Pose = {
-    ...base,
-    buste: fort ? -0.34 : 0.02,
-    tete: fort ? 0.14 : 0,
-    mainAvant: fort ? { x: 11, y: -22 } : { x: 4, y: -16 },
-    mainArriere: fort ? { x: 15, y: -19 } : { x: 8, y: -11 },
-    sabre: fort ? -2.75 : -1.95,
-    ...(sol ? { hanche: { x: fort ? -7 : -2, y: fort ? -27.5 : -30 }, piedArriere: { x: fort ? -17 : -14, y: 0 } } : {}),
-  };
-  const coup: Pose = {
-    ...base,
-    buste: fort ? 0.82 : 0.5,
-    tete: fort ? -0.62 : -0.4,
-    mainAvant: fort ? { x: 25, y: 10 } : { x: 25, y: 4 },
-    mainArriere: fort ? { x: 21, y: 15 } : { x: -13, y: 9 },
-    sabre: fort ? 0.98 : 0.42,
-    ...(sol ? { hanche: { x: fort ? 13 : 7, y: fort ? -26 : -29 }, piedAvant: { x: fort ? 34 : 24, y: 0 }, piedArriere: { x: fort ? -16 : -13, y: 0 } } : {}),
-  };
-  const tenue = fort ? 0.09 : 0.03;
+  const g = GESTES[type];
+  const arme: Pose = { ...base, ...g.arme, ...(sol ? g.solArme : {}) };
+  const coup: Pose = { ...base, ...g.coup, ...(sol ? g.solCoup : {}) };
+  const tenue = g.tenue;
   if (t < c.debut) return melanger(base, arme, lisse(t / c.debut));
   if (t < c.fin) return melanger(arme, coup, sec((t - c.debut) / (c.fin - c.debut)));
   if (t < c.fin + tenue) return coup;
@@ -244,6 +286,7 @@ export function frappe(base: Pose, type: TypeCoup, t: number, sol: boolean): Pos
 
 function cible(p: Pantin, e: Vue): Pose {
   if (e.etourdi > 0) return touche(e.vx * e.dir > 0 ? -1 : 1);
+  if (e.dash > 0) return fonce();
   if (!e.sol) return e.vy < 0 ? monte(e.vy) : tombe(e.vy);
   const vitesse = Math.abs(e.vx);
   return melanger(repos(p.temps), course(p.foulee, vitesse), lisse(vitesse / 110));
@@ -338,7 +381,7 @@ function poserEcharpe(s: Squelette): Maillon[][] {
 export function nouveauPantin(e: Pick<Vue, "x" | "y" | "dir">): Pantin {
   const pose = repos(0);
   const squelette = squeletteDe(pose, e.x, e.y, e.dir, 0);
-  return { base: pose, pose, squelette, face: e.dir, temps: 0, foulee: 0, tour: 0, salto: 0, atterrissage: 0, flash: 0, solAvant: true, vyAvant: 0, xAvant: e.x, yAvant: e.y, coupAvant: -1, pans: poserEcharpe(squelette), reste: 0, trace: [] };
+  return { base: pose, pose, squelette, face: e.dir, temps: 0, foulee: 0, tour: 0, salto: 0, atterrissage: 0, flash: 0, solAvant: true, vyAvant: 0, xAvant: e.x, yAvant: e.y, coupAvant: -1, pans: poserEcharpe(squelette), reste: 0, trace: [], relais: null, relaisT: 0, sillage: [], sillageT: 0 };
 }
 
 /**
@@ -429,18 +472,34 @@ export function animer(p: Pantin, e: Vue, dt: number): Evenements {
     if (Math.abs(p.tour - proche) < 0.01) p.tour = 0;
   }
 
-  const raideur = e.etourdi > 0 ? 40 : e.sol ? (Math.abs(e.vx) > 40 ? 48 : 24) : 16;
+  const raideur = e.dash > 0 ? 70 : e.etourdi > 0 ? 40 : e.sol ? (Math.abs(e.vx) > 40 ? 48 : 24) : 16;
   p.base = melanger(p.base, cible(p, e), 1 - Math.exp(-raideur * dt));
 
   const coup = e.coup;
   const avantCoup = coup && p.coupAvant >= 0 && p.coupAvant <= coup.t ? p.coupAvant : (coup?.t ?? 0);
   let pose = coup ? frappe(p.base, coup.type, coup.t, e.sol) : p.base;
+  // un coup enchaîné ou annulé : on repart de la pose où l'on était, sans saut d'image
+  if (p.coupAvant >= 0 && (!coup || coup.t < p.coupAvant)) {
+    p.relais = p.pose;
+    p.relaisT = RELAIS_S;
+  }
   if (p.atterrissage > 0 && !coup) {
     const k = lisse(p.atterrissage);
     pose = { ...pose, hanche: { x: pose.hanche.x, y: pose.hanche.y + 8 * k }, etire: pose.etire * (1 - 0.13 * k), buste: pose.buste + 0.2 * k, piedAvant: { x: pose.piedAvant.x + 3 * k, y: pose.piedAvant.y }, piedArriere: { x: pose.piedArriere.x - 3 * k, y: pose.piedArriere.y } };
   }
+  if (p.relais && p.relaisT > 0) {
+    pose = melanger(p.relais, pose, 1 - p.relaisT / RELAIS_S);
+    p.relaisT = Math.max(0, p.relaisT - dt);
+  }
   p.pose = pose;
   p.squelette = squeletteDe(pose, e.x, e.y, p.face, p.tour);
+
+  for (const m of p.sillage) m.age += dt;
+  p.sillage = p.sillage.filter((m) => m.age < VIE_SILLAGE);
+  if (e.dash > 0 && p.temps - p.sillageT >= SILLAGE_PAS) {
+    p.sillage.push({ s: p.squelette, age: 0 });
+    p.sillageT = p.temps;
+  }
 
   // la trace de la lame, en plusieurs points par image pour qu'elle reste une courbe
   for (const m of p.trace) m.age += dt;
@@ -462,6 +521,7 @@ export function animer(p: Pantin, e: Vue, dt: number): Evenements {
   if (teleporte) {
     p.pans = poserEcharpe(p.squelette);
     p.trace = [];
+    p.sillage = [];
     p.tour = 0;
   } else agiterEcharpe(p, dt);
 

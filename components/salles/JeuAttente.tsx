@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Swords } from "lucide-react";
 import { TetePanneau } from "@/components/salles/Stage";
-import { TENUE_MANNEQUIN, peindreArene, peindreEclat, peindreOmbre, peindrePantin, peindrePoussiere, peindreTrace, tenueDe, type Eclat, type Poussiere, type Tenue } from "@/components/salles/jeu-dessin";
+import { TENUE_MANNEQUIN, peindreArene, peindreEclat, peindreOmbre, peindrePantin, peindrePoussiere, peindreSillage, peindreTrace, tenueDe, type Eclat, type Poussiere, type Tenue } from "@/components/salles/jeu-dessin";
 import { COUPS, HAUTEUR, LARGEUR, SANS_ENTREE, VIES, avancer, coupActif, dernierDebout, elimine, meneur, nouveauCombattant, subir, touche, type Combattant, type Entrees, type TypeCoup } from "@/lib/salles/jeu-combat";
 import { VIE_TRACE, animer, nouveauPantin, type Pantin, type Vue } from "@/lib/salles/jeu-pantin";
 import type { SalleMembre } from "@/lib/salles/types";
@@ -23,20 +23,26 @@ const ENVOI_MS = 66;
 const ABSENT_MS = 5000;
 const NOUVELLE_MANCHE_MS = 4000;
 const MANNEQUIN = "mannequin";
+/** Au-delà de ce délai sans toucher, le compteur de combo repart de zéro. */
+const COMBO_MS = 900;
+const VIE_BULLE = 0.8;
 
 type Vu = Combattant & { cx: number; cy: number; vu: number };
 type Goutte = { x: number; y: number; vx: number; vy: number; vie: number; r: number; teinte: string };
 type Acteur = { id: string; vue: Vue; invincible: number; degats: number; nom: string; tenue: Tenue };
 type Ligne = { id: string; degats: number; vies: number };
 
+/** Les coups qui projettent : plus d'encre, un arrêt sur image plus long. */
+const lourd = (t: TypeCoup) => t === "fort" || t === "final";
+
 const nomDe = (m: SalleMembre | undefined) => m?.username?.trim() || "Un joueur";
 
 /** Un état reçu du canal, s'il a la bonne forme. */
-function etatLu(p: unknown): (Pick<Combattant, "x" | "y" | "vx" | "vy" | "sol" | "etourdi" | "dir" | "degats" | "vies" | "coup"> & { id: string }) | null {
-  const m = p as { id?: unknown; x?: unknown; y?: unknown; vx?: unknown; vy?: unknown; d?: unknown; g?: unknown; v?: unknown; c?: unknown; t?: unknown; s?: unknown; e?: unknown } | null;
+function etatLu(p: unknown): (Pick<Combattant, "x" | "y" | "vx" | "vy" | "sol" | "etourdi" | "dir" | "degats" | "vies" | "coup" | "dash"> & { id: string }) | null {
+  const m = p as { id?: unknown; x?: unknown; y?: unknown; vx?: unknown; vy?: unknown; d?: unknown; g?: unknown; v?: unknown; c?: unknown; t?: unknown; s?: unknown; e?: unknown; h?: unknown } | null;
   if (!m || typeof m.id !== "string" || typeof m.x !== "number" || typeof m.y !== "number" || typeof m.g !== "number" || typeof m.v !== "number") return null;
-  const type = m.c === "leger" || m.c === "fort" ? m.c : null;
-  return { id: m.id, x: m.x, y: m.y, vx: Number(m.vx) || 0, vy: Number(m.vy) || 0, sol: m.s === 1, etourdi: Number(m.e) || 0, dir: m.d === -1 ? -1 : 1, degats: m.g, vies: m.v, coup: type ? { type, t: Number(m.t) || 0 } : null };
+  const type = typeof m.c === "string" && m.c in COUPS ? (m.c as TypeCoup) : null;
+  return { id: m.id, x: m.x, y: m.y, vx: Number(m.vx) || 0, vy: Number(m.vy) || 0, sol: m.s === 1, etourdi: Number(m.e) || 0, dir: m.d === -1 ? -1 : 1, degats: m.g, vies: m.v, coup: type ? { type, t: Number(m.t) || 0 } : null, dash: m.h === 1 ? 0.1 : 0 };
 }
 
 export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: string; membres: SalleMembre[] }) {
@@ -64,6 +70,9 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
   const poussiere = useRef<Poussiere[]>([]);
   const eclats = useRef<Eclat[]>([]);
   const secousse = useRef(0);
+  /** les coups qu'on vient d'enchaîner, et le chiffre qui s'affiche au-dessus de la cible */
+  const combo = useRef({ n: 0, fin: 0 });
+  const bulle = useRef<{ x: number; y: number; n: number; vie: number } | null>(null);
   /** l'arrêt sur image après un coup, en secondes */
   const gel = useRef(0);
   /** qui on vient de toucher nous-mêmes : son état reçu ensuite ne relance pas les effets */
@@ -90,6 +99,15 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     if (p) p.flash = 0.08;
   };
 
+  /** Un coup qu'on vient de porter : il prolonge le combo s'il arrive à temps. */
+  const compter = (x: number, y: number) => {
+    const maintenant = Date.now();
+    const k = combo.current;
+    k.n = maintenant < k.fin ? k.n + 1 : 1;
+    k.fin = maintenant + COMBO_MS;
+    if (k.n >= 2) bulle.current = { x, y: Math.max(40, y - 108), n: k.n, vie: VIE_BULLE };
+  };
+
   const soulever = (x: number, y: number, n: number, force: number) => {
     for (let i = 0; i < n; i++) {
       const sens = i % 2 === 0 ? 1 : -1;
@@ -113,18 +131,18 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         const p = etatLu(payload);
         if (!p || p.id === moiId || !ids.current.has(p.id)) return;
         const avant = autres.current.get(p.id);
-        if (avant && p.degats > avant.degats && Date.now() - (touchesRecentes.current.get(p.id) ?? 0) > 500) marquerCoup(p.id, p.x, p.y, p.vx >= 0 ? 1 : -1, p.degats - avant.degats >= COUPS.fort.degats);
+        if (avant && p.degats > avant.degats && Date.now() - (touchesRecentes.current.get(p.id) ?? 0) > 500) marquerCoup(p.id, p.x, p.y, p.vx >= 0 ? 1 : -1, p.degats - avant.degats >= COUPS.final.degats);
         // le coup en cours : on garde notre horloge, plus fluide que les messages reçus
         const memeCoup = avant?.coup && p.coup && avant.coup.type === p.coup.type && avant.coup.t > p.coup.t;
         autres.current.set(p.id, { ...nouveauCombattant(0), ...p, coup: memeCoup ? (avant?.coup ?? null) : p.coup, cx: avant?.cx ?? p.x, cy: avant?.cy ?? p.y, vu: Date.now() });
       });
       c.on("broadcast", { event: "coup" }, ({ payload }) => {
         const p = payload as { de?: unknown; cible?: unknown; type?: unknown; dir?: unknown } | null;
-        if (p?.cible !== moiId || typeof p.de !== "string" || !ids.current.has(p.de) || (p.type !== "leger" && p.type !== "fort")) return;
+        if (p?.cible !== moiId || typeof p.de !== "string" || !ids.current.has(p.de) || typeof p.type !== "string" || !(p.type in COUPS)) return;
         const dir = p.dir === -1 ? -1 : 1;
         const avant = moi.current;
         moi.current = subir(avant, p.type as TypeCoup, dir);
-        if (moi.current !== avant) marquerCoup(moiId, avant.x, avant.y, dir, p.type === "fort");
+        if (moi.current !== avant) marquerCoup(moiId, avant.x, avant.y, dir, lourd(p.type as TypeCoup));
       });
       c.on("broadcast", { event: "fin" }, ({ payload }) => {
         const g = (payload as { gagnant?: unknown } | null)?.gagnant;
@@ -155,6 +173,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     const dejaTouches = new Set<string>();
     let coupVu: unknown = null;
     const sage = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const police = getComputedStyle(el).getPropertyValue("--font-brand").trim() || "system-ui";
     const tenue = (id: string): Tenue => (id === MANNEQUIN ? TENUE_MANNEQUIN : tenueDe(id === moiId ? null : (places.current.get(id) ?? 0)));
 
     const boucle = (t: number) => {
@@ -172,11 +191,12 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
 
       const k = touches.current;
       const a = appuis.current;
-      const e: Entrees = { gauche: k.has("gauche"), droite: k.has("droite"), bas: k.has("bas"), saut: a.has("saut"), leger: a.has("leger"), fort: a.has("fort") };
+      const e: Entrees = { gauche: k.has("gauche"), droite: k.has("droite"), bas: k.has("bas"), saut: a.has("saut"), dash: a.has("dash"), leger: a.has("leger"), fort: a.has("fort") };
       a.clear();
 
       const m = elimine(moi.current) ? moi.current : avancer(moi.current, e, dt);
       if (m.vies < moi.current.vies) eclabousser(Math.max(30, Math.min(LARGEUR - 30, moi.current.x)), Math.min(HAUTEUR - 30, Math.max(60, moi.current.y)), moi.current.x < 512 ? 1 : -1, 1);
+      if (m.dash > moi.current.dash && m.sol) soulever(m.x - m.dir * 12, m.y, 7, 1.5);
       moi.current = m;
 
       for (const [id, o] of autres.current) {
@@ -189,6 +209,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         o.cx += (o.x - o.cx) * Math.min(1, brut * 16);
         o.cy += (o.y - o.cy) * Math.min(1, brut * 16);
         o.etourdi = Math.max(0, o.etourdi - brut);
+        o.dash = Math.max(0, o.dash - brut);
         if (o.coup) {
           const avance = o.coup.t + brut;
           o.coup = avance >= COUPS[o.coup.type].total ? null : { ...o.coup, t: avance };
@@ -219,20 +240,24 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           dejaTouches.add(MANNEQUIN);
           const cible = mannequin.current;
           mannequin.current = subir(cible, type, m.dir);
-          if (mannequin.current !== cible) marquerCoup(MANNEQUIN, cible.x, cible.y, m.dir, type === "fort");
+          if (mannequin.current !== cible) {
+            marquerCoup(MANNEQUIN, cible.x, cible.y, m.dir, lourd(type));
+            compter(cible.x, cible.y);
+          }
         }
         for (const [id, o] of autres.current) {
-          if (dejaTouches.has(id) || elimine(o) || !touche(m, { x: o.cx, y: o.cy })) continue;
+          if (dejaTouches.has(id) || elimine(o) || o.dash > 0 || !touche(m, { x: o.cx, y: o.cy })) continue;
           dejaTouches.add(id);
           envoyer("coup", { de: moiId, cible: id, type, dir: m.dir });
           touchesRecentes.current.set(id, maintenant);
-          marquerCoup(id, o.cx, o.cy, m.dir, type === "fort");
+          marquerCoup(id, o.cx, o.cy, m.dir, lourd(type));
+          compter(o.cx, o.cy);
         }
       }
 
       if (t - dernierEnvoi > ENVOI_MS) {
         dernierEnvoi = t;
-        envoyer("etat", { id: moiId, x: Math.round(m.x), y: Math.round(m.y), vx: Math.round(m.vx), vy: Math.round(m.vy), s: m.sol ? 1 : 0, e: Math.round(m.etourdi * 100) / 100, d: m.dir, g: m.degats, v: m.vies, c: m.coup?.type ?? "", t: m.coup?.t ?? 0 });
+        envoyer("etat", { id: moiId, x: Math.round(m.x), y: Math.round(m.y), vx: Math.round(m.vx), vy: Math.round(m.vy), s: m.sol ? 1 : 0, e: Math.round(m.etourdi * 100) / 100, d: m.dir, g: m.degats, v: m.vies, c: m.coup?.type ?? "", t: m.coup?.t ?? 0, h: m.dash > 0 ? 1 : 0 });
       }
 
       // la fin de la manche, décidée par le meneur
@@ -286,6 +311,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
       for (const j of scene) {
         const p = pantins.current.get(j.id);
         if (!p) continue;
+        peindreSillage(c, p, j.tenue);
         peindrePantin(c, p, j.tenue, j.invincible > 0 && Math.floor(t / 90) % 2 === 0);
         peindreTrace(c, p.trace, VIE_TRACE);
       }
@@ -329,6 +355,20 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         c.fillStyle = "#fff";
         c.fillText(texte, j.vue.x, y);
       }
+
+      const b = bulle.current;
+      if (b && b.vie > 0) {
+        b.vie -= brut;
+        b.y -= 26 * brut;
+        const entree = Math.min(1, (VIE_BULLE - b.vie) / 0.07);
+        c.globalAlpha = Math.min(1, Math.max(0, b.vie) / 0.25);
+        c.font = `400 ${Math.round((26 + Math.min(14, b.n * 3)) * (1.35 - 0.35 * entree))}px ${police}, system-ui, sans-serif`;
+        c.lineWidth = 6;
+        c.strokeText(SALLES.jeuCombo(b.n), b.x, b.y);
+        c.fillStyle = b.n >= 3 ? "#f0c04f" : "#fff";
+        c.fillText(SALLES.jeuCombo(b.n), b.x, b.y);
+        c.globalAlpha = 1;
+      }
     };
     image = requestAnimationFrame(boucle);
     return () => cancelAnimationFrame(image);
@@ -337,14 +377,14 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
 
   const sensDe = (e: React.KeyboardEvent) => {
     const cle = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    return ({ ArrowLeft: "gauche", ArrowRight: "droite", ArrowDown: "bas", ArrowUp: "saut", q: "gauche", a: "gauche", d: "droite", s: "bas", z: "saut", w: "saut", " ": "saut", j: "leger", x: "leger", k: "fort", c: "fort" } as Record<string, string>)[cle];
+    return ({ ArrowLeft: "gauche", ArrowRight: "droite", ArrowDown: "bas", ArrowUp: "saut", q: "gauche", a: "gauche", d: "droite", s: "bas", z: "saut", w: "saut", " ": "saut", j: "leger", x: "leger", k: "fort", c: "fort", l: "dash", v: "dash", Shift: "dash" } as Record<string, string>)[cle];
   };
   const clavier = (e: React.KeyboardEvent, enfoncee: boolean) => {
     const sens = sensDe(e);
     if (!sens) return;
     e.preventDefault();
     if (enfoncee) {
-      if (!e.repeat && (sens === "saut" || sens === "leger" || sens === "fort")) appuis.current.add(sens);
+      if (!e.repeat && (sens === "saut" || sens === "dash" || sens === "leger" || sens === "fort")) appuis.current.add(sens);
       touches.current.add(sens);
     } else touches.current.delete(sens);
   };
@@ -354,7 +394,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
       aria-label={nom}
       onPointerDown={(e) => {
         e.preventDefault();
-        if (nom === "saut" || nom === "leger" || nom === "fort") appuis.current.add(nom);
+        if (nom === "saut" || nom === "dash" || nom === "leger" || nom === "fort") appuis.current.add(nom);
         else touches.current.add(nom);
       }}
       onPointerUp={() => touches.current.delete(nom)}
@@ -391,6 +431,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           {bouton("gauche", "←")}
           {bouton("droite", "→")}
           {bouton("saut", "↑")}
+          {bouton("dash", SALLES.jeuDash)}
           {bouton("leger", SALLES.jeuCoup)}
           {bouton("fort", SALLES.jeuCoupFort)}
         </div>
