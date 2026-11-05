@@ -5,9 +5,8 @@ import { BanniereVs } from "@/components/arene/BanniereVs";
 import { enregistrerArene } from "@/lib/arene/actions";
 import { joueurArene, lireReglages } from "@/lib/arene/donnees";
 import { envoyerImageVs, envoyerVideoVictoire } from "@/lib/arene/envoi";
-import { ARENE_VIDE, FONDS, TRAITS, VICTOIRE_MAX_SECONDES, fondDe, type Arene } from "@/lib/arene/perso";
+import { ARENE_VIDE, FONDS, TRAITS, VICTOIRE_MAX_OCTETS, VICTOIRE_MAX_SECONDES, fondDe, type Arene } from "@/lib/arene/perso";
 import { formatVideo } from "@/lib/arene/regles";
-import { VIDEO_MAX_OCTETS } from "@/lib/profil/disposition";
 import { Mo, Refus } from "@/lib/profil/envoi-media";
 import { createClient } from "@/lib/supabase/browser";
 import { ARENE } from "@/lib/voice-arene";
@@ -193,7 +192,7 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
                 <p className="t-small m-0">{R.aucune}</p>
               )}
               <ul className={s.limites}>
-                {R.limites(VICTOIRE_MAX_SECONDES, Mo(VIDEO_MAX_OCTETS)).map((l) => (
+                {R.limites(VICTOIRE_MAX_SECONDES, Mo(VICTOIRE_MAX_OCTETS)).map((l) => (
                   <li key={l}>{l}</li>
                 ))}
               </ul>

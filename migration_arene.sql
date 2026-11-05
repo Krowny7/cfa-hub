@@ -5,7 +5,7 @@
 --    vidéo de victoire (adresse, proportion, durée). Écrite par le serveur
 --    seulement, après validation (lib/arene/actions.ts) ; lisible par tous les
 --    joueurs connectés, comme le reste de profile_style.
--- 2. Le bucket public « arene-medias » : un dossier par joueur, 30 Mo par
+-- 2. Le bucket public « arene-medias » : un dossier par joueur, 50 Mo par
 --    fichier, vidéos MP4, MOV ou WebM et images JPEG, PNG ou WebP, 4 fichiers par
 --    joueur (la vidéo et l'image, et leurs remplaçantes le temps d'enregistrer).
 --    À part de « profil-videos » : le ménage d'« Enregistrer » y supprime ce que
@@ -22,7 +22,7 @@ ALTER TABLE profile_style ADD CONSTRAINT profile_style_arene_check CHECK (
 -- ── 2. les fichiers ───────────────────────────────────────────────────
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
-  'arene-medias', 'arene-medias', true, 31457280,
+  'arene-medias', 'arene-medias', true, 52428800,
   ARRAY['video/mp4', 'video/quicktime', 'video/webm', 'image/jpeg', 'image/png', 'image/webp']
 )
 ON CONFLICT (id) DO UPDATE SET
