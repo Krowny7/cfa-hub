@@ -1566,6 +1566,23 @@ button.onde {
   font-size: 14.5px;
   color: var(--ink);
 }
+/* écran bas : le premier bloc tient dans le cadre (.rl-cadre) sans le pousser. La carte des
+   fiches garde son titre, son avancement et son bouton ; sa phrase d'explication s'efface. */
+@media (min-width: 1100px) and (max-height: 760px) {
+  .tete .c2 {
+    gap: 8px;
+    padding: 14px 20px;
+  }
+  .tete .c2 .sous {
+    display: none;
+  }
+  .tete .c2 .bouton {
+    min-height: 38px;
+  }
+  .tete .paquet {
+    min-height: 170px;
+  }
+}
 /* les one-pagers et la peinture de la pêche */
 .duo {
   display: grid;
