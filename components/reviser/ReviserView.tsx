@@ -139,13 +139,15 @@ function Outils({ d }: { d: DonneesReviser }) {
   return (
     <ul className={s.outils}>
       <li className={s.case} data-leonard="atelier">
-        <Link href="/atelier" className={levable(s.petite)}>
-          <h3 className={s.petiteTitre}>{RV.atelier}</h3>
-          {r && r.enCours > 0 && <span className={s.nb + " t-num"}>{nombre(r.enCours)}</span>}
-          <span className={s.sous}>{RV.atelierSous}</span>
-          <span className={s.visuel} aria-hidden>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/atelier/etabli-640.webp" alt="" width={640} height={358} loading="lazy" decoding="async" draggable={false} className={s.vignette + " " + s.sombreNuit} />
+        <Link href="/atelier" className={[s.carte, s.levable, s.atelierCarte].join(" ")}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/atelier/etabli-1024.webp" alt="" width={1024} height={572} loading="lazy" decoding="async" draggable={false} className={s.fond + " " + s.sombreNuit} />
+          <span className={s.c1Voile} aria-hidden />
+          <h3 className={s.c1Titre}>{RV.atelier}</h3>
+          <span className={s.atelierSous}>{r && r.enCours > 0 ? `${nombre(r.enCours)} ${RV.carnetEnCours(r.enCours)}` : RV.atelierSous}</span>
+          <span className={encre(s.bouton)} data-palette={PAL.key}>
+            <EncreVive tons={PAL.liquide} />
+            {RV.atelierAction}
           </span>
         </Link>
       </li>

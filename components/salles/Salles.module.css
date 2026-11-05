@@ -1177,6 +1177,67 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
+/* ——— le mini-jeu de la salle d'attente : le canevas s'ajuste à la carte ——— */
+.jeuCadre {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--pencil-2);
+  border-radius: 10px;
+  outline-offset: 2px;
+}
+.jeuCadre canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  cursor: pointer;
+}
+.jeuAide,
+.jeuManche {
+  position: absolute;
+  left: 50%;
+  max-width: calc(100% - 20px);
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: rgba(26, 18, 11, 0.8);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.jeuAide {
+  bottom: 10px;
+}
+.jeuManche {
+  top: 12px;
+  font-size: 14px;
+}
+.jeuScores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+}
+.jeuScores li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.jeuScores b {
+  font-size: 16px;
+}
+@media (max-width: 520px) {
+  .jeuAide {
+    white-space: normal;
+  }
+}
+
 /* étroit : la peinture d'abord, puis l'aperçu */
 @container (max-width: 860px) {
   .entreeRangee {

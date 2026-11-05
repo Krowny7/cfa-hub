@@ -1621,10 +1621,57 @@ button.onde {
   box-shadow: var(--shadow-1);
   isolation: isolate;
 }
+/* la même disposition que le premier bloc : l'Atelier en grand, les deux autres l'un sur l'autre */
 .outils {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(190px, 1fr));
   gap: 14px;
+}
+.outils > :first-child {
+  grid-row: 1 / span 2;
+}
+.outils .petite {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+.outils .visuel {
+  height: 100%;
+  min-height: 66px;
+}
+.atelierCarte {
+  position: relative;
+  display: grid;
+  align-content: end;
+  justify-items: start;
+  gap: 8px;
+  height: 100%;
+  min-height: 400px;
+  padding: 24px;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: var(--shadow-2);
+  color: var(--sur-nuit);
+}
+.atelierCarte .c1Titre {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
+}
+.atelierSous {
+  font-size: 14.5px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+.atelierCarte .bouton {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+}
+/* les feuillets de décor ne couvrent pas le compte des fiches */
+.tete .avancement {
+  max-width: calc(100% - 96px);
 }
 @container (max-width: 860px) {
   .tete {
@@ -1640,6 +1687,14 @@ button.onde {
   }
   .outils {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+  }
+  .outils > :first-child {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+  .atelierCarte {
+    min-height: 300px;
   }
 }
 @container (max-width: 640px) {

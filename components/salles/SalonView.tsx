@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Clock, Globe, History, Lock, LogOut, SlidersHorizontal, Trash2 } from "lucide-react";
 import { fmtInt } from "@/components/classement/format";
 import { CodePartage } from "@/components/salles/CodePartage";
+import { JeuAttente } from "@/components/salles/JeuAttente";
 import { Membres } from "@/components/salles/Membres";
 import { ReglagesLecture } from "@/components/salles/Reglages";
 import { Stage, TetePanneau } from "@/components/salles/Stage";
@@ -112,6 +113,7 @@ export function SalonView({
         <div className={s.grille}>
           <div className={s.colonne}>
             <Membres membres={membres} moiId={moi.userId} total={nbMembres} />
+            <JeuAttente canal={salle.id} moiId={moi.userId} membres={membres} />
           </div>
           <div className={s.colonne}>
             {moi.estAdmin ? (
