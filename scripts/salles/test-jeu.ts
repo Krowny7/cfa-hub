@@ -104,6 +104,14 @@ check("sans toucher à rien, on repart du léger", presse(jouer(presse(f, { lege
 check("la cible reste sonnée le temps du coup suivant", COUPS.leger.etourdi > COUPS.leger.fin - COUPS.leger.debut + COUPS.suite.debut && COUPS.suite.etourdi > COUPS.suite.fin - COUPS.suite.debut + COUPS.final.debut);
 check("le final projette bien plus loin que le léger", subir(pose(), "final", 1).vx > subir(pose(), "leger", 1).vx * 2);
 
+// la danse
+const danseuse = presse(f, { danse: true });
+check("la danse part au sol, et on reste sur place", danseuse.danse > 0 && jouer(danseuse, {}, 30).x === f.x);
+check("elle finit toute seule", jouer(danseuse, {}, 130).danse === 0);
+check("le moindre geste l'arrête", presse(danseuse, { droite: true }).danse === 0 && presse(danseuse, { saut: true }).danse === 0 && presse(danseuse, { leger: true }).danse === 0 && presse(danseuse, { dash: true }).danse === 0);
+check("un coup reçu l'arrête", subir(danseuse, "leger", 1).danse === 0);
+check("pas de danse en l'air", presse(jouer(saute, {}, 4), { danse: true }).danse === 0);
+
 const sommet = (vy: number) => (vy * vy) / (2 * 1900);
 check("un saut suffit pour la planche du côté, deux pour celle du haut", sommet(745) > PLATEFORMES[0].y - PLATEFORMES[1].y && sommet(745) + sommet(660) > PLATEFORMES[0].y - PLATEFORMES[3].y);
 check("le bord de l'arène est loin de la plateforme", !horsArene({ x: 100, y: 400 }) && horsArene({ x: -200, y: 300 }) && horsArene({ x: 500, y: 800 }));

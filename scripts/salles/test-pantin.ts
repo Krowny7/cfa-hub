@@ -102,6 +102,16 @@ const pret = () => {
   check("on retombe droit", p.tour === 0 && Math.abs(p.pose.etire - 1) < 0.01);
 }
 
+{
+  const { p, f } = pret();
+  let bouge = 0;
+  const debut = p.pose.hanche.x;
+  jouer(f, p, (i) => (i === 0 ? { danse: true } : {}), 60, () => {
+    bouge = Math.max(bouge, Math.abs(p.pose.hanche.x - debut));
+  });
+  check("la danse fait bouger le corps", bouge > 3, `${bouge.toFixed(1)} px`);
+}
+
 for (const type of ["suite", "final"] as const) {
   const { p, f } = pret();
   const c = COUPS[type];
@@ -168,7 +178,7 @@ for (const type of ["leger", "fort"] as const) {
   let echarpeMax = 0;
   let g = f;
   for (let i = 0; i < 6000; i++) {
-    const e: Entrees = { gauche: hasard() < 0.4, droite: hasard() < 0.4, bas: hasard() < 0.1, dash: false, saut: hasard() < 0.06, leger: hasard() < 0.05, fort: hasard() < 0.03 };
+    const e: Entrees = { gauche: hasard() < 0.4, droite: hasard() < 0.4, bas: hasard() < 0.1, dash: false, saut: hasard() < 0.06, danse: hasard() < 0.02, leger: hasard() < 0.05, fort: hasard() < 0.03 };
     g = avancer(g, e, DT);
     if (hasard() < 0.01) g = subir({ ...g, invincible: 0 }, hasard() < 0.5 ? "leger" : "fort", hasard() < 0.5 ? 1 : -1);
     if (g.vies <= 0) g = { ...g, vies: 3 };

@@ -24,6 +24,8 @@ export const DASH_S = 0.16;
 /** Au début du dash, on passe à travers les coups. */
 const DASH_ESQUIVE = 0.1;
 const DASH_RECHARGE = 0.6;
+/** La danse pour narguer : au sol, et le moindre geste l'arrête. */
+export const DANSE_S = 2;
 /** Combien de temps une touche de coup reste en mémoire pendant le coup précédent. */
 const TAMPON_S = 0.18;
 /** Le petit pas qui accompagne un coup enchaîné, pour rester au contact de la cible. */
@@ -72,19 +74,21 @@ export type Combattant = {
   dash: number;
   recharge: number;
   dashAir: boolean;
+  /** le temps de danse restant */
+  danse: number;
 };
 
-/** `saut`, `dash`, `leger`, `fort` : vrais à l'image où la touche vient d'être enfoncée. */
-export type Entrees = { gauche: boolean; droite: boolean; bas: boolean; saut: boolean; dash: boolean; leger: boolean; fort: boolean };
+/** `saut`, `dash`, `danse`, `leger`, `fort` : vrais à l'image où la touche vient d'être enfoncée. */
+export type Entrees = { gauche: boolean; droite: boolean; bas: boolean; saut: boolean; dash: boolean; danse: boolean; leger: boolean; fort: boolean };
 
-export const SANS_ENTREE: Entrees = { gauche: false, droite: false, bas: false, saut: false, dash: false, leger: false, fort: false };
+export const SANS_ENTREE: Entrees = { gauche: false, droite: false, bas: false, saut: false, dash: false, danse: false, leger: false, fort: false };
 
 const REAPPARITIONS = [240, 784, 512, 335, 689];
 
 /** Où un joueur apparaît : des places différentes selon son rang dans la salle. */
 export function nouveauCombattant(rang: number): Combattant {
   const x = REAPPARITIONS[rang % REAPPARITIONS.length];
-  return { x, y: 330, vx: 0, vy: 0, sol: false, sauts: SAUTS, dir: x < LARGEUR / 2 ? 1 : -1, degats: 0, vies: VIES, coup: null, tampon: null, etourdi: 0, invincible: INVINCIBLE, dash: 0, recharge: 0, dashAir: true };
+  return { x, y: 330, vx: 0, vy: 0, sol: false, sauts: SAUTS, dir: x < LARGEUR / 2 ? 1 : -1, degats: 0, vies: VIES, coup: null, tampon: null, etourdi: 0, invincible: INVINCIBLE, dash: 0, recharge: 0, dashAir: true, danse: 0 };
 }
 
 export const elimine = (f: Combattant) => f.vies <= 0;
@@ -105,6 +109,7 @@ export function avancer(avant: Combattant, e: Entrees, dt: number): Combattant {
   f.invincible = Math.max(0, f.invincible - dt);
   f.etourdi = Math.max(0, f.etourdi - dt);
   f.recharge = Math.max(0, f.recharge - dt);
+  f.danse = Math.max(0, f.danse - dt);
   if (f.dash > 0) {
     f.dash = Math.max(0, f.dash - dt);
     if (f.dash === 0) f.vx = Math.max(-COURSE, Math.min(COURSE, f.vx));
@@ -159,6 +164,9 @@ export function avancer(avant: Combattant, e: Entrees, dt: number): Combattant {
     }
   }
 
+  if (f.danse > 0 && (!libre || !f.sol || sens !== 0 || e.saut || e.dash || voulu)) f.danse = 0;
+  if (libre && e.danse && f.sol && !f.coup && f.dash === 0 && sens === 0) f.danse = DANSE_S;
+
   if (f.dash === 0) f.vy = Math.min(e.bas && libre && !f.sol ? CHUTE_RAPIDE : CHUTE_MAX, f.vy + GRAVITE * dt);
   const y0 = f.y;
   f.x += f.vx * dt;
@@ -207,7 +215,7 @@ export function subir(f: Combattant, type: TypeCoup, dir: 1 | -1): Combattant {
   const c = COUPS[type];
   const degats = f.degats + c.degats;
   const force = c.base + degats * c.croissance;
-  return { ...f, degats, vx: dir * force * 0.8, vy: -force * 0.62, sol: false, coup: null, tampon: null, dash: 0, etourdi: c.etourdi + degats * 0.002 };
+  return { ...f, degats, vx: dir * force * 0.8, vy: -force * 0.62, sol: false, coup: null, tampon: null, dash: 0, danse: 0, etourdi: c.etourdi + degats * 0.002 };
 }
 
 /** La manche : vide tant qu'elle se joue ; sinon le dernier debout. `null` en jeu solo. */

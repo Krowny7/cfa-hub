@@ -7,6 +7,7 @@ import { TetePanneau } from "@/components/salles/Stage";
 import { TENUE_MANNEQUIN, peindreArene, peindreEclat, peindreOmbre, peindrePantin, peindrePoussiere, peindreSillage, peindreTrace, tenueDe, type Eclat, type Poussiere, type Tenue } from "@/components/salles/jeu-dessin";
 import { COUPS, HAUTEUR, LARGEUR, SANS_ENTREE, VIES, avancer, coupActif, dernierDebout, elimine, meneur, nouveauCombattant, subir, touche, type Combattant, type Entrees, type TypeCoup } from "@/lib/salles/jeu-combat";
 import { VIE_TRACE, animer, nouveauPantin, type Pantin, type Vue } from "@/lib/salles/jeu-pantin";
+import { peindreEffetsEcran, peindreEffetsScene, peindreFondImpact, type Effet } from "@/components/salles/jeu-effets";
 import type { SalleMembre } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
 import { SALLES } from "@/lib/voice-salles";
@@ -23,6 +24,8 @@ const ENVOI_MS = 66;
 const ABSENT_MS = 5000;
 const NOUVELLE_MANCHE_MS = 4000;
 const MANNEQUIN = "mannequin";
+/** Le canevas compte deux pixels pour un : les personnages restent nets, même agrandis. */
+const NET = 2;
 /** Au-delà de ce délai sans toucher, le compteur de combo repart de zéro. */
 const COMBO_MS = 900;
 const VIE_BULLE = 0.8;
@@ -38,18 +41,17 @@ const lourd = (t: TypeCoup) => t === "fort" || t === "final";
 const nomDe = (m: SalleMembre | undefined) => m?.username?.trim() || "Un joueur";
 
 /** Un état reçu du canal, s'il a la bonne forme. */
-function etatLu(p: unknown): (Pick<Combattant, "x" | "y" | "vx" | "vy" | "sol" | "etourdi" | "dir" | "degats" | "vies" | "coup" | "dash"> & { id: string }) | null {
-  const m = p as { id?: unknown; x?: unknown; y?: unknown; vx?: unknown; vy?: unknown; d?: unknown; g?: unknown; v?: unknown; c?: unknown; t?: unknown; s?: unknown; e?: unknown; h?: unknown } | null;
+function etatLu(p: unknown): (Pick<Combattant, "x" | "y" | "vx" | "vy" | "sol" | "etourdi" | "dir" | "degats" | "vies" | "coup" | "dash" | "danse"> & { id: string }) | null {
+  const m = p as { id?: unknown; x?: unknown; y?: unknown; vx?: unknown; vy?: unknown; d?: unknown; g?: unknown; v?: unknown; c?: unknown; t?: unknown; s?: unknown; e?: unknown; h?: unknown; n?: unknown } | null;
   if (!m || typeof m.id !== "string" || typeof m.x !== "number" || typeof m.y !== "number" || typeof m.g !== "number" || typeof m.v !== "number") return null;
   const type = typeof m.c === "string" && m.c in COUPS ? (m.c as TypeCoup) : null;
-  return { id: m.id, x: m.x, y: m.y, vx: Number(m.vx) || 0, vy: Number(m.vy) || 0, sol: m.s === 1, etourdi: Number(m.e) || 0, dir: m.d === -1 ? -1 : 1, degats: m.g, vies: m.v, coup: type ? { type, t: Number(m.t) || 0 } : null, dash: m.h === 1 ? 0.1 : 0 };
+  return { id: m.id, x: m.x, y: m.y, vx: Number(m.vx) || 0, vy: Number(m.vy) || 0, sol: m.s === 1, etourdi: Number(m.e) || 0, dir: m.d === -1 ? -1 : 1, degats: m.g, vies: m.v, coup: type ? { type, t: Number(m.t) || 0 } : null, dash: m.h === 1 ? 0.1 : 0, danse: m.n === 1 ? 0.2 : 0 };
 }
 
 export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: string; membres: SalleMembre[] }) {
   const [actif, setActif] = useState(false);
   const [lignes, setLignes] = useState<Ligne[]>([]);
   const [gagnant, setGagnant] = useState<string | null>(null);
-  const [seul, setSeul] = useState(true);
   const toile = useRef<HTMLCanvasElement | null>(null);
   const voie = useRef<RealtimeChannel | null>(null);
   const touches = useRef(new Set<string>());
@@ -73,6 +75,12 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
   /** les coups qu'on vient d'enchaîner, et le chiffre qui s'affiche au-dessus de la cible */
   const combo = useRef({ n: 0, fin: 0 });
   const bulle = useRef<{ x: number; y: number; n: number; vie: number } | null>(null);
+  /** le spectacle du combo : les effets, l'image d'impact, le ralenti et le zoom */
+  const effets = useRef<Effet[]>([]);
+  const impact = useRef<{ x: number; y: number; vie: number } | null>(null);
+  const ralenti = useRef(0);
+  const zoom = useRef<{ x: number; y: number; k: number; vie: number; max: number } | null>(null);
+  const calme = useRef(false);
   /** l'arrêt sur image après un coup, en secondes */
   const gel = useRef(0);
   /** qui on vient de toucher nous-mêmes : son état reçu ensuite ne relance pas les effets */
@@ -99,13 +107,45 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     if (p) p.flash = 0.08;
   };
 
+  /** Le spectacle d'un combo, de plus en plus grand. À partir de trois coups, tout y passe. */
+  const spectacle = (n: number, x: number, y: number, dir: number) => {
+    const yc = y - 42;
+    if (calme.current) {
+      bulle.current = { x, y: Math.max(40, y - 108), n, vie: VIE_BULLE };
+      return;
+    }
+    if (n === 2) {
+      bulle.current = { x, y: Math.max(40, y - 108), n, vie: VIE_BULLE };
+      gel.current = Math.max(gel.current, 0.1);
+      zoom.current = { x, y: yc, k: 1.18, vie: 0.32, max: 0.32 };
+      secousse.current = 12;
+      effets.current.push({ sorte: "lignes", x, y: yc, vie: 0.2, max: 0.2 }, { sorte: "onde", x, y: yc, r: 130, couleur: "#fff6e4", vie: 0.26, max: 0.26 });
+      return;
+    }
+    bulle.current = null;
+    impact.current = { x, y: yc, vie: 0.13 };
+    gel.current = 0.2;
+    ralenti.current = 0.55;
+    zoom.current = { x, y: yc, k: 1.5 + Math.min(0.3, (n - 3) * 0.1), vie: 0.85, max: 0.85 };
+    eclabousser(x, y, dir, 4);
+    secousse.current = 20;
+    effets.current.push(
+      { sorte: "lignes", x, y: yc, vie: 0.55, max: 0.55 },
+      { sorte: "taille", x, y: yc, angle: -0.5 * dir, vie: 0.34, max: 0.34 },
+      { sorte: "taille", x, y: yc, angle: 0.72 * dir, vie: 0.42, max: 0.42 },
+      { sorte: "onde", x, y: yc, r: 300, couleur: "#fff6e4", vie: 0.42, max: 0.42 },
+      { sorte: "onde", x, y: yc, r: 480, couleur: "#d8432a", vie: 0.6, max: 0.6 },
+      { sorte: "titre", texte: SALLES.jeuCombo(n), vie: 1.25, max: 1.25 },
+    );
+  };
+
   /** Un coup qu'on vient de porter : il prolonge le combo s'il arrive à temps. */
-  const compter = (x: number, y: number) => {
+  const compter = (x: number, y: number, dir: number) => {
     const maintenant = Date.now();
     const k = combo.current;
     k.n = maintenant < k.fin ? k.n + 1 : 1;
     k.fin = maintenant + COMBO_MS;
-    if (k.n >= 2) bulle.current = { x, y: Math.max(40, y - 108), n: k.n, vie: VIE_BULLE };
+    if (k.n >= 2) spectacle(k.n, x, y, dir);
   };
 
   const soulever = (x: number, y: number, n: number, force: number) => {
@@ -142,7 +182,10 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         const dir = p.dir === -1 ? -1 : 1;
         const avant = moi.current;
         moi.current = subir(avant, p.type as TypeCoup, dir);
-        if (moi.current !== avant) marquerCoup(moiId, avant.x, avant.y, dir, lourd(p.type as TypeCoup));
+        if (moi.current !== avant) {
+          marquerCoup(moiId, avant.x, avant.y, dir, lourd(p.type as TypeCoup));
+          if (p.type === "final") spectacle(3, avant.x, avant.y, dir);
+        }
       });
       c.on("broadcast", { event: "fin" }, ({ payload }) => {
         const g = (payload as { gagnant?: unknown } | null)?.gagnant;
@@ -174,6 +217,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     let coupVu: unknown = null;
     const sage = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const police = getComputedStyle(el).getPropertyValue("--font-brand").trim() || "system-ui";
+    calme.current = sage;
     const tenue = (id: string): Tenue => (id === MANNEQUIN ? TENUE_MANNEQUIN : tenueDe(id === moiId ? null : (places.current.get(id) ?? 0)));
 
     const boucle = (t: number) => {
@@ -186,12 +230,13 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
       avant = t;
       const maintenant = Date.now();
       // l'arrêt sur image : le temps du jeu s'arrête un instant, pas celui des effets
-      const dt = gel.current > 0 && !sage ? 0 : brut;
-      gel.current = Math.max(0, gel.current - brut);
+      const dt = sage ? brut : gel.current > 0 ? 0 : ralenti.current > 0 ? brut * 0.28 : brut;
+      if (gel.current > 0) gel.current = Math.max(0, gel.current - brut);
+      else ralenti.current = Math.max(0, ralenti.current - brut);
 
       const k = touches.current;
       const a = appuis.current;
-      const e: Entrees = { gauche: k.has("gauche"), droite: k.has("droite"), bas: k.has("bas"), saut: a.has("saut"), dash: a.has("dash"), leger: a.has("leger"), fort: a.has("fort") };
+      const e: Entrees = { gauche: k.has("gauche"), droite: k.has("droite"), bas: k.has("bas"), saut: a.has("saut"), dash: a.has("dash"), danse: a.has("danse"), leger: a.has("leger"), fort: a.has("fort") };
       a.clear();
 
       const m = elimine(moi.current) ? moi.current : avancer(moi.current, e, dt);
@@ -210,6 +255,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         o.cy += (o.y - o.cy) * Math.min(1, brut * 16);
         o.etourdi = Math.max(0, o.etourdi - brut);
         o.dash = Math.max(0, o.dash - brut);
+        o.danse = Math.max(0, o.danse - brut);
         if (o.coup) {
           const avance = o.coup.t + brut;
           o.coup = avance >= COUPS[o.coup.type].total ? null : { ...o.coup, t: avance };
@@ -242,7 +288,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           mannequin.current = subir(cible, type, m.dir);
           if (mannequin.current !== cible) {
             marquerCoup(MANNEQUIN, cible.x, cible.y, m.dir, lourd(type));
-            compter(cible.x, cible.y);
+            compter(cible.x, cible.y, m.dir);
           }
         }
         for (const [id, o] of autres.current) {
@@ -251,13 +297,13 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           envoyer("coup", { de: moiId, cible: id, type, dir: m.dir });
           touchesRecentes.current.set(id, maintenant);
           marquerCoup(id, o.cx, o.cy, m.dir, lourd(type));
-          compter(o.cx, o.cy);
+          compter(o.cx, o.cy, m.dir);
         }
       }
 
       if (t - dernierEnvoi > ENVOI_MS) {
         dernierEnvoi = t;
-        envoyer("etat", { id: moiId, x: Math.round(m.x), y: Math.round(m.y), vx: Math.round(m.vx), vy: Math.round(m.vy), s: m.sol ? 1 : 0, e: Math.round(m.etourdi * 100) / 100, d: m.dir, g: m.degats, v: m.vies, c: m.coup?.type ?? "", t: m.coup?.t ?? 0, h: m.dash > 0 ? 1 : 0 });
+        envoyer("etat", { id: moiId, x: Math.round(m.x), y: Math.round(m.y), vx: Math.round(m.vx), vy: Math.round(m.vy), s: m.sol ? 1 : 0, e: Math.round(m.etourdi * 100) / 100, d: m.dir, g: m.degats, v: m.vies, c: m.coup?.type ?? "", t: m.coup?.t ?? 0, h: m.dash > 0 ? 1 : 0, n: m.danse > 0 ? 1 : 0 });
       }
 
       // la fin de la manche, décidée par le meneur
@@ -277,7 +323,6 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
 
       if (t - dernierTableau > 150) {
         dernierTableau = t;
-        setSeul(estSeul);
         setLignes(joueurs.map((j) => ({ id: j.id, vies: j.vies, degats: j.id === moiId ? m.degats : (autres.current.get(j.id)?.degats ?? 0) })));
       }
 
@@ -298,13 +343,26 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         if (ev.atterri > 240) soulever(x, y, 6, 1 + ev.atterri / 900);
         if (ev.decolle) soulever(x, y, 4, 0.7);
         if (ev.pas) soulever(x - dir * 10, y, 1, 0.5);
+        if (j.vue.danse > 0 && Math.random() < brut * 5) effets.current.push({ sorte: "note", x: x + (Math.random() - 0.5) * 34, y: y - 86, glyphe: Math.random() < 0.5 ? "♪" : "♫", couleur: j.tenue.pans > 0 ? j.tenue.echarpe : "#fff6e4", vie: 0.9, max: 0.9 });
         if (etourdi > 0 && Math.hypot(vx, vy) > 560 && dt > 0) gouttes.current.push({ x, y: y - 36, vx: -vx * 0.12, vy: -vy * 0.12, vie: 0.3, r: 1.5 + Math.random() * 3, teinte: "#1a120b" });
       }
 
       // l'image
       const choc = sage ? 0 : secousse.current;
       secousse.current = Math.max(0, secousse.current - brut * 40);
-      c.setTransform(1, 0, 0, 1, (Math.random() - 0.5) * choc, (Math.random() - 0.5) * choc);
+      // la caméra : elle plonge sur l'impact, puis revient. Ancrée sur lui, elle ne montre jamais le bord
+      let loupe = 1;
+      let kx = 0;
+      let ky = 0;
+      const z = zoom.current;
+      if (z && z.vie > 0) {
+        const u = Math.min(1, (z.max - z.vie) / 0.06) * Math.min(1, z.vie / (z.max * 0.5));
+        loupe = 1 + (z.k - 1) * u * u * (3 - 2 * u);
+        kx = z.x * (1 - loupe);
+        ky = z.y * (1 - loupe);
+        z.vie -= brut;
+      }
+      c.setTransform(NET * loupe, 0, 0, NET * loupe, (kx + (Math.random() - 0.5) * choc) * NET, (ky + (Math.random() - 0.5) * choc) * NET);
       peindreArene(c);
       for (const j of scene) peindreOmbre(c, j.vue.x, j.vue.y);
 
@@ -342,6 +400,8 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         peindreEclat(c, e);
       }
 
+      peindreEffetsScene(c, effets.current);
+
       c.font = "600 20px system-ui, sans-serif";
       c.textAlign = "center";
       c.lineJoin = "round";
@@ -369,6 +429,27 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         c.fillText(SALLES.jeuCombo(b.n), b.x, b.y);
         c.globalAlpha = 1;
       }
+
+      c.setTransform(NET, 0, 0, NET, 0, 0);
+      peindreEffetsEcran(c, effets.current, police);
+      for (const e of effets.current) e.vie -= brut;
+      effets.current = effets.current.filter((e) => e.vie > 0);
+
+      // l'image d'impact : noir et blanc, puis rouge et noir, le temps d'un battement
+      const choc2 = impact.current;
+      if (choc2 && choc2.vie > 0) {
+        const noir = choc2.vie > 0.065;
+        peindreFondImpact(c, choc2.x, choc2.y, noir);
+        for (const j of scene) {
+          const p = pantins.current.get(j.id);
+          if (!p) continue;
+          const flash = p.flash;
+          p.flash = noir ? 1 : 0;
+          peindrePantin(c, p, j.tenue, false);
+          p.flash = flash;
+        }
+        choc2.vie -= brut;
+      }
     };
     image = requestAnimationFrame(boucle);
     return () => cancelAnimationFrame(image);
@@ -377,14 +458,14 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
 
   const sensDe = (e: React.KeyboardEvent) => {
     const cle = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    return ({ ArrowLeft: "gauche", ArrowRight: "droite", ArrowDown: "bas", ArrowUp: "saut", q: "gauche", a: "gauche", d: "droite", s: "bas", z: "saut", w: "saut", " ": "saut", j: "leger", x: "leger", k: "fort", c: "fort", l: "dash", v: "dash", Shift: "dash" } as Record<string, string>)[cle];
+    return ({ ArrowLeft: "gauche", ArrowRight: "droite", ArrowDown: "bas", ArrowUp: "saut", q: "gauche", a: "gauche", d: "droite", s: "bas", z: "saut", w: "saut", " ": "saut", j: "leger", x: "leger", k: "fort", c: "fort", l: "dash", v: "dash", Shift: "dash", e: "danse" } as Record<string, string>)[cle];
   };
   const clavier = (e: React.KeyboardEvent, enfoncee: boolean) => {
     const sens = sensDe(e);
     if (!sens) return;
     e.preventDefault();
     if (enfoncee) {
-      if (!e.repeat && (sens === "saut" || sens === "dash" || sens === "leger" || sens === "fort")) appuis.current.add(sens);
+      if (!e.repeat && (sens === "saut" || sens === "dash" || sens === "danse" || sens === "leger" || sens === "fort")) appuis.current.add(sens);
       touches.current.add(sens);
     } else touches.current.delete(sens);
   };
@@ -394,7 +475,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
       aria-label={nom}
       onPointerDown={(e) => {
         e.preventDefault();
-        if (nom === "saut" || nom === "dash" || nom === "leger" || nom === "fort") appuis.current.add(nom);
+        if (nom === "saut" || nom === "dash" || nom === "danse" || nom === "leger" || nom === "fort") appuis.current.add(nom);
         else touches.current.add(nom);
       }}
       onPointerUp={() => touches.current.delete(nom)}
@@ -423,8 +504,8 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           onKeyDown={(e) => clavier(e, true)}
           onKeyUp={(e) => clavier(e, false)}
         >
-          <canvas ref={toile} width={LARGEUR} height={HAUTEUR} />
-          {!actif && <span className={s.jeuAide}>{SALLES.jeuAide}</span>}
+          <canvas ref={toile} width={LARGEUR * NET} height={HAUTEUR * NET} />
+          {!actif && <span className={s.jeuAide}>{SALLES.jeuClique}</span>}
           {gagnant && <span className={s.jeuManche}>{SALLES.jeuManche(nomDe(parId.get(gagnant)))}</span>}
         </div>
         <div className={s.jeuTouches}>
@@ -432,6 +513,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
           {bouton("droite", "→")}
           {bouton("saut", "↑")}
           {bouton("dash", SALLES.jeuDash)}
+          {bouton("danse", "♪")}
           {bouton("leger", SALLES.jeuCoup)}
           {bouton("fort", SALLES.jeuCoupFort)}
         </div>
@@ -444,7 +526,13 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
             </li>
           ))}
         </ol>
-        {seul && <p className={s.sous}>{SALLES.jeuSeul}</p>}
+        <ul className={s.jeuConsigne}>
+          {SALLES.jeuConsignes.map(([touche, geste]) => (
+            <li key={geste}>
+              <kbd>{touche}</kbd> {geste}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

@@ -1,103 +1,73 @@
 import { HAUTEUR, LARGEUR, PLATEFORMES } from "@/lib/salles/jeu-combat";
-import { RAYON_TETE, VIE_SILLAGE, type Pantin, type Point, type PortFourreau, type Squelette, type Trace } from "@/lib/salles/jeu-pantin";
+import { RAYON_TETE, VIE_SILLAGE, type Pantin, type Point, type PortFourreau, type Trace } from "@/lib/salles/jeu-pantin";
 
 // Le dessin du mini-jeu : l'arène est une peinture (public/salles/arene.webp), les personnages
 // sont peints au canevas à chaque image depuis les points du squelette (lib/salles/jeu-pantin).
-// Ils reprennent les combattants des peintures du site : de vraies silhouettes d'encre,
-// élancées, le sabre fin et le fourreau à la hanche, masquées, le regard dans une fente. Sur le
-// bois sombre de l'arène, le noir disparaîtrait : tout le corps est d'abord tracé en clair, puis
-// rempli, ce qui laisse un fin liseré autour de la silhouette. L'habit vient ensuite, sur les
-// aplats : un reflet froid, le col croisé, la ceinture nouée, les bandes et les plis.
+// Ils reprennent les combattants des peintures du site : une seule masse noire aux contours
+// souples, sans aucune couleur ni ligne dure, que quelques touches claires au couteau font
+// tenir (épaules, plis, taille). Tous sont noirs, seule l'écharpe change. Chaque morceau du
+// corps est une courbe lisse, et comme tous ont le même noir, on ne voit que la silhouette.
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
-type Coiffe = "crochet" | "boule" | "queue" | "bouchon" | "capuche" | "meche" | "sac";
-type Coupe = "hakama" | "serre" | "jupe";
+type Coiffe = "capuche" | "chignon" | "queue" | "sac";
 
 export type Tenue = {
   corps: string;
-  bras: string;
-  jambe: string;
-  jambeArriere: string;
-  ceinture: string;
-  lisere: string;
-  /** le reflet sur l'avant du corps et les plis */
-  reflet: string;
-  /** les bandes des bras et des jambes, le col */
-  bande: string;
-  pied: string;
-  peau: string;
+  /** la lumière froide sur le haut de la silhouette */
+  rim: string;
+  /** les touches au couteau : la lumière, puis le second plan */
+  clair: string;
+  sombre: string;
   echarpe: string;
   echarpeOmbre: string;
-  /** combien de pans dépassent, et jusqu'où */
+  echarpeClair: string;
+  /** combien de pans dépassent */
   pans: number;
-  pansCourts: boolean;
-  /** l'écharpe serrée cache le cou */
-  col: boolean;
   coiffe: Coiffe;
-  coupe: Coupe;
+  /** la demi-largeur du pantalon */
+  ample: number;
   /** sans fourreau ni sabre : le mannequin */
   fourreau: PortFourreau | null;
 };
 
-const LISERE = 2.2;
-const ACIER = "#b9c1cc";
+const ACIER = "#c4ccd6";
 const CONTOUR_ACIER = "#0c0e18";
 
-const ENCRE = {
-  corps: "#171c29",
-  bras: "#1f2431",
-  jambe: "#1b2130",
-  jambeArriere: "#121622",
-  ceinture: "#666a76",
-  lisere: "#8d7256",
-  reflet: "#3a4663",
-  bande: "#8f94a3",
-  pied: "#a6abb7",
-  peau: "#dcb691",
-} as const;
+const NOIR = { corps: "#0b0b0f", rim: "#6f7e92", clair: "#d6dfe8", sombre: "#5f6e83", pans: 2, ample: 6.9 } as const;
 
 /** Toi : le combattant à l'écharpe rouge des peintures. Personne d'autre ne porte ce rouge. */
-const TOI: Tenue = { ...ENCRE, echarpe: "#d8432a", echarpeOmbre: "#8c2c26", pans: 2, pansCourts: false, col: true, coiffe: "crochet", coupe: "hakama", fourreau: "hanche" };
+const TOI: Tenue = { ...NOIR, echarpe: "#d8432a", echarpeOmbre: "#8c2c26", echarpeClair: "#f4917a", coiffe: "capuche", fourreau: "hanche" };
 
-/** Les autres : une silhouette chacun, puis un accent pris dans les couleurs du site. */
+/** Les autres : la même encre, une écharpe chacun prise dans les couleurs du site. */
 const AUTRES: Tenue[] = [
-  { ...ENCRE, echarpe: "#d6a13f", echarpeOmbre: "#94702a", pans: 1, pansCourts: true, col: true, coiffe: "capuche", coupe: "serre", fourreau: "dos" },
-  { ...ENCRE, echarpe: "#6fa595", echarpeOmbre: "#4a7468", pans: 2, pansCourts: false, col: true, coiffe: "queue", coupe: "jupe", fourreau: "travers" },
-  { ...ENCRE, echarpe: "#efe6d2", echarpeOmbre: "#b5a88d", pans: 1, pansCourts: false, col: false, coiffe: "bouchon", coupe: "serre", fourreau: "travers" },
-  { ...ENCRE, echarpe: "#8fa8c4", echarpeOmbre: "#62788f", pans: 2, pansCourts: true, col: true, coiffe: "meche", coupe: "jupe", fourreau: "dos" },
-  { ...ENCRE, echarpe: "#000000", echarpeOmbre: "#000000", pans: 0, pansCourts: false, col: false, coiffe: "boule", coupe: "hakama", fourreau: "hanche" },
+  { ...NOIR, echarpe: "#d6a13f", echarpeOmbre: "#94702a", echarpeClair: "#f2d48c", coiffe: "chignon", fourreau: "dos" },
+  { ...NOIR, echarpe: "#6fa595", echarpeOmbre: "#4a7468", echarpeClair: "#add6c9", coiffe: "queue", fourreau: "travers" },
+  { ...NOIR, echarpe: "#efe6d2", echarpeOmbre: "#b5a88d", echarpeClair: "#fffbf1", coiffe: "chignon", fourreau: "travers" },
+  { ...NOIR, echarpe: "#8fa8c4", echarpeOmbre: "#62788f", echarpeClair: "#c6d7e9", coiffe: "capuche", fourreau: "dos" },
+  { ...NOIR, echarpe: "#a97da6", echarpeOmbre: "#785576", echarpeClair: "#d6b6d3", coiffe: "queue", fourreau: "hanche" },
 ];
 
 /** La tenue d'un joueur : la sienne pour soi, sinon celle de la place qu'il occupe dans le combat. */
 export const tenueDe = (rang: number | null): Tenue => (rang === null ? TOI : AUTRES[rang % AUTRES.length]);
 
 export const TENUE_MANNEQUIN: Tenue = {
-  corps: "#bb9c64",
-  bras: "#a98a56",
-  jambe: "#a4844f",
-  jambeArriere: "#8e7246",
-  ceinture: "#5d4526",
-  lisere: "#2a1c10",
-  reflet: "#d6bb86",
-  bande: "#6e5230",
-  pied: "#8e7246",
-  peau: "#bb9c64",
+  corps: "#b4945d",
+  rim: "#e0c999",
+  clair: "#e6d2a6",
+  sombre: "#7c5f36",
   echarpe: "#000000",
   echarpeOmbre: "#000000",
+  echarpeClair: "#000000",
   pans: 0,
-  pansCourts: false,
-  col: false,
   coiffe: "sac",
-  coupe: "serre",
+  ample: 5.6,
   fourreau: null,
 };
 
 const BLANC = "#fff6e4";
 /** La même tenue toute blanche : le flash d'un coup reçu. */
-const flashDe = (t: Tenue): Tenue => ({ ...t, corps: BLANC, bras: BLANC, jambe: BLANC, jambeArriere: BLANC, ceinture: BLANC, lisere: BLANC, reflet: BLANC, bande: BLANC, pied: BLANC, peau: BLANC, echarpe: BLANC, echarpeOmbre: BLANC });
-
-type Forme = { chemin: Path2D; couleur: string };
+const flashDe = (t: Tenue): Tenue => ({ ...t, corps: BLANC, rim: BLANC, clair: BLANC, sombre: BLANC, echarpe: BLANC, echarpeOmbre: BLANC, echarpeClair: BLANC });
 
 /** Un segment du corps : une forme qui s'affine entre deux points. */
 function capsule(a: Point, b: Point, ra: number, rb: number): Path2D {
@@ -155,43 +125,82 @@ function ruban(m: Point[], largeur: number): Path2D {
   return p;
 }
 
-/** Ce que la tête porte, dessiné de profil vers la droite, le centre de la tête en (0, 0). */
-function coiffure(coiffe: Coiffe): Path2D {
+/** Une courbe lisse qui passe par tous les points. */
+function courbe(pts: Point[]): Path2D {
+  const n = pts.length;
+  const at = (i: number) => pts[(i + n) % n];
   const p = new Path2D();
-  const r = RAYON_TETE;
-  switch (coiffe) {
-    case "crochet":
-      p.addPath(rond({ x: -1.8, y: -r - 1.4 }, 3.3));
-      p.addPath(capsule({ x: -3, y: -r - 2.2 }, { x: -9.5, y: -r - 1.6 }, 2, 1.5));
-      p.addPath(capsule({ x: -9.5, y: -r - 1.6 }, { x: -12.5, y: -r + 2.2 }, 1.5, 0.7));
-      break;
-    case "boule":
-      p.addPath(capsule({ x: -2.4, y: -r + 1 }, { x: -5.4, y: -r - 2.4 }, 1.3, 1));
-      p.addPath(rond({ x: -6.2, y: -r - 4.2 }, 3.3));
-      break;
-    case "queue":
-      p.addPath(capsule({ x: -4, y: -r + 1.6 }, { x: -9.4, y: -r + 0.6 }, 2.2, 1.9));
-      p.addPath(capsule({ x: -9.4, y: -r + 0.6 }, { x: -14.2, y: -r + 8.4 }, 1.9, 0.7));
-      break;
-    case "bouchon":
-      p.addPath(capsule({ x: -2, y: -r + 0.8 }, { x: -4.4, y: -r - 4.4 }, 2.3, 2.5));
-      break;
-    case "capuche":
-      p.addPath(rond({ x: -0.8, y: -0.6 }, r + 1.4));
-      p.moveTo(-3, r + 0.6);
-      p.lineTo(-14.4, 3);
-      p.lineTo(-3, -r - 0.6);
-      p.closePath();
-      break;
-    case "meche":
-      p.addPath(rond({ x: -2.8, y: -r - 0.6 }, 2.2));
-      p.addPath(capsule({ x: -6, y: -2.4 }, { x: -11.6, y: 7.4 }, 2.8, 0.8));
-      break;
-    case "sac":
-      break;
+  p.moveTo(pts[0].x, pts[0].y);
+  for (let i = 0; i < n; i++) {
+    const a = at(i - 1);
+    const b = at(i);
+    const d = at(i + 1);
+    const e = at(i + 2);
+    p.bezierCurveTo(b.x + (d.x - a.x) / 6, b.y + (d.y - a.y) / 6, d.x - (e.x - b.x) / 6, d.y - (e.y - b.y) / 6, d.x, d.y);
   }
+  p.closePath();
   return p;
 }
+
+/** Les deux bords d'une forme le long d'un axe, de demi-largeur `larges[i]` à chaque point. */
+function bords(axe: Point[], larges: number[]): { g: Point[]; d: Point[] } {
+  const n = axe.length;
+  const g: Point[] = [];
+  const d: Point[] = [];
+  axe.forEach((q, i) => {
+    const a = axe[Math.max(0, i - 1)];
+    const b = axe[Math.min(n - 1, i + 1)];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const l = Math.hypot(dx, dy) || 1;
+    g.push({ x: q.x - (dy / l) * larges[i], y: q.y + (dx / l) * larges[i] });
+    d.push({ x: q.x + (dy / l) * larges[i], y: q.y - (dx / l) * larges[i] });
+  });
+  return { g, d };
+}
+
+/** Un membre ou un pan de tissu : un seul contour souple autour de son axe. */
+function membre(axe: Point[], larges: number[]): Path2D {
+  const { g, d } = bords(axe, larges);
+  return courbe([...g, ...d.reverse()]);
+}
+
+/** Une touche au couteau : elle naît en pointe, s'épaissit, et meurt en pointe. */
+function touche(axe: Point[], large: number): Path2D {
+  const n = axe.length;
+  const { g, d } = bords(axe, axe.map((_, i) => large * Math.sin((i / (n - 1)) * Math.PI) ** 0.8));
+  return courbe([...g, ...d.slice(1, -1).reverse()]);
+}
+
+const decale = (q: Point, v: Point, d: number): Point => ({ x: q.x + v.x * d, y: q.y + v.y * d });
+
+/** Le bras et sa manche, qui pend sous l'avant-bras. */
+function bras(e: Point, coude: Point, main: Point): Path2D[] {
+  const a = entre(coude, main, 0.08);
+  const b = entre(coude, main, 0.86);
+  const bas = Math.max(a.y, b.y);
+  return [
+    membre([e, entre(e, coude, 0.5), coude, entre(coude, main, 0.55), main], [6.2, 5.6, 5, 4.2, 2.8]),
+    courbe([a, { x: entre(a, b, 0.32).x, y: bas + 8 }, { x: entre(a, b, 0.78).x, y: bas + 6 }, b]),
+    rond(main, 3),
+  ];
+}
+
+/** La jambe du pantalon, ample jusqu'à l'ourlet. */
+function jambe(h: Point, g: Point, p: Point, ample: number): Path2D {
+  return membre([h, entre(h, g, 0.5), g, entre(g, p, 0.55), entre(g, p, 0.93)], [ample * 0.95, ample, ample * 0.84, ample * 0.8, ample * 0.92]);
+}
+
+/** Le crâne, de profil vers la droite, le centre de la tête en (0, 0) : un œuf, pas un rond. */
+const CRANE: [number, number][] = [[6.2, 2], [6.8, -2.4], [4.7, -6.2], [-0.2, -7.8], [-5.4, -6.4], [-7.6, -1.6], [-6.8, 3.6], [-2.4, 6.8], [3.2, 6.8]];
+
+/** Ce que la tête porte, dans le même repère. */
+const COIFFES: Record<Coiffe, [number, number][][]> = {
+  capuche: [[[-5.6, -5.4], [-9.8, -1.2], [-10.4, 4], [-7, 7.2], [-3.4, 6.2]]],
+  chignon: [[[-3.8, -7.4], [-4.6, -10.4], [-2.6, -13.2], [0.8, -12.6], [1.6, -9.6], [0.4, -7.4]]],
+  queue: [[[-4.8, -6.4], [-9.8, -7.8], [-14.6, -4.6], [-16.6, 2.4], [-15.2, 8.6], [-13.4, 3.4], [-11, -1.2], [-6.6, -1.8]]],
+  sac: [],
+};
 
 /** La lame : fine, courbe, plus large près de la garde. */
 function lame(garde: Point, bout: Point, face: number): Path2D {
@@ -210,77 +219,9 @@ function lame(garde: Point, bout: Point, face: number): Path2D {
   return p;
 }
 
-/** Une bande autour d'un membre, à la fraction `k` du segment. */
-function cerclage(c: Ctx, a: Point, b: Point, k: number, r: number) {
-  const q = entre(a, b, k);
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const l = Math.hypot(dx, dy) || 1;
-  const px = (-dy / l) * r;
-  const py = (dx / l) * r;
-  c.fill(capsule({ x: q.x - px, y: q.y - py }, { x: q.x + px, y: q.y + py }, 0.75, 0.75));
-}
-
-/** L'habit, posé sur les aplats du corps. */
-function peindreHabit(c: Ctx, s: Squelette, t: Tenue) {
-  const sens = s.face >= 0 ? 1 : -1;
-  const hx = s.cou.x - s.hanche.x;
-  const hy = s.cou.y - s.hanche.y;
-  const hl = Math.hypot(hx, hy) || 1;
-  const ux = hx / hl;
-  const uy = hy / hl;
-  /** `d` pixels vers l'avant du buste */
-  const avant = (q: Point, d: number): Point => ({ x: q.x - uy * sens * d, y: q.y + ux * sens * d });
-  const poitrine = entre(s.cou, s.hanche, 0.35);
-  const taille = { x: s.hanche.x + ux * 3, y: s.hanche.y + uy * 3 };
-
-  // le reflet froid sur l'avant du buste et de la cuisse
-  c.fillStyle = t.reflet;
-  c.fill(capsule(avant(poitrine, 6.6), avant(taille, 4), 1.6, 0.6));
-  const k1 = entre(s.hanche, s.genouAvant, 0.3);
-  const k2 = entre(s.hanche, s.genouAvant, 0.88);
-  c.fill(capsule({ x: k1.x + sens * 3.6, y: k1.y }, { x: k2.x + sens * 2.8, y: k2.y }, 1.2, 0.5));
-
-  // les plis du bas
-  if (t.coupe !== "serre") {
-    const jupe = t.coupe === "jupe";
-    const a = entre(s.genouAvant, s.piedAvant, jupe ? 0.5 : 0.18);
-    const b = entre(s.genouArriere, s.piedArriere, jupe ? 0.5 : 0.18);
-    c.strokeStyle = t.reflet;
-    c.lineWidth = 0.9;
-    c.beginPath();
-    for (const k of [0.3, 0.62]) {
-      const bas = entre(a, b, k);
-      const haut = entre(s.hanche, bas, 0.3);
-      c.moveTo(haut.x, haut.y);
-      c.lineTo(bas.x, bas.y);
-    }
-    c.stroke();
-  }
-
-  // les bandes des jambes, au-dessus des pieds
-  c.fillStyle = t.bande;
-  for (const k of [0.72, 0.86]) {
-    cerclage(c, s.genouAvant, s.piedAvant, k, 3.1);
-    cerclage(c, s.genouArriere, s.piedArriere, k, 2.8);
-  }
-
-  // le col croisé, de la nuque vers la taille
-  c.fill(capsule(avant(entre(s.cou, s.hanche, 0.14), -3), avant(taille, 4.4), 0.95, 0.95));
-
-  // la ceinture : large, à la couleur du joueur, nouée dans le dos
-  const obi = t.pans > 0 ? t.echarpeOmbre : t.ceinture;
-  const noeud = avant(taille, -7);
-  c.fillStyle = obi;
-  c.fill(capsule(avant(taille, -6.6), avant(taille, 6.4), 2.3, 2.3));
-  c.fill(rond(noeud, 2.9));
-  c.fill(capsule(noeud, { x: noeud.x - sens * 6.5, y: noeud.y + 10.5 }, 1.7, 0.7));
-  c.fill(capsule(noeud, { x: noeud.x - sens * 2, y: noeud.y + 12.5 }, 1.5, 0.6));
-}
-
 /** Les silhouettes laissées par un dash, à la couleur du joueur. */
 export function peindreSillage(c: Ctx, p: Pantin, tenue: Tenue) {
-  c.fillStyle = tenue.pans > 0 ? tenue.echarpe : tenue.lisere;
+  c.fillStyle = tenue.pans > 0 ? tenue.echarpe : tenue.rim;
   for (const { s, age } of p.sillage) {
     const g = new Path2D();
     g.addPath(capsule(s.hanche, s.cou, 7, 9));
@@ -298,118 +239,124 @@ export function peindreSillage(c: Ctx, p: Pantin, tenue: Tenue) {
 
 /** Le personnage. `clignote` : il vient de réapparaître et ne craint rien pour l'instant. */
 export function peindrePantin(c: Ctx, p: Pantin, tenue: Tenue, clignote: boolean) {
-  const t = p.flash > 0 ? flashDe(tenue) : tenue;
+  const flash = p.flash > 0;
+  const t = flash ? flashDe(tenue) : tenue;
   const s = p.squelette;
   const paille = t.coiffe === "sac";
-  const formes: Forme[] = [];
-  const pose = (chemin: Path2D, couleur: string) => formes.push({ chemin, couleur });
+  const sens = s.face >= 0 ? 1 : -1;
 
-  const pans = p.pans.slice(0, t.pans).map((m, i) => ruban(t.pansCourts ? m.slice(0, Math.ceil(m.length * 0.6)) : m, i === 0 ? 2.8 : 2.3));
+  // le repère du buste : `a` le long du dos (0 le bassin, 1 le cou), `b` en pixels vers l'avant
+  const hx = s.cou.x - s.hanche.x;
+  const hy = s.cou.y - s.hanche.y;
+  const hl = Math.hypot(hx, hy) || 1;
+  const ux = hx / hl;
+  const uy = hy / hl;
+  const B = (a: number, b: number): Point => ({ x: s.hanche.x + hx * a - uy * sens * b, y: s.hanche.y + hy * a + ux * sens * b });
+  // le repère de la tête
+  const cos = Math.cos(s.angleTete);
+  const sin = Math.sin(s.angleTete);
+  const T = ([x, y]: [number, number]): Point => ({ x: s.tete.x + x * s.face * cos - y * sin, y: s.tete.y + x * s.face * sin + y * cos });
+  /** le côté d'un segment qui reçoit la lumière, venue d'en haut et de devant */
+  const cote = (a: Point, b: Point): Point => {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const l = Math.hypot(dx, dy) || 1;
+    const nx = dy / l;
+    const ny = -dx / l;
+    return nx * sens * 0.5 - ny >= 0 ? { x: nx, y: ny } : { x: -nx, y: -ny };
+  };
 
-  const fourreau = t.fourreau ? capsule(s.fourreau[t.fourreau][0], s.fourreau[t.fourreau][1], 2, 1.6) : null;
+  const formes: Path2D[] = [];
+  const clairs: Path2D[] = [];
+  const sombres: Path2D[] = [];
+
+  formes.push(...bras(s.epauleArriere, s.coudeArriere, s.mainArriere));
+
+  // le bas : deux jambes amples, et le tissu qui les relie
+  const ourletAvant = entre(s.genouAvant, s.piedAvant, 0.62);
+  const ourletArriere = entre(s.genouArriere, s.piedArriere, 0.62);
+  const creux = entre(entre(ourletAvant, ourletArriere, 0.5), s.hanche, 0.42);
+  formes.push(jambe(s.hanche, s.genouArriere, s.piedArriere, t.ample), pied(s.genouArriere, s.piedArriere, s.face));
+  formes.push(jambe(s.hanche, s.genouAvant, s.piedAvant, t.ample), pied(s.genouAvant, s.piedAvant, s.face));
+  formes.push(courbe([B(0.08, -8.6), ourletArriere, creux, ourletAvant, B(0.08, 8.6)]));
+
+  // le buste, d'un seul contour, et le bas de la veste
+  formes.push(
+    courbe([B(1.03, 3.2), B(0.86, 7.8), B(0.56, 8.2), B(0.24, 6.2), B(0, 7.4), B(-0.28, 8.8), B(-0.32, 0), B(-0.28, -8.8), B(0, -7.4), B(0.26, -6.4), B(0.6, -9.2), B(0.9, -9), B(1.05, -3.4)]),
+  );
+  formes.push(courbe(CRANE.map(T)));
+  for (const f of COIFFES[t.coiffe]) formes.push(courbe(f.map(T)));
+
+  const devant = bras(s.epauleAvant, s.coudeAvant, s.mainAvant);
+
+  const fourreauPts = t.fourreau ? s.fourreau[t.fourreau] : null;
   const dansLeDos = t.fourreau === "dos";
-  if (fourreau && !dansLeDos) pose(fourreau, t.jambe);
+  const fourreau = fourreauPts ? membre([fourreauPts[0], entre(fourreauPts[0], fourreauPts[1], 0.5), fourreauPts[1]], [2.1, 2.2, 1.5]) : null;
 
-  pose(capsule(s.epauleArriere, s.coudeArriere, 4.6, 3.8), t.jambeArriere);
-  pose(capsule(s.coudeArriere, s.mainArriere, 3.8, 2.6), t.jambeArriere);
-  pose(rond(s.mainArriere, 3), t.jambeArriere);
-
-  // le bas du corps : ample, serré ou en jupe, mais toujours une masse pleine depuis la taille
-  const cuisse = t.coupe === "serre" ? [6.2, 4.6] : t.coupe === "jupe" ? [6.6, 6.2] : [7.4, 6];
-  const tibia = t.coupe === "serre" ? [4.4, 2.6] : t.coupe === "jupe" ? [5.8, 4.4] : [6.2, 3.6];
-  pose(capsule(s.hanche, s.genouArriere, cuisse[0], cuisse[1]), t.jambeArriere);
-  pose(capsule(s.genouArriere, s.piedArriere, tibia[0], tibia[1]), t.jambeArriere);
-  pose(pied(s.genouArriere, s.piedArriere, s.face), t.bande);
-  pose(capsule(s.hanche, s.genouAvant, cuisse[0], cuisse[1]), t.jambe);
-  pose(capsule(s.genouAvant, s.piedAvant, tibia[0], tibia[1]), t.jambe);
-  pose(pied(s.genouAvant, s.piedAvant, s.face), t.pied);
-  if (t.coupe !== "serre") {
-    const jupe = t.coupe === "jupe";
-    const a = entre(s.genouAvant, s.piedAvant, jupe ? 0.6 : 0.25);
-    const b = entre(s.genouArriere, s.piedArriere, jupe ? 0.6 : 0.25);
-    const creux = entre(entre(a, b, 0.5), s.hanche, jupe ? 0.08 : 0.16);
-    const sens = a.x >= b.x ? 1 : -1;
-    const masse = new Path2D();
-    masse.moveTo(s.hanche.x - 6 * sens, s.hanche.y - 2);
-    masse.lineTo(s.hanche.x + 6 * sens, s.hanche.y - 2);
-    masse.lineTo(a.x, a.y);
-    masse.quadraticCurveTo(creux.x, creux.y, b.x, b.y);
-    masse.closePath();
-    pose(masse, t.jambe);
+  // les pans passent derrière le corps, avec leur ombre et leur lumière
+  const pans = p.pans.slice(0, t.pans);
+  for (const m of pans) {
+    c.fillStyle = t.echarpe;
+    c.fill(ruban(m, 3.3));
+    c.fillStyle = t.echarpeOmbre;
+    c.fill(touche(m.slice(1).map((q) => ({ x: q.x, y: q.y + 1.5 })), 1.1));
+    c.fillStyle = t.echarpeClair;
+    c.fill(touche(m.slice(1, -1).map((q) => ({ x: q.x, y: q.y - 1.4 })), 0.9));
   }
 
-  const poitrine = entre(s.cou, s.hanche, 0.35);
-  pose(capsule(s.hanche, poitrine, 6.2, 9.4), t.corps);
-  pose(capsule(poitrine, s.cou, 9.4, 6.4), t.corps);
-
-  // le cou : caché par l'écharpe, ou nu
-  const dx = s.tete.x - s.cou.x;
-  const dy = s.tete.y - s.cou.y;
-  const l = Math.hypot(dx, dy) || 1;
-  const ax = -dy / l;
-  const ay = dx / l;
-  if (!t.col) pose(capsule(s.cou, s.tete, 3, 3), t.corps);
-
-  // la tête et ce qu'elle porte
-  const repere = new DOMMatrix().translate(s.tete.x, s.tete.y).rotate((s.angleTete * 180) / Math.PI).scale(s.face, 1);
-  const tete = new Path2D();
-  tete.addPath(coiffure(t.coiffe), repere);
-  // le menton du masque, un peu en avant : la tête n'est plus une simple boule
-  if (!paille) tete.addPath(capsule({ x: 2.6, y: 1.6 }, { x: 6.8, y: 2.9 }, 3, 1), repere);
-  pose(tete, t.corps);
-  pose(rond(s.tete, RAYON_TETE), t.corps);
-
-  if (t.col) {
-    // le col s'amincit vers l'avant, comme un tissu noué derrière la nuque
-    const sens = s.face >= 0 ? 1 : -1;
-    const bas = { x: s.cou.x - (dx / l) * 1.6, y: s.cou.y - (dy / l) * 1.6 };
-    pose(capsule({ x: bas.x - ax * sens * 6.6, y: bas.y - ay * sens * 6.6 }, { x: bas.x + ax * sens * 5.2, y: bas.y + ay * sens * 5.2 }, 3.4, 1.8), t.echarpe);
-  }
-
-  const brasAvant = [capsule(s.epauleAvant, s.coudeAvant, 5, 4), capsule(s.coudeAvant, s.mainAvant, 4, 2.8), rond(s.mainAvant, 3.1)];
-
-  // le liseré d'abord, sous toutes les formes : il ne reste visible que sur le bord du corps
+  // la silhouette : une lumière froide déborde sur le haut, puis tout est rempli du même noir
   c.lineJoin = "round";
   c.lineCap = "round";
-  c.strokeStyle = clignote ? BLANC : t.lisere;
-  c.lineWidth = clignote ? LISERE + 2.4 : LISERE;
-  if (fourreau && dansLeDos) c.stroke(fourreau);
-  for (const pan of pans) c.stroke(pan);
-  for (const f of formes) c.stroke(f.chemin);
-  for (const f of brasAvant) c.stroke(f);
+  const tout = fourreau ? [fourreau, ...formes, ...devant] : [...formes, ...devant];
+  c.save();
+  if (!clignote) c.translate(-0.45 * sens, -0.85);
+  c.strokeStyle = clignote ? BLANC : t.rim;
+  c.lineWidth = clignote ? 3.4 : 1;
+  for (const f of tout) c.stroke(f);
+  c.restore();
+  c.fillStyle = t.corps;
+  if (fourreau && dansLeDos) c.fill(fourreau);
+  for (const f of formes) c.fill(f);
+  if (fourreau && !dansLeDos) c.fill(fourreau);
 
-  // les pans passent derrière le corps, avec leur pli, et devant le fourreau du dos
-  if (fourreau && dansLeDos) {
-    c.fillStyle = t.jambe;
-    c.fill(fourreau);
+  // les touches au couteau : le dos, la veste croisée, la taille, les plis
+  sombres.push(touche([B(0.94, -8.2), B(0.7, -9.2), B(0.44, -8), B(0.24, -6.2)], 1.2));
+  clairs.push(touche([B(0.86, 4.8), B(0.62, 1.4), B(0.38, -2.4), B(0.2, -5)], 1.05));
+  clairs.push(touche([B(0.2, 7), B(0.15, 2.4), B(0.16, -2.6), B(0.22, -6.8)], 1.3));
+  sombres.push(touche([B(0.05, 7.8), B(0.02, 2.4), B(0.04, -3), B(0.1, -7.4)], 1.1));
+  sombres.push(touche([B(0.66, 7.4), B(0.46, 6.8), B(0.3, 5.4)], 0.9));
+  clairs.push(touche([B(-0.24, 8.6), B(-0.29, 2), B(-0.27, -4), B(-0.22, -8.4)], 0.9));
+  const nv = cote(s.hanche, s.genouAvant);
+  const nb = cote(s.genouAvant, s.piedAvant);
+  clairs.push(touche([decale(entre(s.hanche, s.genouAvant, 0.2), nv, 6.4), decale(entre(s.hanche, s.genouAvant, 0.65), nv, 7.2), decale(s.genouAvant, nb, 6.8), decale(entre(s.genouAvant, s.piedAvant, 0.45), nb, 6.6)], 1.3));
+  sombres.push(touche([decale(entre(s.hanche, s.genouAvant, 0.45), nv, 0.6), decale(s.genouAvant, nb, 1), decale(entre(s.genouAvant, s.piedAvant, 0.5), nb, 1.6), decale(entre(s.genouAvant, s.piedAvant, 0.86), nb, 2.2)], 1));
+  const na = cote(s.genouArriere, s.piedArriere);
+  sombres.push(touche([decale(s.genouArriere, na, 6), decale(entre(s.genouArriere, s.piedArriere, 0.5), na, 6.2), decale(entre(s.genouArriere, s.piedArriere, 0.88), na, 6.4)], 1));
+  if (t.coiffe === "capuche") {
+    clairs.push(touche(([[-6, -3.6], [-3.4, -6.2], [0.4, -6.9], [3.4, -5.4]] as [number, number][]).map(T), 1));
+    sombres.push(touche(([[3.6, -5.2], [1.9, -0.8], [2.4, 3.2], [3.8, 6]] as [number, number][]).map(T), 0.9));
+  } else if (!paille) {
+    clairs.push(touche(([[-5.6, -3.4], [-3, -6], [0.6, -6.6], [3.6, -4.8]] as [number, number][]).map(T), 0.8));
+    sombres.push(touche(([[-3.6, -7.6], [-1.6, -8.3], [0.6, -7.7]] as [number, number][]).map(T), 0.8));
   }
-  c.fillStyle = t.echarpe;
-  for (const pan of pans) c.fill(pan);
-  c.strokeStyle = t.echarpeOmbre;
-  c.lineWidth = 1.1;
-  if (t.pans > 0) {
-    c.beginPath();
-    const m = p.pans[0];
-    const fin = t.pansCourts ? Math.ceil(m.length * 0.6) : m.length;
-    c.moveTo(m[1].x, m[1].y);
-    for (let i = 2; i < fin; i++) c.lineTo(m[i].x, m[i].y);
-    c.stroke();
+  if (fourreauPts) {
+    const n = cote(fourreauPts[0], fourreauPts[1]);
+    sombres.push(touche([decale(fourreauPts[0], n, 1.2), decale(entre(fourreauPts[0], fourreauPts[1], 0.5), n, 1.4), decale(fourreauPts[1], n, 1)], 0.7));
   }
-
-  for (const f of formes) {
-    c.fillStyle = f.couleur;
-    c.fill(f.chemin);
+  if (!flash) {
+    c.fillStyle = t.sombre;
+    for (const f of sombres) c.fill(f);
+    c.fillStyle = t.clair;
+    for (const f of clairs) c.fill(f);
   }
-
-  peindreHabit(c, s, t);
 
   if (paille) {
-    // le mannequin : un sac de toile, deux coutures, une croix pour l'œil
+    // le mannequin : un sac de toile, une croix pour l'œil
     c.save();
     c.translate(s.tete.x, s.tete.y);
     c.rotate(s.angleTete);
     c.scale(s.face, 1);
-    c.strokeStyle = t.lisere;
+    c.strokeStyle = t.sombre;
     c.lineWidth = 1.5;
     c.beginPath();
     c.moveTo(1.6, -3.4);
@@ -420,22 +367,17 @@ export function peindrePantin(c: Ctx, p: Pantin, tenue: Tenue, clignote: boolean
     c.restore();
   }
 
-  if (!paille && p.flash === 0) {
-    // la fente du masque : la peau et l'œil ; sous la capuche, seule une lueur
-    c.save();
-    c.translate(s.tete.x, s.tete.y);
-    c.rotate(s.angleTete);
-    c.scale(s.face, 1);
-    if (t.coiffe === "capuche") {
-      c.fillStyle = t.echarpe;
-      c.fill(capsule({ x: 1.4, y: -1.8 }, { x: 5.4, y: -1.8 }, 1, 1));
-    } else {
-      c.fillStyle = t.peau;
-      c.fill(capsule({ x: 0.8, y: -2 }, { x: 6.2, y: -1.6 }, 1.5, 1.1));
-      c.fillStyle = "#0e1119";
-      c.fill(rond({ x: 4, y: -1.9 }, 0.85));
-    }
-    c.restore();
+  // l'écharpe autour du cou, épaisse, avec son ombre et sa lumière
+  if (t.pans > 0) {
+    const a = B(1.02, -8.2);
+    const m = B(0.93, -0.6);
+    const b = B(1.05, 7.2);
+    c.fillStyle = t.echarpe;
+    c.fill(membre([a, m, b], [3.3, 4.8, 3]));
+    c.fillStyle = t.echarpeOmbre;
+    c.fill(touche([decale(a, { x: ux, y: uy }, -2.4), decale(m, { x: ux, y: uy }, -3), decale(b, { x: ux, y: uy }, -2)], 1.1));
+    c.fillStyle = t.echarpeClair;
+    c.fill(touche([decale(a, { x: ux, y: uy }, 1.8), decale(m, { x: ux, y: uy }, 2.4), decale(b, { x: ux, y: uy }, 1.4)], 0.9));
   }
 
   if (t.fourreau) {
@@ -446,22 +388,26 @@ export function peindrePantin(c: Ctx, p: Pantin, tenue: Tenue, clignote: boolean
     const pommeau = { x: s.mainAvant.x - lx * 7, y: s.mainAvant.y - ly * 7 };
     const fer = lame(s.garde, s.bout, signe);
     c.strokeStyle = CONTOUR_ACIER;
-    c.lineWidth = 2;
+    c.lineWidth = 1.6;
     c.stroke(fer);
-    c.fillStyle = p.flash > 0 ? BLANC : ACIER;
+    c.fillStyle = flash ? BLANC : ACIER;
     c.fill(fer);
-    c.fillStyle = p.flash > 0 ? BLANC : CONTOUR_ACIER;
+    c.fillStyle = flash ? BLANC : CONTOUR_ACIER;
     c.fill(capsule(pommeau, s.garde, 2, 2));
-    c.fillStyle = t.ceinture;
-    c.fill(rond(s.garde, 2.6));
+    c.fillStyle = t.sombre;
+    c.fill(rond(s.garde, 2.5));
   }
 
-  for (const f of brasAvant) {
-    c.fillStyle = t.bras;
-    c.fill(f);
+  c.fillStyle = t.corps;
+  for (const f of devant) c.fill(f);
+  if (!flash) {
+    const n1 = cote(s.epauleAvant, s.coudeAvant);
+    const n2 = cote(s.coudeAvant, s.mainAvant);
+    c.fillStyle = t.clair;
+    c.fill(touche([B(0.99, -5.4), decale(s.epauleAvant, n1, 6), decale(entre(s.epauleAvant, s.coudeAvant, 0.55), n1, 5.3), decale(s.coudeAvant, n2, 4.8), decale(entre(s.coudeAvant, s.mainAvant, 0.55), n2, 3.8)], 1.4));
+    c.fillStyle = t.sombre;
+    c.fill(touche([decale(entre(s.coudeAvant, s.mainAvant, 0.2), n2, -3), decale(entre(s.coudeAvant, s.mainAvant, 0.5), n2, -6), decale(entre(s.coudeAvant, s.mainAvant, 0.8), n2, -4.6)], 0.8));
   }
-  c.fillStyle = t.bande;
-  for (const k of [0.46, 0.64, 0.82]) cerclage(c, s.coudeAvant, s.mainAvant, k, 3.3);
 }
 
 /** L'ombre au sol : elle rétrécit et s'efface quand on monte. */

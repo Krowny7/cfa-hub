@@ -29,7 +29,7 @@ export type Pose = {
 export type PortFourreau = "hanche" | "dos" | "travers";
 
 /** Ce qu'il faut savoir d'un combattant pour l'animer. */
-export type Vue = Pick<Combattant, "x" | "y" | "vx" | "vy" | "sol" | "dir" | "coup" | "etourdi" | "dash">;
+export type Vue = Pick<Combattant, "x" | "y" | "vx" | "vy" | "sol" | "dir" | "coup" | "etourdi" | "dash" | "danse">;
 
 export type Squelette = {
   hanche: Point;
@@ -105,7 +105,7 @@ const JAMBES = 1.12;
 export const RAYON_TETE = 6.8;
 export const LAME = 50;
 
-const MAILLONS = [8, 6];
+const MAILLONS = [9, 8];
 const LONGUEUR_MAILLON = 8;
 const PAS_ECHARPE = 1 / 60;
 /** La force qui ramène un maillon sur sa ligne : plus elle est faible, plus l'écharpe traîne. */
@@ -237,6 +237,24 @@ function fonce(): Pose {
   };
 }
 
+/** La danse pour narguer : le bassin qui roule, les bras en l'air, le sabre qui bat la mesure. */
+function danse(temps: number): Pose {
+  const w = temps * 8.5;
+  const a = Math.sin(w);
+  const b = Math.sin(w * 2);
+  return {
+    hanche: { x: a * 7, y: -31 + Math.abs(Math.cos(w)) * 4 },
+    buste: a * 0.3,
+    tete: -a * 0.4,
+    piedAvant: { x: 14 + a * 5, y: -Math.max(0, a) * 8 },
+    piedArriere: { x: -14 + a * 5, y: -Math.max(0, -a) * 8 },
+    mainAvant: { x: 9 - a * 13, y: -25 + b * 4 },
+    mainArriere: { x: -9 - a * 13, y: -25 - b * 4 },
+    sabre: -1.57 + a * 0.75,
+    etire: 1 + b * 0.035,
+  };
+}
+
 /** Chaque coup : la pose armée, la pose frappée, ce que font les jambes au sol, et le temps tenu. */
 const GESTES: Record<TypeCoup, { arme: Partial<Pose>; coup: Partial<Pose>; solArme: Partial<Pose>; solCoup: Partial<Pose>; tenue: number }> = {
   leger: {
@@ -287,6 +305,7 @@ export function frappe(base: Pose, type: TypeCoup, t: number, sol: boolean): Pos
 function cible(p: Pantin, e: Vue): Pose {
   if (e.etourdi > 0) return touche(e.vx * e.dir > 0 ? -1 : 1);
   if (e.dash > 0) return fonce();
+  if (e.danse > 0 && e.sol) return danse(p.temps);
   if (!e.sol) return e.vy < 0 ? monte(e.vy) : tombe(e.vy);
   const vitesse = Math.abs(e.vx);
   return melanger(repos(p.temps), course(p.foulee, vitesse), lisse(vitesse / 110));
@@ -472,7 +491,7 @@ export function animer(p: Pantin, e: Vue, dt: number): Evenements {
     if (Math.abs(p.tour - proche) < 0.01) p.tour = 0;
   }
 
-  const raideur = e.dash > 0 ? 70 : e.etourdi > 0 ? 40 : e.sol ? (Math.abs(e.vx) > 40 ? 48 : 24) : 16;
+  const raideur = e.dash > 0 ? 70 : e.danse > 0 ? 34 : e.etourdi > 0 ? 40 : e.sol ? (Math.abs(e.vx) > 40 ? 48 : 24) : 16;
   p.base = melanger(p.base, cible(p, e), 1 - Math.exp(-raideur * dt));
 
   const coup = e.coup;
@@ -496,7 +515,9 @@ export function animer(p: Pantin, e: Vue, dt: number): Evenements {
 
   for (const m of p.sillage) m.age += dt;
   p.sillage = p.sillage.filter((m) => m.age < VIE_SILLAGE);
-  if (e.dash > 0 && p.temps - p.sillageT >= SILLAGE_PAS) {
+  // le dash, le coup final et la cible projetée laissent tous des silhouettes derrière eux
+  const file = e.dash > 0 || e.coup?.type === "final" || (e.etourdi > 0 && Math.hypot(e.vx, e.vy) > 420);
+  if (file && p.temps - p.sillageT >= SILLAGE_PAS) {
     p.sillage.push({ s: p.squelette, age: 0 });
     p.sillageT = p.temps;
   }
