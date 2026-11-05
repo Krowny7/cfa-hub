@@ -194,6 +194,15 @@ function jambe(h: Point, g: Point, p: Point, ample: number): Path2D {
 /** Le crâne, de profil vers la droite, le centre de la tête en (0, 0) : un œuf, pas un rond. */
 const CRANE: [number, number][] = [[6.2, 2], [6.8, -2.4], [4.7, -6.2], [-0.2, -7.8], [-5.4, -6.4], [-7.6, -1.6], [-6.8, 3.6], [-2.4, 6.8], [3.2, 6.8]];
 
+/** Le crâne vu de face, et ce que la tête porte vu de face. */
+const CRANE_FACE: [number, number][] = [[6.6, 1], [6.4, -3], [4, -6.6], [0, -7.8], [-4, -6.6], [-6.4, -3], [-6.6, 1], [-4.4, 5.2], [0, 7.2], [4.4, 5.2]];
+const COIFFES_FACE: Record<Coiffe, [number, number][][]> = {
+  capuche: [],
+  chignon: [[[-2.4, -7.4], [-3.2, -10.6], [-1.2, -13.2], [1.2, -13.2], [3.2, -10.6], [2.4, -7.4]]],
+  queue: [[[-4.4, -6], [-8.6, -5.4], [-10.6, 0], [-10, 6.4], [-7.6, 3], [-6.2, -1.4]]],
+  sac: [],
+};
+
 /** Ce que la tête porte, dans le même repère. */
 const COIFFES: Record<Coiffe, [number, number][][]> = {
   capuche: [[[-5.6, -5.4], [-9.8, -1.2], [-10.4, 4], [-7, 7.2], [-3.4, 6.2]]],
@@ -244,6 +253,7 @@ export function peindrePantin(c: Ctx, p: Pantin, tenue: Tenue, clignote: boolean
   const s = p.squelette;
   const paille = t.coiffe === "sac";
   const sens = s.face >= 0 ? 1 : -1;
+  const deFace = s.deFace > 0.5;
 
   // le repère du buste : `a` le long du dos (0 le bassin, 1 le cou), `b` en pixels vers l'avant
   const hx = s.cou.x - s.hanche.x;
@@ -282,10 +292,14 @@ export function peindrePantin(c: Ctx, p: Pantin, tenue: Tenue, clignote: boolean
 
   // le buste, d'un seul contour, et le bas de la veste
   formes.push(
-    courbe([B(1.03, 3.2), B(0.86, 7.8), B(0.56, 8.2), B(0.24, 6.2), B(0, 7.4), B(-0.28, 8.8), B(-0.32, 0), B(-0.28, -8.8), B(0, -7.4), B(0.26, -6.4), B(0.6, -9.2), B(0.9, -9), B(1.05, -3.4)]),
+    courbe(
+      deFace
+        ? [B(1.03, 3.6), B(0.88, 11), B(0.56, 9.6), B(0.24, 6.8), B(0, 7.6), B(-0.28, 9), B(-0.32, 0), B(-0.28, -9), B(0, -7.6), B(0.24, -6.8), B(0.56, -9.6), B(0.88, -11), B(1.03, -3.6)]
+        : [B(1.03, 3.2), B(0.86, 7.8), B(0.56, 8.2), B(0.24, 6.2), B(0, 7.4), B(-0.28, 8.8), B(-0.32, 0), B(-0.28, -8.8), B(0, -7.4), B(0.26, -6.4), B(0.6, -9.2), B(0.9, -9), B(1.05, -3.4)],
+    ),
   );
-  formes.push(courbe(CRANE.map(T)));
-  for (const f of COIFFES[t.coiffe]) formes.push(courbe(f.map(T)));
+  formes.push(courbe((deFace ? CRANE_FACE : CRANE).map(T)));
+  for (const f of (deFace ? COIFFES_FACE : COIFFES)[t.coiffe]) formes.push(courbe(f.map(T)));
 
   const devant = bras(s.epauleAvant, s.coudeAvant, s.mainAvant);
 
@@ -319,12 +333,19 @@ export function peindrePantin(c: Ctx, p: Pantin, tenue: Tenue, clignote: boolean
   for (const f of formes) c.fill(f);
   if (fourreau && !dansLeDos) c.fill(fourreau);
 
-  // les touches au couteau : le dos, la veste croisée, la taille, les plis
-  sombres.push(touche([B(0.94, -8.2), B(0.7, -9.2), B(0.44, -8), B(0.24, -6.2)], 1.2));
-  clairs.push(touche([B(0.86, 4.8), B(0.62, 1.4), B(0.38, -2.4), B(0.2, -5)], 1.05));
+  // les touches au couteau : le dos ou le col en V, la veste, la taille, les plis
+  if (deFace) {
+    clairs.push(touche([B(0.9, 3.8), B(0.62, 1.8), B(0.32, 0)], 1.05));
+    clairs.push(touche([B(0.9, -3.8), B(0.62, -1.8), B(0.32, 0)], 1.05));
+    sombres.push(touche([B(0.74, 8.6), B(0.5, 7.4), B(0.3, 5.6)], 0.9));
+    sombres.push(touche([B(0.74, -8.6), B(0.5, -7.4), B(0.3, -5.6)], 0.9));
+  } else {
+    sombres.push(touche([B(0.94, -8.2), B(0.7, -9.2), B(0.44, -8), B(0.24, -6.2)], 1.2));
+    clairs.push(touche([B(0.86, 4.8), B(0.62, 1.4), B(0.38, -2.4), B(0.2, -5)], 1.05));
+    sombres.push(touche([B(0.66, 7.4), B(0.46, 6.8), B(0.3, 5.4)], 0.9));
+  }
   clairs.push(touche([B(0.2, 7), B(0.15, 2.4), B(0.16, -2.6), B(0.22, -6.8)], 1.3));
   sombres.push(touche([B(0.05, 7.8), B(0.02, 2.4), B(0.04, -3), B(0.1, -7.4)], 1.1));
-  sombres.push(touche([B(0.66, 7.4), B(0.46, 6.8), B(0.3, 5.4)], 0.9));
   clairs.push(touche([B(-0.24, 8.6), B(-0.29, 2), B(-0.27, -4), B(-0.22, -8.4)], 0.9));
   const nv = cote(s.hanche, s.genouAvant);
   const nb = cote(s.genouAvant, s.piedAvant);
@@ -332,7 +353,14 @@ export function peindrePantin(c: Ctx, p: Pantin, tenue: Tenue, clignote: boolean
   sombres.push(touche([decale(entre(s.hanche, s.genouAvant, 0.45), nv, 0.6), decale(s.genouAvant, nb, 1), decale(entre(s.genouAvant, s.piedAvant, 0.5), nb, 1.6), decale(entre(s.genouAvant, s.piedAvant, 0.86), nb, 2.2)], 1));
   const na = cote(s.genouArriere, s.piedArriere);
   sombres.push(touche([decale(s.genouArriere, na, 6), decale(entre(s.genouArriere, s.piedArriere, 0.5), na, 6.2), decale(entre(s.genouArriere, s.piedArriere, 0.88), na, 6.4)], 1));
-  if (t.coiffe === "capuche") {
+  if (deFace && !paille) {
+    // il nous regarde : le bord de la capuche ou du masque, et deux éclats pour les yeux
+    const tete = (pts: [number, number][]) => pts.map(T);
+    clairs.push(touche(tete([[-5.8, -2.8], [-3.4, -6], [0, -6.9], [3.4, -6], [5.8, -2.8]]), 0.9));
+    sombres.push(touche(tete([[-5, 0.6], [-3, 4.4], [0, 5.6], [3, 4.4], [5, 0.6]]), 0.8));
+    clairs.push(touche(tete([[-4.4, -2], [-2.8, -1.1], [-1.2, -0.7]]), 0.95));
+    clairs.push(touche(tete([[4.4, -2], [2.8, -1.1], [1.2, -0.7]]), 0.95));
+  } else if (t.coiffe === "capuche") {
     clairs.push(touche(([[-6, -3.6], [-3.4, -6.2], [0.4, -6.9], [3.4, -5.4]] as [number, number][]).map(T), 1));
     sombres.push(touche(([[3.6, -5.2], [1.9, -0.8], [2.4, 3.2], [3.8, 6]] as [number, number][]).map(T), 0.9));
   } else if (!paille) {
@@ -378,6 +406,14 @@ export function peindrePantin(c: Ctx, p: Pantin, tenue: Tenue, clignote: boolean
     c.fill(touche([decale(a, { x: ux, y: uy }, -2.4), decale(m, { x: ux, y: uy }, -3), decale(b, { x: ux, y: uy }, -2)], 1.1));
     c.fillStyle = t.echarpeClair;
     c.fill(touche([decale(a, { x: ux, y: uy }, 1.8), decale(m, { x: ux, y: uy }, 2.4), decale(b, { x: ux, y: uy }, 1.4)], 0.9));
+    if (deFace) {
+      // le nœud sur la poitrine
+      c.fillStyle = t.echarpe;
+      c.fill(rond(B(0.86, 1.2), 3.4));
+      c.fill(membre([B(0.86, 1.2), B(0.66, 2.6), B(0.5, 1.2)], [2.2, 2.6, 1.2]));
+      c.fillStyle = t.echarpeClair;
+      c.fill(touche([B(0.92, -0.6), B(0.72, 1.6), B(0.54, 1.6)], 0.7));
+    }
   }
 
   if (t.fourreau) {

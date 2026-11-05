@@ -110,6 +110,7 @@ const pret = () => {
     bouge = Math.max(bouge, Math.abs(p.pose.hanche.x - debut));
   });
   check("la danse fait bouger le corps", bouge > 3, `${bouge.toFixed(1)} px`);
+  check("pour danser, il se tourne vers nous : les épaules s'écartent", p.deFace === 1 && Math.abs(p.squelette.epauleAvant.x - p.squelette.epauleArriere.x) > 16);
 }
 
 for (const type of ["suite", "final"] as const) {

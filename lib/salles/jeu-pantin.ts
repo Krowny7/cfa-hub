@@ -54,6 +54,8 @@ export type Squelette = {
   fourreau: Record<PortFourreau, [Point, Point]>;
   /** de quel côté regarde le pantin : de -1 à 1, il se retourne en une fraction de seconde */
   face: number;
+  /** 0 de profil, 1 tourné vers le spectateur (la danse) */
+  deFace: number;
 };
 
 /** Un morceau de la trace laissée par la lame : le bord extérieur et le bord intérieur. */
@@ -88,6 +90,8 @@ export type Pantin = {
   /** les silhouettes laissées derrière soi pendant un dash */
   sillage: { s: Squelette; age: number }[];
   sillageT: number;
+  /** 1 quand il se tourne vers le spectateur, pour narguer */
+  deFace: number;
 };
 
 type Maillon = { x: number; y: number; px: number; py: number };
@@ -237,20 +241,20 @@ function fonce(): Pose {
   };
 }
 
-/** La danse pour narguer : le bassin qui roule, les bras en l'air, le sabre qui bat la mesure. */
+/** La danse pour narguer, de face : une main sur la hanche, le bassin qui roule, le sabre qui tourne en l'air. */
 function danse(temps: number): Pose {
   const w = temps * 8.5;
   const a = Math.sin(w);
   const b = Math.sin(w * 2);
   return {
-    hanche: { x: a * 7, y: -31 + Math.abs(Math.cos(w)) * 4 },
-    buste: a * 0.3,
-    tete: -a * 0.4,
-    piedAvant: { x: 14 + a * 5, y: -Math.max(0, a) * 8 },
-    piedArriere: { x: -14 + a * 5, y: -Math.max(0, -a) * 8 },
-    mainAvant: { x: 9 - a * 13, y: -25 + b * 4 },
-    mainArriere: { x: -9 - a * 13, y: -25 - b * 4 },
-    sabre: -1.57 + a * 0.75,
+    hanche: { x: a * 6, y: -30 + Math.abs(Math.cos(w)) * 3.5 },
+    buste: -a * 0.2,
+    tete: a * 0.36,
+    piedAvant: { x: 15 + a * 3, y: -Math.max(0, a) * 9 },
+    piedArriere: { x: -15 + a * 3, y: -Math.max(0, -a) * 9 },
+    mainAvant: { x: 8 + a * 9, y: -26 + b * 3 },
+    mainArriere: { x: -3, y: 19 },
+    sabre: -1.57 + a * 0.8,
     etire: 1 + b * 0.035,
   };
 }
@@ -325,7 +329,7 @@ function plier(a: Point, b: Point, l1: number, l2: number, sens: number): { join
 }
 
 /** Les points du corps à l'écran, pour une pose. */
-export function squeletteDe(pose: Pose, x: number, y: number, face: number, tour: number): Squelette {
+export function squeletteDe(pose: Pose, x: number, y: number, face: number, tour: number, deFace = 0): Squelette {
   const { buste, tete } = pose;
   const hanche = { x: pose.hanche.x * JAMBES, y: pose.hanche.y * JAMBES };
   const piedAvant = { x: pose.piedAvant.x * JAMBES, y: pose.piedAvant.y * JAMBES };
@@ -334,14 +338,17 @@ export function squeletteDe(pose: Pose, x: number, y: number, face: number, tour
   const sy = -Math.cos(buste);
   const cou = { x: hanche.x + sx * DOS, y: hanche.y + sy * DOS };
   const haut = { x: cou.x - sx * 3, y: cou.y - sy * 3 };
-  const epauleAvant = { x: haut.x + 3.5, y: haut.y };
-  const epauleArriere = { x: haut.x - 3.5, y: haut.y };
+  // de face, les épaules et les hanches s'écartent, et le bras et le genou du second côté plient vers l'extérieur
+  const ecart = 3.5 + 6.5 * deFace;
+  const miroir = deFace > 0.5 ? -1 : 1;
+  const epauleAvant = { x: haut.x + ecart, y: haut.y };
+  const epauleArriere = { x: haut.x - ecart, y: haut.y };
   const angleTete = buste + tete;
   const centreTete = { x: cou.x + Math.sin(angleTete) * (RAYON_TETE + 1), y: cou.y - Math.cos(angleTete) * (RAYON_TETE + 1) };
   const bras = plier(epauleAvant, { x: epauleAvant.x + pose.mainAvant.x, y: epauleAvant.y + pose.mainAvant.y }, BRAS, AVANT_BRAS, 1);
-  const autre = plier(epauleArriere, { x: epauleArriere.x + pose.mainArriere.x, y: epauleArriere.y + pose.mainArriere.y }, BRAS, AVANT_BRAS, 1);
+  const autre = plier(epauleArriere, { x: epauleArriere.x + pose.mainArriere.x, y: epauleArriere.y + pose.mainArriere.y }, BRAS, AVANT_BRAS, miroir);
   const jambe = plier({ x: hanche.x + 3, y: hanche.y }, piedAvant, CUISSE, TIBIA, -1);
-  const seconde = plier({ x: hanche.x - 3, y: hanche.y }, piedArriere, CUISSE, TIBIA, -1);
+  const seconde = plier({ x: hanche.x - 3, y: hanche.y }, piedArriere, CUISSE, TIBIA, -miroir);
   const dirLame = { x: Math.cos(pose.sabre), y: Math.sin(pose.sabre) };
   const garde = { x: bras.fin.x + dirLame.x * 4, y: bras.fin.y + dirLame.y * 4 };
   const bout = { x: bras.fin.x + dirLame.x * LAME, y: bras.fin.y + dirLame.y * LAME };
@@ -384,6 +391,7 @@ export function squeletteDe(pose: Pose, x: number, y: number, face: number, tour
       dos: [ecran(penche(-2.2 + buste, 32, taille)), ecran(penche(-2.2 + buste, -13, taille))],
     },
     face,
+    deFace,
   };
 }
 
@@ -400,7 +408,7 @@ function poserEcharpe(s: Squelette): Maillon[][] {
 export function nouveauPantin(e: Pick<Vue, "x" | "y" | "dir">): Pantin {
   const pose = repos(0);
   const squelette = squeletteDe(pose, e.x, e.y, e.dir, 0);
-  return { base: pose, pose, squelette, face: e.dir, temps: 0, foulee: 0, tour: 0, salto: 0, atterrissage: 0, flash: 0, solAvant: true, vyAvant: 0, xAvant: e.x, yAvant: e.y, coupAvant: -1, pans: poserEcharpe(squelette), reste: 0, trace: [], relais: null, relaisT: 0, sillage: [], sillageT: 0 };
+  return { base: pose, pose, squelette, face: e.dir, temps: 0, foulee: 0, tour: 0, salto: 0, atterrissage: 0, flash: 0, solAvant: true, vyAvant: 0, xAvant: e.x, yAvant: e.y, coupAvant: -1, pans: poserEcharpe(squelette), reste: 0, trace: [], relais: null, relaisT: 0, sillage: [], sillageT: 0, deFace: 0 };
 }
 
 /**
@@ -511,7 +519,10 @@ export function animer(p: Pantin, e: Vue, dt: number): Evenements {
     p.relaisT = Math.max(0, p.relaisT - dt);
   }
   p.pose = pose;
-  p.squelette = squeletteDe(pose, e.x, e.y, p.face, p.tour);
+  const tourne = e.danse > 0 && e.sol ? 1 : 0;
+  p.deFace += (tourne - p.deFace) * (1 - Math.exp(-24 * dt));
+  if (Math.abs(tourne - p.deFace) < 0.01) p.deFace = tourne;
+  p.squelette = squeletteDe(pose, e.x, e.y, p.face, p.tour, p.deFace);
 
   for (const m of p.sillage) m.age += dt;
   p.sillage = p.sillage.filter((m) => m.age < VIE_SILLAGE);
