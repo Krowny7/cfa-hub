@@ -1027,25 +1027,92 @@
   color: var(--sl-texte-2);
 }
 
-/* ——— la carte de S'affronter, peinte comme ses voisines : la peinture, un voile à gauche, le texte clair ——— */
+/* ——— sur S'affronter : l'aperçu à gauche, la carte peinte à droite, qui prend la majorité ——— */
+.entreeRangee {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+  gap: 16px;
+}
+.apercu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 22px 24px;
+  border: 1px solid var(--pencil-2);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  color: var(--ink);
+}
+.apercuTitre {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.apercuCompte {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.apercuCompte b {
+  font-size: 34px;
+  line-height: 1;
+}
+.apercuLigne {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.apercuListe {
+  display: grid;
+  gap: 2px;
+  margin: auto 0 0;
+  padding: 12px 0 0;
+  list-style: none;
+}
+.apercuListe a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  border-top: 1px solid var(--line);
+  color: inherit;
+  font-size: 13.5px;
+  text-decoration: none;
+}
+.apercuListe b {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.apercuListe span {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+/* la carte peinte : la peinture est claire, le texte reste sombre jour et nuit, sans voile */
 .entree {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 14px;
-  min-height: 250px;
-  padding: 26px 30px;
+  min-height: 320px;
+  padding: 24px 26px;
   isolation: isolate;
   overflow: hidden;
   border: 1px solid var(--pencil-2);
-  background: var(--noyer-fonce);
+  background: #efeeea;
   box-shadow: var(--shadow-1);
-  color: var(--sur-nuit);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  color: #1a120b;
 }
 .entree :focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid #1a120b;
   outline-offset: 3px;
 }
 .entreeFond {
@@ -1053,20 +1120,11 @@
   inset: 0;
   z-index: -2;
 }
-/* léger : les personnages restent visibles à droite */
-.entree::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(90deg, rgba(26, 16, 9, 0.86) 0%, rgba(26, 16, 9, 0.64) 36%, rgba(26, 16, 9, 0.12) 62%, rgba(26, 16, 9, 0) 100%);
-}
 .entreeTexte {
   display: grid;
   justify-items: start;
   gap: 8px;
-  max-width: 430px;
+  max-width: 300px;
 }
 .entreeTexte h2 {
   font-size: 28px;
@@ -1074,24 +1132,28 @@
 }
 .entreeTexte p {
   font-size: 14px;
+  font-weight: 500;
   line-height: 1.45;
 }
+/* le bouton à gauche, le code à droite : les deux personnages restent visibles au centre */
 .entreeActions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  max-width: 520px;
 }
 .entreeActions .formCode {
-  flex: 1 1 250px;
-  max-width: 300px;
+  flex: 0 1 300px;
+}
+.entreeActions > :global(.rl-encre) {
+  color: #fff;
 }
 .entree .champ,
 .entree .btn {
-  min-height: 48px;
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(20, 13, 8, 0.55);
+  min-height: 46px;
+  border-color: rgba(26, 18, 11, 0.55);
+  background: rgba(255, 255, 255, 0.86);
+  color: #1a120b;
 }
 .entree .champCode {
   font-size: 16px;
@@ -1099,6 +1161,7 @@
 }
 .entree .champCode::placeholder {
   letter-spacing: 0.14em;
+  color: rgba(26, 18, 11, 0.55);
 }
 :global(html[data-discreet="1"]) .entree :global(.rl-encre):is(a, button) {
   background: #fff;
@@ -1114,14 +1177,24 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
-/* téléphone : le voile passe en bas, sous le texte */
+/* étroit : la peinture d'abord, puis l'aperçu */
+@container (max-width: 860px) {
+  .entreeRangee {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .entreeRangee > .entree {
+    order: -1;
+  }
+}
+/* téléphone : la peinture en haut, le bouton et le code dessous, sur le fond clair */
 @container (max-width: 640px) {
   .entree {
-    min-height: 360px;
+    min-height: 0;
     padding: 18px;
   }
-  .entree::after {
-    background: linear-gradient(180deg, rgba(26, 16, 9, 0.04) 0%, rgba(26, 16, 9, 0.3) 38%, rgba(26, 16, 9, 0.86) 72%, rgba(26, 16, 9, 0.92) 100%);
+  .entreeFond {
+    inset: 0 0 auto;
+    height: 250px;
   }
   .entreeTexte h2 {
     font-size: 26px;
@@ -1129,10 +1202,10 @@
   .entreeActions {
     flex-direction: column;
     align-items: stretch;
+    margin-top: 130px;
   }
   .entreeActions .formCode {
     flex: none;
-    max-width: none;
   }
   .entreeActions > :global(.rl-encre) {
     width: 100%;

@@ -1,11 +1,15 @@
 "use client";
 
 import { Illustration } from "@/components/ui/Illustration";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { COURS_PROGRAMME, MINUTES_COURS, ONDE, carteCours, heuresMinutes, mmss } from "@/components/reviser/parcours";
+import { Pause } from "lucide-react";
+import { COURS_PROGRAMME, ONDE, carteCours, mmss } from "@/components/reviser/parcours";
+import { SUBJECTS } from "@/components/reviser/catalog";
 import { EncreVive } from "@/components/nav/EncreVive";
-import { lireEcoute, type EcouteCours } from "@/lib/course-ecoute";
+import { codexNoter } from "@/lib/codex/actions";
+import { POS_PREFIX, lireEcoute, noterCoursFini, noterDernierCours, type EcouteCours } from "@/lib/course-ecoute";
+import { createClient } from "@/lib/supabase/browser";
 import { PALETTES } from "@/lib/palettes";
 import { ecrireSansCalcul, lireSansCalcul } from "@/lib/sans-calcul";
 import { CARNET } from "@/lib/voice-z1";
@@ -27,79 +31,205 @@ import s from "./Parcours.module.css";
 const SLUGS = COURS_PROGRAMME.map((c) => c.slug);
 const PAL = PALETTES.studiolo;
 
+/**
+ * La carte « Cours complets » : le lecteur joue l'audio sur place, sans changer de page, et
+ * les badges de matière choisissent le cours qu'il lit. La position, le dernier cours écouté
+ * et les minutes du Codex sont gardés comme dans le lecteur de la page du cours
+ * (components/CourseAudioPlayer). Le lien signé n'est demandé qu'au premier appui.
+ */
 export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) {
   const [ecoute, setEcoute] = useState<EcouteCours | null>(apercu ?? null);
-  const [depuisAppareil, setDepuisAppareil] = useState(false);
+  const [choisi, setChoisi] = useState<string | null>(null);
+  const [lecture, setLecture] = useState(false);
+  const [attente, setAttente] = useState(false);
+  const [echec, setEchec] = useState(false);
+  // null : la position gardée sur l'appareil, tant que le lecteur n'a pas tourné
+  const [temps, setTemps] = useState<number | null>(null);
+  const audio = useRef<HTMLAudioElement>(null);
+  const charge = useRef<string | null>(null);
+  const garde = useRef(0);
+  const compte = useRef({ acc: 0, dernier: -1 });
+
   useEffect(() => {
-    if (apercu !== undefined) return;
-    const e = lireEcoute(SLUGS);
-    const avant = carteCours(null);
-    const apres = carteCours(e);
-    setEcoute(e);
-    // un court fondu seulement si la carte change (un cours repris, des matières soulignées)
-    if (JSON.stringify(avant) !== JSON.stringify(apres)) setDepuisAppareil(true);
+    if (apercu === undefined) setEcoute(lireEcoute(SLUGS));
   }, [apercu]);
 
   const c = carteCours(ecoute);
   if (!c) return null;
-  const ou = c.mode === "reprise" ? `${mmss(c.position)} / ${mmss(c.total)}` : `${c.minutes} min`;
-  const action = c.mode === "reprise" ? RV.coursReprendre : RV.coursCommencer;
+  const slug = choisi ?? c.slug;
+  const cours = COURS_PROGRAMME.find((x) => x.slug === slug) ?? COURS_PROGRAMME[0];
+  const total = cours.minutes * 60;
+  const position = temps ?? Math.min(ecoute?.positions[cours.slug] ?? 0, total);
+  const chapitre = cours.chapters.reduce((acc, ch, k) => (position >= ch.start ? k : acc), 0);
+  const lues = Math.round(ONDE.length * (total > 0 ? position / total : 0));
+
+  function garder(a: HTMLAudioElement) {
+    const s2 = charge.current;
+    if (!s2) return;
+    try {
+      const d = a.duration || 0;
+      if (d > 0 && a.currentTime > d - 15) {
+        localStorage.removeItem(POS_PREFIX + s2);
+        noterCoursFini(s2);
+      } else if (a.currentTime > 5) localStorage.setItem(POS_PREFIX + s2, String(Math.round(a.currentTime)));
+    } catch {
+      // stockage indisponible : la position ne sera pas gardée
+    }
+  }
+
+  function noterMinutes(force = false) {
+    const e = compte.current;
+    const minutes = Math.floor(e.acc / 60);
+    if (minutes < 1 || (!force && minutes < 5)) return;
+    e.acc -= minutes * 60;
+    const matiere = SUBJECTS.find((x) => x.course === charge.current)?.key ?? "";
+    codexNoter("cours_ecoute", { matiere, minutes }).catch(() => undefined);
+  }
+
+  /** `depuis` : où reprendre ; null : là où le lecteur s'est arrêté. */
+  async function lancer(cible: (typeof COURS_PROGRAMME)[number], depuis: number | null) {
+    const a = audio.current;
+    if (!a) return;
+    setEchec(false);
+    if (charge.current !== cible.slug) {
+      setAttente(true);
+      const { data } = await createClient().storage.from("courses").createSignedUrl(`${cible.file}.mp3`, 21600);
+      setAttente(false);
+      if (!data?.signedUrl) {
+        setEchec(true);
+        return;
+      }
+      charge.current = cible.slug;
+      compte.current.dernier = -1;
+      a.addEventListener(
+        "loadedmetadata",
+        () => {
+          a.currentTime = depuis ?? 0;
+        },
+        { once: true },
+      );
+      a.src = data.signedUrl;
+      a.load();
+    } else if (depuis !== null) a.currentTime = depuis;
+    a.play().catch(() => setEchec(true));
+  }
+
+  function basculer() {
+    const a = audio.current;
+    if (!a) return;
+    if (!a.paused) a.pause();
+    else void lancer(cours, charge.current === cours.slug ? null : position);
+  }
+
+  function choisir(nouveau: string) {
+    if (nouveau === cours.slug) return;
+    const cible = COURS_PROGRAMME.find((x) => x.slug === nouveau);
+    if (!cible) return;
+    const a = audio.current;
+    const jouait = !!a && !a.paused;
+    if (a) {
+      garder(a);
+      a.pause();
+    }
+    const lue = apercu === undefined ? lireEcoute(SLUGS) : ecoute;
+    setEcoute(lue);
+    setChoisi(nouveau);
+    setTemps(null);
+    if (jouait) void lancer(cible, lue?.positions[nouveau] ?? 0);
+  }
+
+  function aller(e: React.MouseEvent<HTMLButtonElement>) {
+    const r = e.currentTarget.getBoundingClientRect();
+    const cible = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * total;
+    setTemps(cible);
+    void lancer(cours, cible);
+  }
 
   return (
     <li className={"card-ink " + s.carte + " " + s.c1} data-leonard="cours">
       <Illustration nom="reviser-bibliotheque" position="50% 100%" decorative eager className={s.fond} />
       <span className={s.c1Voile} aria-hidden />
-      <div className={s.haut}>
-        <span className={"rl-encre " + s.etape + " " + s.encre + " t-num"} data-palette={PAL.key} aria-hidden>
-          <EncreVive tons={PAL.liquide} echelle={48} />
-          1
-        </span>
-        <span className={s.eyebrow}>{RV.coursEtape}</span>
-        <span className={s.droite + " " + s.mono}>{RV.coursAudio(heuresMinutes(MINUTES_COURS))}</span>
-      </div>
-      <div>
-        <h3 className={s.c1Titre}>{RV.coursTitre}</h3>
-        <p className={s.sous}>{RV.coursSous}</p>
-      </div>
-      <div key={c.slug + c.mode} className={s.c1Corps + (depuisAppareil ? " " + s.arrive : "")}>
-        {/* le lecteur : ouvre le cours en cours (ou le premier) ; le bouton du bas mène à la page des cours */}
-        <Link href={c.href} className={s.lecteur} aria-label={RV.coursLecteur(action, `${c.titre}, ${ou}`)}>
-          <span className={s.play}>
+      <audio
+        ref={audio}
+        preload="none"
+        onPlay={() => {
+          setLecture(true);
+          if (charge.current) noterDernierCours(charge.current);
+        }}
+        onPause={(e) => {
+          compte.current.dernier = -1;
+          noterMinutes(true);
+          setLecture(false);
+          garder(e.currentTarget);
+        }}
+        onEnded={(e) => {
+          noterMinutes(true);
+          setLecture(false);
+          garder(e.currentTarget);
+        }}
+        onTimeUpdate={(e) => {
+          const a = e.currentTarget;
+          const n = compte.current;
+          const d = a.currentTime - n.dernier;
+          if (n.dernier >= 0 && d > 0 && d < 1.5) n.acc += d;
+          n.dernier = a.currentTime;
+          noterMinutes();
+          setTemps(a.currentTime);
+          if (Math.abs(a.currentTime - garde.current) >= 5) {
+            garde.current = a.currentTime;
+            garder(a);
+          }
+        }}
+      />
+      <h3 className={s.c1Titre}>{RV.coursTitre}</h3>
+      <div className={s.lecteur}>
+        <button type="button" className={s.play} onClick={basculer} disabled={attente} aria-label={lecture ? RV.coursPause(cours.title) : RV.coursLire(cours.title)}>
+          {lecture ? (
+            <Pause size={18} fill="currentColor" aria-hidden />
+          ) : (
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d="M6 4l14 8-14 8z" />
             </svg>
-          </span>
-          <span className={s.piste}>
-            <span className={s.l1}>
-              <b>{c.titre}</b>
-              <span className={s.temps + " " + s.mono}>{ou}</span>
-            </span>
-            <span className={s.chap}>{c.module ? RV.coursModule(c.module.n, c.module.titre) : RV.coursModules(c.modules)}</span>
-            <span className={s.onde}>
-              {ONDE.map((h, i) => (
-                <i key={i} style={{ height: h }} className={i < c.barresLues ? s.lu : undefined} />
-              ))}
+          )}
+        </button>
+        <span className={s.piste}>
+          <span className={s.l1}>
+            <b>{cours.title}</b>
+            <span className={s.temps + " " + s.mono}>
+              {mmss(position)} / {mmss(total)}
             </span>
           </span>
-        </Link>
-        <ul className={s.matieres} aria-label={RV.coursMatieres}>
-          {c.matieres.map((m) => {
-            const pct = Math.round(m.part * 100);
-            return (
-              <li key={m.key} className={pct > 0 ? s.fait : undefined} style={pct > 0 ? ({ "--p": m.part } as React.CSSProperties) : undefined} title={RV.coursMatiere(m.nom, pct)}>
+          {cours.chapters[chapitre] && <span className={s.chap}>{RV.coursModule(chapitre + 1, cours.chapters[chapitre].title)}</span>}
+          <button type="button" className={s.onde} onClick={aller} aria-label={RV.coursAller}>
+            {ONDE.map((h, i) => (
+              <i key={i} style={{ height: h }} className={i < lues ? s.lu : undefined} />
+            ))}
+          </button>
+        </span>
+      </div>
+      {echec && (
+        <p role="alert" className={s.sous}>
+          {RV.coursEchec}
+        </p>
+      )}
+      <ul className={s.matieres} aria-label={RV.coursMatieres}>
+        {c.matieres.map((m) => {
+          const pct = Math.round(m.part * 100);
+          const k = SUBJECTS.find((x) => x.key === m.key)?.course ?? null;
+          return (
+            <li key={m.key} className={pct > 0 ? s.fait : undefined} data-actif={k === cours.slug ? "1" : undefined} style={pct > 0 ? ({ "--p": m.part } as React.CSSProperties) : undefined}>
+              <button type="button" disabled={!k} aria-pressed={k === cours.slug} title={RV.coursMatiere(m.nom, pct)} onClick={() => k && choisir(k)}>
                 <span aria-hidden>{m.code}</span>
                 <span className="sr-only">{RV.coursMatiere(m.nom, pct)}</span>
-              </li>
-            );
-          })}
-        </ul>
-        <div className={s.bas}>
-          <Link href="/courses" className={"rl-encre " + s.bouton + " " + s.encre} data-palette={PAL.key} aria-label={`${RV.coursOuvrir} (${RV.coursTous(COURS_PROGRAMME.length)})`}>
-            <EncreVive tons={PAL.liquide} />
-            {RV.coursOuvrir}
-          </Link>
-        </div>
-      </div>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <Link href="/courses" className={"rl-encre " + s.bouton + " " + s.encre} data-palette={PAL.key}>
+        <EncreVive tons={PAL.liquide} />
+        {RV.coursOuvrir}
+      </Link>
     </li>
   );
 }

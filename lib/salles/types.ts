@@ -353,10 +353,21 @@ export type CalculPourSalle = {
   etapes: string[];
 };
 
+/** Une ligne de l'aperçu de S'affronter. `mienne` : le joueur en est membre. */
+export type ApercuSalle = {
+  id: string;
+  nom: string;
+  nbMembres: number;
+  enCours: boolean;
+  mienne: boolean;
+};
+
 /**
  * Ce que la carte « Les Salles » de S'affronter reçoit. `pret` faux : la
  * migration n'est pas appliquée (la carte dit que les salles arrivent).
+ * `apercu` : les salles du moment, pour la carte d'aperçu ; absent : lecture en échec.
  */
 export type EntreeSalles = {
   pret: boolean;
+  apercu?: { salles: ApercuSalle[]; total: number; enCours: number } | null;
 };

@@ -28,7 +28,6 @@ import s from "./Parcours.module.css";
 
 /** Les one-pagers de la carte (vraies pages, public/one-pagers). */
 const EVENTAIL = ["ethics", "equity", "fixed-income", "portfolio", "derivatives"].filter((slug) => SUBJECTS.some((x) => x.onePager === slug));
-const ONE_PAGERS = SUBJECTS.filter((x) => x.onePager).length;
 
 const CASE: Record<EtatFiche, string | undefined> = { finie: s.f, entamee: s.e, neuve: undefined };
 const ORDRE: Record<EtatFiche, number> = { finie: 0, entamee: 1, neuve: 2 };
@@ -126,10 +125,6 @@ function Pages() {
             <img key={slug} src={`/one-pagers/${slug}.webp`} alt="" width={300} height={425} loading="lazy" decoding="async" />
           ))}
         </span>
-        <span className={s.pagesTitre}>
-          <b>{RV.opTitre}</b>
-          <span className="t-num">{ONE_PAGERS}</span>
-        </span>
       </Link>
       <div className={s.peche} aria-hidden>
         <Illustration nom="practice-studiolo" position="50% 60%" decorative className={s.fond} />
@@ -143,6 +138,17 @@ function Outils({ d }: { d: DonneesReviser }) {
   const r = d.ratures;
   return (
     <ul className={s.outils}>
+      <li className={s.case} data-leonard="atelier">
+        <Link href="/atelier" className={levable(s.petite)}>
+          <h3 className={s.petiteTitre}>{RV.atelier}</h3>
+          {r && r.enCours > 0 && <span className={s.nb + " t-num"}>{nombre(r.enCours)}</span>}
+          <span className={s.sous}>{RV.atelierSous}</span>
+          <span className={s.visuel} aria-hidden>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/atelier/etabli-640.webp" alt="" width={640} height={358} loading="lazy" decoding="async" draggable={false} className={s.vignette + " " + s.sombreNuit} />
+          </span>
+        </Link>
+      </li>
       <li className={s.case}>
         <Link href="/page-blanche" className={levable(s.petite)}>
           <h3 className={s.petiteTitre}>{RV.pbTitre}</h3>
@@ -163,38 +169,45 @@ function Outils({ d }: { d: DonneesReviser }) {
           </span>
         </div>
       </li>
-      <li className={s.case} data-leonard="atelier">
-        <Link href="/atelier" className={levable(s.petite)}>
-          <h3 className={s.petiteTitre}>{RV.atelier}</h3>
-          {r && r.enCours > 0 && <span className={s.nb + " t-num"}>{nombre(r.enCours)}</span>}
-          <span className={s.sous}>{RV.atelierSous}</span>
-          <span className={s.visuel} aria-hidden>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/atelier/etabli-640.webp" alt="" width={640} height={358} loading="lazy" decoding="async" draggable={false} className={s.vignette + " " + s.sombreNuit} />
-          </span>
-        </Link>
-      </li>
     </ul>
   );
 }
 
-/** Le Codex : sa carte, de la hauteur de celle du cours, avec son aperçu. */
+/** Une grande carte : le Codex et son aperçu, à côté le Terminal. */
 function Codex({ apercu }: { apercu?: React.ReactNode }) {
   return (
-    <section className={[s.carte, s.papier, s.codex].join(" ")} aria-labelledby="reviser-codex">
-      <div className={s.codexTete}>
-        <div>
-          <h2 id="reviser-codex" className={"font-brand " + s.lieuTitre}>
-            {RV.codexTitre}
-          </h2>
-          <p className={s.sous}>{RV.codexSous}</p>
+    <section className={[s.carte, s.papier, s.grande].join(" ")} aria-label={RV.codexTerminal}>
+      <div className={s.codex}>
+        <div className={s.codexTete}>
+          <div>
+            <h2 className={"font-brand " + s.lieuTitre}>{RV.codexTitre}</h2>
+            <p className={s.sous}>{RV.codexSous}</p>
+          </div>
+          <Link href="/codex" className={encre(s.bouton)} data-palette={PAL.key}>
+            <EncreVive tons={PAL.liquide} />
+            {RV.codexAction}
+          </Link>
         </div>
-        <Link href="/codex" className={encre(s.bouton)} data-palette={PAL.key}>
-          <EncreVive tons={PAL.liquide} />
-          {RV.codexAction}
-        </Link>
+        {apercu}
       </div>
-      {apercu}
+      <Link href="/terminal" className={s.terminal}>
+        <span className={s.terminalEcran} aria-hidden>
+          <i>&gt; MARCHES</i>
+          <i>
+            ORVX <b>+1,2 %</b>
+          </i>
+          <i>
+            BELX <em>−0,4 %</em>
+          </i>
+          <i>
+            KELX <b>+0,8 %</b>
+          </i>
+        </span>
+        <span className={s.terminalTexte}>
+          <b className="font-brand">{RV.terminalTitre}</b>
+          <span>{RV.terminalSous}</span>
+        </span>
+      </Link>
     </section>
   );
 }

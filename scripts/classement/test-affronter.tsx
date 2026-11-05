@@ -123,7 +123,13 @@ console.log("# la carte Les Salles");
   const pret = rendre(<ClassementView data={{ ...data, salles: { pret: true } }} />);
   check("la carte prête : « Voir les salles » vers /salles", pret.includes('data-salles="pret"') && pret.includes("Voir les salles") && pret.includes('href="/salles"'));
   check("le champ de code : un seul, 6 caractères au plus (maxlength 7 avec le tiret), libellé associé", pret.includes('id="cl-salles-code"') && (pret.includes('maxLength="7"') || pret.includes('maxlength="7"')));
-  check("plus aucune liste de salles sur la carte : elles sont sur /salles", !pret.includes("Tes salles") && !pret.includes("Aucune salle publique"));
+  check("sans aperçu lu : la carte peinte seule, sans liste", !pret.includes("En ce moment") && !pret.includes("Tes salles"));
+  const apercu = { salles: [{ id: "s1", nom: "Les révisions du jeudi", nbMembres: 8, enCours: true, mienne: false }, { id: "s2", nom: "Quant en équipe", nbMembres: 1, enCours: false, mienne: true }], total: 5, enCours: 1 };
+  const avec = rendre(<ClassementView data={{ ...data, salles: { pret: true, apercu } }} />);
+  check("l'aperçu à gauche de la carte peinte : le compte, les parties en cours, 3 salles au plus", avec.indexOf("En ce moment") < avec.indexOf('data-salles="pret"') && avec.includes("salles ouvertes") && avec.includes("1 partie en cours") && avec.includes("Les révisions du jeudi") && avec.includes("8 joueurs"));
+  check("une ligne mène à sa salle si le joueur en est membre, sinon à /salles", avec.includes('href="/salles/s2"') && !avec.includes('href="/salles/s1"'));
+  const vide = rendre(<ClassementView data={{ ...data, salles: { pret: true, apercu: { salles: [], total: 0, enCours: 0 } } }} />);
+  check("aucune salle : l'aperçu invite à créer la première", vide.includes("Aucune salle ouverte pour l'instant"));
 }
 
 console.log("# les onglets du classement général");

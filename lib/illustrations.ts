@@ -204,9 +204,16 @@ export const ILLUSTRATIONS = {
     emplacement: "/defi/cinq : bandeau en tête de la carte de départ des 5 du jour, 4:1 (1600×400 px conseillés).",
     prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais et touches visibles, dans l'univers de Léonard de Vinci à Florence vers 1500. Un sablier de bois et de verre posé sur le rebord d'une fenêtre d'atelier, le sable à moitié écoulé, la ville de Florence floue au loin, une cloche de campanile dans la brume dorée. Lumière dorée de fin de journée. Palette chaude : ocre, terre de Sienne brûlée, ambre, brun. Aucun personnage, aucun texte. Format panoramique très allongé 4:1, 1600×400, le sablier un peu à gauche du centre.",
   },
+  "salles-entree": {
+    src: "/illustrations/salles-entree.webp",
+    alt: "Un palais blanc à dôme doré entre deux immenses sabliers, sur un ciel rose ; deux samouraïs assis de dos sur un sol blanc",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-04), choisie par Théo pour les Salles.",
+    emplacement: "S'affronter : la carte Les Salles, environ 2,6:1, texte sombre sans voile, les personnages au centre.",
+    prompt: "Reprends exactement la technique, la lumière et le style de la peinture jointe (huile au couteau, empâtements, décor de jeu vidéo). Un vide immense sur un ciel rose, un palais blanc à dôme doré entre deux sabliers géants, deux samouraïs minuscules, l'un à écharpe vermillon, assis de dos.",
+  },
   "reviser-page-blanche": {
     src: "/illustrations/reviser-page-blanche.webp",
-    alt: "Un palais blanc à dôme doré entre deux immenses sabliers, sur un ciel rose ; deux samouraïs assis de dos sur un sol blanc",
+    alt: "Un palais blanc à dôme doré entre deux immenses sabliers, dans un vide blanc ; deux samouraïs assis de dos",
     credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-04), choisie par Théo pour La page blanche.",
     emplacement: "Réviser : petite carte La page blanche. /page-blanche : bandeau de tête.",
     prompt: "Reprends exactement la technique, la lumière et le style de la peinture jointe (huile au couteau, empâtements, décor de jeu vidéo). Un vide blanc immense, un palais blanc à dôme doré entre deux sabliers géants, deux samouraïs minuscules, l'un à écharpe vermillon, assis de dos.",
