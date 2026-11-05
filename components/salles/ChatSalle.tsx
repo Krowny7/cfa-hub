@@ -94,7 +94,7 @@ export function ChatSalle({ canal, moi }: { canal: string; moi: { userId: string
   }
 
   return (
-    <section className="card-quiet grid gap-2 p-4" aria-label={RUNNER_SALLE.chatTitre}>
+    <section className="card-quiet grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 p-4" aria-label={RUNNER_SALLE.chatTitre}>
       <p className="t-micro m-0">{RUNNER_SALLE.chatTitre}</p>
       {messages.length > 0 ? (
         <ol ref={liste} aria-live="polite" className="m-0 grid max-h-[150px] list-none gap-1 overflow-y-auto p-0 text-[13px] leading-snug">

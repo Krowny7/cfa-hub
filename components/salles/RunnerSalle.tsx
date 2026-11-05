@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { ChatSalle } from "@/components/salles/ChatSalle";
-import { Ticks, type TickMark } from "@/components/defi/parts";
 import type { PropsPartieExamen } from "@/components/salles/PartieExamen";
 import { duelTopicLabel } from "@/lib/duels";
 import { avancementJoueurs, chronoBas, copieRendue, libelleChrono, positionDeDepart, prochaineNonRepondue, refusCopieRendue, reponsesRetenues } from "@/lib/salles/examen";
@@ -14,8 +13,9 @@ import { EXAMEN, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
 const LETTRES = ["A", "B", "C", "D", "E"];
 
 // La copie d'une partie de Salle en chrono global, avec l'écran des 30 du jour
-// (DefiRunner) : en-tête collant (partie, chrono, avancement, coches), une
-// question à la fois, les mêmes boutons et raccourcis. En plus des 30 du jour :
+// (DefiRunner) : en-tête collant (partie, chrono, avancement), toutes les cases
+// dessous, le chat et les autres joueurs à droite, une question à la fois, les
+// mêmes boutons et raccourcis. En plus des 30 du jour :
 // on revient sur n'importe quelle question (coches, « Question précédente », ←)
 // et on change sa réponse tant que la copie n'est pas rendue. Rien n'est
 // corrigé avant la fin ; « Rendre ma copie » verrouille tout. QCM seulement.
@@ -46,6 +46,8 @@ export function RunnerSalle({
   const blanches = nb - repondues;
   const bas = chronoBas(restantMs, totalMs);
   const autres = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: repondues, moiRendu: rendue }).filter((j) => !j.moi);
+  // seul dans la salle : ni chat ni autres joueurs, la question prend toute la place
+  const aCote = membres.length > 1 || autres.length > 0;
 
   const aller = useCallback(
     (p: number) => {
@@ -133,7 +135,6 @@ export function RunnerSalle({
     return () => window.removeEventListener("keydown", touche);
   }, [aller, courante, q, rendue]);
 
-  const coches: TickMark[] = Array.from({ length: nb }, (_, i) => (i === courante && !rendue ? "current" : retenues.has(i) ? "done" : "todo"));
   const titre = session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : SALLES.partieTitre(session.numero);
 
   return (
@@ -156,17 +157,73 @@ export function RunnerSalle({
             <div className="t-micro truncate">{DEFI.repondues}</div>
           </div>
         </div>
-        <Ticks className="mt-3" marks={coches} label={DEFI.avancement} onPick={aller} canPick={() => true} />
       </header>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+      {/* en haut : toutes les cases, pour aller à n'importe quelle question */}
+      <section className="card-quiet grid gap-3 p-4" aria-label={RUNNER_SALLE.cases}>
+        <p className="t-micro m-0">{RUNNER_SALLE.cases}</p>
+        <ol className="m-0 grid max-h-[176px] list-none grid-cols-[repeat(auto-fill,minmax(36px,1fr))] gap-1.5 overflow-y-auto p-1">
+          {Array.from({ length: nb }, (_, i) => {
+            const fait = retenues.has(i);
+            const ici = i === courante && !rendue;
+            return (
+              <li key={i}>
+                <button
+                  type="button"
+                  onClick={() => aller(i)}
+                  aria-current={ici ? "true" : undefined}
+                  aria-label={RUNNER_SALLE.caseAria(i + 1, fait)}
+                  className={
+                    "h-[34px] w-full rounded-[8px] font-mono text-[12px] tabular-nums transition-colors " +
+                    (fait ? "bg-[var(--ink)] text-[var(--paper)] " : "bg-surface-2 text-muted hover:text-[var(--ink)] ") +
+                    (ici ? "ring-2 ring-[var(--pen)] ring-offset-1 ring-offset-[var(--paper)]" : "")
+                  }
+                >
+                  {i + 1}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+        <p className="t-micro m-0">{RUNNER_SALLE.casesLegende}</p>
+      </section>
+
+      <div className={"grid items-start gap-6 " + (aCote ? "lg:grid-cols-[minmax(0,1fr)_280px]" : "")}>
+      {/* à droite : le chat, puis où en sont les autres ; au téléphone, sous la question */}
+      {aCote && (
+        <aside className="order-2 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 p-px lg:sticky lg:top-[166px] lg:max-h-[calc(100svh-176px)] lg:overflow-y-auto">
+          {membres.length > 1 && <ChatSalle canal={session.id} moi={{ userId: moi.userId, nom: membres.find((j) => j.userId === moi.userId)?.username ?? RUNNER_SALLE.chatAnonyme }} />}
+          {autres.length > 0 && (
+            <section className="card-quiet grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 p-4" aria-label={RUNNER_SALLE.joueursTitre}>
+              <p className="t-micro m-0">{RUNNER_SALLE.joueursTitre}</p>
+              <ul className="m-0 grid min-w-0 grid-cols-[minmax(0,1fr)] list-none gap-2.5 p-0">
+                {autres.map((j) => (
+                  <li key={j.userId} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
+                    <div className="flex items-baseline justify-between gap-2 text-[13px]">
+                      <span className="min-w-0 truncate font-semibold">{j.username?.trim() || "Un joueur"}</span>
+                      <span className="shrink-0 font-mono tabular-nums text-muted">
+                        {j.rendu ? RUNNER_SALLE.copieRendue + " · " : ""}
+                        {j.n}/{nb}
+                      </span>
+                    </div>
+                    <span className="block h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
+                      <span className="block h-full rounded-full bg-[var(--ink)]" style={{ width: `${Math.round((100 * j.n) / Math.max(1, nb))}%` }} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </aside>
+      )}
+      <div className={"order-1 grid min-w-0 gap-[22px] " + (aCote ? "" : "mx-auto w-full max-w-[860px]")}>
       {rendue ? (
         <section className="card rl-in grid w-full place-items-center gap-2 p-8 text-center">
           <h2 className="t-h2 m-0">{RUNNER_SALLE.rendueTitre}</h2>
           <p className="t-small m-0">{RUNNER_SALLE.rendueTexte}</p>
         </section>
       ) : !q || !q.choix ? null : (
-        <div className="grid w-full min-w-0 gap-[22px]">
+        <>
           <p className="kicker m-0">{DEFI.question(q.position + 1, nb, duelTopicLabel(q.topic))}</p>
 
           <section className="card flex min-w-0 flex-col gap-6 p-5 md:p-7">
@@ -253,61 +310,9 @@ export function RunnerSalle({
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
-
-      {/* à droite : toutes les cases (aller à n'importe quelle question), l'avancement des autres et le chat */}
-      <aside className="grid gap-4 lg:sticky lg:top-[180px] lg:max-h-[calc(100svh-190px)] lg:overflow-y-auto">
-        <section className="card-quiet grid gap-3 p-4" aria-label={RUNNER_SALLE.cases}>
-          <p className="t-micro m-0">{RUNNER_SALLE.cases}</p>
-          <ol className="m-0 grid max-h-[200px] list-none grid-cols-[repeat(auto-fill,minmax(36px,1fr))] gap-1.5 overflow-y-auto p-0">
-            {Array.from({ length: nb }, (_, i) => {
-              const fait = retenues.has(i);
-              const ici = i === courante && !rendue;
-              return (
-                <li key={i}>
-                  <button
-                    type="button"
-                    onClick={() => aller(i)}
-                    aria-current={ici ? "true" : undefined}
-                    aria-label={RUNNER_SALLE.caseAria(i + 1, fait)}
-                    className={
-                      "h-[34px] w-full rounded-[8px] font-mono text-[12px] tabular-nums transition-colors " +
-                      (fait ? "bg-[var(--ink)] text-[var(--paper)] " : "bg-surface-2 text-muted hover:text-[var(--ink)] ") +
-                      (ici ? "ring-2 ring-[var(--pen)] ring-offset-1 ring-offset-[var(--paper)]" : "")
-                    }
-                  >
-                    {i + 1}
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-          <p className="t-micro m-0">{RUNNER_SALLE.casesLegende}</p>
-        </section>
-        {autres.length > 0 && (
-          <section className="card-quiet grid gap-3 p-4" aria-label={RUNNER_SALLE.joueursTitre}>
-            <p className="t-micro m-0">{RUNNER_SALLE.joueursTitre}</p>
-            <ul className="m-0 grid list-none gap-2.5 p-0">
-              {autres.map((j) => (
-                <li key={j.userId} className="grid gap-1">
-                  <div className="flex items-baseline justify-between gap-2 text-[13px]">
-                    <span className="min-w-0 truncate font-semibold">{j.username?.trim() || "Un joueur"}</span>
-                    <span className="shrink-0 font-mono tabular-nums text-muted">
-                      {j.rendu ? RUNNER_SALLE.copieRendue + " · " : ""}
-                      {j.n}/{nb}
-                    </span>
-                  </div>
-                  <span className="block h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
-                    <span className="block h-full rounded-full bg-[var(--ink)]" style={{ width: `${Math.round((100 * j.n) / Math.max(1, nb))}%` }} />
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-        {membres.length > 1 && <ChatSalle canal={session.id} moi={{ userId: moi.userId, nom: membres.find((j) => j.userId === moi.userId)?.username ?? RUNNER_SALLE.chatAnonyme }} />}
-      </aside>
+      </div>
       </div>
     </div>
   );
