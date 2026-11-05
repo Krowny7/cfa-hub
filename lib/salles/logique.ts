@@ -67,8 +67,8 @@ export const SALLE_SOURCES: SalleSource[] = ["banque", "mocks", "examen"];
 export const SALLE_NOMBRE_MAX_MOCK = 600;
 export const SALLE_MOCK_VERSIONS: SalleMockVersion[] = ["base", "variantes", "tout"];
 export const SALLE_MOCK_ORDRES: SalleMockOrdre[] = ["examen", "melange"];
-/** « Mock A — Session 1 » : le nom d'une session de mock officiel (même motif qu'en SQL). */
-export const MOCK_EXAMEN_RE = /^Mock [A-Z] — Session [0-9]$/;
+/** « Mock A — Session 1 » ou « Variantes 1 — Session 1 » : le nom d'une session (même motif qu'en SQL). */
+export const MOCK_EXAMEN_RE = /^(Mock [A-Z]|Variantes [0-9]) — Session [0-9]$/;
 export const SALLE_DIFFICULTES: SalleDifficulte[] = ["facile", "moyen", "difficile", "melange"];
 
 export const SALLE_TYPE_LABELS: Record<SalleType, string> = {
@@ -455,8 +455,8 @@ export function validerParams(brut: unknown): { ok: true; params: SalleParams } 
 
 /** « Mock A — Session 1 » → « Mock A · S1 ». */
 export function examenCourt(examen: string): string {
-  const m = examen.match(/^Mock ([A-Z]) — Session ([0-9])$/);
-  return m ? `Mock ${m[1]} · S${m[2]}` : examen;
+  const m = examen.match(/^(Mock [A-Z]|Variantes [0-9]) — Session ([0-9])$/);
+  return m ? `${m[1]} · S${m[2]}` : examen;
 }
 
 /** Combien de questions offre une sélection de mocks, dans les matières cochées ; null : pas encore lu. */

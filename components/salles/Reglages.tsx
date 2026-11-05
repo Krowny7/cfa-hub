@@ -219,7 +219,7 @@ export function Reglages({
   }, [surMock, chargerMocks, mocks]);
   const sessions = useMemo(() => sessionsMock(mocks), [mocks]);
   const mock = useMemo(() => ajusterMock(params.mock ?? MOCK_DEFAUT, mocks), [params.mock, mocks]);
-  const lettresMock = useMemo(() => [...new Set(sessions.map((x) => x.examen.charAt(5)))], [sessions]);
+  const nomsMock = useMemo(() => [...new Set(sessions.map((x) => x.examen.split(" — ")[0]))], [sessions]);
   const dispoMock = surMock ? disponiblesMock(mocks, mock, params.topics) : null;
   const maxPartie = Math.max(SALLE_NOMBRE_MIN, Math.min(SALLE_NOMBRE_MAX_MOCK, dispoMock ?? 90));
   const setMock = (m: Partial<SalleMock>) => set({ mock: { ...mock, ...m } });
@@ -454,8 +454,8 @@ export function Reglages({
             <h3 className={s.question}>{REGLAGES.questions.sessions}</h3>
             {mock.version === "base" && (
               <div className={s.raccourcis}>
-                {lettresMock.map((l) => {
-                  const duMock = sessions.map((x) => x.examen).filter((e) => e.charAt(5) === l);
+                {nomsMock.map((l) => {
+                  const duMock = sessions.map((x) => x.examen).filter((e) => e.split(" — ")[0] === l);
                   const pile = duMock.length === mock.examens.length && duMock.every((e) => mock.examens.includes(e));
                   return (
                     <button key={l} type="button" className={[s.btn, s.btnDiscret].join(" ")} aria-pressed={pile} onClick={() => setMock({ examens: duMock })}>

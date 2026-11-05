@@ -160,6 +160,7 @@ export const INSCRIPTION = {
 
 /** Examens officiels : les vrais mocks, rejoués en entier ou par matière. */
 export const OFFICIELS = {
+  variantesNote: "Questions écrites pour le site, pas des sujets officiels.",
   titre: "Examens officiels",
   sous: "Tes examens officiels, aux questions près : en entier, ou une matière à la fois pour reprendre un point fragile.",
   videTitre: "Aucun examen officiel pour l'instant.",

@@ -154,7 +154,7 @@ export const REGLAGES = {
   sessionCompte: (version: "base" | "variantes" | "tout", base: number, variantes: number) =>
     version === "base" ? `${base} questions` : version === "variantes" ? `${variantes} variantes` : `${base} + ${variantes} variantes`,
   sansVariante: "Pas de variante",
-  mockEntier: (lettre: string) => `Mock ${lettre} entier`,
+  mockEntier: (nom: string) => `${nom} entier`,
   chargementMocks: "Lecture des mocks disponibles…",
   mocksIndispo: "Les mocks n'ont pas pu être lus. Recharge la page.",
   version: "Version",

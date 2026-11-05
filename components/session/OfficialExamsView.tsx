@@ -59,9 +59,12 @@ function ListeMatieres({ exams }: { exams: OfficialExamGroup[] }) {
           .map(([label, s]) => (
             <section key={`${g.exam}-${label}`} className="card overflow-hidden" aria-label={`${g.exam} · ${label}`}>
               <div className="flex items-baseline justify-between gap-4 px-5 pb-2 pt-5 md:px-6">
-                <p className="t-eyebrow m-0">
-                  {g.exam} · {label}
-                </p>
+                <div className="min-w-0">
+                  <p className="t-eyebrow m-0">
+                    {g.exam} · {label}
+                  </p>
+                  {g.exam.startsWith("Variantes ") && <p className="t-micro m-0 mt-1">{OFFICIELS.variantesNote}</p>}
+                </div>
                 {s.complete && (
                   <Link href={`/qcm/${s.complete.id}`} className="ink-link shrink-0 text-[13px] font-semibold">
                     Complète · {s.complete.count}
