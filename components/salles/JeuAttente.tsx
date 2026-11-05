@@ -2,93 +2,106 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { Gamepad2 } from "lucide-react";
+import { Swords } from "lucide-react";
 import { TetePanneau } from "@/components/salles/Stage";
-import { echarpeDe, peindreRouleau, poseDe } from "@/components/salles/jeu-dessin";
-import { ETAT_VIDE, HAUTEUR, LARGEUR, MANCHE, POTEAUX, ROULEAUX_MAX, avancer, classement, depart, directionDe, echelle, etatLu, lieuDeRouleau, meneur, prendre, rouleauAPortee, type Direction, type EtatJeu, type Point } from "@/lib/salles/jeu-attente";
+import { echarpeDe, peindreArene, poseDe } from "@/components/salles/jeu-dessin";
+import { COUPS, HAUTEUR, LARGEUR, SANS_ENTREE, VIES, avancer, coupActif, dernierDebout, elimine, meneur, nouveauCombattant, subir, touche, type Combattant, type Entrees, type TypeCoup } from "@/lib/salles/jeu-combat";
 import type { SalleMembre } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
 import { SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 
-// La petite carte de la salle d'attente : chacun promène son samouraï dans le dojo et ramasse
-// les rouleaux. Tout passe par un canal Realtime (broadcast), rien en base et rien dans le
-// chemin de la partie : la carte disparaît quand la partie commence. Le joueur au plus petit
-// identifiant mène le jeu : lui seul pose les rouleaux et tient les scores. Le clavier ne
-// répond que quand la carte a le focus, pour ne pas gêner la page ni le chat.
+// La petite carte de la salle d'attente : un combat de plateforme entre les joueurs, en
+// attendant que la partie commence. Rien en base et rien dans le chemin de la partie : tout
+// passe par un canal Realtime (broadcast), et la carte disparaît au lancement. Chacun simule
+// son personnage ; qui frappe prévient sa cible, qui applique le coup chez elle. Seul dans la
+// salle, on s'entraîne sur un mannequin. Le clavier ne répond que quand la carte a le focus.
 
-/** Pixels d'image par pixel de sprite, au milieu de la salle. */
-const TAILLE_SPRITE = 4;
-const ENVOI_MS = 120;
-const VIE_MS = 2000;
-const ABSENT_MS = 7000;
-const POSE_MS = 2500;
-const ETAT_MS = 4000;
+const TAILLE = 4.6;
+const ENVOI_MS = 66;
+const ABSENT_MS = 5000;
 const NOUVELLE_MANCHE_MS = 4000;
+const MANNEQUIN = "mannequin";
 
-type Autre = { x: number; y: number; cx: number; cy: number; direction: Direction; marche: boolean; vu: number };
+type Vu = Combattant & { cx: number; cy: number; vu: number };
+type Goutte = { x: number; y: number; vx: number; vy: number; vie: number; r: number; teinte: string };
+type Ligne = { id: string; degats: number; vies: number };
 
 const nomDe = (m: SalleMembre | undefined) => m?.username?.trim() || "Un joueur";
 
-/** Une position reçue du canal, si elle a la bonne forme. */
-function posLue(p: unknown): { id: string; x: number; y: number; direction: Direction; marche: boolean } | null {
-  const m = p as { id?: unknown; x?: unknown; y?: unknown; d?: unknown; m?: unknown } | null;
-  if (!m || typeof m.id !== "string" || typeof m.x !== "number" || typeof m.y !== "number") return null;
-  const direction: Direction = m.d === "haut" || m.d === "gauche" || m.d === "droite" ? m.d : "bas";
-  return { id: m.id, x: m.x, y: m.y, direction, marche: m.m === true };
+/** Un état reçu du canal, s'il a la bonne forme. */
+function etatLu(p: unknown): (Pick<Combattant, "x" | "y" | "vx" | "vy" | "dir" | "degats" | "vies" | "coup"> & { id: string }) | null {
+  const m = p as { id?: unknown; x?: unknown; y?: unknown; vx?: unknown; vy?: unknown; d?: unknown; g?: unknown; v?: unknown; c?: unknown; t?: unknown } | null;
+  if (!m || typeof m.id !== "string" || typeof m.x !== "number" || typeof m.y !== "number" || typeof m.g !== "number" || typeof m.v !== "number") return null;
+  const type = m.c === "leger" || m.c === "fort" ? m.c : null;
+  return { id: m.id, x: m.x, y: m.y, vx: Number(m.vx) || 0, vy: Number(m.vy) || 0, dir: m.d === -1 ? -1 : 1, degats: m.g, vies: m.v, coup: type ? { type, t: Number(m.t) || 0 } : null };
 }
 
 export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: string; membres: SalleMembre[] }) {
-  const [etat, setEtat] = useState<EtatJeu>(ETAT_VIDE);
   const [actif, setActif] = useState(false);
+  const [lignes, setLignes] = useState<Ligne[]>([]);
+  const [gagnant, setGagnant] = useState<string | null>(null);
+  const [seul, setSeul] = useState(true);
   const toile = useRef<HTMLCanvasElement | null>(null);
   const voie = useRef<RealtimeChannel | null>(null);
-  const jeu = useRef<EtatJeu>(ETAT_VIDE);
   const touches = useRef(new Set<string>());
-  const cible = useRef<Point | null>(null);
-  const moi = useRef({ ...depart(moiId), direction: "bas" as Direction, marche: false });
-  const autres = useRef(new Map<string, Autre>());
+  const appuis = useRef(new Set<string>());
   const parId = useMemo(() => new Map(membres.map((m) => [m.userId, m])), [membres]);
   const ids = useRef<ReadonlySet<string>>(new Set());
   ids.current = new Set(parId.keys());
   const noms = useRef(parId);
   noms.current = parId;
+  const rang = Math.max(0, membres.findIndex((m) => m.userId === moiId));
+  const moi = useRef<Combattant>(nouveauCombattant(rang));
+  const autres = useRef(new Map<string, Vu>());
+  const mannequin = useRef<Combattant>(nouveauCombattant(rang + 1));
+  const gouttes = useRef<Goutte[]>([]);
+  const secousse = useRef(0);
+  const finDeManche = useRef<string | null>(null);
 
-  const poser = (e: EtatJeu) => {
-    jeu.current = e;
-    setEtat(e);
-  };
   const envoyer = (event: string, payload: Record<string, unknown>) => {
     void voie.current?.send({ type: "broadcast", event, payload });
   };
-  const presents = () => [moiId, ...autres.current.keys()];
-  const jeMene = () => meneur(presents()) === moiId;
+
+  const eclabousser = (x: number, y: number, dir: number, force: number) => {
+    for (let i = 0; i < 8 + force * 10; i++) {
+      gouttes.current.push({ x, y: y - 34, vx: dir * (60 + Math.random() * 300) + (Math.random() - 0.5) * 160, vy: -80 - Math.random() * 260, vie: 0.35 + Math.random() * 0.4, r: 2 + Math.random() * 5, teinte: i % 4 === 0 ? "#c9402a" : "#1a120b" });
+    }
+    secousse.current = Math.min(10, 3 + force * 6);
+  };
+
+  const relancer = () => {
+    moi.current = nouveauCombattant(rang);
+    mannequin.current = nouveauCombattant(rang + 1);
+    finDeManche.current = null;
+    setGagnant(null);
+  };
 
   useEffect(() => {
     let fin = () => {};
     try {
       const sb = createClient();
       const c = sb.channel(`salle-jeu:${canal}`, { config: { broadcast: { self: false } } });
-      c.on("broadcast", { event: "pos" }, ({ payload }) => {
-        const p = posLue(payload);
+      c.on("broadcast", { event: "etat" }, ({ payload }) => {
+        const p = etatLu(payload);
         if (!p || p.id === moiId || !ids.current.has(p.id)) return;
         const avant = autres.current.get(p.id);
-        autres.current.set(p.id, { x: p.x, y: p.y, cx: avant?.cx ?? p.x, cy: avant?.cy ?? p.y, direction: p.direction, marche: p.marche, vu: Date.now() });
+        if (avant && p.degats > avant.degats) eclabousser(p.x, p.y, p.vx >= 0 ? 1 : -1, 0.4);
+        autres.current.set(p.id, { ...nouveauCombattant(0), ...p, cx: avant?.cx ?? p.x, cy: avant?.cy ?? p.y, vu: Date.now() });
       });
-      c.on("broadcast", { event: "etat" }, ({ payload }) => {
-        if (jeMene()) return;
-        const e = etatLu(payload, ids.current);
-        if (e) poser(e);
+      c.on("broadcast", { event: "coup" }, ({ payload }) => {
+        const p = payload as { de?: unknown; cible?: unknown; type?: unknown; dir?: unknown } | null;
+        if (p?.cible !== moiId || typeof p.de !== "string" || !ids.current.has(p.de) || (p.type !== "leger" && p.type !== "fort")) return;
+        const dir = p.dir === -1 ? -1 : 1;
+        const avant = moi.current;
+        moi.current = subir(avant, p.type as TypeCoup, dir);
+        if (moi.current !== avant) eclabousser(avant.x, avant.y, dir, p.type === "fort" ? 1 : 0.4);
       });
-      c.on("broadcast", { event: "prise" }, ({ payload }) => {
-        const p = payload as { joueur?: unknown; rouleau?: unknown } | null;
-        if (!jeMene() || typeof p?.joueur !== "string" || typeof p.rouleau !== "string" || !ids.current.has(p.joueur)) return;
-        const e = prendre(jeu.current, p.joueur, p.rouleau);
-        if (e !== jeu.current) {
-          poser(e);
-          envoyer("etat", e);
-        }
+      c.on("broadcast", { event: "fin" }, ({ payload }) => {
+        const g = (payload as { gagnant?: unknown } | null)?.gagnant;
+        if (typeof g === "string" && ids.current.has(g)) setGagnant(g);
       });
+      c.on("broadcast", { event: "manche" }, () => relancer());
       c.subscribe();
       voie.current = c;
       fin = () => {
@@ -96,7 +109,7 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         void sb.removeChannel(c);
       };
     } catch {
-      // sans canal, on joue seul : le jeu tourne quand même
+      // sans canal, on s'entraîne seul : le jeu tourne quand même
     }
     return () => fin();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,16 +119,12 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     const el = toile.current;
     const c = el?.getContext("2d");
     if (!el || !c) return;
-    const fond = new Image();
-    fond.src = "/salles/dojo.webp";
     let image = 0;
     let avant = performance.now();
     let dernierEnvoi = 0;
-    let derniereVie = 0;
-    let dernierePose = 0;
-    let dernierEtat = 0;
-    let finManche = 0;
-    let marchait = false;
+    let dernierTableau = 0;
+    const dejaTouches = new Set<string>();
+    let coupVu: unknown = null;
 
     const boucle = (t: number) => {
       image = requestAnimationFrame(boucle);
@@ -123,136 +132,129 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
         avant = t;
         return;
       }
-      const dt = Math.min(0.1, (t - avant) / 1000);
+      const dt = Math.min(0.033, (t - avant) / 1000);
       avant = t;
       const maintenant = Date.now();
-      const m = moi.current;
 
-      // où aller : le clavier d'abord, sinon le point touché
       const k = touches.current;
-      let dx = (k.has("droite") ? 1 : 0) - (k.has("gauche") ? 1 : 0);
-      let dy = (k.has("bas") ? 1 : 0) - (k.has("haut") ? 1 : 0);
-      if (dx || dy) cible.current = null;
-      else if (cible.current) {
-        dx = cible.current.x - m.x;
-        dy = cible.current.y - m.y;
-        if (Math.hypot(dx, dy) < 2) {
-          cible.current = null;
-          dx = 0;
-          dy = 0;
-        }
-      }
-      const suivant = avancer(m, dx, dy, dt);
-      const bouge = suivant.x !== m.x || suivant.y !== m.y;
-      if ((dx || dy) && !bouge) cible.current = null;
-      m.x = suivant.x;
-      m.y = suivant.y;
-      m.direction = directionDe(dx, dy, m.direction);
-      m.marche = bouge;
+      const a = appuis.current;
+      const e: Entrees = { gauche: k.has("gauche"), droite: k.has("droite"), bas: k.has("bas"), saut: a.has("saut"), leger: a.has("leger"), fort: a.has("fort") };
+      a.clear();
 
-      // le réseau : souvent quand on marche, de temps en temps pour rester présent
-      if ((bouge && t - dernierEnvoi > ENVOI_MS) || marchait !== bouge || t - derniereVie > VIE_MS) {
-        dernierEnvoi = t;
-        derniereVie = t;
-        envoyer("pos", { id: moiId, x: Math.round(m.x), y: Math.round(m.y), d: m.direction, m: bouge });
-      }
-      marchait = bouge;
+      const m = elimine(moi.current) ? moi.current : avancer(moi.current, e, dt);
+      if (m.vies < moi.current.vies) eclabousser(Math.max(30, Math.min(LARGEUR - 30, moi.current.x)), Math.min(HAUTEUR - 30, Math.max(60, moi.current.y)), moi.current.x < 512 ? 1 : -1, 1);
+      moi.current = m;
 
-      for (const [id, a] of autres.current) {
-        if (maintenant - a.vu > ABSENT_MS) {
+      for (const [id, o] of autres.current) {
+        if (maintenant - o.vu > ABSENT_MS) {
           autres.current.delete(id);
           continue;
         }
-        a.cx += (a.x - a.cx) * Math.min(1, dt * 10);
-        a.cy += (a.y - a.cy) * Math.min(1, dt * 10);
+        o.x += o.vx * dt;
+        o.y += o.vy * dt;
+        o.cx += (o.x - o.cx) * Math.min(1, dt * 16);
+        o.cy += (o.y - o.cy) * Math.min(1, dt * 16);
       }
+      const estSeul = autres.current.size === 0;
+      if (estSeul) mannequin.current = avancer(mannequin.current.vies <= 0 ? nouveauCombattant(rang + 1) : mannequin.current, SANS_ENTREE, dt);
 
-      // le rouleau sous les pieds
-      const e = jeu.current;
-      const trouve = rouleauAPortee(m, e.rouleaux);
-      if (trouve) {
-        if (jeMene()) {
-          const n = prendre(e, moiId, trouve.id);
-          poser(n);
-          envoyer("etat", n);
-        } else {
-          poser({ ...e, rouleaux: e.rouleaux.filter((r) => r.id !== trouve.id) });
-          envoyer("prise", { joueur: moiId, rouleau: trouve.id });
+      // le coup : une seule touche par cible et par coup
+      if (m.coup !== coupVu) {
+        if (!m.coup || m.coup.t === 0) dejaTouches.clear();
+        coupVu = m.coup;
+      }
+      if (coupActif(m) && m.coup) {
+        const type = m.coup.type;
+        if (estSeul && !dejaTouches.has(MANNEQUIN) && touche(m, mannequin.current)) {
+          dejaTouches.add(MANNEQUIN);
+          const cible = mannequin.current;
+          mannequin.current = subir(cible, type, m.dir);
+          if (mannequin.current !== cible) eclabousser(cible.x, cible.y, m.dir, type === "fort" ? 1 : 0.4);
+        }
+        for (const [id, o] of autres.current) {
+          if (dejaTouches.has(id) || elimine(o) || !touche(m, { x: o.cx, y: o.cy })) continue;
+          dejaTouches.add(id);
+          envoyer("coup", { de: moiId, cible: id, type, dir: m.dir });
+          eclabousser(o.cx, o.cy, m.dir, type === "fort" ? 1 : 0.4);
         }
       }
 
-      // le meneur pose les rouleaux, relance la manche et redit l'état pour ceux qui arrivent
-      if (jeMene()) {
-        const j = jeu.current;
-        if (j.gagnant) {
-          finManche ||= t;
-          if (t - finManche > NOUVELLE_MANCHE_MS) {
-            finManche = 0;
-            poser(ETAT_VIDE);
-            envoyer("etat", ETAT_VIDE);
-          }
-        } else if (j.rouleaux.length < ROULEAUX_MAX && t - dernierePose > POSE_MS) {
-          dernierePose = t;
-          const k2 = lieuDeRouleau(j.rouleaux, Math.random());
-          if (k2) {
-            const n = { ...j, rouleaux: [...j.rouleaux, { id: `${Math.round(t)}`, x: k2.x, y: k2.y }] };
-            poser(n);
-            envoyer("etat", n);
-          }
-        }
-        if (t - dernierEtat > ETAT_MS) {
-          dernierEtat = t;
-          envoyer("etat", jeu.current);
+      if (t - dernierEnvoi > ENVOI_MS) {
+        dernierEnvoi = t;
+        envoyer("etat", { id: moiId, x: Math.round(m.x), y: Math.round(m.y), vx: Math.round(m.vx), vy: Math.round(m.vy), d: m.dir, g: m.degats, v: m.vies, c: m.coup?.type ?? "", t: m.coup?.t ?? 0 });
+      }
+
+      // la fin de la manche, décidée par le meneur
+      const joueurs = [{ id: moiId, vies: m.vies }, ...[...autres.current].map(([id, o]) => ({ id, vies: o.vies }))];
+      if (meneur(joueurs.map((j) => j.id)) === moiId && !finDeManche.current) {
+        const dernier = dernierDebout(joueurs);
+        if (dernier) {
+          finDeManche.current = dernier;
+          setGagnant(dernier);
+          envoyer("fin", { gagnant: dernier });
+          setTimeout(() => {
+            envoyer("manche", {});
+            relancer();
+          }, NOUVELLE_MANCHE_MS);
         }
       }
 
-      // l'image : le dojo, les rouleaux, les joueurs du fond vers le devant, puis les poteaux
-      // qui passent devant ceux qui sont derrière
-      c.fillStyle = "#120d09";
-      c.fillRect(0, 0, LARGEUR, HAUTEUR);
-      if (fond.complete && fond.naturalWidth) c.drawImage(fond, 0, 0, LARGEUR, HAUTEUR);
-      const sec = t / 1000;
-      for (const r of jeu.current.rouleaux) peindreRouleau(c, r.x, r.y, 3 * echelle(r.y), sec);
-      const pas = (marche: boolean) => (marche ? (Math.floor(t / 160) % 2) + 1 : 0);
-      const scene = [
-        { id: moiId, x: m.x, y: m.y, direction: m.direction, marche: m.marche },
-        ...[...autres.current].map(([id, a]) => ({ id, x: a.cx, y: a.cy, direction: a.direction, marche: a.marche })),
-      ].sort((a, b) => a.y - b.y);
+      if (t - dernierTableau > 150) {
+        dernierTableau = t;
+        setSeul(estSeul);
+        setLignes(joueurs.map((j) => ({ id: j.id, vies: j.vies, degats: j.id === moiId ? m.degats : (autres.current.get(j.id)?.degats ?? 0) })));
+      }
+
+      // l'image
+      const choc = secousse.current;
+      secousse.current = Math.max(0, choc - dt * 40);
+      c.setTransform(1, 0, 0, 1, (Math.random() - 0.5) * choc, (Math.random() - 0.5) * choc);
+      peindreArene(c);
+      const scene: { id: string; f: Pick<Combattant, "x" | "y" | "dir" | "coup" | "invincible" | "vx" | "degats">; nom: string }[] = [];
+      if (!elimine(m)) scene.push({ id: moiId, f: m, nom: nomDe(noms.current.get(moiId)) });
+      for (const [id, o] of autres.current) if (!elimine(o)) scene.push({ id, f: { ...o, x: o.cx, y: o.cy, invincible: 0 }, nom: nomDe(noms.current.get(id)) });
+      if (estSeul) scene.push({ id: MANNEQUIN, f: mannequin.current, nom: SALLES.jeuMannequin });
+
       c.imageSmoothingEnabled = false;
       for (const j of scene) {
-        const k = TAILLE_SPRITE * echelle(j.y);
-        const saut = pas(j.marche) ? k : 0;
-        c.fillStyle = "rgba(26, 18, 11, 0.3)";
-        c.beginPath();
-        c.ellipse(j.x, j.y, 6 * k, 2 * k, 0, 0, Math.PI * 2);
-        c.fill();
-        c.drawImage(poseDe(j.direction, pas(j.marche), echarpeDe(j.id, j.id === moiId)), j.x - 8 * k, j.y - 15 * k - saut, 16 * k, 16 * k);
-      }
-      c.imageSmoothingEnabled = true;
-      if (fond.complete && fond.naturalWidth) {
-        for (const poteau of POTEAUX) {
-          if (!scene.some((j) => j.y < poteau.base && Math.abs(j.x - poteau.contour[0].x) < 90)) continue;
-          c.save();
-          c.beginPath();
-          poteau.contour.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)));
-          c.closePath();
-          c.clip();
-          c.drawImage(fond, 0, 0, LARGEUR, HAUTEUR);
-          c.restore();
+        const { x, y, dir, coup, invincible, vx } = j.f;
+        c.globalAlpha = invincible > 0 && Math.floor(t / 90) % 2 === 0 ? 0.45 : 1;
+        const pas = Math.abs(vx) > 30 ? (Math.floor(t / 110) % 2) + 1 : 0;
+        const echarpe = j.id === MANNEQUIN ? "#8d8579" : echarpeDe(j.id, j.id === moiId);
+        c.drawImage(poseDe(dir > 0 ? "droite" : "gauche", pas, echarpe), x - 8 * TAILLE, y - 15 * TAILLE, 16 * TAILLE, 16 * TAILLE);
+        c.globalAlpha = 1;
+        if (coup) {
+          const info = COUPS[coup.type];
+          if (coup.t >= info.debut && coup.t <= info.fin + 0.04) {
+            c.strokeStyle = coup.type === "fort" ? "#d8432a" : "#f4ead2";
+            c.lineWidth = coup.type === "fort" ? 11 : 7;
+            c.lineCap = "round";
+            c.beginPath();
+            c.arc(x + dir * 16, y - 36, info.portee * 0.72, dir > 0 ? -1 : Math.PI - 0.6, dir > 0 ? 0.6 : Math.PI + 1);
+            c.stroke();
+          }
         }
       }
-
-      c.font = "600 24px system-ui, sans-serif";
+      gouttes.current = gouttes.current.filter((g) => g.vie > 0);
+      for (const g of gouttes.current) {
+        g.vie -= dt;
+        g.vy += 1100 * dt;
+        g.x += g.vx * dt;
+        g.y += g.vy * dt;
+        c.fillStyle = g.teinte;
+        c.fillRect(g.x, g.y, g.r, g.r);
+      }
+      c.font = "600 22px system-ui, sans-serif";
       c.textAlign = "center";
       c.lineJoin = "round";
       c.lineWidth = 5;
       for (const j of scene) {
-        const nom = nomDe(noms.current.get(j.id)).slice(0, 14);
-        const y = j.y - 17 * TAILLE_SPRITE * echelle(j.y);
+        const y = j.f.y - 17 * TAILLE;
+        const texte = `${j.nom.slice(0, 12)} ${Math.round(j.f.degats)} %`;
         c.strokeStyle = "rgba(26, 18, 11, 0.85)";
-        c.strokeText(nom, j.x, y);
+        c.strokeText(texte, j.f.x, y);
         c.fillStyle = "#fff";
-        c.fillText(nom, j.x, y);
+        c.fillText(texte, j.f.x, y);
       }
     };
     image = requestAnimationFrame(boucle);
@@ -260,24 +262,38 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moiId]);
 
-  const touche = (e: React.KeyboardEvent, enfoncee: boolean) => {
-    const sens = { ArrowUp: "haut", ArrowDown: "bas", ArrowLeft: "gauche", ArrowRight: "droite", z: "haut", s: "bas", q: "gauche", d: "droite", w: "haut", a: "gauche" }[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+  const sensDe = (e: React.KeyboardEvent) => {
+    const cle = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    return ({ ArrowLeft: "gauche", ArrowRight: "droite", ArrowDown: "bas", ArrowUp: "saut", q: "gauche", a: "gauche", d: "droite", s: "bas", z: "saut", w: "saut", " ": "saut", j: "leger", x: "leger", k: "fort", c: "fort" } as Record<string, string>)[cle];
+  };
+  const clavier = (e: React.KeyboardEvent, enfoncee: boolean) => {
+    const sens = sensDe(e);
     if (!sens) return;
     e.preventDefault();
-    if (enfoncee) touches.current.add(sens);
-    else touches.current.delete(sens);
+    if (enfoncee) {
+      if (!e.repeat && (sens === "saut" || sens === "leger" || sens === "fort")) appuis.current.add(sens);
+      touches.current.add(sens);
+    } else touches.current.delete(sens);
   };
-
-  const viser = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    cible.current = { x: ((e.clientX - r.left) / r.width) * LARGEUR, y: ((e.clientY - r.top) / r.height) * HAUTEUR };
-  };
-
-  const scores = classement(etat.scores).slice(0, 4);
+  const bouton = (nom: string, texte: string) => (
+    <button
+      type="button"
+      aria-label={nom}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        if (nom === "saut" || nom === "leger" || nom === "fort") appuis.current.add(nom);
+        else touches.current.add(nom);
+      }}
+      onPointerUp={() => touches.current.delete(nom)}
+      onPointerLeave={() => touches.current.delete(nom)}
+    >
+      {texte}
+    </button>
+  );
 
   return (
     <section className={s.panneau} aria-labelledby="salle-jeu">
-      <TetePanneau id="salle-jeu" icone={<Gamepad2 size={16} />} droite={<span className={s.compte}>{SALLES.jeuBut(MANCHE)}</span>}>
+      <TetePanneau id="salle-jeu" icone={<Swords size={16} />} droite={<span className={s.compte}>{SALLES.jeuVies(VIES)}</span>}>
         {SALLES.jeuTitre}
       </TetePanneau>
       <div className={s.panneauCorps}>
@@ -291,23 +307,30 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
             setActif(false);
             touches.current.clear();
           }}
-          onKeyDown={(e) => touche(e, true)}
-          onKeyUp={(e) => touche(e, false)}
+          onKeyDown={(e) => clavier(e, true)}
+          onKeyUp={(e) => clavier(e, false)}
         >
-          <canvas ref={toile} width={LARGEUR} height={HAUTEUR} onPointerDown={viser} />
+          <canvas ref={toile} width={LARGEUR} height={HAUTEUR} />
           {!actif && <span className={s.jeuAide}>{SALLES.jeuAide}</span>}
-          {etat.gagnant && <span className={s.jeuManche}>{SALLES.jeuManche(nomDe(parId.get(etat.gagnant)))}</span>}
+          {gagnant && <span className={s.jeuManche}>{SALLES.jeuManche(nomDe(parId.get(gagnant)))}</span>}
         </div>
-        {scores.length > 0 && (
-          <ol className={s.jeuScores}>
-            {scores.map(([id, n]) => (
-              <li key={id}>
-                <span>{nomDe(parId.get(id))}</span>
-                <b className="t-num">{n}</b>
-              </li>
-            ))}
-          </ol>
-        )}
+        <div className={s.jeuTouches}>
+          {bouton("gauche", "←")}
+          {bouton("droite", "→")}
+          {bouton("saut", "↑")}
+          {bouton("leger", SALLES.jeuCoup)}
+          {bouton("fort", SALLES.jeuCoupFort)}
+        </div>
+        <ol className={s.jeuScores}>
+          {lignes.map((l) => (
+            <li key={l.id}>
+              <span>{nomDe(parId.get(l.id))}</span>
+              <b className="t-num">{Math.round(l.degats)} %</b>
+              <span aria-label={SALLES.jeuViesRestantes(l.vies)}>{"●".repeat(Math.max(0, l.vies))}</span>
+            </li>
+          ))}
+        </ol>
+        {seul && <p className={s.sous}>{SALLES.jeuSeul}</p>}
       </div>
     </section>
   );

@@ -1,7 +1,9 @@
-import type { Direction } from "@/lib/salles/jeu-attente";
+import { HAUTEUR, LARGEUR, PLATEFORMES } from "@/lib/salles/jeu-combat";
 
-// Les personnages du mini-jeu : peints pixel par pixel une fois par pose, puis agrandis.
-// Le décor, lui, est une image (public/salles/dojo.webp).
+type Direction = "bas" | "haut" | "gauche" | "droite";
+
+// Le dessin du mini-jeu, en attendant la peinture de l'arène et les vrais sprites : les
+// personnages sont peints pixel par pixel une fois par pose, l'arène à chaque image.
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -90,21 +92,22 @@ export function poseDe(direction: Direction, pas: number, echarpe: string): HTML
   return f;
 }
 
-/** Un rouleau de papier, qui flotte un peu. `k` : pixels d'image par pixel de dessin ; `t` : le temps, en secondes. */
-export function peindreRouleau(c: Ctx, x: number, y: number, k: number, t: number) {
-  const x0 = x - 5 * k;
-  const y0 = y - 12 * k + Math.sin(t * 3 + x) * 2;
-  c.fillStyle = "rgba(26, 18, 11, 0.28)";
-  c.fillRect(x - 4 * k, y - k, 8 * k, k);
-  c.fillStyle = "#3a2615";
-  c.fillRect(x0 - k, y0, 12 * k, 8 * k);
-  c.fillStyle = "#f2e6c4";
-  c.fillRect(x0, y0 + k, 10 * k, 6 * k);
-  c.fillStyle = "#cbb483";
-  c.fillRect(x0, y0 + k, 2 * k, 6 * k);
-  c.fillRect(x0 + 8 * k, y0 + k, 2 * k, 6 * k);
-  c.fillStyle = "#b4371f";
-  c.fillRect(x0 + 4 * k, y0, 2 * k, 8 * k);
+/** L'arène : un fond d'encre et des plateformes de bois. */
+export function peindreArene(c: Ctx) {
+  const ciel = c.createLinearGradient(0, 0, 0, HAUTEUR);
+  ciel.addColorStop(0, "#2a1d13");
+  ciel.addColorStop(1, "#120d09");
+  c.fillStyle = ciel;
+  c.fillRect(-20, -20, LARGEUR + 40, HAUTEUR + 40);
+  for (const p of PLATEFORMES) {
+    const h = p.traversable ? 12 : 44;
+    c.fillStyle = "#6b4a2f";
+    c.fillRect(p.x, p.y, p.l, h);
+    c.fillStyle = "#94693f";
+    c.fillRect(p.x, p.y, p.l, 5);
+    c.fillStyle = "#3a2615";
+    c.fillRect(p.x, p.y + h - 4, p.l, 4);
+  }
 }
 
 const ECHARPES = ["#3f7fb5", "#3d9a6a", "#d9a23a", "#8a5fb0", "#2fa3a3", "#c7608b"];

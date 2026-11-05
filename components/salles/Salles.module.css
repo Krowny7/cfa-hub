@@ -1177,7 +1177,26 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
-/* ——— le mini-jeu de la salle d'attente : le canevas s'ajuste à la carte ——— */
+/* ——— le mini-jeu de la salle d'attente : le canevas s'ajuste à la carte, les touches n'existent qu'au doigt ——— */
+.jeuTouches {
+  display: none;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  touch-action: none;
+}
+.jeuTouches button {
+  min-height: 44px;
+  border: 1px solid var(--sl-ligne);
+  border-radius: 10px;
+  background: var(--sl-carte);
+  color: inherit;
+  font-weight: 700;
+}
+@media (pointer: coarse) {
+  .jeuTouches {
+    display: grid;
+  }
+}
 .jeuCadre {
   position: relative;
   overflow: hidden;
