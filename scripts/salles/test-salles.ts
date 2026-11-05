@@ -364,8 +364,8 @@ async function main() {
       }
     }
     ok("mixte, tous nombres (5-50) et toutes parts (10-90) : somme juste, au moins un de chaque, croissant", bon);
-    ok("dureeEstimee : 10 questions de 30 s = 353 s", dureeEstimee({ nombre: 10, temps: 30 }) === 353);
-    ok("dureeEstimee : chrono global = décompte + nombre × temps (8 + 10 × 30 = 308 s)", dureeEstimee({ nombre: 10, temps: 30, chrono: "global" }) === 308 && chronoGlobalS({ nombre: 90, temps: 90 }) === 8100);
+    ok("dureeEstimee : 10 questions de 30 s = 375 s", dureeEstimee({ nombre: 10, temps: 30 }) === 375);
+    ok("dureeEstimee : chrono global = décompte + nombre × temps (30 + 10 × 30 = 330 s)", dureeEstimee({ nombre: 10, temps: 30, chrono: "global" }) === 330 && chronoGlobalS({ nombre: 90, temps: 90 }) === 8100);
     ok("libelleDuree", libelleDuree(353) === "5 min 53 s" && libelleDuree(45) === "45 s" && libelleDuree(120) === "2 min" && libelleDuree(3900) === "1 h 05" && libelleDuree(-3) === "0 s");
     ok("libelleParams", libelleParams({ type: "questions", nombre: 20, source: "mocks", topics: ["ethics", "quant", "fsa"], difficulte: "difficile", temps: 45 }) === "20 questions · mocks · 3 matières · difficile · 45 s");
     ok("libelleParams : calculs, toutes les matières, difficulté mélangée", libelleParams({ type: "calculs", nombre: 10, source: "banque", topics: SALLE_TOPIC_KEYS, difficulte: "melange", temps: 60 }) === "10 calculs · toutes les matières · difficulté mélangée · 60 s");
