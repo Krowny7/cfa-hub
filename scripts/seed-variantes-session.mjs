@@ -1,5 +1,7 @@
 // Importe une session de variantes : des questions écrites pour le site à partir des concepts
-// d'anciens mocks, pas des questions officielles. Données : scripts/data/<fichier>.json
+// d'anciens mocks, pas des questions officielles. Deux séries : « Variantes » raisonne dans le même
+// sens que le concept de départ, « Variantes inverses » le prend à rebours (calcul inversé, cas
+// limite, fait qui renverse la conclusion). Données : scripts/data/<fichier>.json
 // { num, topic, prompt, choices, correct_index, explanation }, énoncés et choix en anglais,
 // explications en français.
 //
@@ -29,8 +31,8 @@ const TOPIC_LABELS = {
 };
 
 const [fichier, examLabel] = process.argv.slice(2);
-if (!fichier || !/^Variantes [0-9] — Session [0-9]$/.test(examLabel ?? "")) {
-  console.error('Usage : node scripts/seed-variantes-session.mjs <fichier sans .json> "Variantes 1 — Session 1"');
+if (!fichier || !/^Variantes( inverses)? [0-9] — Session [0-9]$/.test(examLabel ?? "")) {
+  console.error('Usage : node scripts/seed-variantes-session.mjs <fichier sans .json> "Variantes inverses 1 — Session 1"');
   process.exit(1);
 }
 
