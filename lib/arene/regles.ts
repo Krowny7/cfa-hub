@@ -2,7 +2,7 @@
 // écran VS jouer, qui a gagné, quoi montrer à la fin. Testées par
 // scripts/arene/test-arene.ts ; les écrans sont dans components/arene/.
 
-/** L'écran VS dure 6 secondes, sa sortie comprise : il doit tenir dans les 8 secondes du décompte des Salles. */
+/** L'écran VS dure 6 secondes, sa sortie comprise : il tient dans le décompte de départ des Salles. */
 export const VS_DUREE_MS = 6000;
 export const VS_SORTIE_MS = 400;
 /** La vidéo du vainqueur : 15 secondes au plus. */

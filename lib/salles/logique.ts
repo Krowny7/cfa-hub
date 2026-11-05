@@ -43,7 +43,7 @@ export const SALLE_PART_CALCULS_DEFAUT = 40;
 /** Pause entre deux questions : on y montre la correction et le classement. */
 export const SALLE_PAUSE_S = 5;
 /** Décompte entre le lancement et la première question. */
-export const SALLE_DECOMPTE_S = 8;
+export const SALLE_DECOMPTE_S = 30;
 /** Marge de latence réseau : une réponse est encore acceptée 2 s après la fin du temps (0 point de rapidité), et la correction n'est publique qu'ensuite. */
 export const SALLE_MARGE_S = 2;
 /** Une question est révélée 2 s avant son ouverture (le temps de l'afficher chez tout le monde). */

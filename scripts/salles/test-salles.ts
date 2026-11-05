@@ -190,7 +190,7 @@ async function main() {
     }
     ok("chrono global : aucun écart avec la définition SQL sur 3 000 instants", ecarts === 0, `${ecarts} écarts`);
   }
-  ok("constantes : pause 5 s, décompte 8 s, marge 2 s, aperçu 2 s", SALLE_PAUSE_S === 5 && SALLE_DECOMPTE_S === 8 && SALLE_MARGE_S === 2 && SALLE_APERCU_S === 2);
+  ok("constantes : pause 5 s, décompte 30 s, marge 2 s, aperçu 2 s", SALLE_PAUSE_S === 5 && SALLE_DECOMPTE_S === 30 && SALLE_MARGE_S === 2 && SALLE_APERCU_S === 2);
   {
     // comparaison avec une définition naïve, sur des parties et des instants tirés au hasard
     const rand = seeded(99);

@@ -232,7 +232,7 @@ RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
-  c_decompte CONSTANT int := 8;
+  c_decompte CONSTANT int := 30;
   c_pause    CONSTANT int := 5;
   v_uid      uuid := auth.uid();
   v_now      timestamptz := clock_timestamp();

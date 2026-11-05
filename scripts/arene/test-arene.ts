@@ -56,7 +56,7 @@ console.log("# L'écran VS");
   check("moi d'abord", montres[0].id === "j9");
   check("8 bannières au plus", montres.length === MOSAIQUE_MAX && new Set(montres.map((j) => j.id)).size === MOSAIQUE_MAX);
   check("à deux, personne ne disparaît", joueursMontres(joueurs(2), "j1").map((j) => j.id).join() === "j1,j0");
-  check("6 secondes, et il tient dans le décompte de 8 secondes des Salles, images comprises", VS_DUREE_MS === 6000 && VS_DUREE_MS + 900 < 8000);
+  check("6 secondes, et il tient dans le décompte de 30 secondes des Salles, images comprises", VS_DUREE_MS === 6000 && VS_DUREE_MS + 900 < 30_000);
 }
 
 console.log("# Le vainqueur");
