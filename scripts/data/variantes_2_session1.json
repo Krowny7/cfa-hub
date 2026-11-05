@@ -1,0 +1,1382 @@
+[
+ {
+  "num": 1,
+  "topic": "ethics",
+  "prompt": "Which duty does the CFA Institute Code of Ethics actually place on Members and Candidates?",
+  "choices": [
+   "To put the interests of their employer ahead of all other interests, including those of clients",
+   "To make sure that every colleague at their firm complies with the Code and Standards",
+   "To promote the integrity and viability of the global capital markets for the benefit of society"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : promouvoir l'intégrité et la viabilité des marchés de capitaux mondiaux, au bénéfice final de la société, est l'une des six composantes du Code d'éthique (Code of Ethics). Les cinq autres portent sur l'intégrité, la primauté de la profession et des clients sur l'intérêt personnel, le jugement indépendant, la pratique éthique et la compétence. Faire passer l'employeur avant tout le reste n'y figure pas : le Code place l'intégrité de la profession et les intérêts des clients au-dessus des intérêts personnels, et la loyauté envers l'employeur ne prime pas sur eux. S'assurer que chaque collègue respecte le Code est une obligation inventée : il s'agit seulement d'encourager les autres à agir de façon éthique, et le Standard IV(C) ne vise que les personnes placées sous son autorité."
+ },
+ {
+  "num": 2,
+  "topic": "ethics",
+  "prompt": "A stock exchange's disciplinary committee tells Ingrid Solberg, CFA, in writing that a member firm has filed a complaint about how she handled a block trade. The committee has not yet ruled, and her employer has kept her in her role. Her annual CFA Institute membership renewal is now due. Under the Professional Conduct Program, what is she most likely expected to do?",
+  "choices": [
+   "Report the complaint herself on her annual Professional Conduct Statement.",
+   "Step away from the trading desk until the committee has issued its ruling.",
+   "Leave it to her employer, which is the party that must notify CFA Institute."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : chaque année, le membre signe sa déclaration de conduite professionnelle (Professional Conduct Statement) et y signale lui-même un litige civil, une enquête pénale ou le fait d'être visé par une plainte écrite. C'est le cas de Solberg, même si le comité n'a encore rien décidé. Cette déclaration peut ensuite conduire le Professional Conduct staff à ouvrir une enquête. S'écarter de la table de négociation jusqu'à la décision est une mesure préventive que le Code n'exige pas : une sanction ne peut venir qu'à l'issue d'une procédure. Laisser l'employeur prévenir CFA Institute est faux : le devoir de déclaration pèse sur le membre lui-même, et le Code n'en charge pas l'employeur."
+ },
+ {
+  "num": 3,
+  "topic": "ethics",
+  "prompt": "Policy at Greyfield Asset Management: a preclearance approval covers only the trade described in the request and lapses at that day's close.\nRhea Kapoor, CFA, obtains approval in the morning to buy 400 shares of Tamsin Energy for her own account. That afternoon, after checking her valuation of the stock, she buys call options on Tamsin instead. No client or firm order in Tamsin is pending. Which statement best describes the options purchase?",
+  "choices": [
+   "It complied with the policy, because she traded in the approved company within the approved period.",
+   "It breached the policy, because the approval covered only the share purchase she had described.",
+   "It breached Diligence and Reasonable Basis, because her valuation work did not extend to the options."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : l'accord du matin portait sur 400 actions, et la politique de la firme le limite à l'opération décrite. Des options d'achat sont un autre instrument, avec un autre risque : Kapoor devait présenter une nouvelle demande. La préautorisation (preclearance) fait partie des procédures liées au Standard VI(B) (Priority of Transactions), et il faut la suivre même si aucun client n'est lésé. Dire qu'elle a respecté la politique parce que la société et la journée sont les bonnes oublie que l'accord vise une opération précise, pas un émetteur. Invoquer Diligence and Reasonable Basis revient à chercher un défaut d'analyse là où seule la procédure interne est en cause : le Standard V(A) porte sur le fondement des recommandations et des décisions prises pour les clients."
+ },
+ {
+  "num": 4,
+  "topic": "ethics",
+  "prompt": "Matteo Rinaldi, CFA, a housing economist at Eastbourne Bank, sits on the paid advisory panel of Kerrigan Homes, a builder, and has not told Eastbourne. To help Kerrigan's coming bond issue, he publishes a house price forecast that he knows his models do not support. The evening before publication, he gives the forecast to the bank's mortgage desk, which files it without acting. Rinaldi owns no Kerrigan securities, and the bank has no dealings in them. Which statement is most accurate?",
+  "choices": [
+   "He violated Misrepresentation and Additional Compensation Arrangements, but not Priority of Transactions.",
+   "He violated Priority of Transactions and Misrepresentation, but not Additional Compensation Arrangements.",
+   "He violated Priority of Transactions and Additional Compensation Arrangements, but not Misrepresentation."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : publier une prévision qu'il sait sans fondement est une présentation trompeuse délibérée, interdite par le Standard I(C) (Misrepresentation), et elle peut aussi relever du Standard II(B) (Market Manipulation). Le siège rémunéré chez Kerrigan peut créer un conflit avec l'intérêt d'Eastbourne et exige son accord écrit (Standard IV(B), Additional Compensation Arrangements). Retenir Priority of Transactions avec Misrepresentation est faux : le Standard VI(B) vise les opérations passées avant celles des clients, personne n'a rien négocié, et remettre la prévision au service des prêts immobiliers ne suffit pas à l'enfreindre. Retenir Priority of Transactions avec Additional Compensation Arrangements est faux aussi : cette réponse garde le même Standard hors sujet, et une prévision qu'on sait infondée n'est pas une simple opinion."
+ },
+ {
+  "num": 5,
+  "topic": "ethics",
+  "prompt": "Hallam Bond Partners has always tried to add value by moving portfolio duration ahead of expected rate changes. After a documented two-year review of its results, chief investment officer Esther Mwangi, CFA, ends these rate calls: duration now stays at benchmark, and returns are sought through credit selection instead. All portfolios stay within client guidelines. Nine months later, clients have not been told, and the firm's website still describes the old process. With respect to the Standards, Mwangi has most likely:",
+  "choices": [
+   "complied with them, because the portfolios have stayed within client guidelines.",
+   "violated them, because dropping an established process removes the reasonable basis for her decisions.",
+   "violated them, because clients and prospects were not told promptly of the change in process."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le Standard V(B) (Communication With Clients and Prospective Clients) impose de décrire le processus d'investissement et de signaler rapidement tout changement qui peut l'affecter de façon significative. Renoncer aux paris sur les taux pour chercher le rendement dans la sélection de crédit en est un, et neuf mois de silence, avec un site qui décrit encore l'ancienne méthode, ne répondent pas à ce devoir, ni envers les clients ni envers les prospects. Dire qu'elle a respecté les Standards parce que les portefeuilles restent dans les limites confond ce devoir d'information avec l'adéquation du Standard III(C). Dire que l'abandon de l'ancien processus retire la base raisonnable est faux : deux ans d'analyse documentée répondent au Standard V(A), et changer de méthode n'enlève pas à lui seul cette base."
+ },
+ {
+  "num": 6,
+  "topic": "ethics",
+  "prompt": "Portfolio manager Nasser Al-Amin, CFA, is added by mistake to a private messaging group. He reads several hedge fund traders agreeing to buy the thinly traded shares of Dorval Airlines together on Friday, to squeeze short sellers and drive the price up. The plan is not public. Some of Al-Amin's client portfolios are short Dorval, so on Thursday he closes those positions to protect them. Has Al-Amin violated the Standards?",
+  "choices": [
+   "No, because his duty to clients required him to shield them from a scheme he took no part in.",
+   "Yes, because he traded on material nonpublic information, even though it reached him by accident.",
+   "Yes, because Preservation of Confidentiality required him to keep what he read to himself."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le plan est une information significative, car il ferait bouger le cours, et non publique, car rien n'a été diffusé au marché. Le Standard II(A) (Material Nonpublic Information) interdit d'agir ou de faire agir sur une telle information, quelle que soit la façon dont on l'a apprise, même par erreur. Al-Amin devait s'abstenir et alerter la conformité. La manœuvre des opérateurs relève du Standard II(B) (Market Manipulation), mais ce sont eux qui la mènent. Dire que son devoir envers les clients l'obligeait à les protéger est faux : le Standard III(A) ne permet pas d'agir sur une information non publique. Invoquer Preservation of Confidentiality est faux aussi : le Standard III(E) protège les informations sur les clients, et ces messages n'en sont pas."
+ },
+ {
+  "num": 7,
+  "topic": "ethics",
+  "prompt": "Ewa Kowalczyk, CFA, an adviser at Trevane Trust, sees from account records that a client, a company director, has repeatedly bought his company's shares through his wife's account just before results. Local whistleblower law allows staff to give such evidence to the securities commission. Trevane's staff handbook says that client records never leave the firm. Kowalczyk, who gains nothing from doing so, hands the records to the commission. Her action is most likely:",
+  "choices": [
+   "a violation of Preservation of Confidentiality, which protects client records even when wrongdoing is suspected.",
+   "a violation of Loyalty to her employer, which requires her to follow the firm's handbook in all cases.",
+   "consistent with the Standards, because she reported apparent illegal activity, as local law allows."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le Standard III(E) (Preservation of Confidentiality) protège les informations sur les clients, sauf si elles portent sur une activité illégale du client, si la loi impose de les révéler ou si le client l'autorise. Des achats répétés juste avant les résultats, via le compte d'un proche, laissent présumer un délit d'initié, et la loi locale permet de remettre ces preuves. Retenir une atteinte au secret client est donc faux : ce secret ne sert pas à couvrir une activité illégale présumée. Retenir une atteinte à la loyauté est faux aussi : le Standard IV(A) n'oblige pas à appliquer une règle interne qui couvrirait une telle activité, et il admet qu'on passe outre au devoir envers l'employeur pour protéger l'intégrité du marché, sans gain personnel."
+ },
+ {
+  "num": 8,
+  "topic": "ethics",
+  "prompt": "The written mandate of the Merrivale Hospital Endowment bars derivatives. Last spring the investment committee agreed in writing to one currency forward to hedge a single euro bond purchase. Since then manager Bisi Oyelaran, CFA, has begun using index futures to adjust the portfolio's equity exposure without contacting the committee, reasoning that the futures lower the portfolio's risk. Which statement about the futures is most accurate?",
+  "choices": [
+   "They violate Suitability, because the committee's consent covered only the single forward contract.",
+   "They comply with Suitability, because the committee has already accepted derivatives in this mandate.",
+   "They comply with Suitability, because they lower the risk of the portfolio rather than add to it."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : selon le Standard III(C) (Suitability), un gérant tenu par un mandat ne prend que des décisions conformes aux objectifs et contraintes écrits. L'accord du printemps visait un seul contrat à terme de change, lié à un seul achat : c'est une dérogation ponctuelle, pas une modification du mandat. Pour utiliser des contrats à terme sur indice, Oyelaran devait d'abord obtenir une nouvelle autorisation du comité ou faire modifier le mandat par écrit. Dire que le comité a déjà accepté les dérivés traite une exception isolée comme un changement durable : l'interdiction reste en place pour tout le reste. Dire que la baisse du risque suffit est faux aussi : le mandat interdit l'instrument lui-même, et un effet favorable sur le risque ne remplace pas l'accord du client."
+ },
+ {
+  "num": 9,
+  "topic": "ethics",
+  "prompt": "Thandiwe Nkosi earned the charter in 2016 and remains a member of CFA Institute in good standing. On a call with a prospect, she says: “I am a Chartered Financial Analyst, and I have worked in Asian equities for twelve years.” Has she violated the Standard on Reference to CFA Institute, the CFA Designation, and the CFA Program?",
+  "choices": [
+   "No, because her statement is accurate and her membership is current.",
+   "Yes, because the designation must not be used as a noun, even when speaking.",
+   "Yes, because mentioning the designation to a prospect overstates its meaning."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : les termes CFA et Chartered Financial Analyst s'emploient comme adjectifs ou après le nom du titulaire, jamais comme noms, à l'écrit comme à l'oral. Dire « I am a Chartered Financial Analyst » est donc fautif, même de la part d'une vraie titulaire : elle pouvait dire « I am a CFA charterholder » (Standard VII(B)). Dire qu'il n'y a pas de faute parce que la phrase est exacte et l'adhésion à jour passe à côté du sujet : ces deux conditions lui donnent le droit d'utiliser le titre, pas celui de l'employer n'importe comment. Dire que citer le titre devant un prospect en exagère le sens est faux aussi : il est permis d'en faire état, et le Standard interdit d'en exagérer la portée, par exemple en promettant une compétence ou des résultats supérieurs."
+ },
+ {
+  "num": 10,
+  "topic": "ethics",
+  "prompt": "Emre Yilmaz, CFA, runs the back office at Wrenfield Investments. He plays no part in choosing suppliers and has never recommended one to anyone. Sablewood Data, Wrenfield's market data supplier, gives him free shares in the company each year in thanks for informal feedback on its products. He has told no one at Wrenfield. Which statement about the shares is most accurate?",
+  "choices": [
+   "They are a referral fee, so disclosing them to Wrenfield's clients would settle the matter.",
+   "They need Wrenfield's written consent, because they may create a conflict with its interests.",
+   "They raise no concern, because Yilmaz has no say in the selection of Wrenfield's suppliers."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le Standard IV(B) (Additional Compensation Arrangements) interdit d'accepter d'un tiers un avantage qui peut raisonnablement créer un conflit avec l'intérêt de l'employeur, sans l'accord écrit de celui-ci. Des actions offertes chaque année par un fournisseur de la firme entrent dans ce cas, et le silence de Yilmaz va aussi contre sa loyauté (Standard IV(A)). Y voir une commission d'apport est faux : le Standard VI(C) (Referral Fees) vise ce qui est reçu pour recommander un produit ou un service, il n'a rien recommandé, et prévenir les clients ne remplace pas l'accord écrit. Dire qu'il n'y a aucun problème parce qu'il ne choisit pas les fournisseurs est faux aussi : le conflit peut exister sans ce pouvoir, et c'est à l'employeur d'en juger."
+ },
+ {
+  "num": 11,
+  "topic": "ethics",
+  "prompt": "Ivana Petrov, CFA, who covers municipal bonds at Quarry Hill Wealth, stands in for a colleague who follows technology stocks. With a client note due, she averages the price targets in three brokers' reports on Payvault Holdings, a payments company, and recommends the shares with that average as her target. She names the brokers but does not read Payvault's filings or review the brokers' assumptions. The note also discloses that she has owned a small Payvault position for years, as firm policy allows. Petrov has most likely violated the Standards by:",
+  "choices": [
+   "owning the shares while recommending them, which put her own interests ahead of those of her clients.",
+   "relying on brokers' views, which compromised her independence and objectivity.",
+   "recommending the shares without a reasonable and adequate basis for her recommendation."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le Standard V(A) (Diligence and Reasonable Basis) exige une base raisonnable et suffisante, appuyée sur une recherche appropriée. On peut s'appuyer sur la recherche d'un tiers, à condition d'en contrôler la solidité : hypothèses, rigueur, actualité, objectivité. Faire la moyenne de trois objectifs de cours sans lire les documents de la société ne le permet pas, surtout pour une spécialiste des obligations municipales qui sort de son domaine. Citer les courtiers évite le plagiat, mais ne remplace pas ce contrôle. Lui reprocher ses actions est faux : la position est ancienne, permise par la firme et révélée dans la note, comme le demande le Standard VI(A). Parler d'une perte d'indépendance est faux aussi : le Standard I(B) vise les pressions et les avantages qui faussent le jugement, et personne n'a cherché à l'influencer."
+ },
+ {
+  "num": 12,
+  "topic": "ethics",
+  "prompt": "Yara Castillo, CFA, an adviser at Harbourline Securities, manages discretionary accounts for clients ranging from retirees who live on portfolio income to young savers. On the day Harbourline launches a catastrophe bond fund, she moves 10% of every account into it, reasoning that its low correlation with stocks and bonds improves any portfolio. Harbourline rewards its top sellers with a paid trip, which she has not mentioned to clients. Which statement about the allocation and the trip is most accurate?",
+  "choices": [
+   "Both are a concern, because she did not assess each client or reveal her incentive.",
+   "Only the trip is a concern, because low correlation makes the fund suitable for every account.",
+   "Neither is a concern, because every client received the same allocation at the same time."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : le Standard III(C) (Suitability) impose de juger l'adéquation client par client, dans le contexte de tout son portefeuille, avant d'agir. Placer 10 % de chaque compte sans examiner l'horizon, les besoins de revenu et la tolérance au risque de chacun ne le respecte pas. Le voyage est une incitation qui ne doit pas peser sur son jugement (Standard I(B)) et qu'elle doit révéler (Standard VI(A), Avoid or Disclose Conflicts). Dire que seul le voyage pose problème est faux : un gain de diversification ne remplace pas l'analyse de chaque client, et un tel fonds peut ne pas convenir à un retraité qui vit de ses revenus. Dire que rien ne pose problème parce que tous ont reçu la même chose est faux aussi : traiter tout le monde pareil relève de l'équité du Standard III(B) (Fair Dealing) et ne dit rien de l'adéquation."
+ },
+ {
+  "num": 13,
+  "topic": "ethics",
+  "prompt": "Keiko Tanaka, CFA, an equity analyst at Birchwood Advisors, took up each of the pastimes below this year on her own time. Birchwood's rules go no further than the Standards, and the firm knows of none of these pastimes. Which one should she most likely have reported to Birchwood?",
+  "choices": [
+   "Coaching a youth basketball team in her town for a small monthly stipend",
+   "Writing, unpaid, a weekly stock-picks column for her sister's online magazine",
+   "Selling her handmade ceramics, at a profit, at weekend craft markets"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : une chronique de sélection d'actions touche au métier même de Tanaka. Elle peut concurrencer les services de Birchwood et gêner ses devoirs envers l'employeur et les clients, par exemple si ses choix diffèrent des recommandations de la firme, ce qui relève des Standards IV(A) (Loyalty) et VI(A) (Avoid or Disclose Conflicts). L'absence de rémunération et le cadre familial ne la dispensent pas de la déclarer. Entraîner une équipe de basket est payé, mais sans lien avec la finance : il n'y a ni concurrence ni conflit raisonnablement prévisible. Vendre ses céramiques rapporte de l'argent, mais ne concurrence pas non plus Birchwood : c'est le lien avec son métier qui compte, pas le fait d'être payé."
+ },
+ {
+  "num": 14,
+  "topic": "ethics",
+  "prompt": "Mateus Silva, a derivatives trader, runs an online study group for people preparing for the CFA exams. Its home page says: “Run by a derivatives specialist and Level I candidate in the CFA Program.”\nThe day after sitting the exam, he gathers members' impressions and posts: “Most of you found this sitting heavy on fixed income and light on alternative investments.”\nWhich statement is most accurate?",
+  "choices": [
+   "Neither text violates the Standards, because he passed on only broad topics and gave no actual question.",
+   "Only the home page violates the Standards, because a candidate cannot claim to be a specialist.",
+   "Only the post violates the Standards, because it reveals which topics the exam emphasized."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le Standard VII(A) (Conduct as Participants in CFA Institute Programs) interdit de révéler quoi que ce soit sur les sujets testés, qu'ils soient généraux ou précis. Dire quelles matières ont pesé lourd renseigne les futurs candidats et compromet la sécurité de l'examen, même si Silva ne fait que rapporter l'avis des membres du groupe. Sa présentation, elle, est correcte : la candidature est exacte et bien formulée, et « specialist » décrit son métier de négociateur, pas un titre. Dire qu'aucun texte ne pose problème parce qu'il cite de grands thèmes oublie que le Standard couvre aussi les thèmes généraux, pas seulement les questions. Dire que seule la page d'accueil est fautive est faux : le Standard VII(B) interdit d'exagérer le sens de la candidature, pas de se présenter comme spécialiste de son domaine."
+ },
+ {
+  "num": 15,
+  "topic": "ethics",
+  "prompt": "Ravi Menon, CFA, a credit analyst at Lodestar Capital, is finishing the investor presentation for a bond issue by Castellan Minerals, a client of Lodestar's underwriting desk. On a site visit he saw output figures suggesting that the reserves Castellan reports may be overstated. Not wanting to upset the deal team, he tells no one and leaves the reported reserves in the presentation, citing Castellan as the source. Has Menon violated the Standards?",
+  "choices": [
+   "Yes, because he passed on doubtful figures instead of alerting his supervisor or compliance.",
+   "No, because citing Castellan as the source makes the company answerable for the figures.",
+   "Yes, because he had to publish his doubts himself, so that investors could act before the issue."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : un membre qui soupçonne une irrégularité s'adresse d'abord à son supérieur ou au service conformité (Standard I(A)), pour que la firme puisse vérifier et réagir. Il ne doit pas non plus reprendre des chiffres qu'il a des raisons de croire faux : le Standard I(C) (Misrepresentation) l'interdit, et ne pas vouloir contrarier l'équipe chargée de l'opération est une pression que le Standard I(B) lui demande d'écarter. Dire que citer Castellan suffit est faux : citer une source ne dispense pas du Standard I(C) quand on doute soi-même de l'information. Dire qu'il devait publier lui-même ses doutes est faux aussi : ce ne sont que des indices non vérifiés, et les diffuser seul risque de tromper le marché."
+ },
+ {
+  "num": 16,
+  "topic": "ethics",
+  "prompt": "Marlowe Street Advisers, a small firm, is about to claim compliance with the GIPS standards and asks its consultant what independent verification involves. Under the GIPS standards, verification is best described as:",
+  "choices": [
+   "required before any claim, and carried out on the whole firm, with the firm answerable for the claim.",
+   "optional, and carried out on the whole firm, with the firm answerable for the claim.",
+   "optional, and carried out on selected composites, with the verifier answerable for the claim."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : la vérification par un tiers est encouragée, pas exigée, et une firme peut se déclarer conforme sans elle. Si elle choisit d'en faire une, celle-ci porte sur l'ensemble de la firme, et non sur un composite choisi. Dans tous les cas, c'est la firme qui répond de sa déclaration de conformité et de son maintien. Dire qu'elle est exigée avant toute déclaration est faux : la conformité est volontaire et la firme s'en déclare elle-même, sans attestation externe. Dire qu'elle porte sur quelques composites et que le vérificateur répond de la déclaration est doublement faux : une vérification ne se fait pas composite par composite, et le vérificateur atteste des pratiques de la firme sans prendre sa responsabilité."
+ },
+ {
+  "num": 17,
+  "topic": "ethics",
+  "prompt": "Asha Verma, new to performance reporting at Marrowgate Capital, looks in the current GIPS standards for firms for a section devoted to real estate and another devoted to wrap fee portfolios. What will she most likely find?",
+  "choices": [
+   "No such sections, because provisions are arranged by topic and by type of report.",
+   "Both sections, because provisions are arranged by asset class and type of mandate.",
+   "No such sections, because one set of provisions applies identically to all reports."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : les GIPS pour les firmes, dans leur version 2020, comptent huit sections organisées par thème et par type de rapport : principes de conformité, données et calculs, tenue des composites et des fonds mutualisés (pooled funds), quatre rapports selon qu'il s'agit d'un composite ou d'un fonds mutualisé et d'un rendement pondéré par le temps ou par les capitaux, puis règles de publicité. Chercher des sections par classe d'actifs ou par type de mandat est faux : ces sections de l'ancienne version ont disparu. Dire qu'un seul jeu de dispositions vaut pour tous les rapports est faux aussi : les exigences changent selon le type de rapport, et certaines dispositions ne visent que certains portefeuilles."
+ },
+ {
+  "num": 18,
+  "topic": "ethics",
+  "prompt": "A national association of actuaries already has a code of ethics and now plans to add standards of conduct. What would the standards of conduct most likely add?",
+  "choices": [
+   "Nothing of substance, because its code of ethics already sets the minimum behavior required.",
+   "A broader statement of the values that serve as a general guide to members' behavior.",
+   "A more specific statement of the minimum behavior expected of members."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : des normes de conduite (standards of conduct) précisent le comportement attendu et fixent le plancher, le niveau minimal exigé des membres. Un code d'éthique (code of ethics), lui, met par écrit les valeurs et les principes du groupe et sert de guide général de ce qui est acceptable. Dire que les normes n'apporteraient rien parce que le code fixe déjà le minimum prend le code pour le plancher : des principes généraux n'ont pas la précision d'un minimum exigé, et c'est justement ce que les normes ajoutent. Parler d'un énoncé plus large de valeurs servant de guide général inverse les rôles : cette fonction est celle du code d'éthique que l'association possède déjà, et les normes vont vers plus de précision, pas vers plus de généralité."
+ },
+ {
+  "num": 19,
+  "topic": "ethics",
+  "prompt": "A manager at Garnet Insurance Brokers reviews three incidents from the past year. Which employee's conduct is least consistent with widely accepted ethical principles?",
+  "choices": [
+   "Lena told a customer about her own pricing error, which nobody else had noticed.",
+   "Tobias looked up a neighbor's private policy file out of curiosity.",
+   "Marek gave large and small customers the same information at the same time."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : consulter par curiosité le dossier privé d'un voisin va contre le respect des droits d'autrui, l'un des principes éthiques largement reconnus, avec l'honnêteté, la transparence, l'équité et la diligence. La simple curiosité n'excuse rien : l'éthique demande de mettre en balance son intérêt et l'effet de ses actes sur les autres. Attention à la forme de la question, qui cherche la conduite contraire aux principes. Signaler à un client sa propre erreur de prix, que personne n'avait vue, relève de l'honnêteté : cette conduite est conforme et ne répond donc pas à la question. Donner la même information en même temps aux petits et aux grands clients relève de l'équité : elle est conforme aussi et ne répond pas non plus à la question."
+ },
+ {
+  "num": 20,
+  "topic": "quant",
+  "prompt": "The annual return on the Halden Real Assets Fund is normally distributed with a mean of 8% and a variance of 0.04.\nCumulative standard normal probabilities:\nF(0.50): 0.6915\nF(0.90): 0.8159\nF(2.50): 0.9938\nThe probability that next year's return exceeds 18% is closest to:",
+  "choices": [
+   "0.6%",
+   "18.4%",
+   "30.9%"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : l'écart-type se déduit de la variance, √0,04 = 0,20, soit 20 %. On centre puis on réduit le seuil : z = (18 % − 8 %) / 20 % = 0,50. La table donne la probabilité de rester sous ce seuil, donc celle de le dépasser vaut 1 − F(0,50) = 1 − 0,6915 = 0,3085, soit environ 30,9 %. Le chiffre de 0,6 % divise l'écart à la moyenne par la variance au lieu de l'écart-type : 0,10 / 0,04 = 2,50, puis 1 − 0,9938. Le chiffre de 18,4 % oublie de centrer : 18 % / 20 % = 0,90, puis 1 − 0,8159, comme si le rendement moyen du fonds était nul."
+ },
+ {
+  "num": 21,
+  "topic": "quant",
+  "prompt": "To read probabilities from a z-table, an analyst standardizes a normally distributed variable X using Z = (X − μ) / σ. What is the role of σ in this procedure?",
+  "choices": [
+   "It is the standard deviation of X, and it expresses the distance from the mean as a number of standard deviations.",
+   "It is the standard deviation of Z, and it expresses the distance from the mean in the units of X.",
+   "It is the variance of X, and it expresses the distance from the mean as a share of total risk."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : la réduction utilise les paramètres de la variable de départ. Retrancher μ, la moyenne de X, amène le centre de la distribution à zéro. Diviser par σ, l'écart-type de X, amène sa dispersion à 1, si bien que z compte des écarts-types : avec μ = 5 % et σ = 10 %, un rendement de 20 % donne z = 1,5. L'écart-type de Z vaut toujours 1 : diviser par lui ne changerait rien, l'écart resterait en unités de X et la variable ne serait pas réduite. La variance de X n'est pas le bon diviseur non plus : elle s'exprime en unités au carré, et le résultat n'aurait pas un écart-type de 1."
+ },
+ {
+  "num": 22,
+  "topic": "quant",
+  "prompt": "A portfolio manager at Marchetti Private Bank has no say over when clients add or withdraw money. During the year, one client made a large deposit just before the final quarter, which was the account's strongest. Compared with no deposit, which statement about the account's returns for the year is most accurate?",
+  "choices": [
+   "The deposit raises both returns, because each one links the subperiod results.",
+   "The deposit raises the money-weighted return and leaves the time-weighted return unchanged.",
+   "The deposit raises the time-weighted return and leaves the money-weighted return unchanged."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le rendement pondéré par le temps (time-weighted return) enchaîne les rendements de sous-périodes. Il mesure la croissance composée de 1 $ et ne dépend ni de la date ni du montant des apports et retraits, d'où son usage pour juger un gérant qui ne choisit pas ces flux. Le rendement pondéré par les capitaux (money-weighted return) est un TRI : il pèse davantage les périodes où le capital est élevé, et cet apport juste avant le dernier trimestre, le meilleur de l'année, le relève. Dire que seul le time-weighted monte inverse les deux mesures et lui prête une sensibilité aux flux qu'il n'a pas. Dire que les deux montent suppose que le money-weighted enchaîne aussi les sous-périodes, ce qu'il ne fait pas."
+ },
+ {
+  "num": 23,
+  "topic": "quant",
+  "prompt": "A dairy cooperative evaluates a new bottling line. Its expected cash flows are:\nToday: −$850,000\nEnd of Year 1: +$120,000\nEnd of Year 2: +$260,000\nEnd of Year 3: +$340,000\nEnd of Year 4: +$410,000\nAt a discount rate of 9%, the project's NPV is closest to:",
+  "choices": [
+   "$31,900",
+   "$65,200",
+   "$111,300"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : chaque flux s'actualise à sa propre date. 120 000 / 1,09 = 110 092 $, 260 000 / 1,09² = 218 837 $, 340 000 / 1,09³ = 262 542 $ et 410 000 / 1,09⁴ = 290 454 $. La somme vaut 881 925 $, et la VAN 881 925 − 850 000 = 31 925 $. Le chiffre de 111 300 $ avance tous les flux d'une période, comme si le premier arrivait aujourd'hui : 881 925 × 1,09 − 850 000. Le chiffre de 65 200 $ remplace les flux par leur moyenne, 1 130 000 / 4 = 282 500 $ par an, soit 282 500 × 3,2397 − 850 000 : il ignore que les flux les plus forts arrivent en dernier."
+ },
+ {
+  "num": 24,
+  "topic": "quant",
+  "prompt": "An analyst would most likely prefer a parametric test to a nonparametric test when:",
+  "choices": [
+   "the data are analysts' ordinal rankings of stocks, from best to worst",
+   "the sample is small and strongly skewed by a few extreme values",
+   "the test concerns the mean of a large sample, and the distributional assumptions hold"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : un test paramétrique repose sur des hypothèses de distribution et porte sur un paramètre de la population, comme la moyenne. Un grand échantillon dont les hypothèses tiennent réunit ces deux conditions : un test t sur la moyenne y convient. Des classements d'analystes sont des rangs, sur une échelle ordinale, et non des valeurs : ils appellent un test non paramétrique, comme la corrélation de rang de Spearman. Un petit échantillon très asymétrique, tiré par quelques valeurs extrêmes, ne respecte pas les hypothèses de distribution : le théorème central limite ne joue pas encore, le test t n'est pas fiable et un test non paramétrique convient mieux."
+ },
+ {
+  "num": 25,
+  "topic": "quant",
+  "prompt": "An analyst models next year's return on the shares of Brennick Bank:\nIf interest rates fall (probability 0.40): expected return of 11%\nIf interest rates do not fall (probability 0.60): expected return of 4%\nWhich statement is most accurate?",
+  "choices": [
+   "The 11% is a conditional expected value, and the total probability rule for expected value gives an unconditional expected return of 6.8%.",
+   "The 11% is an unconditional expected value, and the total probability rule for expected value gives a conditional expected return of 6.8%.",
+   "The 11% is a conditional expected value, and the unconditional expected return is the simple average of the two scenarios, 7.5%."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : le chiffre de 11 % est une espérance conditionnelle (conditional expected value) : la moyenne des rendements possibles une fois donné un événement, ici la baisse des taux. Tant que cet événement reste incertain, on retient l'espérance non conditionnelle, que donne la règle des probabilités totales appliquée aux espérances : 0,40 × 11 % + 0,60 × 4 % = 6,8 %. Inverser les deux termes revient à appeler conditionnel un chiffre qui couvre tous les scénarios. La moyenne simple (11 % + 4 %) / 2 = 7,5 % ignore les probabilités des scénarios. Dans tous les cas, ces chiffres sont des espérances de rendement, et non des probabilités d'événements."
+ },
+ {
+  "num": 26,
+  "topic": "quant",
+  "prompt": "Two early-stage biotech stocks, Orvane and Selkirk, have the following annual return statistics:\nVariance of Orvane's returns: 0.3600\nVariance of Selkirk's returns: 0.4900\nCovariance of returns: 0.1260\nThe correlation of the two stocks' returns is closest to:",
+  "choices": [
+   "0.30",
+   "0.71",
+   "0.85"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : la corrélation rapporte la covariance au produit des écarts-types, et non des variances. On passe d'abord aux écarts-types : √0,3600 = 0,60 et √0,4900 = 0,70. Ainsi ρ = 0,1260 / (0,60 × 0,70) = 0,1260 / 0,42 = 0,30. Le chiffre de 0,71 divise par le produit des variances, 0,1260 / (0,3600 × 0,4900) = 0,1260 / 0,1764 : il saute le passage à la racine carrée. Le chiffre de 0,85 place mal la racine : il la prend sur toute la fraction, √(0,1260 / 0,1764), au lieu de la réserver au dénominateur. Ces deux résultats restent entre −1 et +1 : tomber dans cet intervalle ne prouve pas que le calcul est juste."
+ },
+ {
+  "num": 27,
+  "topic": "alternatives",
+  "prompt": "Hedge fund return databases are often said to suffer from survivorship bias. This bias most likely arises from:",
+  "choices": [
+   "analysts testing many patterns on the same data until one appears significant",
+   "funds that stop reporting, often after poor results, dropping out of the data",
+   "funds adding favorable past returns to the data when they join an index"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le biais du survivant (survivorship bias) est un biais de composition de la base. Les fonds qui échouent ou cessent de publier leurs résultats sortent de l'échantillon : seuls les survivants restent, ce qui gonfle le rendement moyen et minore le risque mesuré. L'ajout des bons résultats passés d'un fonds à son entrée dans un indice est un autre biais, le biais de remplissage (backfill bias), qui agit à l'entrée de la base et non à sa sortie. Multiplier les essais sur les mêmes données jusqu'à trouver un résultat significatif relève de l'exploration abusive des données (data mining ou data snooping) : c'est un biais de méthode de test, et non un biais de composition."
+ },
+ {
+  "num": 28,
+  "topic": "quant",
+  "prompt": "A private lender quotes a stated annual rate of 12%, compounded weekly (52 weeks a year). The effective annual rate is closest to:",
+  "choices": [
+   "12.00%",
+   "12.68%",
+   "12.73%"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le taux effectif annuel (effective annual rate) intègre les intérêts sur les intérêts. Le taux périodique vaut 12 % / 52 = 0,2308 % par semaine, appliqué 52 fois : (1 + 0,12 / 52)⁵² − 1 = 12,73 %. Une capitalisation aussi fréquente approche déjà la limite de la capitalisation continue, exp(0,12) − 1 = 12,75 %. Le chiffre de 12,00 % assimile le taux nominal au taux effectif : il ignore toute capitalisation dans l'année. Le chiffre de 12,68 % se trompe de fréquence : il capitalise chaque mois, (1 + 0,12 / 12)¹² − 1, alors que ce prêteur capitalise chaque semaine."
+ },
+ {
+  "num": 29,
+  "topic": "quant",
+  "prompt": "A legal settlement will pay a claimant $200,000 in five years. The appropriate discount rate is a 10% stated annual rate, compounded monthly. The present value of the payment is closest to:",
+  "choices": [
+   "$100,000",
+   "$121,600",
+   "$124,200"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le taux et le nombre de périodes s'ajustent ensemble. Le taux périodique vaut 10 % / 12 = 0,8333 % par mois, et cinq ans représentent 5 × 12 = 60 mois. On actualise donc : 200 000 / (1 + 0,10 / 12)⁶⁰ = 200 000 / 1,64531 = 121 558 $. Le chiffre de 124 200 $ actualise annuellement, 200 000 / 1,10⁵ : il ignore la capitalisation mensuelle, dont le taux effectif de 10,47 % réduit davantage la valeur actuelle. Le chiffre de 100 000 $ applique une décote simple, 200 000 × (1 − 5 × 10 %), sans aucune capitalisation."
+ },
+ {
+  "num": 30,
+  "topic": "economics",
+  "prompt": "Ferrowyn Textiles, a New Zealand exporter selling to the United Kingdom, needs the NZD/GBP spot rate, which its dealer did not quote. Quotes are in price currency/base currency terms, and one forward point equals 0.0001.\nUSD/GBP 180-day forward rate: 1.2718\nUSD/GBP 180-day forward points: −124.5\nUSD/NZD spot rate: 0.5940\nThe NZD/GBP spot rate is closest to:",
+  "choices": [
+   "2.1201",
+   "2.1620",
+   "2.1681"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : on retrouve d'abord le comptant USD/GBP, puis on chaîne les cotations. Les points (forward points) sont un écart exprimé en dix-millièmes, et terme = comptant + points : comptant = 1,2718 + 124,5 × 0,0001 = 1,28425. Ensuite, NZD/GBP = (USD/GBP) / (USD/NZD) = 1,28425 / 0,5940 = 2,1620 : les USD s'annulent. La valeur 2,1681 lit les points comme un pourcentage, soit −1,245 % : 1,2718 / 0,98755 = 1,28783, puis division par 0,5940. La valeur 2,1201 se trompe de signe : elle retranche les 124,5 points du terme (1,25935) au lieu de les lui rajouter, alors que des points négatifs placent le comptant au-dessus du terme."
+ },
+ {
+  "num": 31,
+  "topic": "economics",
+  "prompt": "The treasury team at Olvera Logistics reviews the following 1-year riskless rates:\nIndian rupee (INR): 6.5%\nUS dollar (USD): 4.0%\nExchange rates are quoted as INR/USD (rupees per US dollar). If no arbitrage opportunity exists, the 1-year forward rate is most likely:",
+  "choices": [
+   "above the spot rate, with the US dollar at a forward premium",
+   "below the spot rate, with the US dollar at a forward discount",
+   "above the spot rate, with the Indian rupee at a forward premium"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : sans arbitrage, terme / comptant = (1 + taux de la devise de cotation) / (1 + taux de la devise de base) = 1,065 / 1,040 = 1,024 : le terme dépasse le comptant d'environ 2,4 %, soit à peu près l'écart de taux de 2,5 points. La devise de base, le dollar, cote donc en prime à terme (forward premium), parce que son taux est le plus bas. Un terme inférieur au comptant ouvrirait un arbitrage : emprunter des dollars à 4,0 %, placer des roupies à 6,5 % et les revendre à terme rapporterait plus que le coût de l'emprunt. La roupie en prime associe la prime au taux le plus élevé et lit la cotation à l'envers : il faut plus de roupies par dollar à terme, donc la roupie est en décote (forward discount)."
+ },
+ {
+  "num": 32,
+  "topic": "economics",
+  "prompt": "Tavren operates a currency board anchored to the euro. Its neighbor Melkar runs a conventional fixed peg to the euro with a ±1% band. Which statement about the two monetary authorities is most accurate?",
+  "choices": [
+   "Melkar's authority alone can earn interest on its reserves, as Tavren's reserve income goes to the European Central Bank.",
+   "Tavren's authority has more room than Melkar's to change interest rates and to lend to troubled banks.",
+   "Tavren's authority alone must fully back the currency it issues with euro reserves, on which it can earn interest."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : dans une caisse d'émission (currency board), l'autorité s'engage à échanger sa monnaie à un taux fixe et n'en émet que si elle est entièrement couverte par des réserves dans la devise d'ancrage. Ces réserves restent placées et rapportent des intérêts, comme à Hong Kong, ce qui lui procure un revenu. Une parité fixe classique (conventional fixed peg) n'impose pas cette couverture intégrale. Réserver les intérêts à Melkar confond la caisse d'émission avec la dollarisation, où le revenu revient à la banque centrale qui émet la monnaie. Donner à Tavren plus de marge sur les taux et le soutien aux banques inverse le classement : sans réserves en face, elle ne peut guère créer de liquidité, alors que la parité fixe garde plus de souplesse, avec l'intervention indirecte par les taux."
+ },
+ {
+  "num": 33,
+  "topic": "economics",
+  "prompt": "Marovia's annual transactions with the rest of the world, in billions of its currency, are as follows:\nExports of goods: 212\nImports of goods: 247\nTransport and tourism services sold to foreigners: 58\nInsurance and consulting services bought from foreigners: 31\nLoan received from a foreign bank syndicate: 24\nForeign direct investment into Marovia: 17\nMarovian purchases of foreign bonds: 33\nMarovia's balance of trade in goods and services is closest to:",
+  "choices": [
+   "−35",
+   "−8",
+   "+16"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le solde commercial (balance of trade) ne retient que les exportations et les importations de biens et de services : (212 + 58) − (247 + 31) = 270 − 278 = −8, soit un déficit. Le prêt reçu, l'investissement direct et les achats d'obligations étrangères sont des flux de capitaux (capital flows) : ils n'en font pas partie et ils financent le déficit, avec une entrée nette de 24 + 17 − 33 = +8, qui le compense exactement. La valeur −35 s'arrête aux marchandises (212 − 247) et oublie les services, qui font partie des échanges. La valeur +16 compte à tort le prêt étranger comme une recette (−8 + 24), alors qu'un emprunt finance les échanges sans en être un."
+ },
+ {
+  "num": 34,
+  "topic": "economics",
+  "prompt": "The central bank of Sorrenia cuts its policy rate. Within the monetary transmission mechanism, which of the following is the final outcome of the cut, rather than a channel through which it works?",
+  "choices": [
+   "A weaker domestic currency",
+   "Higher prices of equities and bonds",
+   "Upward pressure on the price level"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le mécanisme de transmission (monetary transmission mechanism) désigne les voies par lesquelles un changement du taux directeur agit sur le niveau des prix et l'inflation. Il passe par quatre canaux : les autres taux courts, la valeur des actifs, le change et les anticipations. Une baisse du taux soutient ainsi la demande agrégée, ce qui exerce une pression à la hausse sur les prix : c'est là que la chaîne aboutit. Une monnaie plus faible n'est qu'un de ces canaux : elle rend les exportations moins chères à l'étranger et stimule la demande, sans être le point d'arrivée. La hausse du prix des actions et des obligations en est un autre : des taux d'actualisation plus bas relèvent la valeur des actifs, et l'effet de richesse soutient la consommation."
+ },
+ {
+  "num": 35,
+  "topic": "economics",
+  "prompt": "Analysts at Quenby Partners review monetary policy in Ysmere:\nPolicy rate: 4.25%\nReal trend rate of economic growth: 1.25%\nExpected inflation, equal to the central bank's target: 2.50%\nCurrent inflation: 4.25%\nThe stance of monetary policy in Ysmere is best described as:",
+  "choices": [
+   "contractionary, because the policy rate is above the neutral rate",
+   "neutral, because the policy rate equals current inflation",
+   "expansionary, because the policy rate is below the sum of trend growth and current inflation"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : le taux neutre (neutral interest rate) est la somme de la croissance réelle tendancielle et de l'inflation anticipée, ici égale à la cible : 1,25 % + 2,50 % = 3,75 %. Le taux directeur de 4,25 % le dépasse de 0,50 point : la politique est restrictive, même si l'inflation du moment est tout aussi élevée. Conclure à une politique neutre compare le taux directeur à la seule inflation, sans ajouter la croissance : l'égalité avec l'inflation courante ne dit rien de l'orientation. Conclure à une politique expansionniste calcule un taux neutre de 5,50 % avec l'inflation courante, alors qu'une banque centrale raisonne sur l'inflation à venir : le chiffre du jour reflète les politiques et les événements passés."
+ },
+ {
+  "num": 36,
+  "topic": "economics",
+  "prompt": "Harbrook and Selwin are the only two mobile carriers on an island. Each must decide, at the same time and without any agreement, whether to launch a costly advertising campaign. Annual profits, in millions, are as follows:\nBoth campaign: Harbrook 40, Selwin 35\nOnly Harbrook campaigns: Harbrook 75, Selwin 20\nOnly Selwin campaigns: Harbrook 25, Selwin 70\nNeither campaigns: Harbrook 60, Selwin 55\nThe Nash equilibrium is most likely that:",
+  "choices": [
+   "neither firm campaigns",
+   "only Harbrook campaigns",
+   "both firms campaign"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : chaque firme a une stratégie dominante (dominant strategy), celle qui lui rapporte le plus quel que soit le choix de l'autre. Pour Harbrook, faire campagne gagne toujours : 40 contre 25 si Selwin fait campagne, 75 contre 60 sinon. Pour Selwin aussi : 35 contre 20, puis 70 contre 55. L'équilibre de Nash (Nash equilibrium) est donc (40, 35) : aucune firme n'y gagne à changer seule. « Aucune campagne » donne le gain total le plus élevé (115 contre 75), mais sans accord de collusion chacune a intérêt à dévier. « Seule Harbrook fait campagne » offre à Harbrook son meilleur gain, mais Selwin y passerait de 20 à 35 en lançant aussi sa campagne."
+ },
+ {
+  "num": 37,
+  "topic": "corporate",
+  "prompt": "Brisal Data sells a subscription to corporate clients. It negotiates privately with each client and knows exactly how much each one values the service, so every client pays the highest price it would accept. Compared with a single price for all clients, consumer surplus under this policy is most likely:",
+  "choices": [
+   "higher, because clients priced out at a single price can now buy",
+   "zero, because no client pays less than the subscription is worth to it",
+   "lower but still positive, because the clients who value it most keep part of their gain"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le surplus du consommateur (consumer surplus) est l'écart entre le prix maximal qu'un acheteur accepterait de payer et le prix qu'il paie réellement. Si le vendeur pratique une discrimination par les prix (price discrimination) jusqu'à faire payer à chacun son maximum, cet écart est nul pour tous les clients, et le vendeur capte tout le surplus. Un surplus résiduel pour les clients qui valorisent le plus le service n'existe qu'au prix unique : ici, ce sont eux qui paient le plus cher. Les clients exclus au prix unique peuvent bien acheter, mais eux aussi paient leur maximum : ils ajoutent des ventes et du profit pour le vendeur, sans aucun surplus pour eux."
+ },
+ {
+  "num": 38,
+  "topic": "economics",
+  "prompt": "A regional transit operator cuts the price of a monthly pass from $62.50 to $57.50. All else equal, monthly pass sales rise from 20,000 to 22,800. Using percentage changes from the initial levels, the price elasticity of demand is best described as:",
+  "choices": [
+   "1.75 in absolute value, so demand is elastic",
+   "1.75 in absolute value, so demand is perfectly elastic",
+   "−1.75, which is below 1, so demand is inelastic"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : l'élasticité-prix de la demande (price elasticity of demand) est la variation relative de la quantité divisée par la variation relative du prix. Prix : (57,50 − 62,50) / 62,50 = −8 %. Quantité : (22 800 − 20 000) / 20 000 = +14 %. Le rapport vaut 14 % / −8 % = −1,75, soit 1,75 en valeur absolue : au-dessus de 1, la demande est élastique. Parler de demande parfaitement élastique confond les deux notions : ce cas limite est une courbe de demande horizontale, où la moindre hausse de prix annule les ventes, et une valeur de 1,75 en est très loin. Lire −1,75 comme inférieur à 1 garde le signe négatif, alors que le classement se fait sur la valeur absolue."
+ },
+ {
+  "num": 39,
+  "topic": "economics",
+  "prompt": "An economist reviews recent data for Zephran:\nReal GDP growth, last four quarters, oldest first: 3.1%, 2.7%, 2.0%, 1.3%\nUnemployment rate: down from 4.6% to 4.3%, while hiring slows\nConsumer spending and business investment: still rising, at slower rates\nInflation: up from 2.4% to 3.1%\nZephran's economy is most likely in which phase of the business cycle?",
+  "choices": [
+   "Contraction",
+   "Expansion",
+   "Peak"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : un taux de croissance du PIB qui recule trimestre après trimestre, un chômage qui baisse encore alors que les embauches ralentissent, une consommation et un investissement qui progressent moins vite et une inflation en hausse forment le portrait du pic (peak). L'expansion est tentante, car le PIB continue de croître, mais elle se reconnaît à un taux de croissance qui monte et à des embauches qui s'accélèrent, ce qui n'est pas le cas ici. La contraction suppose une croissance négative, des heures travaillées en baisse, un chômage en hausse et un recul de la consommation et de l'investissement : un simple ralentissement ne suffit pas, puisque la croissance reste de 1,3 %."
+ },
+ {
+  "num": 40,
+  "topic": "economics",
+  "prompt": "As part of a business cycle review, an analyst collects the following labor market data for Galwen:\nWorking-age population: 52.0 million\nEmployed persons: 33.6 million\nPersons without a job and actively seeking work: 2.4 million\nPersons without a job and not seeking work: 16.0 million\nThe unemployment rate is closest to:",
+  "choices": [
+   "4.6%",
+   "6.7%",
+   "7.1%"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le taux de chômage rapporte les chômeurs à la population active (labor force), c'est-à-dire aux personnes en emploi plus celles qui cherchent activement un emploi. Population active = 33,6 + 2,4 = 36,0 millions, d'où 2,4 / 36,0 = 6,7 %. Les 16,0 millions de personnes sans emploi qui n'en cherchent pas sont hors de la population active : elles n'entrent ni au numérateur ni au dénominateur. La valeur de 4,6 % rapporte les chômeurs à toute la population en âge de travailler (2,4 / 52,0), ce qui minore le taux. La valeur de 7,1 % les rapporte aux seules personnes en emploi (2,4 / 33,6), en oubliant que les chômeurs font eux-mêmes partie de la population active."
+ },
+ {
+  "num": 41,
+  "topic": "fsa",
+  "prompt": "Brennock Foods reports the following balance sheet items (in EUR millions):\nAccounts payable: 190\nAccrued expenses: 55\nDeferred revenue: 45\nShort-term bank loans: 75\nCurrent portion of long-term debt: 35\nLong-term bonds: 340\nShareholders' equity: 750\nThe company's debt-to-capital ratio is closest to:",
+  "choices": [
+   "37.5%",
+   "49.7%",
+   "60.0%"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : le ratio dette sur capital (debt-to-capital) ne retient que la dette portant intérêt, soit 75 + 35 + 340 = 450. Le capital égale cette dette plus les capitaux propres : 450 + 750 = 1 200. Le ratio vaut donc 450 / 1 200 = 37,5 %. Les fournisseurs, les charges à payer et les produits constatés d'avance ne portent pas intérêt et restent en dehors du calcul. 49.7% retient à tort tous les passifs : 740 / (740 + 750). 60.0% est le ratio dette sur fonds propres (debt-to-equity), 450 / 750, qui oublie d'ajouter la dette au dénominateur."
+ },
+ {
+  "num": 42,
+  "topic": "fsa",
+  "prompt": "Lucia Ferrante forecasts net income for a hotel chain. She re-runs her model with the occupancy rate at 67% instead of 72%, all other inputs unchanged. She then restores occupancy and re-runs the model with the average room rate 5% lower, again with all other inputs unchanged. Her technique is best described as:",
+  "choices": [
+   "scenario analysis, because several assumptions are tested across the runs",
+   "sensitivity analysis, because each run isolates the effect of one assumption",
+   "simulation, because the model is run more than once with different inputs"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : l'analyse de sensibilité (sensitivity analysis) répond à des questions « what if » : on change une seule hypothèse, toutes les autres restant à leur valeur de base, et on lit l'effet sur le résultat. Lucia fait exactement cela, deux fois de suite, en remettant le taux d'occupation en place entre les deux essais. Parler d'analyse de scénarios confond plusieurs essais isolés et un scénario, qui fixe ensemble plusieurs variables pour décrire un même enchaînement d'événements. Parler de simulation ne convient pas non plus : elle tire les variables au hasard dans des lois de probabilité, un grand nombre de fois, et livre une distribution de résultats."
+ },
+ {
+  "num": 43,
+  "topic": "fsa",
+  "prompt": "Corbridge Cartons makes standard corrugated boxes in a fragmented market with low entry barriers, where customers switch suppliers on price. DuPont data:\nCorbridge: net profit margin 5.0%, asset turnover 2.0, financial leverage 2.7\nSector average: net profit margin 3.0%, asset turnover 2.0, financial leverage 1.8\nCorbridge's higher margin comes from prices set above those of its rivals. Its debt is long-term, its covenants leave ample headroom, and management intends to keep the current capital structure. Over the next few years, Corbridge's ROE is most likely to move toward:",
+  "choices": [
+   "10.8%, because competition pulls both its margin and its leverage back to the sector average",
+   "16.2%, because its price premium is likely to erode while its leverage can be maintained",
+   "18.0%, because its extra debt is likely to be unwound while its price premium holds"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le ROE de Corbridge vaut 5,0 % × 2,0 × 2,7 = 27,0 %, contre 10,8 % pour le secteur. La rotation des actifs est la même : tout l'écart vient de la marge et du levier. Dans un marché fragmenté, à faibles barrières à l'entrée, une marge tirée d'un prix supérieur s'érode. Le levier (financial leverage) est un choix de structure du capital que la direction peut garder ici, d'où 3,0 % × 2,0 × 2,7 = 16,2 %. Le chiffre de 18.0% suppose l'inverse, que la dette recule et que la prime de prix tienne, alors que rien n'oblige à se désendetter. Le chiffre de 10.8% suppose que la concurrence ramène aussi le levier à la moyenne, or elle agit sur les prix, pas sur le financement."
+ },
+ {
+  "num": 44,
+  "topic": "fsa",
+  "prompt": "Selected data for Tessaly Home Goods (in GBP millions):\nRevenue (2024, 2025): 9,125; 10,950\nCost of goods sold (2024, 2025): 6,570; 7,300\nPurchases (2024, 2025): 6,610; 7,260\nReceivables at year-end (2023, 2024, 2025): 860; 940; 1,000\nInventory at year-end (2023, 2024, 2025): 880; 920; 880\nPayables at year-end (2023, 2024, 2025): 420; 460; 380\nUsing average balances, a 365-day year, and purchases for days payable, which statement best describes the change in the cash conversion cycle from 2024 to 2025?",
+  "choices": [
+   "It shortened from about 62 to about 56 days, as slower payment of suppliers and faster collections more than offset slower inventory turnover",
+   "It shortened from about 62 to about 50 days, as receivables, inventory, and payables all moved in the company's favor",
+   "It shortened from about 62 to about 56 days, as faster collections and faster inventory turnover more than offset faster payment of suppliers"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : sur soldes moyens, le délai clients (days of sales outstanding) passe de 900 / 9 125 × 365 = 36,0 à 970 / 10 950 × 365 = 32,3 jours, et le délai de stockage (days of inventory on hand) de 900 / 6 570 × 365 = 50,0 à 900 / 7 300 × 365 = 45,0 jours. Le délai fournisseurs (days payable) tombe de 440 / 6 610 × 365 = 24,3 à 420 / 7 260 × 365 = 21,1 jours : payer plus vite allonge le cycle, mais celui-ci recule tout de même de 61,7 à 56,2 jours. La baisse à 50 jours traite le recul du délai fournisseurs comme un gain, alors que ce délai se retranche. L'idée d'un paiement plus lent et d'un stock plus lent inverse le sens de ces deux délais."
+ },
+ {
+  "num": 45,
+  "topic": "fsa",
+  "prompt": "An analyst reviewing the annual report of Tavira Online notes three items:\nItem 1: a one-off currency gain, shown on its own line and explained in the notes\nItem 2: a return on invested capital that is accurately reported but below the cost of capital\nItem 3: recurring customer-acquisition advertising, classified as an intangible asset and amortized over five years, while peers expense it as incurred\nWhich item most clearly lowers financial reporting quality, rather than only the quality of reported earnings?",
+  "choices": [
+   "Item 1, because a one-off gain cannot be sustained in later years",
+   "Item 2, because a return below the cost of capital is too low to reward investors",
+   "Item 3, because the classification hides the nature of a recurring operating cost"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : la qualité du reporting (financial reporting quality) juge si les états sont fidèles et utiles à la décision ; la qualité des résultats (earnings quality) juge leur pérennité et leur niveau. Classer en actif une publicité récurrente que les pairs passent en charges masque la nature d'un coût d'exploitation : le résultat est gonflé et la sortie de trésorerie glisse vers l'investissement. C'est un défaut de reporting. Le gain de change isolé et expliqué est bien publié : il n'est pas durable, ce qui touche seulement la qualité des résultats. Un rendement trop faible mais exactement publié est un problème de niveau de résultat, pas de reporting."
+ },
+ {
+  "num": 46,
+  "topic": "fsa",
+  "prompt": "Three manufacturers report under US GAAP and use LIFO. Input costs rose throughout the year. An analyst screens their inventory notes for signs that management used inventory to lift reported earnings. Which disclosure gives the strongest such sign?",
+  "choices": [
+   "Jessop Pumps postponed year-end purchases despite stable orders, so units on hand fell below their opening level",
+   "Hartwell Valves wrote down slow-moving parts to market value after a product redesign left them obsolete",
+   "Ingram Castings reported lower inventory turnover as customer orders softened and unsold units built up"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : quand les coûts montent, une baisse des quantités chez un utilisateur de LIFO fait passer d'anciennes couches à bas coût dans le coût des ventes (LIFO liquidation). Reporter les achats alors que les commandes sont stables n'a pas de cause externe, comme une grève ou une pénurie : c'est un choix de la direction, qui gonfle la marge sans progrès réel et ne peut pas se répéter sans fin. La dépréciation de pièces à rotation lente après une refonte du produit traduit un problème d'obsolescence et réduit le résultat au lieu de le relever. La baisse de la rotation quand les commandes faiblissent signale une demande molle, pas un levier choisi pour embellir le résultat."
+ },
+ {
+  "num": 47,
+  "topic": "fsa",
+  "prompt": "During the year, Lindqvist Robotics, a US-listed company, produced the following documents. Which one is least likely to be a filing required by the US Securities and Exchange Commission?",
+  "choices": [
+   "A Form 8-K reporting a major acquisition",
+   "An illustrated annual review with a CEO letter, mailed to shareholders",
+   "A proxy statement (Form DEF-14A) sent to shareholders before a vote"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : une revue annuelle illustrée avec la lettre du directeur général est une communication destinée aux actionnaires, sans statut de dépôt réglementaire. Être adressé aux actionnaires ne fait pas d'un document un dépôt auprès de la SEC (Securities and Exchange Commission). Le Form 8-K est bien exigé : il annonce les événements importants, comme une acquisition majeure. La circulaire de procuration (proxy statement, Form DEF-14A) est exigée elle aussi : elle part vers les actionnaires avant un vote et elle est déposée à la SEC, avec des informations sur les administrateurs et leur rémunération."
+ },
+ {
+  "num": 48,
+  "topic": "fsa",
+  "prompt": "Which statement best describes how information is divided between the notes to the financial statements and the management commentary?",
+  "choices": [
+   "The commentary gives a complete account of accounting policies and estimates, while the notes focus on the matters most important to strategy",
+   "The commentary is audited as part of the financial statements, while the notes are unaudited supplementary information",
+   "The notes give a complete account of accounting policies and estimates, while the commentary focuses on the matters most important to strategy"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : les notes annexes (notes) décrivent de façon complète les méthodes comptables, les hypothèses et les estimations. Le commentaire de la direction (management commentary ou MD&A) présente l'activité, les objectifs, la performance, les ressources et les risques, en se concentrant sur ce qui pèse le plus sur les résultats et la stratégie. Dire que le commentaire est exhaustif et que les notes se limitent à l'essentiel inverse les deux rôles. Dire que le commentaire est audité et que les notes ne le sont pas inverse aussi le contrôle : les notes sont auditées avec les états financiers, alors que le commentaire peut en partie ne pas l'être."
+ },
+ {
+  "num": 49,
+  "topic": "fsa",
+  "prompt": "Tomasz Wrona is comparing two chemical producers, one reporting under IFRS and the other under US GAAP. Which of the following is most likely an output of the data-processing step of the financial statement analysis framework?",
+  "choices": [
+   "Balance sheets adjusted to a common accounting basis, with ratios calculated from them",
+   "The audited balance sheets published in each company's annual report",
+   "A statement of the questions to be answered, with a timetable and a budget"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : le traitement des données (process the data) est la troisième étape du cadre d'analyse. L'analyste y ajuste les états financiers, par exemple pour neutraliser un écart entre IFRS et US GAAP, calcule les ratios et prépare des états en pourcentage (common-size) ou des graphiques. Les bilans audités publiés dans le rapport annuel sont déjà disponibles : ils viennent de la société et relèvent de la collecte (gather data), non du travail de l'analyste. L'énoncé des questions, du calendrier et du budget appartient à la première étape, la définition de l'objectif et du contexte, qui précède toute collecte."
+ },
+ {
+  "num": 50,
+  "topic": "fsa",
+  "prompt": "For the year just ended, Hollowell Marine reports income taxes payable of USD 48.5 million. Balance sheet data (in USD millions):\nDeferred tax liabilities, start of year: 22.0\nDeferred tax liabilities, end of year: 30.0\nDeferred tax assets, start of year: 9.0\nDeferred tax assets, end of year: 7.0\nThe company's income tax expense for the year is closest to:",
+  "choices": [
+   "USD 38.5 million",
+   "USD 58.5 million",
+   "USD 71.5 million"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : la charge d'impôt (income tax expense) égale l'impôt exigible (income taxes payable) plus la variation du passif net d'impôt différé. Le passif net vaut 22,0 − 9,0 = 13,0 à l'ouverture et 30,0 − 7,0 = 23,0 à la clôture : il monte de 10,0. La charge est donc 48,5 + 10,0 = 58,5. Une hausse du passif net rend la charge comptable supérieure à l'impôt exigible. USD 38.5 million se trompe de signe en retranchant la hausse de 10,0. USD 71.5 million ajoute le solde de clôture de 23,0 au lieu de sa variation sur l'exercice."
+ },
+ {
+  "num": 51,
+  "topic": "fsa",
+  "prompt": "Which inventory valuation method charges to cost of sales the cost of the units actually sold, rather than relying on a cost flow assumption?",
+  "choices": [
+   "FIFO, because the oldest goods are normally the first to leave the warehouse",
+   "Weighted average cost, because every unit sold carries a share of all purchase costs",
+   "Specific identification, because each item sold is matched with its own cost"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : l'identification spécifique (specific identification) rattache à chaque article vendu son coût réel. Elle suit donc les unités effectivement sorties, ce qui convient à des biens identifiables un à un, comme des bijoux ou des véhicules. FIFO reste une hypothèse de flux de coûts (cost flow assumption) : il décide quel coût passe en charge sans regarder quelles unités sont réellement parties, même si les marchandises les plus anciennes sortent souvent en premier. Le coût moyen pondéré (weighted average cost) est lui aussi une hypothèse : il répartit le coût total entre les unités, sans jamais distinguer celles qui ont été vendues."
+ },
+ {
+  "num": 52,
+  "topic": "fsa",
+  "prompt": "Inventory note of Rosthorn Cycles (in CAD millions, prior year-end to current year-end):\nRaw materials: 120 to 84\nWork in progress: 70 to 49\nFinished goods: 95 to 158\nTotal inventory: 285 to 291\nThis pattern most likely suggests that:",
+  "choices": [
+   "management expects strong demand and has stocked up on goods ready to ship",
+   "demand is weakening, which raises the risk of future inventory write-downs",
+   "the inventory position is stable, because total inventory has barely changed"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : la composition compte plus que le total. Les matières premières reculent de 120 à 84 et les en-cours de 70 à 49, pendant que les produits finis bondissent de 95 à 158. La production ralentit alors que les produits terminés s'écoulent moins bien : c'est le signe d'une demande en baisse et d'un risque de dépréciation (write-down). Lire ces produits finis comme un stock constitué pour une forte demande est l'erreur classique : une société qui attend des commandes renforce plutôt ses matières et ses en-cours. Conclure à une situation stable parce que le total passe seulement de 285 à 291 ignore ce déplacement entre catégories."
+ },
+ {
+  "num": 53,
+  "topic": "fsa",
+  "prompt": "Vantry Software, an IFRS reporter, bought a license at the start of Year 1 for EUR 80 million and amortizes it on a straight-line basis over 8 years, with no residual value. At the end of Year 2, its newly appointed CEO writes the license down to EUR 30 million, leaving the remaining useful life unchanged. The loss is reversed in Year 4. Compared with the results Vantry would have reported without the write-down, Year 3 most likely shows that:",
+  "choices": [
+   "amortization falls to EUR 5 million, and net profit margin, total asset turnover, and return on assets are all higher",
+   "amortization stays at EUR 10 million, net profit margin is unchanged, and total asset turnover is higher",
+   "amortization falls to EUR 5 million, net profit margin is higher, and total asset turnover and return on assets are lower"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : sans dépréciation, la charge annuelle vaut 80 / 8 = 10. Fin d'année 2, la valeur comptable de 60 est ramenée à 30 par la dépréciation (impairment), et ces 30 s'amortissent sur les 6 ans restants, soit 5 par an. En année 3, le résultat monte à chiffre d'affaires inchangé : la marge nette augmente. Les actifs sont plus faibles, donc la rotation des actifs (total asset turnover) augmente aussi, et le rendement des actifs (return on assets) gagne sur ses deux termes. Garder une charge de 10 oublie que l'amortissement repart de la valeur dépréciée. Une rotation et un rendement en baisse inversent l'effet d'un dénominateur plus petit. Une dépréciation excessive, reprise ensuite sous IFRS, déplace ainsi du résultat vers les années suivantes."
+ },
+ {
+  "num": 54,
+  "topic": "fsa",
+  "prompt": "Ashgrove Health, a US GAAP reporter, financed two identical MRI scanners in different ways: an unsecured bank loan for the first, and a six-year lease from the manufacturer's finance arm for the second, with the scanner to be handed back at the end of the term. Ashgrove has now defaulted on both contracts. Compared with the bank, the finance arm is better protected most likely because:",
+  "choices": [
+   "the lease stayed off Ashgrove's balance sheet under ASC 842, so it ranks ahead of the recorded bank debt",
+   "Ashgrove must resell the scanner at the end of the term, so the finance arm bears no residual value risk",
+   "it kept legal title to the scanner, so it can take the asset back and recover value from it"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le bailleur (lessor) reste propriétaire du scanner. Après le défaut, il le reprend, puis le revend ou le reloue : son exposition est de fait garantie par l'actif, alors que la banque n'a qu'une créance sans garantie. C'est aussi ce qui permet à un bailleur de proposer un taux implicite inférieur à celui d'un prêt sans garantie. L'argument du hors-bilan est faux : sous ASC 842, comme sous IFRS 16, le preneur inscrit un droit d'utilisation (right-of-use asset) et une dette de location pour ce type de contrat, et ce classement ne donne de toute façon aucune priorité. L'argument de la revente inverse les rôles : le scanner revient au bailleur à l'échéance, c'est lui qui le revend et qui porte le risque de valeur résiduelle et d'obsolescence."
+ },
+ {
+  "num": 55,
+  "topic": "fsa",
+  "prompt": "An analyst has a company's total assets and total owners' equity and needs its total liabilities. Rearranging the basic accounting equation, total liabilities equal:",
+  "choices": [
+   "total assets minus the owners' equity",
+   "owners' equity minus the total assets",
+   "total assets plus the owners' equity"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : l'équation comptable s'écrit actifs = passifs + capitaux propres (owners' equity). En retranchant les capitaux propres des deux côtés, on obtient passifs = actifs − capitaux propres : ce qui n'est pas financé par les propriétaires l'est par les créanciers. Avec 500 d'actifs et 200 de capitaux propres, les passifs valent 300. Retrancher les actifs des capitaux propres inverse le signe et donnerait ici −300, un passif négatif. Ajouter les capitaux propres aux actifs donnerait 700 : des passifs supérieurs aux actifs alors que les capitaux propres sont positifs, ce qui contredit l'équation."
+ },
+ {
+  "num": 56,
+  "topic": "fsa",
+  "prompt": "Which statement about the classification of interest paid in the statement of cash flows is most accurate?",
+  "choices": [
+   "US GAAP allows operating or financing activities, whereas IFRS requires operating activities",
+   "IFRS allows operating or financing activities, whereas US GAAP requires operating activities",
+   "Both frameworks require financing activities, because interest is a cost of borrowing"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : l'IFRS laisse le choix de classer les intérêts payés (interest paid) en flux d'exploitation (CFO) ou en flux de financement (CFF), alors que l'US GAAP impose l'exploitation. L'analyste qui compare deux sociétés doit donc vérifier ce classement, car il peut modifier le CFO d'une société sous IFRS. Accorder la souplesse à l'US GAAP et imposer l'exploitation à l'IFRS inverse les deux référentiels : c'est l'IFRS qui offre le choix. Exiger le financement dans les deux référentiels paraît logique, puisque l'intérêt rémunère une dette, mais aucun des deux ne l'impose, et l'US GAAP l'exclut même."
+ },
+ {
+  "num": 57,
+  "topic": "fsa",
+  "prompt": "Halden Hardware sells to contractors on credit and owns the land under its stores. Which pair of accounting treatments is most appropriate?",
+  "choices": [
+   "Record bad debt expense only when a customer defaults, and do not depreciate the land",
+   "Deduct estimated bad debts directly from revenue, and depreciate the land over its estimated life",
+   "Estimate bad debt expense in the period of sale, and do not depreciate the land"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le rattachement des charges (matching principle) impose d'estimer les pertes sur créances dès l'exercice de la vente et de les comptabiliser en charge, via une provision (allowance). Le terrain n'a pas de durée d'utilité limitée : il n'est pas amorti. Attendre le défaut d'un client repousse la charge après l'exercice où le chiffre d'affaires a été constaté, même si le traitement du terrain est juste. Déduire l'estimation directement du chiffre d'affaires se trompe de ligne, car une perte sur créances est une charge, et amortir le terrain revient à étaler le coût d'un actif qui ne s'use pas."
+ },
+ {
+  "num": 58,
+  "topic": "fsa",
+  "prompt": "Vertical common-size income statement of Wexcombe Home (percent of revenue):\nCost of goods sold (2024, 2025): 62.0; 60.0\nSG&A expenses (2024, 2025): 20.0; 24.0\nInterest expense (2024, 2025): 2.0; 2.5\nIncome tax (2024, 2025): 4.0; 2.7\nNet income (2024, 2025): 12.0; 10.8\nWexcombe closed its outlet stores in 2025, and revenue fell from USD 1,000 million to USD 800 million. Gross profit and SG&A both fell in dollars, and interest expense was unchanged in dollars. Which explanation of the lower net profit margin is most accurate?",
+  "choices": [
+   "Higher SG&A and interest relative to revenue outweighed a stronger gross margin and a lower effective tax rate",
+   "A weaker gross margin drove the decline, while SG&A supported the margin by falling in dollars",
+   "Higher SG&A relative to revenue was the only drag, because interest expense stayed flat at USD 20 million"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : un compte de résultat en pourcentage se lit en part du chiffre d'affaires. La marge brute progresse de 38,0 % à 40,0 % et le taux effectif d'impôt recule de 4,0 / 16,0 = 25,0 % à 2,7 / 13,5 = 20,0 %. Mais les frais généraux (SG&A) passent de 20,0 % à 24,0 % et les intérêts de 2,0 % à 2,5 %, si bien que la marge nette tombe de 12,0 % à 10,8 %. Parler d'une marge brute plus faible et d'une aide des frais juge sur les dollars : profit brut et frais baissent moins vite que les ventes. Dire que seuls les frais pèsent oublie que des intérêts stables à 20 millions pèsent davantage sur un chiffre d'affaires plus petit."
+ },
+ {
+  "num": 59,
+  "topic": "corporate",
+  "prompt": "A port authority can build a cargo terminal for $8.0 million today. The terminal should bring in $0.72 million after tax at the end of every year, forever. Discounted at the authority's 6% cost of capital, these inflows give the terminal an NPV of $4.0 million. Its IRR is closest to:",
+  "choices": [
+   "6.0%",
+   "9.0%",
+   "18.0%"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : une perpétuité constante vaut CF / r. Le TRI est le taux qui annule la VAN : la valeur de la perpétuité y égale le seul décaissement initial, soit 0,72 / TRI = 8,0, d'où TRI = 0,72 / 8,0 = 9,0 %. La VAN de 4,0 M$ se mesure au coût du capital (0,72 / 0,06 − 8,0) et n'entre pas dans le calcul du TRI, puisqu'elle y vaut zéro. Le chiffre de 6,0 % ajoute cette VAN au montant investi, 0,72 / (8,0 + 4,0) : on retombe sur le coût du capital. Le chiffre de 18,0 % la retranche du décaissement, 0,72 / (8,0 − 4,0). Un TRI de 9,0 %, supérieur au coût de 6 %, est bien cohérent avec une VAN positive."
+ },
+ {
+  "num": 60,
+  "topic": "corporate",
+  "prompt": "A two-year offshore drilling lease has the following cash flows, in € thousands:\nToday: −5,000\nEnd of Year 1: +13,750\nEnd of Year 2: −9,200 (platform removal)\nAt which of the following discount rates is the project's NPV positive?",
+  "choices": [
+   "8%",
+   "30%",
+   "75%"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : on calcule la VAN à chaque taux, en milliers d'euros. À 30 % : −5 000 + 13 750 / 1,30 − 9 200 / 1,30² = +133. À 8 % : −5 000 + 12 731,5 − 7 887,5 = −156. À 75 % : −5 000 + 7 857 − 3 004 = −147. Les flux changent deux fois de signe : le profil n'est pas conventionnel, le projet a deux TRI, 15 % et 60 %, et la VAN n'est positive qu'entre les deux. Retenir 8 % suppose que la VAN baisse toujours quand le taux monte, ce qui ne vaut que pour des flux conventionnels : ici, à taux bas, le démantèlement final pèse presque à plein. Retenir 75 % revient à croire que la VAN monte sans fin avec le taux : au-delà du second TRI, elle redevient négative."
+ },
+ {
+  "num": 61,
+  "topic": "corporate",
+  "prompt": "A new director of Cobalt Freight asks how the company's code of ethics is handled at board level. Which statement is most accurate?",
+  "choices": [
+   "The audit committee implements it as part of its oversight of financial reporting, and reviews it only when the external auditor changes.",
+   "The nominating/governance committee implements it, and monitors changes in laws and regulations that may call for updates.",
+   "The nominating/governance committee implements it, but following it is optional for employees outside senior management."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le comité de nomination et de gouvernance (nominating/governance committee) met en œuvre le code de déontologie et les politiques sur les conflits d'intérêts. Il surveille aussi l'évolution des lois et règlements et vérifie que l'entreprise les respecte, ce qui oblige à suivre le code dans la durée. Le comité d'audit surveille l'information financière, le contrôle interne et l'audit interne : le code n'entre pas dans sa mission, et une révision liée au seul changement d'auditeur le laisserait vieillir. Un code facultatif pour les salariés hors direction perdrait son objet, même confié au bon comité : il s'impose à toute l'entreprise."
+ },
+ {
+  "num": 62,
+  "topic": "corporate",
+  "prompt": "The external audit firm of Penrose Instruments has asked for a 40% higher fee, and some directors would like to change firms. Which board committee would most likely make a recommendation on both the choice of auditor and its fee?",
+  "choices": [
+   "The audit committee",
+   "The compensation committee",
+   "The nominating/governance committee"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : le comité d'audit (audit committee) recommande un auditeur externe indépendant et sa rémunération, en plus de surveiller l'information financière, le contrôle interne et l'audit interne. Le choix du cabinet et ses honoraires relèvent donc tous deux de lui. Le comité de rémunération vient à l'esprit à cause du mot « fee » : il recommande le montant et la forme de la paie des administrateurs et des dirigeants, et non les honoraires d'un cabinet externe. Le comité de nomination et de gouvernance vient à l'esprit à cause du mot « choice » : il fixe les règles de nomination des candidats au conseil et suit le code de gouvernance, mais il ne sélectionne pas l'auditeur."
+ },
+ {
+  "num": 63,
+  "topic": "corporate",
+  "prompt": "At Kittering Breweries, the chief executive and two other senior managers sit on the board committee that evaluates senior managers and recommends their pay. Shareholders doubt that the board can act as a check on management. Which change would most likely be the most effective?",
+  "choices": [
+   "Rotating the committee's chair among the same three executives each year",
+   "Hiring a pay consultant, selected by the chief executive, to advise the committee",
+   "Replacing the three executives on the committee with independent directors"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : ici, des dirigeants se jugent et se paient eux-mêmes, ce qui crée un conflit d'intérêts avec les actionnaires. Le contre-pouvoir vient de l'indépendance réelle : des administrateurs indépendants (independent directors), sans lien significatif avec la société, protègent mieux les actionnaires, et dans de nombreux pays ce comité ne peut compter qu'eux. Faire tourner la présidence entre les trois mêmes dirigeants n'est qu'un réglage formel : les mêmes personnes décideraient, sans contre-pouvoir nouveau. Un consultant choisi par le directeur général ne règle rien non plus : il dépendrait de celui que le comité doit évaluer, et la décision resterait entre les mains des mêmes membres."
+ },
+ {
+  "num": 64,
+  "topic": "corporate",
+  "prompt": "An analyst gathers the following for Dunmore Cement, which is financed only with debt and equity:\nWeighted average cost of capital: 9.9%\nCost of equity: 13.0%\nBefore-tax cost of debt: 7.0%\nTax rate: 25%\nThe weight of equity in the company's capital structure is closest to:",
+  "choices": [
+   "48.3%",
+   "60.0%",
+   "76.2%"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : la dette entre dans le coût moyen pondéré du capital (WACC) après impôt : 7,0 % × (1 − 0,25) = 5,25 %. En notant wE le poids des fonds propres, 9,9 % = wE × 13,0 % + (1 − wE) × 5,25 %, d'où wE = (9,9 − 5,25) / (13,0 − 5,25) = 4,65 / 7,75 = 60,0 %. La dette pèse donc 40,0 %. Le chiffre de 48,3 % oublie l'économie d'impôt sur la dette : (9,9 − 7,0) / (13,0 − 7,0) = 2,9 / 6,0. Le chiffre de 76,2 % divise simplement deux coûts, 9,9 / 13,0 : cela revient à traiter la dette comme une ressource gratuite."
+ },
+ {
+  "num": 65,
+  "topic": "equity",
+  "prompt": "An analyst estimates the cost of equity of Marisol Telecom in three ways. Which approach relies on the historical relationship between the stock's returns and the market's returns?",
+  "choices": [
+   "The dividend discount model, through its estimate of dividend growth",
+   "The bond yield plus risk premium approach, through its estimate of the premium",
+   "The capital asset pricing model, through its estimate of beta"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le CAPM calcule le coût des fonds propres comme le taux sans risque plus le bêta multiplié par la prime de marché. Le bêta s'estime d'ordinaire en régressant les rendements passés de l'action sur ceux du marché : c'est ce lien historique qui fait le cœur de la méthode. Le modèle de dividendes tire le rendement exigé du prix, du dividende attendu et de sa croissance, soit D1 / P0 + g : la croissance du dividende n'a rien à voir avec le lien entre l'action et le marché. L'approche du rendement obligataire ajoute une prime au rendement de la dette de la société, ou une prime plus forte à celui d'un emprunt d'État : elle part du marché obligataire, sans bêta."
+ },
+ {
+  "num": 66,
+  "topic": "corporate",
+  "prompt": "Zeller Industries makes the following annual cash payments:\nInterest on senior notes: $14 million\nRegular dividend on common shares: $14 million\nShare repurchases: $9 million\nWhich of these payments contribute to the company's financial risk?",
+  "choices": [
+   "The interest only",
+   "The interest and the regular dividend",
+   "All three payments"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : le risque financier naît des engagements fixes de financement. Les intérêts des obligations sont contractuels : ils sont dus quels que soient les résultats, et un défaut de paiement peut mener à la détresse financière. Ajouter le dividende régulier revient à le traiter comme une charge fixe : même versé depuis longtemps, il reste décidé par le conseil, qui peut le réduire ou le suspendre, et les actionnaires n'ont qu'une créance résiduelle. Retenir les trois paiements pousse la même erreur plus loin : les rachats d'actions se décident librement et s'arrêtent sans défaut. L'égalité des montants, 14 M$ de part et d'autre, ne dit rien : seule compte la nature de l'engagement."
+ },
+ {
+  "num": 67,
+  "topic": "corporate",
+  "prompt": "Tolland Ceramics needs cash to cover a shortfall. Which action most likely relies on a secondary source of liquidity?",
+  "choices": [
+   "Selling marketable securities it holds",
+   "Borrowing from its bank",
+   "Selling a warehouse it owns"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : vendre un actif comme un entrepôt est une source secondaire de liquidité, au même titre que suspendre le dividende, retarder des investissements, émettre des actions ou restructurer la dette. L'entreprise n'y recourt que si les sources primaires ne suffisent plus, et ces mesures envoient un signal négatif au marché et coûtent en général plus cher. Vendre des titres négociables puise dans une source primaire : la trésorerie et les titres négociables disponibles servent justement de réserve courante. Emprunter à sa banque est aussi une source primaire, comme la trésorerie dégagée par l'activité : c'est un financement courant, même s'il crée une dette, et non une ressource de secours."
+ },
+ {
+  "num": 68,
+  "topic": "fixed_income",
+  "prompt": "A pension fund buys a government bill with 270 days to maturity and a face value of $1,000,000 for $955,000. Its discount yield, based on a 360-day year, is closest to:",
+  "choices": [
+   "6.00%",
+   "6.08%",
+   "6.28%"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : un rendement sur base d'escompte (discount yield) rapporte l'escompte à la valeur faciale, puis l'annualise sur 360 jours. L'escompte vaut 1 000 000 − 955 000 = 45 000 $, soit 4,50 % de la faciale, et le rendement 4,50 % × 360 / 270 = 6,00 %. Le chiffre de 6,28 % divise par le prix payé, 45 000 / 955 000 × 360 / 270 : c'est un rendement add-on, calculé sur le montant investi. Le chiffre de 6,08 % garde bien la faciale, mais il retient l'année civile, 4,50 % × 365 / 270, alors que cette cotation se fait sur 360 jours."
+ },
+ {
+  "num": 69,
+  "topic": "portfolio",
+  "prompt": "Dorothea Lindqvist has funded a trust for her newborn grandson.\nFirst withdrawal: in 25 years\nCash needs before then: none\nObjective: grow the purchasing power of the fund\nTrustee's attitude to risk: willing to accept large short-term losses\nWhich asset class should most likely dominate the trust's allocation?",
+  "choices": [
+   "Money market instruments, because an asset with a stable value suits every investment horizon.",
+   "Equities, because the long horizon lets the trust recover from market declines and earn real growth.",
+   "Investment-grade bonds, because fixed coupons best meet the trust's need for regular income."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : la classe d'actifs dominante découle de l'horizon et de la tolérance au risque. Le trust n'a aucun retrait à faire avant 25 ans et son administrateur accepte de fortes pertes passagères : il a le temps de se refaire après une baisse. Son objectif de croissance du pouvoir d'achat appelle l'actif dont le rendement espéré dépasse le plus l'inflation sur longue période, les actions (equities). Les instruments monétaires (money market instruments) sont sûrs à court terme, pas à tout horizon : sur 25 ans, leur faible rendement expose le trust au risque de ne pas suivre l'inflation. Les obligations de qualité (investment-grade bonds) versent des coupons dont le trust n'a pas besoin, puisqu'il n'a aucune dépense à couvrir avant 25 ans."
+ },
+ {
+  "num": 70,
+  "topic": "portfolio",
+  "prompt": "An adviser summarizes for a client how a separately managed account differs from a mutual fund that follows the same strategy. Which summary of the separately managed account is most accurate?",
+  "choices": [
+   "The client owns the securities directly, the portfolio can reflect her tax position, and the minimum investment is typically higher.",
+   "The client owns the securities directly, the portfolio can reflect her tax position, and the minimum investment is typically lower.",
+   "The client owns shares of a pooled portfolio, tax decisions apply to all holders alike, and the minimum investment is typically higher."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : dans un compte géré séparément (separately managed account), aucune part n'est émise : le client possède lui-même les titres. Le portefeuille étant le sien, le gérant peut choisir quand réaliser plus-values et moins-values selon sa situation fiscale. En contrepartie, ce format vise les patrimoines importants : le ticket d'entrée est en général nettement plus élevé que celui d'un fonds commun, qui mutualise de petits montants. La version qui annonce un minimum plus bas reprend les deux premiers traits mais inverse le ticket d'entrée des deux véhicules. La version qui parle de parts d'un portefeuille mis en commun et d'une fiscalité identique pour tous les porteurs décrit le fonds commun (mutual fund), pas le compte séparé."
+ },
+ {
+  "num": 71,
+  "topic": "portfolio",
+  "prompt": "Cedarline Growth Fund earned the following annual returns.\nYear 1: 18%\nYear 2: −12%\nYear 3: 7%\nYear 4: 11%\nThe fund's compound annual return over the four years is closest to:",
+  "choices": [
+   "5.4%",
+   "6.0%",
+   "23.3%"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : le rendement annuel composé (moyenne géométrique) est le taux constant qui mène au même résultat final que la suite des rendements. On multiplie les facteurs de croissance : 1,18 × 0,88 × 1,07 × 1,11 = 1,2333. On prend ensuite la racine quatrième, car il y a quatre années : elle vaut 1,0538, soit 5,4 % par an. La valeur 6,0 % est la moyenne arithmétique, (18 − 12 + 7 + 11) / 4 : elle ignore la composition et dépasse la moyenne géométrique dès que les rendements varient. La valeur 23,3 % est le rendement cumulé sur les quatre ans : le calcul s'arrête avant l'annualisation."
+ },
+ {
+  "num": 72,
+  "topic": "portfolio",
+  "prompt": "An analyst treats the following five annual returns of Pinehurst Infrastructure Fund as a sample.\nYear 1: 6%\nYear 2: −3%\nYear 3: 10%\nYear 4: 4%\nYear 5: −2%\nThe sample variance of the returns, in percent squared, is closest to:",
+  "choices": [
+   "24.00",
+   "30.00",
+   "41.25"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : la variance d'échantillon (sample variance) centre chaque rendement sur la moyenne, puis divise la somme des carrés par n − 1. La moyenne vaut (6 − 3 + 10 + 4 − 2) / 5 = 3 %. Les écarts sont 3, −6, 7, 1 et −5, et leurs carrés ont pour somme 9 + 36 + 49 + 1 + 25 = 120. La variance vaut 120 / 4 = 30,00. La valeur 24,00 divise par l'effectif complet (120 / 5) : c'est la formule d'une population, qui sous-estime la dispersion quand on ne dispose que d'un échantillon. La valeur 41,25 élève les rendements au carré sans les centrer sur la moyenne : (36 + 9 + 100 + 16 + 4) / 4 = 165 / 4."
+ },
+ {
+  "num": 73,
+  "topic": "portfolio",
+  "prompt": "Sofia Anders estimates expected returns on Nordic retail stocks with a return generating model. Its inputs are the inflation rate, growth in industrial production and the change in the unemployment rate. Her model is best described as a:",
+  "choices": [
+   "fundamental factor model.",
+   "market model.",
+   "macroeconomic factor model."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : les trois variables décrivent l'économie dans son ensemble et s'appliquent à toutes les sociétés : ce sont des facteurs macroéconomiques (macroeconomic factors), et un modèle se classe d'après la nature de ses facteurs. Chaque action réagit à ces facteurs avec sa propre sensibilité, mais les facteurs eux-mêmes restent communs. Un modèle à facteurs fondamentaux (fundamental factor model) retient des données propres à chaque entreprise, comme la croissance de ses bénéfices, sa taille ou ses dépenses de recherche : aucune des trois variables n'a ce caractère. Le modèle de marché (market model) n'a qu'un seul facteur, le rendement de l'indice de marché : il ne peut donc pas décrire un modèle à trois variables économiques."
+ },
+ {
+  "num": 74,
+  "topic": "portfolio",
+  "prompt": "A portfolio manager is estimating what Solvane Pharma shares should return.\nExpected market return: 9.0%\nShare beta: 1.25\nRisk-free rate: 3.5%\nThe return on the shares predicted by the CAPM is closest to:",
+  "choices": [
+   "6.88%",
+   "10.38%",
+   "14.75%"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le CAPM s'écrit E(Ri) = Rf + β × [E(Rm) − Rf]. La prime de risque du marché vaut 9,0 − 3,5 = 5,5 %. Avec un bêta de 1,25, la prime de l'action est 1,25 × 5,5 = 6,875 %, et le rendement espéré 3,5 + 6,875 = 10,375 %, soit 10,38 %. Un bêta supérieur à 1 place logiquement ce résultat au-dessus du rendement du marché. La valeur 6,88 % s'arrête à la prime de l'action et omet d'ajouter le taux sans risque. La valeur 14,75 % additionne le taux sans risque au produit du bêta et du rendement du marché, 3,5 + 1,25 × 9,0, sans calculer la prime : le taux sans risque n'a pas été retranché du rendement du marché."
+ },
+ {
+  "num": 75,
+  "topic": "portfolio",
+  "prompt": "The primary purpose of risk budgeting in an organization's risk management framework is to:",
+  "choices": [
+   "split total risk across at least two risk types, because a single measure cannot serve as a budget.",
+   "ensure that actively managed portfolios earn higher returns than passive alternatives over time.",
+   "put the total risk the organization accepts to work where expected returns over time are greatest."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le budget de risque (risk budgeting) part du risque total que l'organisation accepte et le répartit entre les placements, selon leurs caractéristiques de risque et la façon dont ils se combinent. Le but est de loger ce risque là où le rendement espéré dans la durée est le plus élevé : la tolérance au risque fixe combien de risque prendre, le budget dit où le prendre. Exiger au moins deux types de risque est faux : un budget peut tenir en une seule mesure, comme le bêta du portefeuille, la value at risk ou la duration, même s'il peut aussi se découper par facteur de risque. Promettre que la gestion active battra la gestion passive est faux aussi : le budget organise l'usage du risque et ne garantit aucune surperformance."
+ },
+ {
+  "num": 76,
+  "topic": "equity",
+  "prompt": "Three analysts value Tolverne Logistics as follows:\nOkafor multiplies forecast EPS by the average P/E of Tolverne's peers.\nMarchetti discounts forecast free cash flow to equity at the required return on equity.\nLindqvist subtracts the estimated market value of liabilities from the estimated market value of assets.\nWhich analyst is using a present value model?",
+  "choices": [
+   "Okafor",
+   "Marchetti",
+   "Lindqvist"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : c'est Marchetti, car il actualise au coût des fonds propres les flux qui reviennent à l'actionnaire, ici le flux disponible pour les actionnaires (free cash flow to equity). C'est la définition d'un modèle de valeur actuelle (present value model, ou discounted cash flow model), famille qui comprend aussi l'actualisation des dividendes (dividend discount model). Okafor applique un multiple de pairs à un bénéfice prévu : c'est un modèle de multiples (multiplier model), qui n'actualise aucun flux, même s'il part d'une prévision. Lindqvist retranche les passifs des actifs à leur valeur de marché : c'est un modèle fondé sur l'actif (asset-based model), qui part du bilan et non des flux futurs attendus par l'actionnaire."
+ },
+ {
+  "num": 77,
+  "topic": "equity",
+  "prompt": "An analyst gathers the following data on Brockhaven Glass:\nShare price: 44.00\nEPS, last 12 months: 2.75\nEPS, next 12 months (forecast): 2.92\nDividend payout ratio: 60%\nRequired return on equity: 11%\nLong-term growth rate of dividends and earnings: 6%\nThe stock's actual trailing P/E exceeds its justified forward P/E from the constant growth model by an amount closest to:",
+  "choices": [
+   "3.1",
+   "4.0",
+   "8.0"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le multiple constaté (trailing P/E) rapporte le cours au bénéfice des douze derniers mois : 44,00 / 2,75 = 16,0. Le multiple prospectif justifié (justified forward P/E) tiré du modèle de croissance constante vaut taux de distribution / (r − g) : 0,60 / (0,11 − 0,06) = 12,0. L'écart est de 16,0 − 12,0 = 4,0. Le choix 3,1 calcule le multiple constaté sur le bénéfice projeté et non sur le bénéfice passé : 44,00 / 2,92 = 15,1, puis 15,1 − 12,0. Le choix 8,0 met le taux de rétention à la place du taux de distribution dans le multiple justifié : 0,40 / 0,05 = 8,0, puis 16,0 − 8,0."
+ },
+ {
+  "num": 78,
+  "topic": "equity",
+  "prompt": "Fenmoor Semiconductors reported a loss per share of 0.85 for the last 12 months, at the bottom of the chip cycle. Its operating cash flow per share was 1.90, and analysts forecast EPS of 1.10 for the next 12 months. To compare Fenmoor with its peers, the analyst should most appropriately:",
+  "choices": [
+   "replace the trailing P/E with the forward P/E and the price-to-cash-flow ratio",
+   "keep the trailing P/E, because a negative multiple signals that the stock is cheap",
+   "drop all multiples based on earnings or cash flow and use only price-to-book"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : avec un bénéfice passé négatif, le P/E constaté (trailing P/E) n'a pas de sens : un dénominateur négatif donne un multiple inexploitable, qu'on ne peut ni classer ni comparer à celui des pairs. L'analyste se reporte donc sur des multiples dont le dénominateur reste positif : le P/E prospectif (forward P/E), fondé sur un bénéfice attendu de 1,10, et le multiple de flux, fondé sur un flux d'exploitation de 1,90. Garder le P/E constaté est faux : un multiple négatif ne veut pas dire que l'action est bon marché, il ne mesure rien. Abandonner tous les multiples de bénéfices et de flux va trop loin : seule la perte passée pose problème, ni la prévision ni le flux ne sont négatifs, et le multiple de valeur comptable n'est donc pas le seul recours."
+ },
+ {
+  "num": 79,
+  "topic": "equity",
+  "prompt": "An analyst compares two chemical producers. Each company's ratios are expected to hold indefinitely, and dividends grow at the sustainable growth rate. ROA is net income divided by total assets.\nLynmouth Chemicals: ROE 10%, ROA 5%, payout ratio 40%, actual forward P/E 11.0\nPennard Chemicals: ROE 16%, ROA 4%, payout ratio 70%, actual forward P/E 12.5\nRequired return on both stocks: 10%\nWhich conclusion is most accurate?",
+  "choices": [
+   "Pennard has the higher sustainable growth rate, is undervalued, and has the lower financial leverage.",
+   "Lynmouth has the higher sustainable growth rate, is undervalued, and has the higher financial leverage.",
+   "Lynmouth has the higher sustainable growth rate, is overvalued, and has the lower financial leverage."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : la croissance soutenable vaut taux de rétention × ROE : 0,60 × 10 % = 6,0 % pour Lynmouth et 0,30 × 16 % = 4,8 % pour Pennard. Le multiple prospectif justifié vaut distribution / (r − g) : 0,40 / 0,04 = 10,0 pour Lynmouth, sous son multiple constaté de 11,0, donc surévaluée ; 0,70 / 0,052 = 13,5 pour Pennard, au-dessus de 12,5, donc sous-évaluée. Le levier (actif / fonds propres) se déduit de ROE / ROA : 2,0 contre 4,0. Donner à Pennard la croissance la plus forte et le levier le plus bas revient à se fier à son ROE, sans voir sa distribution élevée ni d'où vient ce ROE. Dire Lynmouth sous-évaluée et plus endettée inverse la comparaison entre multiple justifié et multiple constaté, et lit le levier à l'envers."
+ },
+ {
+  "num": 80,
+  "topic": "equity",
+  "prompt": "Dorrington Labs sells prescription heart medicines and blood glucose monitors. Demand depends on patients' medical needs rather than on household income, and revenue barely moved in the last two recessions. Dorrington is best described as a:",
+  "choices": [
+   "defensive company in the health care sector",
+   "defensive company in the consumer staples sector",
+   "cyclical company in the consumer discretionary sector"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : une entreprise défensive (defensive) vend des biens ou des services dont la demande reste stable sur le cycle, ce que confirme un chiffre d'affaires presque inchangé en récession. Des médicaments sur ordonnance et des appareils de mesure de la glycémie relèvent du secteur de la santé (health care), défensif parce que ces dépenses suivent le besoin médical et non le revenu. Les biens de base (consumer staples) sont eux aussi défensifs, mais ce secteur regroupe les produits de la vie courante, comme l'alimentation et l'entretien, pas les traitements. La consommation discrétionnaire (consumer discretionary) est cyclique : elle vend des achats reportables, dont le chiffre d'affaires chute en récession, à l'opposé du profil décrit."
+ },
+ {
+  "num": 81,
+  "topic": "equity",
+  "prompt": "Priya Raman is assembling a peer group to value Sorrel Bay Ferries, an operator of passenger ferries. Which candidate should she most likely exclude?",
+  "choices": [
+   "Calder Sound Lines, a ferry operator with the same demand drivers, whose P/E is well above Sorrel Bay's",
+   "Morvern Sea Link, a ferry operator with the same demand drivers, whose figures need adjusting for a different fiscal year-end",
+   "Kestwick Holdings, a software group with a small ferry unit, whose P/E is almost the same as Sorrel Bay's"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : un groupe de comparables (peer group) réunit des sociétés proches par leur activité et par les facteurs qui pilotent leur demande et leur cycle. Kestwick vit surtout du logiciel : sa rentabilité, sa croissance et son risque dépendent d'une autre économie, et un P/E presque identique n'y change rien, car la proximité des multiples peut être fortuite. Calder Sound Lines doit rester : son activité est comparable, et un multiple plus élevé n'est pas un motif d'exclusion, c'est le résultat que la comparaison doit expliquer, action chère ou fondamentaux meilleurs. Morvern Sea Link doit rester aussi : un exercice décalé se traite par des retraitements (adjustments), en recalant les chiffres sur la même période, pas par une exclusion."
+ },
+ {
+  "num": 82,
+  "topic": "equity",
+  "prompt": "A family office gathers the following expected annual figures for a stock-picking strategy:\nIndex fund of equal risk, return before fees: 8.10%\nIndex fund of equal risk, fees: 0.10%\nManagement fee of the strategy: 0.95%\nTrading costs of the strategy: 0.40%\nCompeting active manager, return after all costs: 8.75%\nThe strategy is justified only if, after all costs, it at least matches the return available at equal risk without active management. The minimum return before costs that the strategy must earn is closest to:",
+  "choices": [
+   "9.35%",
+   "9.45%",
+   "10.10%"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : une stratégie active ne se justifie que si, après tous ses coûts, elle rapporte au moins ce que l'investisseur obtient sans gestion active à risque égal. La référence est donc le rendement net du fonds indiciel : 8,10 % − 0,10 % = 8,00 %. Les coûts de la stratégie s'élèvent à 0,95 % + 0,40 % = 1,35 %. Le seuil brut vaut 8,00 % + 1,35 % = 9,35 %. Le choix 9,45 % part du rendement brut du fonds indiciel (8,10 % + 1,35 %) et oublie que l'investisseur passif paie lui aussi des frais. Le choix 10,10 % prend pour référence l'autre gérant actif (8,75 % + 1,35 %), alors que la référence est le placement passif de même risque, et non un autre gérant dont le risque n'est pas donné."
+ },
+ {
+  "num": 83,
+  "topic": "equity",
+  "prompt": "Gwen Adeyemi is considering an asset-based valuation for three private companies. The approach is most likely to be reliable for:",
+  "choices": [
+   "Quorra Software, whose main assets are internally developed code and customer relationships",
+   "Larkfield Timber, whose main asset is forest land with regularly quoted market prices",
+   "Pressly Foundry, whose main assets are custom-built furnaces with no resale market"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : la méthode par l'actif (asset-based valuation) estime les fonds propres comme juste valeur des actifs moins juste valeur des passifs : elle n'est fiable que si ces valeurs s'observent. C'est le cas d'une société de ressources naturelles dont le principal actif, ici des forêts, a un prix de marché régulièrement coté. La méthode convient aussi à des actifs surtout à court terme ou à une société en liquidation. Le logiciel développé en interne et les relations clients sont des incorporels, souvent hors bilan, dont la valeur dépend des flux futurs : ils rendent la méthode particulièrement délicate. Des fours construits sur mesure sont bien corporels, mais sans marché de revente aucun prix ne s'observe : leur juste valeur reste une simple estimation."
+ },
+ {
+  "num": 84,
+  "topic": "equity",
+  "prompt": "Mateus Oliveira buys a stock at 63.00 with a leverage ratio of 3.0. The maintenance margin requirement is 25%. He will receive a margin call if the price falls below a level closest to:",
+  "choices": [
+   "28.00",
+   "47.25",
+   "56.00"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : un levier de 3,0 signifie une marge initiale de 1 / 3,0 = 33,3 %, donc un apport de 21,00 et une dette de 42,00 par action. L'appel de marge survient quand les fonds propres tombent à 25 % de la valeur de la position : (P − 42,00) / P = 0,25, soit P = 42,00 / 0,75 = 56,00. C'est la formule P0 × (1 − marge initiale) / (1 − marge de maintenance). Contrôle : à 56,00, les fonds propres valent 14,00, soit 25 %. Le choix 28,00 inverse dette et apport : 21,00 / 0,75. Le choix 47,25 abat directement le prix d'achat de la marge de maintenance : 63,00 × 0,75, sans tenir compte de la dette."
+ },
+ {
+  "num": 85,
+  "topic": "equity",
+  "prompt": "Aldwick Ceramics, a family-owned company, is preparing an initial public offering. Compared with remaining privately held, a listing will most likely:",
+  "choices": [
+   "reduce the capital available to fund the company's growth",
+   "weaken the company's corporate governance",
+   "increase the pressure on management to deliver short-term results"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : une fois cotée, la société subit la pression du marché sur ses résultats de court terme. C'est la contrepartie d'un avantage du non coté, la plus grande liberté de viser le long terme (greater ability to focus on long-term prospects). Réduire le capital disponible est faux : l'introduction en bourse (IPO) ouvre au contraire l'accès aux investisseurs du public, alors qu'une société non cotée dépend d'un cercle restreint de financeurs. Affaiblir la gouvernance est faux aussi : les obligations d'information et le regard du public la renforcent plutôt, et c'est dans le non coté qu'elle est potentiellement plus faible. Le non coté garde d'autres atouts, comme des coûts de reporting plus bas, mais ses titres sont moins liquides."
+ },
+ {
+  "num": 86,
+  "topic": "equity",
+  "prompt": "Ingleby Water paid its annual dividend of 2.40 per share last week. Dividends are expected to grow at 3.5% per year indefinitely, and investors require a return of 9.5%. Using the constant growth model, the intrinsic value of a share is closest to:",
+  "choices": [
+   "40.00",
+   "41.40",
+   "70.97"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le modèle de croissance constante (Gordon growth model) actualise le prochain dividende, pas celui qui vient d'être versé. D1 = 2,40 × 1,035 = 2,484. La valeur intrinsèque vaut D1 / (r − g) = 2,484 / (0,095 − 0,035) = 2,484 / 0,06 = 41,40. Le choix 40,00 actualise le dernier dividende sans le projeter : 2,40 / 0,06. Cette erreur prend D0 pour D1, alors que le dividende de la semaine dernière est déjà versé et ne revient plus à l'acheteur. Le choix 70,97 divise le bon dividende par la seule croissance : 2,484 / 0,035, au lieu de l'écart entre le rendement exigé et la croissance."
+ },
+ {
+  "num": 87,
+  "topic": "equity",
+  "prompt": "An analyst examines three indexes built from the same stocks. Which index most likely has a value tilt, with weights that do not depend on share prices?",
+  "choices": [
+   "An index that weights each stock by its share of total earnings and book value",
+   "An index that weights each stock by the market value of its publicly available shares",
+   "An index that gives every stock the same weight"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : la pondération fondamentale (fundamental weighting) fixe les poids à partir de mesures comme les bénéfices, les dividendes, les flux ou les fonds propres, que les cours n'affectent pas directement. Une société dont le bénéfice est élevé par rapport à sa capitalisation pèse plus lourd : l'indice surpondère les titres à fort rendement bénéficiaire ou à fort ratio valeur comptable / cours, d'où un biais valeur (value tilt). La capitalisation flottante (float-adjusted market capitalization) dépend directement des cours : le poids d'un titre monte avec son prix, ce qui penche vers les titres surévalués. L'équipondération (equal weighting) ignore les cours au rééquilibrage, mais elle surpondère les petites valeurs et ne retient aucun critère de valeur."
+ },
+ {
+  "num": 88,
+  "topic": "equity",
+  "prompt": "A grain cooperative hedges its harvest with exchange-traded wheat futures rather than with a forward contract negotiated with a bank, mainly to limit counterparty risk. On the futures position, the entity that bears this risk and guarantees that the contract will be honored is most likely:",
+  "choices": [
+   "the exchange that lists the contract",
+   "the clearinghouse that settles the trades",
+   "the regulator that supervises the market"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : dans un contrat à terme négocié en bourse, la chambre de compensation (clearinghouse) s'interpose entre les deux parties : elle est l'acheteur de chaque vendeur et le vendeur de chaque acheteur. Elle porte ainsi le risque de contrepartie et garantit la bonne fin du contrat, grâce aux appels de marge et au règlement quotidien. Un contrat à terme de gré à gré (forward) avec une banque laisserait au contraire la coopérative exposée au défaut de cette banque. La bourse (exchange) cote le contrat, fixe ses règles et organise les échanges, mais ce n'est pas elle qui assure la bonne fin. Le régulateur fixe et fait respecter le cadre du marché : il n'est partie à aucun contrat et ne garantit aucune opération."
+ },
+ {
+  "num": 89,
+  "topic": "fixed_income",
+  "prompt": "Renata Moss is training a junior analyst at Quillon Asset Management on embedded bond options. Which statement about who decides whether an option is exercised is most accurate?",
+  "choices": [
+   "On a putable bond, the issuer decides whether the bond is sold back before maturity.",
+   "On a convertible bond, the bondholder decides whether to exchange the bond for common shares.",
+   "On a callable bond, the bondholder decides whether the bond is redeemed before maturity."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : une obligation convertible donne au porteur le droit d'échanger son titre contre un nombre fixé d'actions ordinaires. Ce droit a de la valeur pour lui, si bien qu'il accepte un rendement plus bas que sur une obligation identique sans option. Laisser la décision du put à l'émetteur est faux : le put appartient au porteur, qui revend le titre à l'émetteur à un prix fixé, en général quand les taux ont monté ou que le crédit s'est dégradé. Laisser la décision du call au porteur est faux aussi : le call appartient à l'émetteur, qui rembourse par anticipation quand les taux baissent afin de se refinancer moins cher, et le porteur exige pour ce risque (call risk) un rendement plus élevé."
+ },
+ {
+  "num": 90,
+  "topic": "fixed_income",
+  "prompt": "The indenture for Tavistock Cement's 2034 notes contains the following provisions. Which one is most likely a negative covenant?",
+  "choices": [
+   "The company will apply the net proceeds of the issue to finance its new Antwerp kiln.",
+   "The notes will rank equally with all other senior unsecured debt of the company.",
+   "The company will not enter into sale and leaseback transactions on its plants."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : une clause négative (negative covenant) restreint ce que l'émetteur a le droit de faire, pour protéger les porteurs contre des décisions qui augmenteraient le risque de défaut. Interdire la cession-bail (sale and leaseback) sur les usines en est un exemple type, car ces opérations font sortir de la propriété de l'émetteur des actifs sur lesquels comptent les créanciers. Affecter le produit de l'émission au four d'Anvers est une clause positive (affirmative covenant) : elle fixe ce que l'émetteur doit faire, sans interdire aucun acte de gestion. Le rang égal avec les autres dettes senior non garanties (pari passu) est lui aussi une clause positive : il décrit un engagement de l'émetteur envers les porteurs, pas une interdiction."
+ },
+ {
+  "num": 91,
+  "topic": "fixed_income",
+  "prompt": "Credit analyst Omar Reyes records two findings on Brennock Hotels:\nFinding 1: After the loss of its largest corporate client, projected operating cash flow no longer covers next year's debt service.\nFinding 2: During an earlier restructuring, the controlling owners concealed a related-party loan from creditors.\nWhich classification under the Cs of credit analysis is most accurate?",
+  "choices": [
+   "Finding 1 is capacity; Finding 2 is character.",
+   "Finding 1 is character; Finding 2 is capacity.",
+   "Finding 1 is conditions; Finding 2 is covenants."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : la capacité (capacity) est l'aptitude de l'emprunteur à payer sa dette à temps, et des flux d'exploitation qui ne couvrent plus le service de la dette la touchent directement. Le caractère (character) recouvre l'intégrité de l'emprunteur et sa volonté d'honorer ses engagements : cacher un prêt à des créanciers est une question de moralité, pas de moyens. Inverser les deux rubriques confond ce que l'emprunteur peut payer et ce qu'il est prêt à faire. Parler de conditions et de covenants est faux aussi : les conditions décrivent l'environnement économique général, alors que la perte d'un client est propre à Brennock, et les covenants sont les clauses juridiques de l'émission. Capacity, character et covenants font partie des cinq C ascendants (bottom-up), conditions des trois C descendants (top-down)."
+ },
+ {
+  "num": 92,
+  "topic": "fixed_income",
+  "prompt": "A recession scare triggers a flight to quality: government bond yields fall and equity prices drop sharply. Relative to investment-grade corporate bonds of similar duration, high-yield corporate bonds are most likely to:",
+  "choices": [
+   "gain about as much, because equal durations imply equal sensitivity to government bond yields.",
+   "underperform, because their spreads widen more and their returns track equities more closely.",
+   "outperform, because their wider spreads give them more room to fall as government bond yields decline."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : l'écart de crédit du haut rendement reflète surtout le risque de défaut, qui grimpe quand la conjoncture se dégrade. Dans une fuite vers la qualité (flight to quality), cet écart s'élargit bien plus que celui de la qualité investissement et efface une bonne partie, voire la totalité, du gain lié à la baisse des taux d'État. Le haut rendement réagit donc moins aux taux sans risque et davantage au climat des actions : ses rendements sont dits proches de ceux des actions (equity-like). Un gain équivalent suppose des écarts immobiles, hypothèse de la duration analytique que ce scénario contredit. Une surperformance grâce à des écarts plus larges inverse le lien : ces écarts montent avec les craintes de défaut, ils ne suivent pas la baisse des taux d'État."
+ },
+ {
+  "num": 93,
+  "topic": "fixed_income",
+  "prompt": "Mateo Quiroga stops paying his fully amortizing, nonrecourse home mortgage. The balance is CAD 412,000, and the foreclosure sale raises CAD 371,000 net of costs. Quiroga also holds CAD 150,000 in a brokerage account. Which statement about the CAD 41,000 shortfall is most accurate?",
+  "choices": [
+   "The lender absorbs it, because the property is the only asset backing the loan.",
+   "Quiroga still owes it, because a fully amortizing loan must repay all of its principal.",
+   "The lender can take it from the brokerage account, because nonrecourse means it need not rely on the property alone."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : dans un prêt sans recours (nonrecourse loan), seul le bien gagé garantit la créance. Une fois le bien vendu, le prêteur n'a aucun droit sur les autres actifs de l'emprunteur : il supporte l'écart de 412 000 − 371 000 = 41 000, et le compte-titres de Quiroga reste hors d'atteinte. Dire que Quiroga doit encore cette somme parce que le prêt est amortissable confond deux notions : l'amortissement décrit le rythme de remboursement du capital, le recours décrit l'étendue du droit du prêteur au-delà du bien. Dire que le prêteur peut se servir sur le compte-titres inverse le sens du terme : c'est le prêt avec recours (recourse loan) qui ouvre une créance sur les autres actifs de l'emprunteur."
+ },
+ {
+  "num": 94,
+  "topic": "fixed_income",
+  "prompt": "Fintry CLO holds leveraged loans yielding 8.5%, funded by a senior tranche costing 6.0%, a mezzanine tranche costing 7.5%, and an equity tranche. An overcollateralization test is breached, so collateral cash flows are redirected to repay the senior tranche early. For equity tranche investors, this event is most likely:",
+  "choices": [
+   "favorable, because less senior debt lowers interest expense and leaves more for the equity tranche.",
+   "neutral, because the equity tranche earns a fixed return that is set when the CLO is issued.",
+   "unfavorable, because the tranche earns the excess of collateral income over debt costs, and that cash is diverted."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : la tranche equity n'a aucun coupon promis. Elle touche le résidu, c'est-à-dire l'écart entre le revenu des actifs et le coût des tranches de dette. Un test de surcollatéralisation (overcollateralization test) non respecté signale un portefeuille dégradé, et les flux qui auraient pu lui revenir partent rembourser le senior. Y voir une bonne nouvelle est l'erreur classique : chaque 100 affecté au senior économise 6,0 d'intérêts, alors que ces 100 auraient rapporté 8,5 placés en prêts, ou seraient allés à l'equity. Le levier qui fait son rendement diminue. Parler d'un rendement fixé à l'émission est faux : seules les tranches de dette ont un taux promis, tandis que l'equity est servie en dernier et absorbe les premières pertes."
+ },
+ {
+  "num": 95,
+  "topic": "fixed_income",
+  "prompt": "Farah Aziz is pricing a bond with these terms:\nTime to maturity: 7 years\nCoupon rate: 5.60% per year, paid semiannually\nYield to maturity: 7.40% on a semiannual bond basis\nThe bond's price per 100 of par is closest to:",
+  "choices": [
+   "90.30",
+   "90.43",
+   "110.31"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : il faut tout ramener au semestre : 14 périodes, coupon de 5,60 / 2 = 2,80, taux périodique de 7,40 % / 2 = 3,70 %. Valeur actuelle des coupons : 2,80 × (1 − 1,037⁻¹⁴) / 0,037 = 30,17. Valeur actuelle du nominal : 100 / 1,037¹⁴ = 60,13. Prix : 30,17 + 60,13 = 90,30. Contrôle : le coupon est inférieur au rendement, le prix doit donc être sous le pair. 90,43 traite le titre comme s'il payait une fois par an, avec 7 coupons de 5,60 actualisés à 7,40 %, sans ajuster à la périodicité. 110,31 inverse coupon et taux : un coupon de 3,70 actualisé à 2,80 %, ce qui donne à tort un prix au-dessus du pair."
+ },
+ {
+  "num": 96,
+  "topic": "fixed_income",
+  "prompt": "An option-free bond is priced at 100.00. A pricing model shows that a 100 bp rise in its yield would lower the price to 94.20. If its yield instead fell by 100 bp, the bond's price would most likely be:",
+  "choices": [
+   "exactly 105.80, because equal yield changes move the price by equal amounts in both directions.",
+   "above 105.80, because the price-yield relationship is curved rather than linear.",
+   "below 105.80, because a price above par is pulled back toward par as maturity approaches."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : la relation prix-rendement d'une obligation sans option n'est pas une droite mais une courbe convexe. La pente est plus forte quand le rendement baisse et plus faible quand il monte, si bien qu'à variation égale du rendement le gain dépasse la perte. La perte vaut 100 − 94,20 = 5,80, donc le gain dépasse 5,80 et le prix dépasse 105,80. Ce résultat tient à la courbure (convexity), pas au coupon ni à l'échéance, qui en changent seulement l'ampleur. Un prix de 105,80 exactement suppose une relation linéaire, ce qui est l'hypothèse de la duration seule. Un prix inférieur invoque le retour vers le pair (pull to par) : cet effet agit avec le temps qui passe, alors qu'ici seul le rendement change."
+ },
+ {
+  "num": 97,
+  "topic": "fixed_income",
+  "prompt": "Hollis Freight's 8-year bond pays a 3.75% annual coupon and is redeemable at par. It trades at a flat price of 86.40 per 100 of par. The bond's current yield is closest to:",
+  "choices": [
+   "3.75%",
+   "4.34%",
+   "6.31%"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le rendement courant (current yield) rapporte le coupon annuel au prix de marché, sans tenir compte de ce qui se passe à l'échéance : 3,75 / 86,40 = 4,34 %. La décote le place au-dessus du taux facial, puisqu'on achète le même coupon moins cher. 3,75 % est le taux facial : il rapporte le coupon au nominal de 100, et non au prix effectivement payé. 6,31 % est le rendement simple (simple yield) : il ajoute au coupon l'étalement linéaire de la décote, (100 − 86,40) / 8 = 1,70 par an, soit (3,75 + 1,70) / 86,40. Cet étalement n'a pas sa place dans le rendement courant, qui ne mesure que le revenu de coupon."
+ },
+ {
+  "num": 98,
+  "topic": "fixed_income",
+  "prompt": "The treasury desk at Marlowe Bank quotes these zero-coupon government rates on a semiannual bond basis:\n3-year: 3.90%\n5-year: 6.20%\nThe implied 2-year forward rate three years from now, quoted on the same basis, is closest to:",
+  "choices": [
+   "4.85%",
+   "9.70%",
+   "9.75%"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : en base semestrielle, chaque taux se capitalise par semestre. Facteur à 5 ans : (1 + 6,20 % / 2)¹⁰ = 1,031¹⁰ = 1,35702. Facteur à 3 ans : 1,0195⁶ = 1,12285. Leur rapport, 1,20855, couvre les 4 semestres compris entre les années 3 et 5. Taux par semestre : 1,20855^(1/4) − 1 = 4,85 %. Taux annualisé sur la même base : 2 × 4,85 % = 9,70 %. 4,85 % est le taux périodique, que l'on a oublié d'annualiser. 9,75 % vient d'une capitalisation annuelle, (1,062⁵ / 1,039³)^(1/2) − 1, qui ignore que les taux sont cotés sur base semestrielle."
+ },
+ {
+  "num": 99,
+  "topic": "fixed_income",
+  "prompt": "Ingrid Solvang has EUR 200,000 in a bond fund whose fact sheet shows a modified duration of 4.8. She asks her adviser what that figure means for her as an investor. Which reply is most useful?",
+  "choices": [
+   "You should get your EUR 200,000 back in about 4.8 years, whichever way yields move.",
+   "It is the slope of the fund's price-yield curve, a calculus result with no direct link to your gains or losses.",
+   "If yields rise by 1 percentage point, your holding would lose about EUR 9,600."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : pour un porteur, la duration modifiée se lit d'abord comme une mesure du risque de taux, c'est-à-dire la variation de prix en pourcentage à attendre pour une variation de 1 point du rendement. Ici, 4,8 × 1 % = 4,8 %, et 200 000 × 4,8 % = 9 600. C'est une estimation, valable pour un déplacement parallèle et modéré des taux. Lire 4,8 comme un délai de récupération du capital est faux : la duration n'est ni une échéance ni une date à laquelle le capital serait rendu, et un fonds obligataire n'a d'ailleurs pas de date de remboursement. Réduire ce chiffre à une pente sans lien avec les pertes est faux aussi : c'est justement cette sensibilité qui chiffre le gain ou la perte du porteur."
+ },
+ {
+  "num": 100,
+  "topic": "fixed_income",
+  "prompt": "The bond sleeve of Halvard Pension holds three option-free positions (prices per 100 of par):\nBond K: par 3,000,000, price 124, duration 12.5\nBond L: par 5,000,000, price 101, duration 6.0\nBond M: par 2,000,000, price 96, duration 3.0\nUsing the weighted average of the holdings' durations, the sleeve's duration is closest to:",
+  "choices": [
+   "7.17",
+   "7.35",
+   "7.72"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : la duration d'un portefeuille est la moyenne des durations pondérée par les valeurs de marché, pas par les nominaux. Valeurs de marché : 3 720 000, 5 050 000 et 1 920 000, soit 10 690 000 au total. Poids : 34,80 %, 47,24 % et 17,96 %. Duration : 0,3480 × 12,5 + 0,4724 × 6,0 + 0,1796 × 3,0 = 7,72. Le poids de Bond K passe de 30 % à 34,80 % parce que son prix est de loin le plus élevé, et c'est lui qui a la duration la plus longue. 7,35 pondère par les nominaux (30 %, 50 % et 20 %) et ignore donc les prix. 7,17 est une moyenne simple, (12,5 + 6,0 + 3,0) / 3, qui ne tient compte d'aucun poids."
+ },
+ {
+  "num": 101,
+  "topic": "fixed_income",
+  "prompt": "The risk system at Bellmere Insurance reports the following for a noncallable corporate bond, with prices including accrued interest:\nPar value held: 5,000,000\nPrice today, per 100: 102.3460\nPrice if the yield rises 0.01%, per 100: 102.2815\nPrice if the yield falls 0.01%, per 100: 102.4107\nThe PVBP of this holding is closest to:",
+  "choices": [
+   "3,230",
+   "3,306",
+   "6,460"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : la PVBP est la moyenne des deux variations de prix pour ±1 pb, soit (V− − V+) / 2 × nominal × 0,01. Par 100 de nominal : (102,4107 − 102,2815) / 2 = 0,0646. Pour la position : 0,0646 × 5 000 000 / 100 = 3 230. Les deux variations (0,0647 quand le rendement baisse, 0,0645 quand il monte) sont presque égales, et la moyenne lisse ce petit écart. 6 460 garde l'écart total de 0,1292 sans en prendre la moyenne : cet écart couvre 2 pb, pas 1. 3 306 applique 0,0646 % à la valeur de marché de 5 117 300 au lieu du nominal : le prix est alors compté deux fois, puisque 0,0646 est déjà exprimé pour 100 de nominal."
+ },
+ {
+  "num": 102,
+  "topic": "derivatives",
+  "prompt": "Mirela Stan is pricing two forward contracts on Tarnley Holdings stock, which generates no income and costs nothing to carry.\nStock price today: 80.00\nAnnually compounded risk-free rate, all maturities: 3%\nContract 1: expires in 3 months\nContract 2: expires in 9 months\nThe no-arbitrage forward prices of the two contracts are closest to:",
+  "choices": [
+   "Contract 1: 79.41; Contract 2: 78.25",
+   "Contract 1: 82.40; Contract 2: 82.40",
+   "Contract 1: 80.59; Contract 2: 81.79"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : sans revenu ni coût de détention, le prix à terme sans arbitrage est le comptant capitalisé au taux sans risque sur la durée du contrat. À 3 mois : 80 × 1,03 puissance 0,25 = 80,59. À 9 mois : 80 × 1,03 puissance 0,75 = 81,79. Plus l'échéance est longue, plus le financement de l'achat au comptant dure, donc plus le prix à terme est élevé. Le couple 79,41 et 78,25 actualise le comptant au lieu de le capitaliser, ce qui ferait baisser le prix à terme avec la durée. Le prix de 82,40 pour les deux contrats applique une année pleine d'intérêts à chacun, 80 × 1,03 : il traite le prix à terme comme s'il ne dépendait pas de la durée du contrat."
+ },
+ {
+  "num": 103,
+  "topic": "derivatives",
+  "prompt": "Heating oil distributors want stock in their own tanks as a cold winter approaches.\nSpot price: 2.84 per gallon\n4-month forward price: 2.71 per gallon\nInterest rates and tank storage costs are both positive. The spot price exceeds the forward price most likely because of:",
+  "choices": [
+   "the cost of storing heating oil in tanks.",
+   "the interest cost of financing heating oil stocks.",
+   "the convenience yield on physical heating oil."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le rendement d'opportunité (convenience yield) est l'avantage non monétaire de détenir la marchandise physique : un distributeur qui a du fioul en cuve peut servir ses clients si l'offre vient à manquer. Cet avantage se retranche du coût de portage. Quand il dépasse les intérêts et le stockage réunis, le coût de portage net est négatif et le terme passe sous le comptant (backwardation), ce qu'on observe ici : 2,71 contre 2,84. Les frais de stockage agissent en sens inverse : celui qui achète à terme évite de les payer, ils s'ajoutent donc au prix à terme et le tirent au-dessus du comptant. Les intérêts de financement agissent de même : ils relèvent le prix à terme et ne peuvent pas expliquer qu'il soit sous le comptant."
+ },
+ {
+  "num": 104,
+  "topic": "derivatives",
+  "prompt": "Arno Keskin compares a futures contract and a forward contract on the same asset. They have the same expiration date and no credit risk, and only the futures contract settles daily. In which situation would the prices of the two contracts most likely differ?",
+  "choices": [
+   "Interest rates change over time and are positively correlated with the futures price.",
+   "Interest rates change over time and are uncorrelated with the futures price.",
+   "Interest rates remain constant until the contracts expire."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : le règlement quotidien ne crée un écart de prix que si ses flux sont liés aux taux. Avec une corrélation positive, l'acheteur du future encaisse ses gains quand les taux sont hauts et les replace à ces taux, et il finance ses pertes quand les taux sont bas : le future vaut plus pour lui et son prix dépasse celui du forward. Une corrélation négative créerait l'écart inverse. Des taux variables sans corrélation avec le prix du future ne suffisent pas : gains et pertes tombent sans rapport avec le niveau des taux, leurs effets se compensent et les deux prix sont égaux. Des taux constants donnent aussi des prix égaux : gains et pertes se placent et se financent au même taux, quelle que soit la date."
+ },
+ {
+  "num": 105,
+  "topic": "derivatives",
+  "prompt": "The board of Zephyr Property Trust raises the cash distribution on its units, payable before a European call on the units expires. The call's terms are not adjusted for distributions. All else equal, the call's value will most likely:",
+  "choices": [
+   "increase, because the call holder benefits from a higher return on the units.",
+   "decrease, because the unit price will fall by the amount paid out, and the call holder receives none of it.",
+   "stay the same, because the exercise price and the expiration date do not change."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : une distribution est de l'argent qui sort du trust : le prix de la part baisse d'environ son montant à la date de détachement. Le porteur de parts est compensé par le versement ; le détenteur du call ne l'est pas, car il ne touche aucune distribution et son gain à l'échéance ne dépend que du prix de la part. Une distribution plus forte abaisse donc le prix attendu à l'échéance, et la valeur du call avec lui ; elle augmenterait au contraire celle d'un put. Dire que le call gagne en valeur oublie que ce rendement supplémentaire va au porteur de parts, pas au détenteur de l'option. Dire que sa valeur ne change pas oublie qu'elle dépend aussi des revenus du sous-jacent, pas seulement du prix d'exercice et de l'échéance."
+ },
+ {
+  "num": 106,
+  "topic": "derivatives",
+  "prompt": "Tobias Nkemelu holds a fiduciary call on Harbourline Logistics shares.\nLong European call: exercise price 70\nZero-coupon risk-free bond: pays 70 at the call's expiration\nThe value of his combined position at expiration, if the share price ends at 62 and if it ends at 83, is:",
+  "choices": [
+   "0 at a share price of 62; 13 at a share price of 83",
+   "70 at a share price of 62; 70 at a share price of 83",
+   "70 at a share price of 62; 83 at a share price of 83"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : à l'échéance, un call fiduciaire (fiduciary call) vaut le zéro-coupon plus le gain du call. À 62, le call finit hors de la monnaie et ne rapporte rien : seul le zéro-coupon paie 70, plancher de la position. À 83, le call finit dans la monnaie et rapporte 83 − 70 = 13, qui s'ajoutent aux 70 du zéro-coupon : la position vaut 83, le cours de l'action. Elle vaut donc le plus grand du cours et du prix d'exercice, comme un put protecteur (protective put), ce qui fonde la parité put-call. Le couple 0 et 13 ne retient que le gain de l'option et oublie le zéro-coupon. Le couple 70 et 70 ne retient que le zéro-coupon et oublie le gain du call quand il finit dans la monnaie."
+ },
+ {
+  "num": 107,
+  "topic": "derivatives",
+  "prompt": "Two analysts value the same European call on Quillon Ore shares with a one-period binomial model. They use the same current share price, up and down prices, exercise price and risk-free rate, but they disagree on the actual probability of an up-move.\nAnalyst Ferro: 35%\nAnalyst Dunn: 65%\nCompared with Ferro's value of the call, Dunn's value is most likely:",
+  "choices": [
+   "higher, because a more likely up-move raises the call's expected payoff.",
+   "the same, because the model values the call with risk-neutral probabilities.",
+   "lower, because a more likely up-move calls for a higher discount rate."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : le modèle binomial repose sur un raisonnement d'arbitrage : on combine l'action et le call pour former un portefeuille sans risque. La probabilité neutre au risque (risk-neutral probability) se déduit du cours actuel, des cours possibles et du taux sans risque, et le gain espéré calculé avec elle s'actualise au taux sans risque. Comme les deux analystes partagent ces données, ils trouvent la même valeur : la probabilité réelle n'entre nulle part dans le calcul. Dire que la valeur de Dunn est plus élevée confond gain espéré réel et prix : une hausse jugée plus probable ne change pas la valeur sans arbitrage. Dire qu'elle est plus basse invente un taux ajusté du risque : on actualise au taux sans risque, quel que soit l'avis de l'analyste."
+ },
+ {
+  "num": 108,
+  "topic": "derivatives",
+  "prompt": "An adviser compares two products linked to the same basket of Asian equities.\nProduct 1: a mutual fund that holds the shares in the basket and passes their returns to investors, net of fees\nProduct 2: a contract that pays the holder 70% of any rise in the basket over one year and nothing if the basket falls\nWhich product is a derivative?",
+  "choices": [
+   "Product 2 only, because its contract terms transform the performance of the basket.",
+   "Both products, because the value of each depends on the value of the basket.",
+   "Product 1 only, because its value comes entirely from the assets it holds."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : un dérivé est un contrat dont la valeur vient d'un sous-jacent et dont les clauses transforment la performance de ce sous-jacent. Le second produit ne détient pas les actions : il ne garde que 70 % de la hausse et supprime la baisse, ce qui donne un profil différent de celui du panier. Le fonds commun, lui, détient les actions et transmet simplement leur performance à ses porteurs, moins les frais : c'est un véhicule collectif, pas un dérivé. Retenir les deux produits revient à qualifier de dérivé tout ce dont la valeur dépend d'autres actifs, alors que ce critère ne suffit pas. Retenir le seul fonds inverse la logique : tirer sa valeur des actifs qu'on détient est une simple détention, et non un contrat qui modifie leur profil."
+ },
+ {
+  "num": 109,
+  "topic": "alternatives",
+  "prompt": "Kestrel Bay Capital runs a private fund open only to accredited investors. The manager buys European bank bonds it considers cheap, sells short similar bonds it considers expensive, and finances much of the book with borrowed money to magnify small price differences.\nThis fund is best classified as a:",
+  "choices": [
+   "leveraged buyout fund.",
+   "hedge fund.",
+   "private debt fund."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : un fonds qui combine des positions acheteuses et vendeuses sur des titres négociés et qui amplifie ses paris par l'emprunt est un hedge fund. C'est un véhicule privé réservé aux investisseurs qualifiés, et le gérant cherche ici à tirer parti d'écarts de prix entre des obligations comparables. Le choix du fonds de rachat par endettement (leveraged buyout) s'arrête au mot « emprunt » : un tel fonds s'endette pour prendre le contrôle d'une société, et il ne vend rien à découvert. Le choix du fonds de dette privée (private debt) confond les deux côtés du crédit : ce fonds prête directement à des sociétés non cotées, alors qu'ici le fonds emprunte et arbitre des obligations déjà négociées."
+ },
+ {
+  "num": 110,
+  "topic": "alternatives",
+  "prompt": "Lena Marchetti advises a family office that wants to hold copper, wheat, and crude oil in physical form rather than through derivatives. Her working assumption is that commodity prices are the main driver of consumer price inflation.\nIgnoring storage and other holding costs, the average long-run real return on this holding is most likely to be:",
+  "choices": [
+   "positive, because a holding that hedges inflation earns more than inflation.",
+   "negative, because a physical holding pays no income to offset inflation.",
+   "close to zero, because the holding's value rises about in line with inflation."
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : si les prix des matières premières pilotent l'inflation, l'indice des prix suit ces prix, et le panier monte à peu près au même rythme que lui. Le rendement nominal moyen est donc proche de l'inflation, et le rendement réel, c'est-à-dire le rendement nominal corrigé de l'inflation, proche de zéro. Le choix d'un rendement réel positif confond une couverture contre l'inflation (inflation hedge) avec une source de rendement : la couverture préserve le pouvoir d'achat, elle ne l'augmente pas. Le choix d'un rendement réel négatif retient l'absence de revenu, mais oublie que la hausse du prix compense déjà l'inflation ; hors frais de stockage, rien ne creuse l'écart."
+ },
+ {
+  "num": 111,
+  "topic": "alternatives",
+  "prompt": "Velmora Fund charges its incentive fee on gross gains, independently of its management fee.\nOpening value: $320.0 million\nYear-end value before fees: $364.8 million\nIncentive fee rate: 15%\nHurdle rate: 8%, hard\nThe fund's incentive fee for the year is closest to:",
+  "choices": [
+   "$2.88 million",
+   "$6.72 million",
+   "$2.34 million"
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : avec un seuil strict (hard hurdle), la commission ne porte que sur la part du gain qui dépasse le rendement minimal. Gain de l'année : 364,8 − 320,0 = 44,8 M$, soit 14 %. Seuil : 8 % × 320,0 = 25,6 M$. Assiette : 44,8 − 25,6 = 19,2 M$. Commission : 15 % × 19,2 = 2,88 M$. Le choix 6,72 M$ applique le taux à tout le gain, 15 % × 44,8 : c'est la règle d'un seuil souple (soft hurdle), où le gain entier devient l'assiette dès que le seuil est franchi. Le choix 2,34 M$ calcule le seuil sur la valeur finale, 8 % × 364,8 = 29,18 M$, alors que le rendement minimal se mesure sur le capital de départ."
+ },
+ {
+  "num": 112,
+  "topic": "alternatives",
+  "prompt": "An investor placed $12.5 million in Dunmoor Partners' fund at the start of the year.\nYear-end value before fees: $14.5 million\nManagement fee: 2% of year-end value before fees\nHurdle: 5% of opening value, hard\nIncentive fee: 20% of gains net of the management fee, above the hurdle\nThe investor's return after all fees is closest to:",
+  "choices": [
+   "10.94%",
+   "11.94%",
+   "11.48%"
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : on retire les deux frais de la valeur finale, puis on compare au capital de départ. Frais de gestion : 2 % × 14,5 = 0,29 M$. Gain net de ces frais : 14,5 − 12,5 − 0,29 = 1,71 M$. Seuil : 5 % × 12,5 = 0,625 M$. Assiette de la commission : 1,71 − 0,625 = 1,085 M$. Commission : 20 % × 1,085 = 0,217 M$. Valeur nette : 14,5 − 0,29 − 0,217 = 13,993 M$, soit 13,993 / 12,5 − 1 = 11,94 %. Le choix 10,94 % néglige le seuil : 20 % × 1,71 = 0,342 M$, comme si tout le gain entrait dans l'assiette. Le choix 11,48 % oublie les frais de gestion dans l'assiette : 20 % × (2,0 − 0,625) = 0,275 M$, alors que la commission porte sur le gain net de ces frais."
+ },
+ {
+  "num": 113,
+  "topic": "alternatives",
+  "prompt": "Larkspur Capital's hedge fund opened with $150.00 million and has had no subscriptions or redemptions.\nYear 1 value before fees: $174.00 million\nYear 2 value before fees: $158.00 million\nYear 3 value before fees: $181.00 million\nManagement fee: 1% of year-end value before fees\nIncentive fee: 15% of any year-end value before fees above the high-water mark, regardless of the management fee\nHigh-water mark: highest value net of all fees at a prior year-end, starting from the opening value\nThe fund's total fees for Year 3 are closest to:",
+  "choices": [
+   "$5.50 million",
+   "$2.86 million",
+   "$3.66 million"
+  ],
+  "correct_index": 2,
+  "explanation": "Correct : le plus-haut historique (high-water mark) est la plus haute valeur nette de frais déjà constatée en fin d'année, et il faut d'abord le calculer. Année 1 : frais de gestion 1 % × 174,00 = 1,74 M$, commission 15 % × (174,00 − 150,00) = 3,60 M$, valeur nette 168,66 M$. Année 2 : la valeur reste sous ce repère, donc pas de commission, et le plus-haut ne bouge pas. Année 3 : frais de gestion 1,81 M$, commission 15 % × (181,00 − 168,66) = 1,85 M$, total 3,66 M$. Le choix 5,50 M$ repart de la valeur nette de l'année 2, 156,42 M$ : il facture des gains qui ne font que rattraper une perte. Le choix 2,86 M$ prend pour repère 174,00 M$, une valeur avant frais, alors que le repère se mesure net de frais."
+ },
+ {
+  "num": 114,
+  "topic": "alternatives",
+  "prompt": "Rafael Quintero runs a fund of funds that holds three equity long/short hedge funds, all of which trade exchange-listed shares in developed markets. Before adding a fourth fund, he wants to check how far the three funds truly diversify one another.\nThe main difficulty he most likely faces is:",
+  "choices": [
+   "limited transparency about the positions each fund holds.",
+   "limited liquidity in the shares each fund trades.",
+   "limited reliability of the prices of the shares each fund holds."
+  ],
+  "correct_index": 0,
+  "explanation": "Correct : pour mesurer la diversification entre fonds, il faut voir ce qu'ils détiennent, et c'est ce qui manque. Les hedge funds réduisent la transparence sur leurs stratégies et leurs positions afin de protéger leurs méthodes de gestion (proprietary trading methods). Sans le détail des lignes, l'investisseur ne peut pas savoir si les fonds portent les mêmes titres ou les mêmes paris. Le choix de la liquidité ne tient pas : des actions cotées sur des marchés développés se vendent sans difficulté, et la question porte sur le chevauchement des positions, pas sur leur sortie. Le choix de la fiabilité des prix ne tient pas non plus : ces titres ont un cours de marché observable, ce problème concerne plutôt des actifs non cotés."
+ },
+ {
+  "num": 115,
+  "topic": "equity",
+  "prompt": "The investment committee of a small charity is choosing an outside manager, and one trustee, Ines Varga, is worried about fraud by the manager.\nWhich step would most likely give the charity the strongest protection against such fraud?",
+  "choices": [
+   "Favoring the candidate with the steadiest monthly returns, because a record free of losses indicates a sound operation.",
+   "Requiring an independent custodian to hold the assets and a third-party verifier to test the firm's GIPS compliance.",
+   "Relying on the firm's own performance report, provided that the report states the firm complies with the GIPS standards."
+  ],
+  "correct_index": 1,
+  "explanation": "Correct : la protection contre la fraude d'un gérant vient de contrôles qu'il ne maîtrise pas. Un dépositaire indépendant (custodian) conserve les titres des clients, ce qui évite les pertes dues à une fraude du gérant. Une vérification par un tiers (third-party verification) porte sur toute la firme ; facultative, elle ne peut pas être menée par la firme elle-même. Le choix de la performance la plus régulière se trompe de signal : des gains trop réguliers que personne n'a contrôlés doivent alerter, pas rassurer. Le choix du rapport interne revient à croire le gérant sur parole : l'affirmation de conformité aux GIPS vient de la firme elle-même, et elle ne remplace pas un contrôle extérieur."
+ }
+]
