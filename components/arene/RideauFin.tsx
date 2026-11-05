@@ -7,7 +7,7 @@ import { BoutonEnvoi, PorteeEncre } from "@/components/classement/Encre";
 import { dejaJoue, lancerVideo, marquerJoue, modeDiscret, mouvementReduit } from "@/lib/arene/client";
 import { joueurArene, lireArene, lireElos } from "@/lib/arene/donnees";
 import { ARENE_VIDE, type Arene } from "@/lib/arene/perso";
-import { BANNIERE_DUREE_MS, VIDEO_FILET_MS, VIDEO_MAX_MS, formatVideo, rideauFerme, sceneFin } from "@/lib/arene/regles";
+import { BANNIERE_DUREE_MS, VIDEO_FILET_MS, VIDEO_MAX_MS, formatVideo, relancerVideo, rideauFerme, sceneFin } from "@/lib/arene/regles";
 import { createClient } from "@/lib/supabase/browser";
 import { ARENE } from "@/lib/voice-arene";
 import s from "./Arene.module.css";
@@ -88,6 +88,7 @@ export function RideauFin({
   const video = useRef<HTMLVideoElement | null>(null);
   const panne = useRef(false);
   const plafond = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const departVideo = useRef<number | null>(null);
   const gagnantId = gagnant?.id ?? null;
   const eloConnu = gagnant?.elo ?? null;
   const vu = `fin:${cle}`;
@@ -184,12 +185,18 @@ export function RideauFin({
                   preload="auto"
                   playsInline
                   disablePictureInPicture
-                  onEnded={terminer}
+                  onEnded={() => {
+                    const v = video.current;
+                    if (!v || departVideo.current === null || !relancerVideo(Date.now() - departVideo.current)) return terminer();
+                    v.currentTime = 0;
+                    void v.play().catch(terminer);
+                  }}
                   onError={() => {
                     panne.current = true;
                     if (etape === "video") terminer();
                   }}
                   onPlaying={() => {
+                    departVideo.current ??= Date.now();
                     plafond.current ??= setTimeout(terminer, VIDEO_MAX_MS);
                   }}
                 />

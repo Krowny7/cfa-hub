@@ -181,11 +181,11 @@
 
 /* ——— l'écran VS ——— */
 .scene .ban {
-  animation: areneTrait 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation: areneTrait 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 .scene .droite {
   animation-name: areneTraitDroite;
-  animation-delay: 0.1s;
+  animation-delay: 0.16s;
 }
 .entaille {
   position: absolute;
@@ -209,7 +209,7 @@
   letter-spacing: -0.015em;
   text-shadow: 0 0.02em 0.22em rgba(26, 18, 11, 0.55);
   transform: translate(-50%, -50%);
-  animation: areneVs 0.3s 0.18s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation: areneVs 0.5s 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 .hud {
   position: absolute;
@@ -447,7 +447,7 @@
   --h: 31.25;
   left: 0;
   top: 0;
-  animation: areneTrait 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation: areneTrait 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 
 /* ——— téléphone et écrans en hauteur : les bannières en haut et en bas ——— */

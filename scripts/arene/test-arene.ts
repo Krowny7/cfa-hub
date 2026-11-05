@@ -8,6 +8,8 @@
 import { ARENE_VIDE, FONDS, TRAITS, areneDepuis, areneValide, couleurTrait, fichiersArene, fondDe } from "@/lib/arene/perso";
 import {
   BANNIERE_DUREE_MS,
+  VIDEO_MIN_MS,
+  relancerVideo,
   MOSAIQUE_MAX,
   VIDEO_FILET_MS,
   VIDEO_MAX_MS,
@@ -54,7 +56,7 @@ console.log("# L'écran VS");
   check("moi d'abord", montres[0].id === "j9");
   check("8 bannières au plus", montres.length === MOSAIQUE_MAX && new Set(montres.map((j) => j.id)).size === MOSAIQUE_MAX);
   check("à deux, personne ne disparaît", joueursMontres(joueurs(2), "j1").map((j) => j.id).join() === "j1,j0");
-  check("3 secondes environ", VS_DUREE_MS === 3000);
+  check("6 secondes, et il tient dans le décompte de 8 secondes des Salles, images comprises", VS_DUREE_MS === 6000 && VS_DUREE_MS + 900 < 8000);
 }
 
 console.log("# Le vainqueur");
@@ -87,7 +89,8 @@ console.log("# La fin de partie");
   check("le résultat est caché à la fin d'une partie", rideauFerme({ discret: false, dejaVu: false }));
   check("mode discret : le résultat directement", !rideauFerme({ discret: true, dejaVu: false }));
   check("déjà vu : le résultat directement", !rideauFerme({ discret: false, dejaVu: true }));
-  check("15 secondes au plus, filet de 20 s, bannière 3 s", VIDEO_MAX_MS === 15_000 && VIDEO_FILET_MS === 20_000 && BANNIERE_DUREE_MS === 3000);
+  check("15 secondes au plus, filet de 20 s, bannière 7 s", VIDEO_MAX_MS === 15_000 && VIDEO_FILET_MS === 20_000 && BANNIERE_DUREE_MS === 7000);
+  check("une vidéo courte repart, une vidéo assez longue s'arrête", relancerVideo(4000) && relancerVideo(VIDEO_MIN_MS - 1) && !relancerVideo(VIDEO_MIN_MS) && VIDEO_MIN_MS < VIDEO_MAX_MS);
   check("le filet passe après le plafond", VIDEO_FILET_MS > VIDEO_MAX_MS);
   check("le cadre suit le format", formatVideo(16 / 9) === "paysage" && formatVideo(9 / 16) === "vertical" && formatVideo(1) === "paysage");
 }
