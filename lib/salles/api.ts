@@ -198,6 +198,7 @@ function toSerie(r: Raw): SalleSerie {
     rounds: num(r.rounds, 1),
     finie: r.finie === true,
     termineeAt: str(r.terminee_at),
+    parties: liste(r.parties).map((p) => ({ round: num(obj(p).round, 1), sessionId: String(obj(p).session_id) })),
     prochain: num(r.prochain),
     total: num(r.total),
     classement: liste(r.classement).map((l) => {

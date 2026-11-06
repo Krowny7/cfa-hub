@@ -692,3 +692,25 @@ BEGIN
   END IF;
 END;
 $m$;
+
+-- 13. Revoir la copie de chaque round : l'état dit lesquels sont finis et où le joueur a répondu
+DO $m$
+DECLARE
+  d text := pg_get_functiondef('public.etat_salle(uuid,integer)'::regprocedure);
+  n text;
+BEGIN
+  IF position($a$'parties', ($a$ IN d) = 0 THEN
+    n := replace(d, $a$          'terminee_at', v_serie.terminee_at,
+$a$, $a$          'terminee_at', v_serie.terminee_at,
+          'parties', (
+            SELECT coalesce(json_agg(json_build_object('round', s3.round, 'session_id', s3.id) ORDER BY s3.round), '[]'::json)
+            FROM salle_sessions s3
+            WHERE s3.serie_id = v_serie.id AND s3.statut = 'terminee'
+              AND EXISTS (SELECT 1 FROM salle_reponses r3 WHERE r3.session_id = s3.id AND r3.user_id = v_uid)
+          ),
+$a$);
+    IF n = d THEN RAISE EXCEPTION 'etat_salle : série introuvable'; END IF;
+    EXECUTE n;
+  END IF;
+END;
+$m$;

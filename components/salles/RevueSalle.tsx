@@ -20,7 +20,7 @@ type Filtre = "errors" | "all";
 // chaque question (ma réponse, la bonne, l'explication), filtrées par « Mes
 // erreurs / Tout » et par matière. QCM seulement (PartieExamen garde l'ancien
 // débrief pour une partie avec des calculs).
-function RevueSalleBase({ revue, numero, titre, retest = false }: { revue: DailyReviewItem[]; numero: number; titre: string; /** « Me retester » : sur une copie relue, pas à la fin d'une partie qu'on quitterait */ retest?: boolean }) {
+function RevueSalleBase({ revue, numero, titre, retest = false, kicker }: { revue: DailyReviewItem[]; numero: number; titre: string; /** « Me retester » : sur une copie relue, pas à la fin d'une partie qu'on quitterait */ retest?: boolean; /** la ligne du haut, pour un round */ kicker?: string }) {
   const total = revue.length;
   const score = revue.filter((q) => q.isCorrect).length;
   const erreurs = revue.filter((q) => !q.isCorrect);
@@ -45,7 +45,7 @@ function RevueSalleBase({ revue, numero, titre, retest = false }: { revue: Daily
   return (
     <div className="mx-auto grid w-full max-w-[880px] gap-7 md:gap-9" style={{ color: "var(--ink)" }}>
       <div className="grid gap-2">
-        <p className="kicker m-0">{RUNNER_SALLE.revueKicker(numero)}</p>
+        <p className="kicker m-0">{kicker ?? RUNNER_SALLE.revueKicker(numero)}</p>
         <h2 className="t-h1 m-0">{RUNNER_SALLE.revueTitre}</h2>
         <p className="t-small m-0 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className={"rounded-[7px] px-2 py-0.5 text-[12.5px] font-bold " + (pct >= 70 ? "bg-white text-black" : "bg-surface-2 text-white")}>

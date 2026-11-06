@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { mesNotionsATravailler } from "@/app/practice/actions";
-import { choixDisponible, choixVide, contientRecherche, lireNotionsATravailler, lireNotionsDisponibles, matieresDuChoix, plat, questionsDuChoix, type ChoixNotionsValeur, type MockNotions, type NotionATravailler, type NotionDispo, type SourceNotions } from "@/lib/notions-choix";
+import { choixDisponible, choixVide, contientRecherche, lireNotionsATravailler, partagerFaibles, lireNotionsDisponibles, matieresDuChoix, plat, questionsDuChoix, type ChoixNotionsValeur, type MockNotions, type NotionATravailler, type NotionDispo, type SourceNotions } from "@/lib/notions-choix";
 import { chercherProches, type IndexMots } from "@/lib/notions-proches";
 import { TOPIC_LABELS, TOPICS } from "@/lib/practiceTopics";
 import { createClient } from "@/lib/supabase/browser";
@@ -17,6 +17,10 @@ export type InfoChoix = { topics: string[]; total: number };
 
 /** au-delà, les libellés suffisent : pas de résultats proches en plus */
 const MAX_DIRECTS_AVEC_PROCHES = 3;
+/** dans une Salle, on relit ce que les joueurs présents ont à travailler : quelqu'un a pu arriver ou partir */
+const RELECTURE_FAIBLES_MS = 20000;
+/** le repli « Pour un seul joueur », rangé avec les matières ouvertes */
+const REPLI_SEULES = "seules";
 
 type Libelles = Map<string, string>;
 
@@ -63,7 +67,7 @@ export function ChoixNotions({
     let fini = false;
     setDispo(null);
     setErreur(false);
-    const faiblesLus = demo ? demo.faibles : salleId ? lireNotionsATravailler(client.current, salleId) : mesNotionsATravailler().catch(() => []);
+    const faiblesLus = demo ? demo.faibles : salleId ? lireNotionsATravailler(client.current, salleId).then((f) => f ?? []) : mesNotionsATravailler().catch(() => []);
     Promise.all([demo ? demo.dispo : lireNotionsDisponibles(client.current, source, dernier.current.mock), faiblesLus, import("@/lib/notions")])
       .then(([d, f, lib]) => {
         if (fini) return;
@@ -76,6 +80,17 @@ export function ChoixNotions({
       fini = true;
     };
   }, [source, salleId, demo, cleMock]);
+
+  useEffect(() => {
+    if (!salleId || demo) return;
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      void lireNotionsATravailler(client.current, salleId).then((f) => {
+        if (f) setFaibles(f);
+      });
+    }, RELECTURE_FAIBLES_MS);
+    return () => clearInterval(id);
+  }, [salleId, demo]);
 
   // réglages rouverts, autres sessions de mock : le choix et son total suivent ce qui est disponible
   useEffect(() => {
@@ -189,6 +204,10 @@ export function ChoixNotions({
     return p.concepts.length > 0 && seuls.length === 0 ? [] : [{ n, seuls: new Set(seuls) }];
   });
   const aTravailler = faibles.flatMap((f) => dispo.filter((n) => n.notion === f.notion && garde(n)));
+  const { communes, seules } = partagerFaibles(aTravailler, faibles);
+  // des notions communes : elles passent devant, le reste se replie ; pendant une recherche, tout se montre
+  const repli = salleId !== undefined && communes.length > 0 && seules.length > 0 && q.length === 0;
+  const seulesOuvertes = !repli || matieres.has(REPLI_SEULES);
   const groupes = TOPICS.map((t) => ({ cle: t.key, nom: TOPIC_LABELS[t.key] ?? t.key, notions: dispo.filter((n) => n.notion.startsWith(t.key + ":") && garde(n)).sort((a, b) => Number(a.notion.split(":")[1]) - Number(b.notion.split(":")[1])) })).filter((g) => g.notions.length > 0);
 
   return (
@@ -198,13 +217,34 @@ export function ChoixNotions({
         <input type="search" value={cherche} onChange={(e) => setCherche(e.target.value)} placeholder={V.recherche} aria-label={V.recherche} />
       </label>
       <div className={s.liste}>
-        {aTravailler.length > 0 && (
+        {salleId !== undefined && communes.length > 0 && (
           <section>
-            <h3 className={s.titre}>{salleId ? V.aTravaillerSalleTitre : V.aTravaillerTitre}</h3>
-            <p className={s.aide}>{salleId ? V.aideSalle : V.aide}</p>
+            <h3 className={s.titre}>{V.enCommunTitre}</h3>
+            <p className={s.aide}>{V.enCommunAide}</p>
             <ul className={s.notions}>
-              {aTravailler.map((n) => ligne(n))}
+              {communes.map((n) => ligne(n))}
             </ul>
+          </section>
+        )}
+        {(salleId === undefined ? aTravailler : seules).length > 0 && (
+          <section>
+            {repli ? (
+              <button type="button" className={s.matiere} aria-expanded={seulesOuvertes} onClick={() => setMatieres((m) => basculer(m, REPLI_SEULES))}>
+                <span>{V.unSeulJoueur}</span>
+                <b>{seules.length}</b>
+                <ChevronDown size={16} aria-hidden data-ouvert={seulesOuvertes ? "1" : undefined} />
+              </button>
+            ) : (
+              <>
+                <h3 className={s.titre}>{salleId ? V.aTravaillerSalleTitre : V.aTravaillerTitre}</h3>
+                <p className={s.aide}>{salleId ? V.aideSalle : V.aide}</p>
+              </>
+            )}
+            {seulesOuvertes && (
+              <ul className={s.notions}>
+                {(salleId === undefined ? aTravailler : seules).map((n) => ligne(n))}
+              </ul>
+            )}
           </section>
         )}
         {groupes.map((g) => {
