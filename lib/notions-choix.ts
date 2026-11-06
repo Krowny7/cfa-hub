@@ -67,8 +67,14 @@ export async function lireNotionsDisponibles(sb: SupabaseClient, source: SourceN
   return liste<NotionDispo>(data);
 }
 
-/** Dans une Salle : celles des joueurs présents. Une erreur ici n'empêche pas de choisir. */
-export async function lireNotionsATravailler(sb: SupabaseClient, salleId: string): Promise<NotionATravailler[]> {
+/** Dans une Salle : celles des joueurs présents, les communes d'abord. null : la lecture a échoué, ce qui n'empêche pas de choisir. */
+export async function lireNotionsATravailler(sb: SupabaseClient, salleId: string): Promise<NotionATravailler[] | null> {
   const { data, error } = await sb.rpc("salle_notions_a_travailler", { p_salle_id: salleId });
-  return error ? [] : liste<NotionATravailler>(data);
+  return error ? null : liste<NotionATravailler>(data);
+}
+
+/** Ce que plusieurs joueurs présents ont à travailler, et ce qui ne concerne qu'un seul. */
+export function partagerFaibles<T extends { notion: string }>(lignes: T[], faibles: NotionATravailler[]): { communes: T[]; seules: T[] } {
+  const joueurs = new Map(faibles.map((f) => [f.notion, f.joueurs]));
+  return { communes: lignes.filter((l) => (joueurs.get(l.notion) ?? 0) >= 2), seules: lignes.filter((l) => (joueurs.get(l.notion) ?? 0) < 2) };
 }

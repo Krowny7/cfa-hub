@@ -270,6 +270,8 @@ export type SalleSerie = {
   finie: boolean;
   /** quand l'admin s'est arrêté là */
   termineeAt: string | null;
+  /** les rounds finis où j'ai répondu : de quoi rouvrir leur copie */
+  parties: { round: number; sessionId: string }[];
   /** combien de questions compte le round suivant */
   prochain: number;
   /** combien de questions ont été jouées, tous rounds confondus */

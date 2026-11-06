@@ -50,7 +50,8 @@ export function RunnerSalle({
   const blanches = nb - repondues;
   const bas = chronoBas(restantMs, totalMs);
   const presents = usePresents();
-  const autres = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: repondues, moiRendu: rendue, presents }).filter((j) => !j.moi);
+  const joueurs = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: repondues, moiRendu: rendue, presents });
+  const autres = joueurs.filter((j) => !j.moi);
   // seul dans la salle : ni chat ni autres joueurs, la question prend toute la place
   const accompagne = presents ? presents.size > 1 : membres.length > 1;
   const aCote = accompagne || autres.length > 0;
@@ -209,13 +210,15 @@ export function RunnerSalle({
             <section className="card-quiet grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 p-4" aria-label={RUNNER_SALLE.joueursTitre}>
               <p className="t-micro m-0">{RUNNER_SALLE.joueursTitre}</p>
               <ul className="m-0 grid min-w-0 grid-cols-[minmax(0,1fr)] list-none gap-2.5 p-0">
-                {autres.map((j) => (
+                {joueurs.map((j) => (
                   <li key={j.userId} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
-                    <div className="flex items-baseline justify-between gap-2 text-[13px]">
-                      <span className="min-w-0 truncate font-semibold">{j.username?.trim() || "Un joueur"}</span>
-                      <span className="shrink-0 font-mono tabular-nums text-muted">
-                        {j.rendu ? RUNNER_SALLE.copieRendue + " · " : ""}
-                        {j.n}/{nb}
+                    <div className="flex items-center justify-between gap-2 text-[13px]">
+                      <span className="min-w-0 truncate font-semibold">{j.moi ? RUNNER_SALLE.toi : j.username?.trim() || "Un joueur"}</span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        {j.rendu && <span className="rounded-[7px] bg-[var(--ink)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--surface-3)]">{RUNNER_SALLE.copieRendue}</span>}
+                        <span className="font-mono tabular-nums text-muted">
+                          {j.n}/{nb}
+                        </span>
                       </span>
                     </div>
                     <span className="block h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>

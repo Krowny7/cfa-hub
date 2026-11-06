@@ -1,5 +1,5 @@
 // Le calcul du choix par notion. Lancer : npx tsx --tsconfig ./tsconfig.json scripts/notions/test-choix.ts
-import { choixDisponible, choixVide, contientRecherche, matiereDeNotion, matieresDuChoix, plat, questionsDuChoix, type NotionDispo } from "@/lib/notions-choix";
+import { choixDisponible, choixVide, contientRecherche, partagerFaibles, matiereDeNotion, matieresDuChoix, plat, questionsDuChoix, type NotionDispo } from "@/lib/notions-choix";
 import { chercherProches, ecart, motsDe, type IndexMots } from "@/lib/notions-proches";
 import { bilanRetest, lienSimilaires, lireSimilaires, ratures, type CibleRetest } from "@/lib/notions-similaires";
 import { libelleParams, paramsDepuisJson, paramsParDefaut, paramsVersJson, roundsMax, tailleRounds, validerParams } from "@/lib/salles/logique";
@@ -80,7 +80,7 @@ check("en chrono global, le résumé annonce la durée d'un round", libelleParam
 check("une partie sans round garde son nom", titreSession({ numero: 7, params: paramsDepuisJson(paramsVersJson(paramsParDefaut())) }) === "Partie 7");
 check("rejouer garde les rounds et les notions", paramsPourRejouer({ ...relue, notions: ["fsa:3"], concepts: [] }).rounds === 3 && paramsPourRejouer({ ...relue, notions: ["fsa:3"], concepts: [] }).notions?.[0] === "fsa:3");
 const ligneSerie = { rang: 1, userId: "a", username: "A", avatarUrl: null, points: 1700, bonnes: 2, repondues: 2, tempsMs: 5, rangAvant: 1, pointsRound: 800, pointsAvant: 900, parRound: { 1: 900, 2: 800 } };
-const serieEnCours: SalleSerie = { id: "s", round: 2, rounds: 3, finie: false, termineeAt: null, prochain: 3, total: 7, classement: [ligneSerie] };
+const serieEnCours: SalleSerie = { id: "s", round: 2, rounds: 3, finie: false, termineeAt: null, parties: [], prochain: 3, total: 7, classement: [ligneSerie] };
 const serieFinie: SalleSerie = { ...serieEnCours, round: 3, finie: true, total: 10 };
 check("la partie n'est conclue qu'une fois le dernier classement lu", serieFinale(serieEnCours) === null && serieFinale({ ...serieFinie, classement: [] }) === null && serieFinale(serieFinie) === serieFinie);
 const partieRound = { id: "p", nb: 3, params: { rounds: 3 } };
@@ -88,6 +88,10 @@ check("le rideau du dernier round parle de toute la partie, sous sa propre clé"
 check("le rideau d'un round dit que le round est fini", rideauDeFin(partieRound, [], serieEnCours).session.nb === 3 && rideauDeFin(partieRound, [], serieEnCours).titre === "Round terminé");
 check("une partie simple garde son rideau", rideauDeFin({ id: "p", nb: 3, params: {} }, [], null).titre === undefined);
 check("le résumé d'un round annonce le round, pas toute la série", libelleSession({ nb: 10, params: { ...relue, nombre: 30 } }).startsWith("10 questions") && libelleSession({ nb: 30, params: paramsDepuisJson(paramsVersJson({ ...paramsParDefaut(), nombre: 30 })) }).startsWith("30 questions"));
+
+const faiblesSalle = [{ notion: "fsa:3", joueurs: 2 }, { notion: "quant:1", joueurs: 3 }, { notion: "ethics:3", joueurs: 1 }];
+const partage = partagerFaibles([{ notion: "quant:1" }, { notion: "fsa:3" }, { notion: "ethics:3" }], faiblesSalle);
+check("les notions communes passent à part, dans leur ordre", partage.communes.map((n) => n.notion).join() === "quant:1,fsa:3" && partage.seules.map((n) => n.notion).join() === "ethics:3");
 
 const a1 = "11111111-1111-4111-8111-111111111111";
 const a2 = "22222222-2222-4222-8222-222222222222";

@@ -1163,6 +1163,15 @@
   color: var(--sl-texte-2);
 }
 
+/* Les copies des autres rounds, sous le bilan */
+.copiesRounds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px 0;
+}
+
 /* L'annonce d'un round : une surface qui reste sombre, dans les deux thèmes */
 .annonce {
   position: fixed;

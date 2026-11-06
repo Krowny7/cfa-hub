@@ -3,16 +3,16 @@ import { salleFinie } from "@/lib/answer-stats";
 import type { DailyReviewItem } from "@/lib/daily";
 import { revueSalle } from "@/lib/salles/examen";
 import type { SalleCorrection, SalleItem, SalleMaReponse } from "@/lib/salles/types";
-import { RUNNER_SALLE } from "@/lib/voice-salles";
+import { PARTIE, RUNNER_SALLE } from "@/lib/voice-salles";
 
 // Ta copie d'une partie de Salle passée, pour la relire après coup (/salles/copie/<id>).
 // Lecture côté serveur avec le client admin (salle_items et salle_reponses n'ont pas de
 // policy), toujours filtrée sur le joueur connecté : il ne voit que sa copie, d'une partie
 // qu'il a jouée et qui est finie (les bonnes réponses restent cachées avant). QCM seulement.
 
-export type CopieSalle = { revue: DailyReviewItem[]; numero: number; titre: string };
+export type CopieSalle = { revue: DailyReviewItem[]; numero: number; titre: string; kicker?: string };
 
-type LigneSession = { id: string; salle_id: string | null; numero: number; statut: string; fin_at: string | null; params: { examens?: string[] } | null };
+type LigneSession = { id: string; salle_id: string | null; numero: number; statut: string; fin_at: string | null; params: { examens?: string[]; round?: number; rounds?: number } | null };
 type LigneItem = Omit<SalleItem, "choix" | "donnees"> & { question_id: string | null; choix: string[] | null; bonne_index: number | null; explication: string | null };
 type LigneReponse = { position: number; choix: number | null; valeur: number | null; juste: boolean; points: number; delai_ms: number };
 
@@ -35,5 +35,7 @@ export async function lireCopieSalle(admin: SupabaseClient, sessionId: string, u
     mes,
   );
   if (!revue?.length) return null;
-  return { revue, numero: s.numero, titre: s.params?.examens?.join(" + ") || RUNNER_SALLE.copieTitre };
+  const round = s.params?.round;
+  const rounds = s.params?.rounds;
+  return { revue, numero: s.numero, titre: s.params?.examens?.join(" + ") || (round && rounds ? PARTIE.roundTitre(round, rounds) : RUNNER_SALLE.copieTitre), kicker: round && rounds ? PARTIE.revueRound(round, rounds) : undefined };
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { memo, useState, type ComponentProps } from "react";
-import { ArrowLeft, ChartNoAxesColumn, Crown, RotateCcw, Trophy } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, ChartNoAxesColumn, Crown, ExternalLink, RotateCcw, Trophy } from "lucide-react";
 import { RideauSalle } from "@/components/arene/Rideaux";
 import { ActionsRound, type RetourRound } from "@/components/salles/ActionsRound";
 import { ClassementSerie } from "@/components/salles/ClassementSerie";
@@ -76,6 +77,8 @@ function FinPartieBase({
   const moiSerie = finale?.classement.find((l) => l.userId === moiId) ?? null;
   const bilanRound = bilanJoueur({ session, mesReponses, classement, monClassement, moiId });
   const bilan = finale ? { ...bilanRound, bonnes: moiSerie?.bonnes ?? 0, nb: finale.total, points: moiSerie?.points ?? 0, rang: moiSerie?.rang ?? null, sur: finale.classement.length } : bilanRound;
+  // les copies des autres rounds, ou de tous à la fin ; un round de calculs seuls n'a pas de copie à relire
+  const copies = session.params.type === "calculs" ? [] : (serie?.parties ?? []).filter((c) => finale || c.round !== serie?.round);
   const aDesPoints = lignes.some((l) => l.points > 0);
   const marches = aDesPoints ? podium(lignes.filter((l) => l.points > 0)) : [];
   const gagnant = aDesPoints ? lignes[0] : null;
@@ -209,6 +212,17 @@ function FinPartieBase({
               })}
             </ol>
           </details>
+        )}
+
+        {copies.length > 0 && (
+          <nav className={p.copiesRounds} aria-label={PARTIE.copiesRounds}>
+            <span className={s.libelle}>{PARTIE.copiesRounds}</span>
+            {copies.map((c) => (
+              <Link key={c.sessionId} href={`/salles/copie/${c.sessionId}`} target="_blank" className={[s.btn, s.btnDiscret].join(" ")} aria-label={PARTIE.copieRoundAide(c.round)}>
+                {PARTIE.copieRound(c.round)} <ExternalLink size={13} aria-hidden />
+              </Link>
+            ))}
+          </nav>
         )}
 
         <div className={p.finActions}>

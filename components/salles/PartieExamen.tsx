@@ -189,7 +189,7 @@ export function PartieExamen(props: PropsPartieExamen) {
             rideau={false}
           />
           {revue ? (
-            <RevueSalle revue={revue} numero={session.numero} titre={session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : titreSession(session)} />
+            <RevueSalle revue={revue} numero={session.numero} kicker={session.params.rounds && session.params.round ? PARTIE.revueRound(session.params.round, session.params.rounds) : undefined} titre={session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : titreSession(session)} />
           ) : (
             <DebriefExamen nb={session.nb} items={items} corrections={corrections} mesReponses={mesReponses} />
           )}
