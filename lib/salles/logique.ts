@@ -29,12 +29,11 @@ import type {
 // Constantes (les mêmes en SQL)
 
 export const SALLE_NOMBRE_MIN = 5;
-export const SALLE_NOMBRE_MAX = 50;
-/** Les nombres de questions proposés : 5, 10, 15 … 50. */
-export const SALLE_NOMBRES: number[] = Array.from({ length: SALLE_NOMBRE_MAX / 5 }, (_, i) => 5 * (i + 1));
+/** Une borne technique, pas une limite de jeu : seules les questions disponibles limitent une partie. */
+export const SALLE_NOMBRE_MAX = 99999;
 export const SALLE_TEMPS_MIN = 15;
 export const SALLE_TEMPS_MAX = 120;
-export const SALLE_TEMPS_DEFAUT = 45;
+export const SALLE_TEMPS_DEFAUT = 90;
 /** Les temps proposés par défaut dans l'écran de réglages (secondes). */
 export const SALLE_TEMPS_PROPOSES = [15, 20, 30, 45, 60, 90, 120];
 export const SALLE_PART_CALCULS_MIN = 10;
@@ -66,15 +65,13 @@ export const SALLE_CHRONOS: SalleChrono[] = ["question", "global"];
 export const SALLE_POINTS_GLOBAL = 1000;
 export const SALLE_SOURCES: SalleSource[] = ["banque", "mocks", "examen"];
 /** Mocks officiels : jusqu'à 600 questions (toutes les sessions, variantes comprises). */
-export const SALLE_NOMBRE_MAX_MOCK = 600;
+export const SALLE_NOMBRE_MAX_MOCK = SALLE_NOMBRE_MAX;
 
-/** Une partie se découpe en 10 rounds au plus, de 3 questions au moins (le serveur applique la même règle). */
-export const SALLE_ROUNDS_MAX = 10;
-export const SALLE_ROUND_MIN_QUESTIONS = 3;
-export const SALLE_ROUNDS_PROPOSES = [1, 2, 3, 4, 5, 6, 8, 10];
+/** Autant de rounds qu'on veut, tant que chacun garde une question (le serveur applique la même règle). */
+export const SALLE_ROUNDS_MAX = 99999;
 
 /** Le plus de rounds possible pour ce nombre de questions. */
-export const roundsMax = (nombre: number): number => Math.max(1, Math.min(SALLE_ROUNDS_MAX, Math.floor(nombre / SALLE_ROUND_MIN_QUESTIONS)));
+export const roundsMax = (nombre: number): number => Math.max(1, Math.min(SALLE_ROUNDS_MAX, nombre));
 
 /** La taille de chaque round : les premiers prennent les questions en plus. */
 export function tailleRounds(nombre: number, rounds: number): number[] {
@@ -401,10 +398,10 @@ export function validerParams(brut: unknown): { ok: true; params: SalleParams } 
 
   const surMock = r.source === "examen";
   const nombre = entier(r.nombre);
-  if (nombre === null) erreurs.push({ champ: "nombre", message: "Indique le nombre de questions (de 5 à 50)." });
+  if (nombre === null || nombre > SALLE_NOMBRE_MAX) erreurs.push({ champ: "nombre", message: "Indique le nombre de questions." });
   else if (surMock) {
-    if (nombre < 1 || nombre > SALLE_NOMBRE_MAX_MOCK) erreurs.push({ champ: "nombre", message: "Le nombre de questions va de 5 à 600 pour un mock." });
-  } else if (nombre < SALLE_NOMBRE_MIN || nombre > SALLE_NOMBRE_MAX) erreurs.push({ champ: "nombre", message: "Le nombre de questions va de 5 à 50." });
+    if (nombre < 1) erreurs.push({ champ: "nombre", message: "Indique le nombre de questions." });
+  } else if (nombre < SALLE_NOMBRE_MIN) erreurs.push({ champ: "nombre", message: "Une partie compte au moins 5 questions." });
 
   let temps = SALLE_TEMPS_DEFAUT;
   if (r.temps !== undefined && r.temps !== null && r.temps !== "") {
@@ -455,14 +452,14 @@ export function validerParams(brut: unknown): { ok: true; params: SalleParams } 
     const ordre = m.ordre === undefined || m.ordre === null || m.ordre === "" ? "examen" : m.ordre;
     if (!SALLE_MOCK_ORDRES.includes(ordre as SalleMockOrdre)) erreurs.push({ champ: "mock", message: "L'ordre est celui de l'examen ou mélangé." });
     const complet = m.complet === undefined || m.complet === null ? true : m.complet === true || m.complet === "true";
-    if (!complet && nombre !== null && nombre < SALLE_NOMBRE_MIN) erreurs.push({ champ: "nombre", message: "Le nombre de questions va de 5 à 600 pour un mock." });
+    if (!complet && nombre !== null && nombre < SALLE_NOMBRE_MIN) erreurs.push({ champ: "nombre", message: "Une partie compte au moins 5 questions." });
     mock = { examens, version: version as SalleMockVersion, complet, ordre: ordre as SalleMockOrdre };
   }
 
   let rounds = 1;
   if (r.rounds !== undefined && r.rounds !== null && r.rounds !== "") {
     const n = entier(r.rounds);
-    if (n === null || n < 1 || n > SALLE_ROUNDS_MAX) erreurs.push({ champ: "rounds", message: "Le nombre de rounds va de 1 à 10." });
+    if (n === null || n < 1 || n > SALLE_ROUNDS_MAX) erreurs.push({ champ: "rounds", message: "Indique le nombre de rounds." });
     else rounds = n;
   }
 
@@ -580,7 +577,8 @@ export function libelleDuree(secondes: number): string {
 export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" | "topics" | "difficulte" | "temps" | "mock" | "chrono" | "rounds" | "notions" | "concepts">): string {
   const nbNotions = (p.notions?.length ?? 0) + (p.concepts?.length ?? 0);
   const notions = nbNotions > 0 ? [`${nbNotions} notion${nbNotions > 1 ? "s" : ""}`] : [];
-  const temps = p.chrono === "global" ? `chrono global ${libelleDuree(chronoGlobalS(p))}` : `${p.temps} s`;
+  // en rounds, chaque round a son propre chrono
+  const temps = p.chrono !== "global" ? `${p.temps} s` : p.rounds ? `chrono global ${libelleDuree(chronoGlobalS({ ...p, nombre: Math.ceil(p.nombre / p.rounds) }))} par round` : `chrono global ${libelleDuree(chronoGlobalS(p))}`;
   const quoi = p.type === "calculs" ? "calculs" : p.type === "mixte" ? "questions et calculs" : "questions";
   const matieres = p.topics.length === SALLE_TOPIC_KEYS.length ? "toutes les matières" : `${p.topics.length} matière${p.topics.length > 1 ? "s" : ""}`;
   if (p.source === "examen" && p.mock) {

@@ -32,3 +32,20 @@ export const NOTIONS_CHOIX = {
   dispo: (n: number) => `${n} question${s(n)} disponible${s(n)}`,
   peu: (voulu: number, n: number) => `Il n'y a que ${n} question${s(n)} sur ce choix, pas ${voulu}.`,
 };
+
+/** Se retester sur ses ratures, depuis une copie. */
+export const RETEST = {
+  titre: (n: number) => (n > 1 ? `${n} ratures : c'est compris, maintenant ?` : "Une rature : c'est compris, maintenant ?"),
+  texte: "Des questions voisines, du même concept dès que possible, pour voir ce qui a changé.",
+  bouton: "Me retester",
+  epreuve: "Retest de tes ratures",
+  pret: "Retest de tes ratures · session prête",
+  regle: "Des questions voisines de tes ratures, du même concept dès que possible, et de préférence jamais vues.",
+  annuler: "Revenir à l'entraînement",
+  erreur: "Pas de question voisine disponible pour ces ratures.",
+  bilanTitre: "Alors, c'est compris ?",
+  bilanResume: (compris: number, total: number) => `${compris} concept${s(compris)} compris sur ${total}`,
+  compris: "Compris",
+  en_progres: "En progrès",
+  fragile: "Encore fragile",
+};

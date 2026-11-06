@@ -2,14 +2,16 @@
 
 import { usePresents } from "@/components/salles/presence";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Send } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { ChatSalle } from "@/components/salles/ChatSalle";
 import type { PropsPartieExamen } from "@/components/salles/PartieExamen";
 import { duelTopicLabel } from "@/lib/duels";
 import { avancementJoueurs, chronoBas, copieRendue, libelleChrono, positionDeDepart, prochaineNonRepondue, refusCopieRendue, reponsesRetenues } from "@/lib/salles/examen";
 import { DEFI } from "@/lib/voice-z2c";
-import { EXAMEN, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
+import { CONFIRMATION, EXAMEN, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
+import { BoutonEnvoi } from "@/components/classement/Encre";
+import { useConfirmation } from "@/components/salles/Confirmation";
 import { titreSession } from "@/lib/salles/partie";
 
 const LETTRES = ["A", "B", "C", "D", "E"];
@@ -93,9 +95,11 @@ export function RunnerSalle({
     if (suite !== null && suite !== courante) aller(suite);
   }, [aller, courante, nb, retenues]);
 
+  const { demander, dialogue } = useConfirmation();
+
   async function rendre() {
     if (rendue || envoi) return;
-    if (!window.confirm(RUNNER_SALLE.confirmRendre(blanches))) return;
+    if (!(await demander({ titre: CONFIRMATION.rendreTitre, texte: RUNNER_SALLE.confirmRendre(blanches), confirmer: DEFI.rendre, annuler: CONFIRMATION.continuer }))) return;
     setEnvoi(true);
     try {
       await rendreCopie();
@@ -108,7 +112,7 @@ export function RunnerSalle({
   }
 
   async function arreter() {
-    if (!onArreter || !window.confirm(SALLES.arreterConfirme)) return;
+    if (!onArreter || !(await demander({ titre: CONFIRMATION.arreterTitre, texte: SALLES.arreterConfirme, confirmer: SALLES.arreter, danger: true }))) return;
     await onArreter();
   }
 
@@ -124,6 +128,10 @@ export function RunnerSalle({
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // la confirmation ouverte garde le clavier pour elle
+      if (document.querySelector('[role="alertdialog"]')) return;
+      // un bouton qui a le focus garde son Entrée (« Rendre ma copie » au clavier)
+      if (el?.tagName === "BUTTON" && (e.key === "Enter" || e.key === " ")) return;
       const k = e.key.toLowerCase();
       const parChiffre = k.length === 1 ? "12345".indexOf(k) : -1;
       const parLettre = k.length === 1 ? "abcde".indexOf(k) : -1;
@@ -309,15 +317,16 @@ export function RunnerSalle({
                   {SALLES.arreter}
                 </button>
               )}
-              <button type="button" onClick={() => void rendre()} className={"font-semibold transition-colors hover:text-white " + (blanches === 0 ? "text-white underline underline-offset-4" : "")}>
-                {DEFI.rendre}
-              </button>
+              <BoutonEnvoi type="button" disabled={envoi} onClick={() => void rendre()}>
+                <Send size={15} aria-hidden /> {envoi ? EXAMEN.rendreEnvoi : DEFI.rendre}
+              </BoutonEnvoi>
             </div>
           </div>
         </>
       )}
       </div>
       </div>
+      {dialogue}
     </div>
   );
 }

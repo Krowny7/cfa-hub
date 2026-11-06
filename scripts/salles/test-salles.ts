@@ -307,7 +307,7 @@ async function main() {
     ok("mixte : chaînes numériques lues, matières dans l'ordre du programme, inconnues écartées", v1.ok && eq(v1.params, { type: "mixte", nombre: 20, source: "mocks", topics: ["ethics", "quant"], difficulte: "difficile", temps: 60, partCalculs: 50, chrono: "question" }), JSON.stringify(v1));
 
     const v2 = validerParams({ type: "calculs", nombre: 10, topics: ["quant"], source: "mocks", partCalculs: 30 });
-    ok("calculs : source ramenée à la banque, part 100, temps 45 et difficulté mélangée par défaut", v2.ok && eq(v2.params, { type: "calculs", nombre: 10, source: "banque", topics: ["quant"], difficulte: "melange", temps: 45, partCalculs: 100, chrono: "question" }), JSON.stringify(v2));
+    ok("calculs : source ramenée à la banque, part 100, temps 90 et difficulté mélangée par défaut", v2.ok && eq(v2.params, { type: "calculs", nombre: 10, source: "banque", topics: ["quant"], difficulte: "melange", temps: 90, partCalculs: 100, chrono: "question" }), JSON.stringify(v2));
 
     const v3 = validerParams({ type: "questions", nombre: 5, topics: ["fsa", "fsa", "fsa"], partCalculs: 70 });
     ok("questions : part de calculs ramenée à 0, matière en double comptée une fois", v3.ok && v3.params.partCalculs === 0 && eq(v3.params.topics, ["fsa"]), JSON.stringify(v3));
@@ -320,7 +320,7 @@ async function main() {
     refuse("type absent refusé", { ...base, type: undefined }, "type");
     refuse("type inconnu refusé", { ...base, type: "quiz" }, "type");
     refuse("nombre 4 refusé", { ...base, nombre: 4 }, "nombre");
-    refuse("nombre 51 refusé", { ...base, nombre: 51 }, "nombre");
+    ok("pas de plafond : 3 000 questions acceptées, seules les questions disponibles limitent", validerParams({ ...base, nombre: 3000 }).ok);
     refuse("nombre décimal refusé", { ...base, nombre: 12.5 }, "nombre");
     refuse("nombre illisible refusé", { ...base, nombre: "abc" }, "nombre");
     refuse("nombre absent refusé", { ...base, nombre: undefined }, "nombre");
@@ -747,7 +747,7 @@ async function main() {
     } catch (e) {
       msg = (e as Error).message;
     }
-    ok("lancerSession : réglages invalides refusés avant tout appel, tous les messages réunis", appelsKo.length === 0 && /nombre de questions va de 5 à 50/.test(msg) && /au moins une matière/.test(msg), msg);
+    ok("lancerSession : réglages invalides refusés avant tout appel, tous les messages réunis", appelsKo.length === 0 && /au moins 5 questions/.test(msg) && /au moins une matière/.test(msg), msg);
 
     let pasAdmin = "";
     try {

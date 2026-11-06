@@ -1,7 +1,8 @@
 // Le calcul du choix par notion. Lancer : npx tsx --tsconfig ./tsconfig.json scripts/notions/test-choix.ts
 import { choixDisponible, choixVide, contientRecherche, matiereDeNotion, matieresDuChoix, plat, questionsDuChoix, type NotionDispo } from "@/lib/notions-choix";
 import { chercherProches, ecart, motsDe, type IndexMots } from "@/lib/notions-proches";
-import { paramsDepuisJson, paramsParDefaut, paramsVersJson, roundsMax, tailleRounds, validerParams } from "@/lib/salles/logique";
+import { bilanRetest, lienSimilaires, lireSimilaires, ratures, type CibleRetest } from "@/lib/notions-similaires";
+import { libelleParams, paramsDepuisJson, paramsParDefaut, paramsVersJson, roundsMax, tailleRounds, validerParams } from "@/lib/salles/logique";
 import { libelleSession, paramsPourRejouer, rideauDeFin, serieFinale, titreSession } from "@/lib/salles/partie";
 import type { SalleSerie } from "@/lib/salles/types";
 
@@ -69,10 +70,13 @@ const libelles: IndexMots = { cibles: [["fsa:3", "EPS", 20], ["alternatives:2", 
 check("le terme présent dans le libellé passe devant", chercherProches("frais", libelles, dispo)[0]?.notion === "alternatives:2");
 
 check("les rounds se partagent les questions, les premiers prennent le reste", tailleRounds(10, 3).join() === "4,3,3" && tailleRounds(30, 3).join() === "10,10,10");
-check("un round garde au moins 3 questions, et il y en a 10 au plus", roundsMax(5) === 1 && roundsMax(6) === 2 && roundsMax(50) === 10);
-check("un nombre de rounds hors limites est refusé", !validerParams({ ...paramsParDefaut(), rounds: 11 }).ok);
+check("un round garde au moins une question, sans autre limite", roundsMax(5) === 5 && roundsMax(3000) === 3000);
+check("100 rounds de 30 et 10 rounds de 180 passent", validerParams({ ...paramsParDefaut(), nombre: 3000, rounds: 100 }).ok && validerParams({ ...paramsParDefaut(), nombre: 1800, rounds: 10 }).ok);
+check("100 rounds de 30 se partagent à parts égales", tailleRounds(3000, 100).every((n) => n === 30) && tailleRounds(3000, 100).length === 100);
+check("zéro round est refusé", !validerParams({ ...paramsParDefaut(), rounds: 0 }).ok);
 const relue = paramsDepuisJson({ ...paramsVersJson({ ...paramsParDefaut(), rounds: 3 }), round: 2 });
 check("une partie relue sait son round", relue.rounds === 3 && relue.round === 2 && titreSession({ numero: 7, params: relue }) === "Round 2 sur 3");
+check("en chrono global, le résumé annonce la durée d'un round", libelleParams({ ...paramsParDefaut(), nombre: 3000, temps: 90, rounds: 100, chrono: "global" }).includes("chrono global 45 min par round") && libelleParams({ ...paramsParDefaut(), nombre: 3000, temps: 90, rounds: 100, chrono: "global" }).includes("100 rounds"));
 check("une partie sans round garde son nom", titreSession({ numero: 7, params: paramsDepuisJson(paramsVersJson(paramsParDefaut())) }) === "Partie 7");
 check("rejouer garde les rounds et les notions", paramsPourRejouer({ ...relue, notions: ["fsa:3"], concepts: [] }).rounds === 3 && paramsPourRejouer({ ...relue, notions: ["fsa:3"], concepts: [] }).notions?.[0] === "fsa:3");
 const ligneSerie = { rang: 1, userId: "a", username: "A", avatarUrl: null, points: 1700, bonnes: 2, repondues: 2, tempsMs: 5, rangAvant: 1, pointsRound: 800, pointsAvant: 900, parRound: { 1: 900, 2: 800 } };
@@ -84,6 +88,24 @@ check("le rideau du dernier round parle de toute la partie, sous sa propre clé"
 check("le rideau d'un round dit que le round est fini", rideauDeFin(partieRound, [], serieEnCours).session.nb === 3 && rideauDeFin(partieRound, [], serieEnCours).titre === "Round terminé");
 check("une partie simple garde son rideau", rideauDeFin({ id: "p", nb: 3, params: {} }, [], null).titre === undefined);
 check("le résumé d'un round annonce le round, pas toute la série", libelleSession({ nb: 10, params: { ...relue, nombre: 30 } }).startsWith("10 questions") && libelleSession({ nb: 30, params: paramsDepuisJson(paramsVersJson({ ...paramsParDefaut(), nombre: 30 })) }).startsWith("30 questions"));
+
+const a1 = "11111111-1111-4111-8111-111111111111";
+const a2 = "22222222-2222-4222-8222-222222222222";
+check("les ratures : sans doublon, ni vide, ni autre chose qu'un identifiant", ratures([a1, a1, "", null, "x", a2]).join() === `${a1},${a2}`);
+check("le lien du retest se relit", lireSimilaires(lienSimilaires([a1, a2]).split("=")[1]).length === 2 && lireSimilaires("<script>,1").length === 0 && lireSimilaires(null).length === 0);
+const quatreVingts = Array.from({ length: 80 }, (_, i) => `${String(i).padStart(8, "0")}-1111-4111-8111-111111111111`);
+check("les ratures sont plafonnées, réparties sur toute la copie", ratures(quatreVingts).length === 60 && ratures(quatreVingts).at(-1) === quatreVingts[78] && new Set(ratures(quatreVingts)).size === 60);
+const cible = (id: string, concept: string | null): CibleRetest => ({ questionId: id, topic: "fsa", notion: "fsa:2", concept });
+const bilan = bilanRetest([cible("a", "EPS"), cible("b", "EPS"), cible("c", "Goodwill"), cible("d", "Stocks"), cible("e", "Stocks"), cible("f", null), cible("g", "Absent")], [
+  { question_id: "a", is_correct: true },
+  { question_id: "b", is_correct: true },
+  { question_id: "c", is_correct: false },
+  { question_id: "d", is_correct: true },
+  { question_id: "e", is_correct: false },
+  { question_id: "f", is_correct: true },
+]);
+check("le bilan : ce qui coince d'abord, puis les progrès, puis ce qui est compris", bilan.map((l) => `${l.libelle}:${l.verdict}`).join() === "Goodwill:fragile,Stocks:en_progres,Analyse des États Financiers:compris,EPS:compris");
+check("le bilan compte les justes par concept, et oublie ce qui n'a pas été corrigé", bilan.find((l) => l.libelle === "Stocks")?.justes === 1 && bilan.find((l) => l.libelle === "Stocks")?.total === 2 && !bilan.some((l) => l.libelle === "Absent"));
 
 console.log(ko ? `${ko} vérification(s) en échec` : "tout est vert");
 process.exit(ko ? 1 : 0);

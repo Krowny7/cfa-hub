@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Clock, Globe, History, Lock, LogOut, MessageCircle, SlidersHorizontal, Trash2 } from "lucide-react";
 import { fmtInt } from "@/components/classement/format";
 import { ChatSalle } from "@/components/salles/ChatSalle";
+import { useConfirmation } from "@/components/salles/Confirmation";
 import { CodePartage } from "@/components/salles/CodePartage";
 import { JeuAttente } from "@/components/salles/JeuAttente";
 import { Membres } from "@/components/salles/Membres";
@@ -12,7 +13,7 @@ import { ReglagesLecture } from "@/components/salles/Reglages";
 import { Stage, TetePanneau } from "@/components/salles/Stage";
 import { estChronoGlobal } from "@/lib/salles/examen";
 import type { EtatSalle, SalleParams } from "@/lib/salles/types";
-import { REGLAGES, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
+import { CONFIRMATION, REGLAGES, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 
 // Le salon d'une salle (la salle d'attente), sur le papier du site
@@ -56,6 +57,7 @@ export function SalonView({
   const ici = presents ? membres.filter((m) => m.userId === moi.userId || presents.has(m.userId)) : membres;
   const nbIci = presents ? ici.length : nbMembres;
   const [occupe, setOccupe] = useState(false);
+  const { demander, dialogue } = useConfirmation();
   const admin = membres.find((m) => m.estAdmin);
   const nomAdmin = admin?.username?.trim() || "Un joueur";
 
@@ -183,6 +185,7 @@ export function SalonView({
         </div>
       )}
 
+      {dialogue}
       {!enJeuGlobal && (
       <footer className={s.pied}>
         <div className={s.piedActions}>
@@ -190,8 +193,8 @@ export function SalonView({
             type="button"
             className={[s.btn, s.btnDiscret].join(" ")}
             disabled={occupe}
-            onClick={() => {
-              if (actions.quitter && window.confirm(quitterMsg)) void agir(() => actions.quitter!(nbMembres <= 1));
+            onClick={async () => {
+              if (actions.quitter && (await demander({ titre: CONFIRMATION.quitterTitre, texte: quitterMsg, confirmer: SALLES.quitter, danger: true }))) void agir(() => actions.quitter!(nbMembres <= 1));
             }}
           >
             <LogOut size={16} aria-hidden /> {SALLES.quitter}
@@ -205,8 +208,8 @@ export function SalonView({
                 type="button"
                 className={[s.btn, s.btnDiscret, s.btnDanger].join(" ")}
                 disabled={occupe}
-                onClick={() => {
-                  if (actions.supprimer && window.confirm(SALLES.supprimerConfirme)) void agir(actions.supprimer);
+                onClick={async () => {
+                  if (actions.supprimer && (await demander({ titre: CONFIRMATION.supprimerTitre, texte: SALLES.supprimerConfirme, confirmer: SALLES.supprimer, danger: true }))) void agir(actions.supprimer);
                 }}
               >
                 <Trash2 size={16} aria-hidden /> {SALLES.supprimer}

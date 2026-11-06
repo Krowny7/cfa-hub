@@ -12,6 +12,7 @@ import { Icone } from "@/components/adn/icons";
 import { CLASSEMENT, PARTIE, motIssue } from "@/lib/voice-z2";
 import { clock, decisiveQuestion, duelTopicLabel, reviewHasOpponent, type DuelReviewItem, type DuelState } from "@/lib/duels";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
+import { RetestRatures } from "@/components/notions/RetestRatures";
 import PctScore from "@/components/adn/PctScore";
 
 type Filter = "errors" | "all";
@@ -196,6 +197,8 @@ export function DuelReview({ state, review, initialFilter }: Props) {
           </div>
         )}
       </section>
+
+      <RetestRatures questionIds={errors.filter((q) => q.selectedIndex !== null).map((q) => q.questionId)} />
 
       {/* Copier pour l'IA : le point focal */}
       <section className="card-ink p-6 md:p-8" aria-label="Copier pour l'IA">

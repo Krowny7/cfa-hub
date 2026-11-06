@@ -95,6 +95,8 @@ export type PropsPartieExamen = {
   serie?: SalleSerie | null;
   onLancerRound?: () => Promise<RetourRound>;
   onTerminerSerie?: () => Promise<RetourRound>;
+  /** entre deux rounds : le jeu de la salle d'attente */
+  jeu?: React.ReactNode;
   onRetour?: () => void;
 };
 
@@ -151,16 +153,18 @@ function FinEnAttente({ session }: { session: SalleSession }) {
 }
 
 export function PartieExamen(props: PropsPartieExamen) {
-  const { session, items, corrections, mesReponses, locales, classement, monClassement, membres, moi, estAdmin, t, repondre, onArreter, onRejouer, onRetour, serie, onLancerRound, onTerminerSerie } = props;
+  const { session, items, corrections, mesReponses, locales, classement, monClassement, membres, moi, estAdmin, t, repondre, onArreter, onRejouer, onRetour, serie, onLancerRound, onTerminerSerie, jeu } = props;
   const h = horlogeExamen(session, t);
   const presents = usePresents();
+  // mémorisée : le chrono redessine l'écran cinq fois par seconde, pas la correction
+  const fini = h.phase === "fin";
+  const revue = useMemo(() => (fini && session.params.type === "questions" && finRevelee(session, mesReponses) ? revueSalle(items, corrections, mesReponses) : null), [fini, session, items, corrections, mesReponses]);
 
   if (h.phase === "fin") {
     // la fin tombe à l'horloge avant que le serveur ne la confirme : l'état lu est encore celui
     // de la partie (classement à 0, justesse masquée) ; on attend la lecture qui révèle tout
     if (!finRevelee(session, mesReponses)) return <FinEnAttente session={session} />;
     // QCM seulement : la revue des 30 du jour (filtres, matières, « Copier pour l'IA ») ; sinon l'ancien débrief
-    const revue = session.params.type === "questions" ? revueSalle(items, corrections, mesReponses) : null;
     // le rideau couvre tout ce qui dit le résultat : le podium, le bilan et la correction
     const scene = rideauDeFin(session, classement, serie);
     return (
@@ -180,6 +184,7 @@ export function PartieExamen(props: PropsPartieExamen) {
             serie={serie}
             onLancerRound={onLancerRound}
             onTerminerSerie={onTerminerSerie}
+            jeu={jeu}
             revue={false}
             rideau={false}
           />

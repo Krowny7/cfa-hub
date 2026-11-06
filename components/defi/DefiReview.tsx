@@ -10,6 +10,7 @@ import { clock, duelTopicLabel } from "@/lib/duels";
 import { FORMATS, dayHref, dayLabel, rankLine, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
 import { DEFI, verdictCopie, voixDefi } from "@/lib/voice-z2c";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
+import { RetestRatures } from "@/components/notions/RetestRatures";
 import PctScore from "@/components/adn/PctScore";
 
 type Filter = "errors" | "all";
@@ -147,6 +148,8 @@ export function DefiReview({ info, review, initialFilter }: Props) {
           </div>
         )}
       </section>
+
+      <RetestRatures questionIds={errors.filter((q) => q.selectedIndex !== null).map((q) => q.questionId)} />
 
       {/* Copier pour l'IA : le point focal */}
       <section className="card-ink p-6 md:p-8" aria-label={DEFI.iaTout}>

@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { ARENE } from "@/lib/voice-arene";
 import { PARTIE, SALLES } from "@/lib/voice-salles";
 import { AnnonceRound } from "@/components/salles/AnnonceRound";
+import { JeuAttente } from "@/components/salles/JeuAttente";
 import type { RetourRound } from "@/components/salles/ActionsRound";
 import { titreSession } from "@/lib/salles/partie";
 import s from "./Salles.module.css";
@@ -170,6 +171,13 @@ export function PartieSalle({
   const moiAvatar = moiMembre?.avatarUrl ?? null;
   const moi = useMemo(() => ({ userId: moiId, username: moiNom, avatarUrl: moiAvatar }), [moiId, moiNom, moiAvatar]);
 
+  // entre deux rounds, le jeu de la salle d'attente : le même canal que le salon. Mémorisé : le
+  // chrono redessine l'écran cinq fois par seconde, l'écran de fin ne doit pas le suivre
+  const enPause = etat.serie !== null && etat.serie !== undefined && !etat.serie.finie;
+  const canal = etat.salle.id;
+  const membres = etat.membres;
+  const jeu = useMemo(() => (enPause ? <JeuAttente canal={canal} moiId={moiId} membres={membres} /> : null), [enPause, canal, moiId, membres]);
+
   if (!ses) return null;
 
   // avant le montage, ou tant que l'horloge n'est pas calée sur celle du serveur
@@ -210,6 +218,7 @@ export function PartieSalle({
         serie={etat.serie}
         onLancerRound={onLancerRound}
         onTerminerSerie={onTerminerSerie}
+        jeu={jeu}
       />
     );
   }
@@ -236,6 +245,7 @@ export function PartieSalle({
         serie={etat.serie}
         onLancerRound={onLancerRound}
         onTerminerSerie={onTerminerSerie}
+        jeu={jeu}
       />
     </>
   );

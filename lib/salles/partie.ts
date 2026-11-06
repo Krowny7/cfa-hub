@@ -228,7 +228,7 @@ export const serieFinale = (serie: SalleSerie | null | undefined): SalleSerie | 
 /** Le résumé d'une partie : celui du round en cours quand il y en a, car params garde le total de la série. */
 export function libelleSession(s: Pick<SalleSession, "nb" | "params">, chrono?: SalleChrono): string {
   const p = chrono ? { ...s.params, chrono } : s.params;
-  return libelleParams(p.rounds ? { ...p, nombre: s.nb } : p);
+  return libelleParams(p.rounds ? { ...p, nombre: s.nb, rounds: undefined } : p);
 }
 
 /**

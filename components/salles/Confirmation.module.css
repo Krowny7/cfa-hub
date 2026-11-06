@@ -1,0 +1,87 @@
+/* La confirmation des Salles : une boîte du site, sur un voile sombre */
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 270;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(12, 8, 5, 0.55);
+  backdrop-filter: blur(3px);
+  animation: voile 0.16s ease both;
+}
+@keyframes voile {
+  from {
+    opacity: 0;
+  }
+}
+.boite {
+  width: min(440px, 100%);
+  outline: none;
+  padding: 24px;
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  background: var(--surface-3);
+  color: var(--ink);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  animation: boite 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes boite {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+.contenu {
+  display: grid;
+  gap: 10px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+.refus,
+.danger {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.refus {
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--ink);
+}
+.refus:hover {
+  background: var(--well);
+}
+.danger {
+  border: 1px solid transparent;
+  /* une couleur fixe : --pen s'éclaircit la nuit, le blanc n'y serait plus lisible */
+  background: #b4412f;
+  color: #fff;
+}
+.danger:hover {
+  filter: brightness(1.08);
+}
+.refus:focus-visible,
+.danger:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .voile,
+  .boite {
+    animation: none;
+  }
+}
+:global(html[data-discreet="1"]) .voile,
+:global(html[data-discreet="1"]) .boite {
+  animation: none;
+}

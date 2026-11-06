@@ -1418,3 +1418,59 @@
 :global(html[data-discreet="1"]) .pointVif {
   animation: none;
 }
+
+/* Les nombres d'une partie : rounds et questions, qu'on tape ou qu'on ajuste */
+.compteurs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.compteur {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.compteurLigne {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  align-items: stretch;
+  min-height: 52px;
+  overflow: hidden;
+  border: 1px solid var(--sl-trait);
+  border-radius: 12px;
+  background: var(--sl-carte);
+}
+.compteurLigne:focus-within {
+  border-color: var(--sl-texte);
+}
+.compteurPas {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--sl-texte);
+  cursor: pointer;
+}
+.compteurPas:hover:not(:disabled) {
+  background: var(--sl-puits);
+}
+.compteurPas:disabled {
+  color: var(--sl-texte-2);
+  opacity: 0.45;
+  cursor: default;
+}
+.compteurValeur {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--sl-texte);
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: 22px;
+  letter-spacing: var(--sl-brand-ls);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

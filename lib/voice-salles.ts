@@ -116,18 +116,35 @@ export const SALLES = {
   partieDecompte: "La partie démarre",
   partieSous: "L'écran de jeu s'affiche ici. Les questions arrivent en direct, au même moment pour tout le monde.",
   arreter: "Arrêter la partie",
-  arreterConfirme: "Arrêter la partie maintenant ? Les points déjà marqués restent, la correction s'ouvre.",
+  arreterConfirme: "Les points déjà marqués restent, la correction s'ouvre.",
 } as const;
 
 /** Les réglages de l'admin. */
+/** La confirmation des Salles (components/salles/Confirmation.tsx). */
+export const CONFIRMATION = {
+  annuler: "Annuler",
+  arreterTitre: "Arrêter la partie ?",
+  quitterTitre: "Quitter la salle ?",
+  supprimerTitre: "Supprimer la salle ?",
+  terminerTitre: "Terminer ici ?",
+  rendreTitre: "Rendre ta copie ?",
+  continuer: "Continuer",
+} as const;
+
 export const REGLAGES = {
   titre: "Réglages de la partie",
   rounds: "Rounds",
-  roundsUn: "Un seul",
-  roundsAide: (tailles: number[]) => {
+  parRound: "Questions par round",
+  nombreSeul: "Questions",
+  moins: (titre: string) => `Un de moins : ${titre}`,
+  plus: (titre: string) => `Un de plus : ${titre}`,
+  roundsResume: (tailles: number[], total: number, dispo: number | null) => {
+    const n = (x: number) => x.toLocaleString("fr-FR");
+    const reste = dispo !== null && dispo > 0 ? ` sur ${n(dispo)} disponibles` : "";
+    if (tailles.length <= 1) return `${n(total)} question${total > 1 ? "s" : ""}${reste}.`;
     const min = Math.min(...tailles);
     const max = Math.max(...tailles);
-    return `${tailles.length} rounds de ${min === max ? min : `${min} à ${max}`} questions. Les résultats tombent à chaque round, tu lances le suivant quand tout le monde est prêt, et les points s'additionnent.`;
+    return `${n(tailles.length)} rounds de ${min === max ? n(min) : `${n(min)} à ${n(max)}`} question${max > 1 ? "s" : ""}, soit ${n(total)} questions${reste}. Les résultats tombent à chaque round, tu lances le suivant quand tout le monde est prêt, et les points s'additionnent.`;
   },
   lectureTitre: "Réglages de la partie",
   /** le parcours : une question à la fois */
@@ -326,7 +343,7 @@ export const PARTIE = {
   attenteRound: (round: number) => `L'admin lance le round ${round} quand tout le monde est prêt.`,
   roundAttenteSalon: (round: number, rounds: number) => `La partie continue : round ${round} sur ${rounds}.`,
   terminerSerie: "Terminer ici",
-  terminerSerieConfirme: "Terminer maintenant ? Le classement actuel devient le classement final.",
+  terminerSerieConfirme: "Le classement actuel devient le classement final.",
   roundErreur: "Le lancement n'a pas abouti. Réessaie dans un instant.",
 } as const;
 
@@ -437,9 +454,7 @@ export const RUNNER_SALLE = {
   changer: "Changer ma réponse",
   dejaRepondue: (lettre: string) => `Ta réponse : ${lettre}. Choisis-en une autre pour la changer.`,
   confirmRendre: (blanches: number) =>
-    blanches > 0
-      ? `Rendre ta copie ? ${blanches} question${blanches > 1 ? "s" : ""} sans réponse. Tu ne pourras plus rien changer.`
-      : "Rendre ta copie ? Tu ne pourras plus rien changer.",
+    blanches > 0 ? `${blanches} question${blanches > 1 ? "s" : ""} sans réponse. Tu ne pourras plus rien changer.` : "Tu ne pourras plus rien changer.",
   rendueTitre: "Copie rendue.",
   rendueTexte: "La correction arrive quand tout le monde a rendu sa copie, ou à la fin du chrono.",
   joueur: (nom: string, n: number, total: number, rendu: boolean) => `${nom} · ${n}/${total}${rendu ? " · copie rendue" : ""}`,

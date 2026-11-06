@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Flag, Play } from "lucide-react";
 import { BoutonEnvoi } from "@/components/classement/Encre";
+import { useConfirmation } from "@/components/salles/Confirmation";
 import type { SalleSerie } from "@/lib/salles/types";
-import { PARTIE } from "@/lib/voice-salles";
+import { CONFIRMATION, PARTIE } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 
 // L'admin, entre deux rounds : lancer le suivant, ou s'arrêter là (le classement
@@ -30,6 +31,7 @@ export function ActionsRound({
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const suivant = serie.round + 1;
+  const { demander, dialogue } = useConfirmation();
 
   async function agir(f: () => Promise<RetourRound>) {
     if (occupe) return;
@@ -53,13 +55,14 @@ export function ActionsRound({
           type="button"
           className={[s.btn, s.btnDiscret].join(" ")}
           disabled={occupe || !pret}
-          onClick={() => {
-            if (window.confirm(PARTIE.terminerSerieConfirme)) void agir(onTerminerSerie);
+          onClick={async () => {
+            if (await demander({ titre: CONFIRMATION.terminerTitre, texte: PARTIE.terminerSerieConfirme, confirmer: PARTIE.terminerSerie })) void agir(onTerminerSerie);
           }}
         >
           <Flag size={15} aria-hidden /> {PARTIE.terminerSerie}
         </button>
       )}
+      {dialogue}
       {erreur && (
         <p className={s.erreur} role="alert" style={{ flexBasis: "100%", margin: 0 }}>
           {erreur}

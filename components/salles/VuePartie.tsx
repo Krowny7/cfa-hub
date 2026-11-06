@@ -6,6 +6,7 @@ import { CarteQuestion, etiquettesDe, type Repondre } from "@/components/salles/
 import { ClassementDirect } from "@/components/salles/ClassementDirect";
 import type { RetourRound } from "@/components/salles/ActionsRound";
 import { ClassementSerie } from "@/components/salles/ClassementSerie";
+import { useConfirmation } from "@/components/salles/Confirmation";
 import { FinPartie } from "@/components/salles/FinPartie";
 import { TetePanneau } from "@/components/salles/Stage";
 import { clockDe, horlogeSession, pointsAu } from "@/lib/salles/logique";
@@ -23,7 +24,7 @@ import {
   type ReponseOk,
 } from "@/lib/salles/partie";
 import type { SalleClassementLigne, SalleCorrection, SalleItem, SalleMaReponse, SalleSerie, SalleSession } from "@/lib/salles/types";
-import { PARTIE, SALLES } from "@/lib/voice-salles";
+import { CONFIRMATION, PARTIE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 import p from "./Partie.module.css";
 
@@ -58,18 +59,23 @@ export type PropsVuePartie = {
   serie?: SalleSerie | null;
   onLancerRound?: () => Promise<RetourRound>;
   onTerminerSerie?: () => Promise<RetourRound>;
+  /** entre deux rounds : le jeu de la salle d'attente */
+  jeu?: React.ReactNode;
 };
 
 /** « Arrêter la partie » (admin), avec confirmation : la correction s'ouvre, les points marqués restent. */
 export function BoutonArreter({ onArreter }: { onArreter: () => Promise<void> }) {
   const [arret, setArret] = useState(false);
+  const { demander, dialogue } = useConfirmation();
   return (
+    <>
+    {dialogue}
     <button
       type="button"
       className={[s.btn, s.btnDiscret, s.btnDanger].join(" ")}
       disabled={arret}
       onClick={async () => {
-        if (!window.confirm(SALLES.arreterConfirme)) return;
+        if (!(await demander({ titre: CONFIRMATION.arreterTitre, texte: SALLES.arreterConfirme, confirmer: SALLES.arreter, danger: true }))) return;
         setArret(true);
         try {
           await onArreter();
@@ -80,6 +86,7 @@ export function BoutonArreter({ onArreter }: { onArreter: () => Promise<void> })
     >
       <Square size={14} aria-hidden /> {SALLES.arreter}
     </button>
+    </>
   );
 }
 
@@ -116,7 +123,7 @@ function Decompte({ session, avantMs, onArreter, serie, moiId }: { session: Sall
 }
 
 export function VuePartie(props: PropsVuePartie) {
-  const { session, items, corrections, mesReponses, locales, classement, monClassement, moi, estAdmin, t, repondre, onArreter, onRejouer, onRetour, serie, onLancerRound, onTerminerSerie } = props;
+  const { session, items, corrections, mesReponses, locales, classement, monClassement, moi, estAdmin, t, repondre, onArreter, onRejouer, onRetour, serie, onLancerRound, onTerminerSerie, jeu } = props;
   const clock = clockDe(session);
   const h = horlogeSession(clock, t);
 
@@ -136,7 +143,7 @@ export function VuePartie(props: PropsVuePartie) {
         </section>
       );
     }
-    return <FinPartie session={session} items={items} corrections={corrections} mesReponses={mesReponses} classement={classement} monClassement={monClassement} moiId={moi.userId} estAdmin={estAdmin} onRejouer={onRejouer} onRetour={onRetour} serie={serie} onLancerRound={onLancerRound} onTerminerSerie={onTerminerSerie} />;
+    return <FinPartie session={session} items={items} corrections={corrections} mesReponses={mesReponses} classement={classement} monClassement={monClassement} moiId={moi.userId} estAdmin={estAdmin} onRejouer={onRejouer} onRetour={onRetour} serie={serie} onLancerRound={onLancerRound} onTerminerSerie={onTerminerSerie} jeu={jeu} />;
   }
   if (h.phase === "decompte") return <Decompte session={session} avantMs={h.avantProchainMs ?? 0} onArreter={onArreter} serie={serie} moiId={moi.userId} />;
 

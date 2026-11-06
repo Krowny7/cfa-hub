@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChoixNotions, type InfoChoix } from "@/components/notions/ChoixNotions";
 import type { NotionATravailler, NotionDispo } from "@/lib/notions-choix";
 import { NOTIONS_CHOIX } from "@/lib/voice-notions";
-import { ArrowLeft, ArrowRight, ChevronDown, Play } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, Minus, Play, Plus } from "lucide-react";
 import { BoutonEnvoi, PAL } from "@/components/classement/Encre";
 import { EncreVive } from "@/components/nav/EncreVive";
 import { MIX_DEFAUT } from "@/lib/calc/session";
@@ -33,7 +33,7 @@ import {
   sessionJouable,
   sessionsMock,
   validerParams,
-  SALLE_ROUNDS_PROPOSES,
+  SALLE_ROUNDS_MAX,
   roundsMax,
   tailleRounds,
 } from "@/lib/salles/logique";
@@ -139,6 +139,46 @@ function Choix<T extends string>({ titre, options, valeur, onChoix, petits = fal
           {o.compte && <span className={s.puceCompte}>{o.compte}</span>}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** Un nombre qu'on tape ou qu'on ajuste. Tapé, il compte quand on a fini (Entrée ou en quittant le champ) : les chiffres de passage ne déplacent pas l'autre réglage, et Entrée ne lance pas la partie. */
+function Compteur({ id, titre, valeur, min, max, onChange }: { id: string; titre: string; valeur: number; min: number; max: number; onChange: (n: number) => void }) {
+  const [saisie, setSaisie] = useState<string | null>(null);
+  const borne = (n: number) => Math.min(max, Math.max(min, n));
+  const valider = () => {
+    if (saisie) onChange(borne(Number(saisie)));
+    setSaisie(null);
+  };
+  return (
+    <div className={s.compteur}>
+      <label htmlFor={id} className={s.libelle}>
+        {titre}
+      </label>
+      <div className={s.compteurLigne}>
+        <button type="button" className={s.compteurPas} aria-label={REGLAGES.moins(titre)} disabled={valeur <= min} onClick={() => onChange(borne(valeur - 1))}>
+          <Minus size={16} aria-hidden />
+        </button>
+        <input
+          id={id}
+          className={s.compteurValeur}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          value={saisie ?? String(valeur)}
+          onChange={(e) => setSaisie(e.target.value.replace(/\D/g, "").slice(0, 5))}
+          onBlur={valider}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            valider();
+          }}
+        />
+        <button type="button" className={s.compteurPas} aria-label={REGLAGES.plus(titre)} disabled={valeur >= max} onClick={() => onChange(borne(valeur + 1))}>
+          <Plus size={16} aria-hidden />
+        </button>
+      </div>
     </div>
   );
 }
@@ -301,12 +341,6 @@ export function Reglages({
         source: params.type === "calculs" || params.source === "examen" ? "banque" : params.source,
         mock: undefined,
       };
-  // les rounds suivent le nombre de questions : moins de questions, moins de rounds possibles
-  const maxRounds = roundsMax(reelBrut.nombre);
-  const nbRounds = SALLE_ROUNDS_PROPOSES.filter((n) => n <= Math.min(params.rounds ?? 1, maxRounds)).at(-1) ?? 1;
-  const reel: SalleParams = { ...reelBrut, rounds: nbRounds > 1 ? nbRounds : undefined };
-  const { questions: nbQuestions, calculs: nbCalculs } = repartirNombre(reel);
-
   // les effectifs de la source choisie, lus une fois par source (sauf calculs seuls et mocks officiels)
   const besoinSource = params.type !== "calculs" && !surMock ? params.source : null;
   useEffect(() => {
@@ -321,7 +355,13 @@ export function Reglages({
   }, [besoinSource, chargerDispos, dispos]);
 
   const dispoSource = besoinSource ? dispos[besoinSource] : undefined;
-  const dispo = parNotions && infoNotions.total > 0 ? infoNotions.total : surMock ? dispoMock : nbQuestions > 0 ? disponibles(dispoSource, reel.topics, reel.difficulte) : null;
+  const dispo = parNotions && infoNotions.total > 0 ? infoNotions.total : surMock ? dispoMock : repartirNombre(reelBrut).questions > 0 ? disponibles(dispoSource, reelBrut.topics, reelBrut.difficulte) : null;
+  // pas d'autre limite que les questions disponibles ; les calculs, eux, se comptent au tirage
+  const plafond = surMock ? maxPartie : params.type === "questions" && dispo !== null && dispo > 0 ? dispo : SALLE_NOMBRE_MAX;
+  const nombre = surMock ? reelBrut.nombre : Math.max(SALLE_NOMBRE_MIN, Math.min(reelBrut.nombre, plafond));
+  const nbRounds = Math.min(params.rounds ?? 1, roundsMax(nombre));
+  const reel: SalleParams = { ...reelBrut, nombre, rounds: nbRounds > 1 ? nbRounds : undefined };
+  const { questions: nbQuestions, calculs: nbCalculs } = repartirNombre(reel);
   /** ce qu'offre une matière : dans la banque (à la difficulté choisie) ou dans les sessions de mock cochées */
   function dispoTopic(k: TopicKey): number | null {
     if (surMock) return mocks ? disponiblesMock(mocks.filter((d) => d.topic === k), mock, [k]) : null;
@@ -376,20 +416,34 @@ export function Reglages({
       </button>
     </div>
   );
-  const choixRounds =
-    maxRounds >= 2 ? (
-      <div className={s.bloc}>
-        <span className={s.libelle}>{REGLAGES.rounds}</span>
-        <Choix
-          petits
+  // rounds × questions par round : changer l'un garde l'autre
+  const parRound = Math.max(1, Math.round(reel.nombre / nbRounds));
+  const toutLeMock = surMock && mock.complet;
+  const choixRounds = (
+    <div className={s.bloc}>
+      <div className={s.compteurs}>
+        <Compteur
+          id={`${uid}-rounds`}
           titre={REGLAGES.rounds}
-          options={SALLE_ROUNDS_PROPOSES.filter((n) => n <= maxRounds).map((n) => ({ cle: String(n), nom: n === 1 ? REGLAGES.roundsUn : String(n) }))}
-          valeur={String(nbRounds)}
-          onChoix={(n) => set({ rounds: Number(n) })}
+          valeur={nbRounds}
+          min={1}
+          max={toutLeMock || parRound <= SALLE_NOMBRE_MIN ? roundsMax(toutLeMock ? reel.nombre : plafond) : Math.max(1, Math.min(SALLE_ROUNDS_MAX, Math.floor(plafond / parRound)))}
+          onChange={(n) => set(toutLeMock ? { rounds: n } : { rounds: n, nombre: Math.min(plafond, Math.max(SALLE_NOMBRE_MIN, parRound * n)) })}
         />
-        {nbRounds > 1 && <p className={s.aide}>{REGLAGES.roundsAide(tailleRounds(reel.nombre, nbRounds))}</p>}
+        {!toutLeMock && (
+          <Compteur
+            id={`${uid}-par-round`}
+            titre={nbRounds > 1 ? REGLAGES.parRound : REGLAGES.nombreSeul}
+            valeur={parRound}
+            min={Math.ceil(SALLE_NOMBRE_MIN / nbRounds)}
+            max={Math.max(Math.ceil(SALLE_NOMBRE_MIN / nbRounds), Math.floor(plafond / nbRounds))}
+            onChange={(n) => set({ nombre: Math.max(SALLE_NOMBRE_MIN, n * nbRounds) })}
+          />
+        )}
       </div>
-    ) : null;
+      <p className={s.aide}>{REGLAGES.roundsResume(tailleRounds(reel.nombre, nbRounds), reel.nombre, dispo)}</p>
+    </div>
+  );
 
   const nbChoisis = (params.notions?.length ?? 0) + (params.concepts?.length ?? 0);
   const choixNotions = (
@@ -554,17 +608,12 @@ export function Reglages({
                 valeur={mock.complet ? "tout" : "partie"}
                 onChoix={(c) => setMock({ complet: c === "tout" })}
               />
-              {!mock.complet && <Curseur id={`${uid}-nombre-mock`} titre={REGLAGES.nombre} valeur={reel.nombre} unite={REGLAGES.nombreUnite} min={SALLE_NOMBRE_MIN} max={maxPartie} onChange={(n) => set({ nombre: n })} />}
               {choixRounds}
             </>,
           )
         : panneau(
             "combien",
-            <>
-              <Curseur id={`${uid}-nombre`} titre={REGLAGES.questions.combien} grand valeur={reel.nombre} unite={REGLAGES.nombreUnite} min={SALLE_NOMBRE_MIN} max={SALLE_NOMBRE_MAX} onChange={(n) => set({ nombre: n })} />
-              {choixRounds}
-            </>,
-            null,
+            choixRounds,
           )}
 
       <div className={s.navEtapes}>

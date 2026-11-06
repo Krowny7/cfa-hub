@@ -39,6 +39,9 @@ import {
 import { PASS_THRESHOLD, fmtMinutes, pctOf, subjectName, topicsSummary, type ReviewQuestion } from "@/components/session/review";
 import { FinDeSession } from "@/components/session/FinDeSession";
 import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
+import { BilanRetest, RetestRatures } from "@/components/notions/RetestRatures";
+import { bilanRetest, lireSimilaires, type CibleRetest } from "@/lib/notions-similaires";
+import { RETEST } from "@/lib/voice-notions";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { surTitreSession } from "@/lib/voice";
 import { EPREUVE } from "@/lib/voice-z3";
@@ -113,6 +116,9 @@ export function PracticeSession({
   // sans forcer le choix, l'utilisateur peut toujours en enlever ou en ajouter.
   const searchParams = useSearchParams();
   const [lien] = useState(() => lireLienPractice((k) => searchParams.get(k)));
+  // ?similaires=<ratures> : la séance se prépare tout de suite, sur des questions voisines
+  const [similaires] = useState(() => lireSimilaires(searchParams.get("similaires")));
+  const [retest, setRetest] = useState<CibleRetest[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(() => {
     if (demo?.selected) return new Set(demo.selected);
     if (lien.matieres) return new Set(lien.matieres);
@@ -133,7 +139,7 @@ export function PracticeSession({
   // l'instant où l'épreuve a commencé : l'annonce des trophées compte depuis lui
   const [debut, setDebut] = useState("");
   // ?go=1 : la séance se prépare dès l'arrivée (le constructeur ne s'affiche qu'en cas d'échec)
-  const [enRoute, setEnRoute] = useState(!demo && lien.go);
+  const [enRoute, setEnRoute] = useState(!demo && (lien.go || similaires.length > 0));
   const [questions, setQuestions] = useState<ActiveQuestion[]>(demo?.questions ?? []);
   const [answers, setAnswers] = useState<(number | null)[]>(demo?.answers ?? (demo?.questions ?? []).map(() => null));
   const [idx, setIdx] = useState(demo?.idx ?? 0);
@@ -240,6 +246,32 @@ export function PracticeSession({
     }
   }
 
+  async function genererSimilaires(ids: string[]) {
+    setBusy(true);
+    setError(null);
+    try {
+      const { data, error: rpcError } = await supabase.rpc("generate_similaires", { p_questions: ids });
+      if (rpcError) throw new Error(rpcError.message);
+      const lus = (data ?? []) as (ActiveQuestion & { topic: string; notion: string; concept: string | null })[];
+      if (lus.length === 0) {
+        setError(RETEST.erreur);
+        return;
+      }
+      const qs = lus.map(({ id, position, prompt, choices }) => ({ id, position, prompt, choices }));
+      setQuestions(qs);
+      setAnswers(qs.map(() => null));
+      setTirees([...new Set(lus.map((q) => q.topic))]);
+      setRetest(lus.map((q) => ({ questionId: q.id, topic: q.topic, notion: q.notion, concept: q.concept })));
+      setSecondsLeft(Math.max(5, Math.round(qs.length * MIN_PER_QUESTION_MINUTES)) * 60);
+      setPhase("ready");
+    } catch (e: unknown) {
+      setError(friendlyError(e, "Erreur lors de la génération"));
+    } finally {
+      setBusy(false);
+      setEnRoute(false);
+    }
+  }
+
   async function generate(topics: Set<string> = selected, fmt: 90 | 180 = format, n: number | null = taille) {
     if (topics.size === 0) return;
     setBusy(true);
@@ -287,7 +319,12 @@ export function PracticeSession({
   useEffect(() => {
     if (!enRoute || parti.current) return;
     parti.current = true;
-    if (selected.size === 0) setEnRoute(false);
+    if (similaires.length > 0) {
+      // l'adresse se nettoie : un rechargement ne doit pas relancer un tirage ni perdre la copie
+      window.history.replaceState(null, "", "/practice");
+      void genererSimilaires(similaires);
+    }
+    else if (selected.size === 0) setEnRoute(false);
     else void generate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -348,6 +385,7 @@ export function PracticeSession({
   }
 
   function backToBuilder() {
+    setRetest(null);
     setPhase("builder");
     setReview([]);
     setQuestions([]);
@@ -391,7 +429,7 @@ export function PracticeSession({
     const last5 = pastSessions.slice(0, 5);
     const avg5 = last5.length ? Math.round(last5.reduce((n, s) => n + pctOf(s.score, s.total), 0) / last5.length) : 0;
     const trophees = pastSessions.filter((s) => pctOf(s.score, s.total) >= PASS_THRESHOLD).length;
-    const entiers = pastSessions.filter((s) => s.topics.length >= TOPICS.length);
+    const entiers = pastSessions.filter((s) => s.topics.length >= TOPICS.length && s.question_count >= 90);
     const meilleurEntier = entiers.length ? Math.max(...entiers.map((s) => pctOf(s.score, s.total))) : null;
     // les matières faibles d'abord (ordre fixe : une case cochée ne fait pas sauter la liste)
     const rangees = [...TOPICS].sort((a, b) => Number(weak.includes(b.key)) - Number(weak.includes(a.key)));
@@ -683,16 +721,17 @@ export function PracticeSession({
     return (
       <div className="grid gap-6 py-2 md:py-8">
         <ReadyCard
-          eyebrow="Entraînement ciblé · session prête"
+          eyebrow={retest ? RETEST.pret : "Entraînement ciblé · session prête"}
           title={`${questions.length} questions`}
           meta={`${fmtMinutes(Math.round(secondsLeft / 60))} · ${topicNames}`}
           rules={[
+            ...(retest ? [RETEST.regle] : []),
             "Pas de correction pendant la session : tout arrive à la fin, avec les explications.",
             "Tu peux revenir sur une question et changer ta réponse jusqu'à la fin.",
             "Pause possible : le chrono s'arrête et la question se cache.",
           ]}
           onCancel={backToBuilder}
-          cancelLabel="Changer les matières"
+          cancelLabel={retest ? RETEST.annuler : "Changer les matières"}
           onStart={start}
         />
       </div>
@@ -713,7 +752,7 @@ export function PracticeSession({
     return (
       <div className="rl-page">
         <FinDeSession
-          epreuve={surTitreSession(EPREUVE.practice, total, minutes)}
+          epreuve={surTitreSession(retest ? RETEST.epreuve : EPREUVE.practice, total, minutes)}
           titre={topicsSummary(tirees, 2) || EPREUVE.practice}
           meta={meta || undefined}
           score={score}
@@ -746,6 +785,8 @@ export function PracticeSession({
             ) : null
           }
         >
+          {retest && <BilanRetest lignes={bilanRetest(retest, review)} />}
+          <RetestRatures questionIds={review.filter((q) => !q.is_correct && q.selected_index !== null).map((q) => q.question_id)} onLancer={(ids) => void genererSimilaires(ids)} occupe={busy} erreur={error} />
           {many && <TopicBreakdown review={review} />}
           <ReviewSection review={review} />
         </FinDeSession>

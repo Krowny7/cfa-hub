@@ -31,7 +31,7 @@ export default async function CopieSallePage({ params }: { params: Promise<{ id:
         ← {ACTIVITES.titre}
       </Link>
       <Stage>
-        <RevueSalle revue={copie.revue} numero={copie.numero} titre={copie.titre} />
+        <RevueSalle revue={copie.revue} numero={copie.numero} titre={copie.titre} retest />
       </Stage>
     </div>
   );

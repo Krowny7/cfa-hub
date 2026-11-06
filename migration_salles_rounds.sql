@@ -580,3 +580,115 @@ $a$);
   END IF;
 END;
 $m$;
+
+-- 11. Plus de plafond : seules les questions disponibles limitent une partie
+ALTER TABLE public.salle_series DROP CONSTRAINT IF EXISTS salle_series_rounds_check;
+ALTER TABLE public.salle_series ADD CONSTRAINT salle_series_rounds_check CHECK (rounds >= 2);
+
+DO $m$
+DECLARE
+  d text := pg_get_functiondef('public._salle_params(jsonb)'::regprocedure);
+  n text;
+BEGIN
+  IF position('Le nombre de questions va de 5 à 50.' IN d) > 0 THEN
+    n := replace(d, $a$  IF coalesce(p ->> 'nombre', '') !~ '^[0-9]{1,3}$' THEN
+    RAISE EXCEPTION 'Indique le nombre de questions (de 5 à 50).';
+  END IF;$a$, $a$  IF coalesce(p ->> 'nombre', '') !~ '^[0-9]{1,5}$' THEN
+    RAISE EXCEPTION 'Indique le nombre de questions.';
+  END IF;$a$);
+    IF n = d THEN RAISE EXCEPTION '_salle_params : nombre introuvable'; END IF;
+    d := n;
+    n := replace(d, $a$    IF v_nombre < 1 OR v_nombre > 600 THEN
+      RAISE EXCEPTION 'Le nombre de questions va de 5 à 600 pour un mock.';
+    END IF;
+  ELSIF v_nombre < 5 OR v_nombre > 50 THEN
+    RAISE EXCEPTION 'Le nombre de questions va de 5 à 50.';
+  END IF;$a$, $a$    IF v_nombre < 1 THEN
+      RAISE EXCEPTION 'Indique le nombre de questions.';
+    END IF;
+  ELSIF v_nombre < 5 THEN
+    RAISE EXCEPTION 'Une partie compte au moins 5 questions.';
+  END IF;$a$);
+    IF n = d THEN RAISE EXCEPTION '_salle_params : bornes introuvables'; END IF;
+    d := n;
+    n := replace(d, $a$    IF NOT v_complet AND v_nombre < 5 THEN
+      RAISE EXCEPTION 'Le nombre de questions va de 5 à 600 pour un mock.';
+    END IF;$a$, $a$    IF NOT v_complet AND v_nombre < 5 THEN
+      RAISE EXCEPTION 'Une partie compte au moins 5 questions.';
+    END IF;$a$);
+    IF n = d THEN RAISE EXCEPTION '_salle_params : borne du mock introuvable'; END IF;
+    d := n;
+    n := replace(d, $a$  IF coalesce(p ->> 'rounds', '1') !~ '^[0-9]{1,2}$' THEN
+    RAISE EXCEPTION 'Le nombre de rounds va de 1 à 10.';
+  END IF;
+  v_rounds := coalesce((p ->> 'rounds')::int, 1);
+  IF v_rounds < 1 OR v_rounds > 10 THEN
+    RAISE EXCEPTION 'Le nombre de rounds va de 1 à 10.';
+  END IF;$a$, $a$  IF coalesce(p ->> 'rounds', '1') !~ '^[0-9]{1,5}$' THEN
+    RAISE EXCEPTION 'Indique le nombre de rounds.';
+  END IF;
+  v_rounds := coalesce((p ->> 'rounds')::int, 1);
+  IF v_rounds < 1 THEN
+    RAISE EXCEPTION 'Indique le nombre de rounds.';
+  END IF;$a$);
+    IF n = d THEN RAISE EXCEPTION '_salle_params : rounds introuvables'; END IF;
+    EXECUTE n;
+  END IF;
+END;
+$m$;
+
+DO $m$
+DECLARE
+  d text := pg_get_functiondef('public.lancer_session(uuid,jsonb,jsonb)'::regprocedure);
+  n text;
+BEGIN
+  IF position('v_total / 3' IN d) > 0 THEN
+    n := replace(d, $a$  IF v_ncalculs > 100 THEN$a$, $a$  IF v_ncalculs > 20000 THEN$a$);
+    IF n = d THEN RAISE EXCEPTION 'lancer_session : calculs introuvables'; END IF;
+    d := n;
+    n := replace(d, $a$  -- chaque round garde au moins 3 questions ; à moins de 2 rounds, c'est une partie simple
+  v_rounds := least(coalesce((v_p ->> 'rounds')::int, 1), v_total / 3);$a$, $a$  -- chaque round garde au moins une question ; à moins de 2 rounds, c'est une partie simple
+  v_rounds := least(coalesce((v_p ->> 'rounds')::int, 1), v_total);$a$);
+    IF n = d THEN RAISE EXCEPTION 'lancer_session : découpage introuvable'; END IF;
+    EXECUTE n;
+  END IF;
+END;
+$m$;
+
+-- 12. Après relecture : le dernier plafond, et une partie qui manque de questions
+ALTER TABLE public.salle_sessions DROP CONSTRAINT IF EXISTS salle_sessions_nb_check;
+ALTER TABLE public.salle_sessions ADD CONSTRAINT salle_sessions_nb_check CHECK (nb >= 1);
+
+DO $m$
+DECLARE
+  d text;
+  n text;
+BEGIN
+  d := pg_get_functiondef('public._salle_params(jsonb)'::regprocedure);
+  IF position('jsonb_array_length(v_notions) > 100' IN d) > 0 THEN
+    n := replace(d, 'jsonb_array_length(v_notions) > 100 OR jsonb_array_length(v_concepts) > 100', 'jsonb_array_length(v_notions) > 5000 OR jsonb_array_length(v_concepts) > 5000');
+    EXECUTE n;
+  END IF;
+
+  -- s'il manque des questions, les rounds gardent leur taille et il y en a moins
+  d := pg_get_functiondef('public.lancer_session(uuid,jsonb,jsonb)'::regprocedure);
+  IF position('garde leur taille' IN d) = 0 AND position('gardent leur taille' IN d) = 0 THEN
+    n := replace(d, $a$  v_rounds := least(coalesce((v_p ->> 'rounds')::int, 1), v_total);$a$, $a$  v_rounds := coalesce((v_p ->> 'rounds')::int, 1);
+  -- s'il manque des questions, les rounds gardent leur taille et il y en a moins
+  IF v_rounds > 1 AND v_total < v_nombre THEN
+    v_rounds := ceil(v_total::numeric / ceil(v_nombre::numeric / v_rounds))::int;
+  END IF;
+  v_rounds := least(v_rounds, v_total);$a$);
+    IF n = d THEN RAISE EXCEPTION 'lancer_session : découpage introuvable'; END IF;
+    EXECUTE n;
+  END IF;
+
+  -- une longue partie s'étale sur plusieurs jours : c'est le dernier round lancé qui compte
+  d := pg_get_functiondef('public._salle_derniere_vie(uuid)'::regprocedure);
+  IF position('12 hours' IN d) > 0 THEN
+    n := replace(d, $a$AND se.created_at > now() - interval '12 hours')$a$, $a$AND (SELECT max(s3.started_at) FROM salle_sessions s3 WHERE s3.serie_id = se.id) > now() - interval '7 days')$a$);
+    IF n = d THEN RAISE EXCEPTION '_salle_derniere_vie : délai introuvable'; END IF;
+    EXECUTE n;
+  END IF;
+END;
+$m$;

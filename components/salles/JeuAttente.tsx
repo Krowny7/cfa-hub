@@ -318,6 +318,13 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
             envoyer("manche", {});
             relancer();
           }, NOUVELLE_MANCHE_MS);
+        } else if (joueurs.every((j) => j.vies <= 0)) {
+          // seul contre le mannequin, ou tout le monde à terre : pas de gagnant, on repart quand même
+          finDeManche.current = moiId;
+          setTimeout(() => {
+            envoyer("manche", {});
+            relancer();
+          }, NOUVELLE_MANCHE_MS);
         }
       }
 
@@ -461,6 +468,8 @@ export function JeuAttente({ canal, moiId, membres }: { canal: string; moiId: st
     return ({ ArrowLeft: "gauche", ArrowRight: "droite", ArrowDown: "bas", ArrowUp: "saut", q: "gauche", a: "gauche", d: "droite", s: "bas", z: "saut", w: "saut", " ": "saut", j: "leger", x: "leger", k: "fort", c: "fort", l: "dash", v: "dash", Shift: "dash", e: "danse" } as Record<string, string>)[cle];
   };
   const clavier = (e: React.KeyboardEvent, enfoncee: boolean) => {
+    // les raccourcis du navigateur (Ctrl+L, Alt+←…) ne sont pas des coups
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     const sens = sensDe(e);
     if (!sens) return;
     e.preventDefault();

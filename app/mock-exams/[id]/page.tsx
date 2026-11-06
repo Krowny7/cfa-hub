@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { MockExamRunner } from "@/components/MockExamRunner";
 import { MockExamRegistration } from "@/components/MockExamRegistration";
 import { MockExamRetake } from "@/components/MockExamRetake";
+import { RetestRatures } from "@/components/notions/RetestRatures";
 import { applyMockExamElo, getMockExamEloDeltas } from "@/lib/rating";
 import { duelsReady } from "@/lib/duels";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
@@ -310,6 +311,8 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
       )}
 
       {showLeaderboard && <MockExamLeaderboard rows={leaderRows} meId={auth.user.id} eloDeltas={eloDeltas} />}
+
+      {alreadyDone && <RetestRatures questionIds={review.filter((r) => !r.is_correct && r.selected_index !== null).map((r) => r.question_id)} />}
 
       {/* Rejouer l'examen en entraînement (score seul conservé, pas les réponses) */}
       {alreadyDone && (

@@ -51,29 +51,46 @@ export type TirageCalculs = {
 export function tirerCalculs(params: Pick<SalleParams, "topics" | "difficulte">, n: number, rand: () => number = Math.random): TirageCalculs {
   const demandes = Math.max(0, Math.floor(n));
   if (demandes === 0) return { calculs: [], demandes, manque: false };
-  // le moteur tire au moins 5 calculs ; on en garde les `demandes` premiers (déjà mêlés)
-  const tirage = drawSession({ topics: params.topics, count: Math.min(SESSION_MAX, Math.max(SESSION_MIN, demandes)), mix: mixDeDifficulte(params.difficulte) }, rand);
-  if (!tirage) return { calculs: [], demandes, manque: true };
-
+  // le moteur tire de 5 à 50 calculs d'un coup : on répète jusqu'à la demande, sans doublon,
+  // et on s'arrête quand plusieurs tirages de suite n'apportent plus rien (le vivier est épuisé)
   const calculs: CalculPourSalle[] = [];
-  for (const item of tirage.items) {
-    if (calculs.length >= demandes) break;
-    const plein = calcQuestion(item.topic, item.typeKey, item.q.id);
-    if (!plein) continue;
-    const info = tirage.types[sessionTypeKey(item.topic, item.typeKey)];
-    calculs.push({
-      topic: item.topic,
-      niveau: plein.level,
-      libelle: info ? `${info.subject} · ${info.name}` : item.topic,
-      enonce: plein.prompt,
-      donnees: plein.data.map((d) => ({ label: d.label, value: d.value })),
-      unite: plein.unit,
-      decimales: plein.decimals,
-      reponse: plein.answer,
-      tolerance: toleranceOf(plein),
-      stricte: !!plein.strict,
-      etapes: correctionSteps(plein.solution),
-    });
+  const vus = new Set<string>();
+  let vides = 0;
+  const parTirage = Math.min(SESSION_MAX, Math.max(SESSION_MIN, demandes));
+  while (calculs.length < demandes && vides < 8) {
+    const tirage = drawSession({ topics: params.topics, count: parTirage, mix: mixDeDifficulte(params.difficulte) }, rand);
+    if (!tirage) break;
+    const avant = calculs.length;
+    for (const item of tirage.items) {
+      if (calculs.length >= demandes) break;
+      const cle = `${item.topic}:${item.typeKey}:${item.q.id}`;
+      if (vus.has(cle)) continue;
+      vus.add(cle);
+      const plein = calcQuestion(item.topic, item.typeKey, item.q.id);
+      if (!plein) continue;
+      const info = tirage.types[sessionTypeKey(item.topic, item.typeKey)];
+      calculs.push({
+        topic: item.topic,
+        niveau: plein.level,
+        libelle: info ? `${info.subject} · ${info.name}` : item.topic,
+        enonce: plein.prompt,
+        donnees: plein.data.map((d) => ({ label: d.label, value: d.value })),
+        unite: plein.unit,
+        decimales: plein.decimals,
+        reponse: plein.answer,
+        tolerance: toleranceOf(plein),
+        stricte: !!plein.strict,
+        etapes: correctionSteps(plein.solution),
+      });
+    }
+    vides = calculs.length === avant ? vides + 1 : 0;
+  }
+  // plusieurs tirages : on mêle, sinon les faciles partiraient tous dans les premiers rounds
+  if (demandes > SESSION_MAX) {
+    for (let i = calculs.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [calculs[i], calculs[j]] = [calculs[j], calculs[i]];
+    }
   }
   return { calculs, demandes, manque: calculs.length < demandes };
 }

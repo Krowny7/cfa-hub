@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { segThumbStyle } from "@/components/classement/Seg";
 import { DefiAiCopy } from "@/components/defi/DefiAiCopy";
 import { ReviewCard } from "@/components/defi/DefiReview";
 import { Filigrane, FiltreMatieres, Ticks, matieresDe, reviewMarks } from "@/components/defi/parts";
+import { RetestRatures } from "@/components/notions/RetestRatures";
 import PctScore from "@/components/adn/PctScore";
 import { duelTopicLabel } from "@/lib/duels";
 import type { DailyReviewItem } from "@/lib/daily";
@@ -19,7 +20,7 @@ type Filtre = "errors" | "all";
 // chaque question (ma réponse, la bonne, l'explication), filtrées par « Mes
 // erreurs / Tout » et par matière. QCM seulement (PartieExamen garde l'ancien
 // débrief pour une partie avec des calculs).
-export function RevueSalle({ revue, numero, titre }: { revue: DailyReviewItem[]; numero: number; titre: string }) {
+function RevueSalleBase({ revue, numero, titre, retest = false }: { revue: DailyReviewItem[]; numero: number; titre: string; /** « Me retester » : sur une copie relue, pas à la fin d'une partie qu'on quitterait */ retest?: boolean }) {
   const total = revue.length;
   const score = revue.filter((q) => q.isCorrect).length;
   const erreurs = revue.filter((q) => !q.isCorrect);
@@ -71,6 +72,8 @@ export function RevueSalle({ revue, numero, titre }: { revue: DailyReviewItem[];
         <Ticks marks={reviewMarks(revue)} label={DEFI.coches} numbered onPick={aller} />
       </section>
 
+      {retest && <RetestRatures questionIds={erreurs.filter((q) => q.selectedIndex !== null).map((q) => q.questionId)} />}
+
       <section className="card-ink p-6 md:p-8" aria-label={DEFI.iaTout}>
         <Filigrane size={280} className="-right-14 top-1/2 -translate-y-1/2" />
         <DefiAiCopy review={revue} ctx={ctx} layout="block" exporter={exporter} />
@@ -112,3 +115,6 @@ export function RevueSalle({ revue, numero, titre }: { revue: DailyReviewItem[];
     </div>
   );
 }
+
+/** Mémorisé : le chrono redessine l'écran cinq fois par seconde, pas la correction. */
+export const RevueSalle = memo(RevueSalleBase);

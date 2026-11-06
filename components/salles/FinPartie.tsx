@@ -45,6 +45,7 @@ function FinPartieBase({
   serie = null,
   onLancerRound,
   onTerminerSerie,
+  jeu = null,
 }: {
   session: SalleSession;
   items: SalleItem[];
@@ -63,6 +64,8 @@ function FinPartieBase({
   serie?: SalleSerie | null;
   onLancerRound?: () => Promise<RetourRound>;
   onTerminerSerie?: () => Promise<RetourRound>;
+  /** entre deux rounds : le jeu de la salle d'attente */
+  jeu?: React.ReactNode;
 }) {
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -226,6 +229,8 @@ function FinPartieBase({
           </p>
         )}
       </section>
+
+      {enRounds && jeu}
     </div>
   );
 }
