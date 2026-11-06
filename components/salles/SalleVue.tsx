@@ -142,7 +142,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
       donnees={etat}
       hors={suivi.hors}
       actions={actions}
-      reglages={etat.moi.estAdmin ? <Reglages initial={session ? session.params : null} chargerDispos={chargerDispos} chargerMocks={chargerMocks} onLancer={onLancer} desactive={active} /> : null}
+      reglages={etat.moi.estAdmin ? <Reglages salleId={salleId} initial={session ? session.params : null} chargerDispos={chargerDispos} chargerMocks={chargerMocks} onLancer={onLancer} desactive={active} /> : null}
       partie={
         partieAffichee && session ? (
           <PartieSalle

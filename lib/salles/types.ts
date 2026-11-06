@@ -74,6 +74,9 @@ export type SalleParams = {
   mock?: SalleMock;
   /** par question (défaut) ou global ; absent = par question */
   chrono?: SalleChrono;
+  /** le choix par notion : les questions sont tirées là, à parts égales ; absent = toutes celles des matières */
+  notions?: string[];
+  concepts?: string[];
 };
 
 /** Les réglages tels que le serveur les a gardés : avec ce qui a vraiment été tiré. */

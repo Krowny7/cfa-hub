@@ -588,6 +588,10 @@ export function paramsVersJson(p: SalleParams): Record<string, unknown> {
     json.complet = p.mock.complet;
     json.ordre = p.mock.ordre;
   }
+  if (p.source !== "examen" && (p.notions?.length || p.concepts?.length)) {
+    json.notions = p.notions ?? [];
+    json.concepts = p.concepts ?? [];
+  }
   return json;
 }
 
@@ -603,6 +607,11 @@ export function paramsDepuisJson(raw: unknown): SalleParamsStockes {
   // partie suivante puissent proposer le chrono global (reglagesDeDepart)
   const lus: SalleParams = { ...base };
   if (r.chrono === undefined || r.chrono === null || r.chrono === "") delete lus.chrono;
+  const textes = (x: unknown) => (Array.isArray(x) ? x.filter((e): e is string => typeof e === "string") : []);
+  if (textes(r.notions).length + textes(r.concepts).length > 0) {
+    lus.notions = textes(r.notions);
+    lus.concepts = textes(r.concepts);
+  }
   return {
     ...lus,
     nbQuestions: r.nb_questions === undefined ? rep.questions : n(r.nb_questions),

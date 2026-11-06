@@ -9,6 +9,9 @@ import { multDuJour, texteGain, xpAvecSerie } from "@/lib/serie-encre";
 import { friendlyError } from "@/lib/errors";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 import { TOPICS, TOPIC_LABELS } from "@/lib/practiceTopics";
+import { ChoixNotions, type InfoChoix } from "@/components/notions/ChoixNotions";
+import { CHOIX_VIDE, choixVide, type ChoixNotionsValeur } from "@/lib/notions-choix";
+import { NOTIONS_CHOIX } from "@/lib/voice-notions";
 import { lireLienPractice, matieresServies, repartir, tirerSeance } from "@/lib/practice-lien";
 import { nomPalier, palierCiblee, type TropheeGagne } from "@/lib/trophees";
 import { AnnonceTrophee } from "@/components/trophees/AnnonceTrophee";
@@ -122,6 +125,11 @@ export function PracticeSession({
   const [taille, setTaille] = useState<number | null>(demo ? null : lien.taille);
   // les matières de la séance tirée (celles qui ont reçu des questions) : la copie, le trophée
   const [tirees, setTirees] = useState<string[]>(demo?.selected ?? []);
+  // le choix par notion : au lieu des matières, des notions et des concepts, à parts égales
+  const [parNotions, setParNotions] = useState(false);
+  const [choix, setChoix] = useState<ChoixNotionsValeur>(CHOIX_VIDE);
+  const [infoChoix, setInfoChoix] = useState<InfoChoix>({ topics: [], total: 0 });
+  const [tailleNotions, setTailleNotions] = useState(30);
   // l'instant où l'épreuve a commencé : l'annonce des trophées compte depuis lui
   const [debut, setDebut] = useState("");
   // ?go=1 : la séance se prépare dès l'arrivée (le constructeur ne s'affiche qu'en cas d'échec)
@@ -197,15 +205,40 @@ export function PracticeSession({
     });
   }
 
-  const previewCount =
-    taille ??
+  const previewCount = parNotions ? Math.min(tailleNotions, infoChoix.total) : taille ??
     [...selected].reduce((sum, key) => {
       const w = TOPICS.find((t) => t.key === key)?.weight ?? 0;
       return sum + Math.round((w / 100) * format);
     }, 0);
   const previewMinutes = Math.max(5, Math.round(previewCount * MIN_PER_QUESTION_MINUTES));
   // les matières qui recevront des questions (une petite séance aux poids officiels peut en laisser une de côté)
-  const previewMatieres = taille !== null ? matieresServies(repartir(taille, [...selected], { poids: lien.poids })).length : selected.size;
+  const previewMatieres = parNotions ? infoChoix.topics.length : taille !== null ? matieresServies(repartir(taille, [...selected], { poids: lien.poids })).length : selected.size;
+
+  const pret = parNotions ? !choixVide(choix) : selected.size > 0;
+
+  async function genererNotions() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { data, error: rpcError } = await supabase.rpc("generate_practice_notions", { p_notions: choix.notions, p_concepts: choix.concepts, p_n: tailleNotions });
+      if (rpcError) throw new Error(rpcError.message);
+      const lus = (data ?? []) as (ActiveQuestion & { topic: string })[];
+      if (lus.length === 0) {
+        setError("Aucune question disponible pour cette sélection.");
+        return;
+      }
+      const qs = lus.map(({ topic: _topic, ...q }) => q);
+      setQuestions(qs);
+      setAnswers(qs.map(() => null));
+      setTirees([...new Set(lus.map((q) => q.topic))]);
+      setSecondsLeft(Math.max(5, Math.round(qs.length * MIN_PER_QUESTION_MINUTES)) * 60);
+      setPhase("ready");
+    } catch (e: unknown) {
+      setError(friendlyError(e, "Erreur lors de la génération"));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function generate(topics: Set<string> = selected, fmt: 90 | 180 = format, n: number | null = taille) {
     if (topics.size === 0) return;
@@ -431,17 +464,37 @@ export function PracticeSession({
                         <span className="text-[0.5em] font-semibold">{previewCount > 1 ? "questions" : "question"}</span>
                       </h2>
                       <p className="t-micro m-0 inline-flex items-center gap-1.5">
-                        {selected.size > 0 ? (
+                        {pret ? (
                           <>
                             <Trophy size={13} aria-hidden /> {fmtMinutes(previewMinutes)} · trophée {nomPalier(palier).toLowerCase()} à 70 % ou plus
                           </>
                         ) : (
-                          STUDIOLO.choisir
+                          parNotions ? NOTIONS_CHOIX.rienChoisi : STUDIOLO.choisir
                         )}
                       </p>
                     </div>
-                    <p className="t-body m-0 max-w-[420px] text-muted">{STUDIOLO.phrase(weak.length)}</p>
-                    {taille !== null ? (
+                    {!parNotions && <p className="t-body m-0 max-w-[420px] text-muted">{STUDIOLO.phrase(weak.length)}</p>}
+                    {parNotions ? (
+                      <div className="flex flex-col gap-2">
+                        <Seg
+                          label={NOTIONS_CHOIX.taille}
+                          value={String(tailleNotions) as "10" | "20" | "30" | "45" | "60"}
+                          onChange={(v) => setTailleNotions(Number(v))}
+                          options={[
+                            { key: "10", label: "10" },
+                            { key: "20", label: "20" },
+                            { key: "30", label: "30" },
+                            { key: "45", label: "45" },
+                            { key: "60", label: "60" },
+                          ]}
+                        />
+                        {pret && (
+                          <p className="t-small m-0">
+                            {NOTIONS_CHOIX.resume(choix.notions.length, choix.concepts.length)} · {NOTIONS_CHOIX.dispo(infoChoix.total)}
+                          </p>
+                        )}
+                      </div>
+                    ) : taille !== null ? (
                       <p className="t-small m-0 flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span>
                           Séance de {taille} questions{selected.size > 1 ? (lien.poids ? ", mêlées aux poids officiels de l'examen" : ", à parts égales entre tes matières") : ""}.
@@ -462,10 +515,15 @@ export function PracticeSession({
                       />
                     )}
                     <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
-                      <button type="button" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" disabled={selected.size === 0 || busy} onClick={() => void generate()}>
+                      <button type="button" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" disabled={!pret || busy} onClick={() => void (parNotions ? genererNotions() : generate())}>
                         {busy ? "Préparation…" : "Générer la session"} {!busy && <ArrowRight size={16} aria-hidden />}
                       </button>
-                      {selected.size > 0 && selected.size < TOPICS.length && (
+                      {parNotions && pret && (
+                        <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => { setChoix(CHOIX_VIDE); setInfoChoix({ topics: [], total: 0 }); }}>
+                          {NOTIONS_CHOIX.effacer}
+                        </button>
+                      )}
+                      {!parNotions && selected.size > 0 && selected.size < TOPICS.length && (
                         <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setSelected(new Set())}>
                           Effacer
                         </button>
@@ -477,6 +535,19 @@ export function PracticeSession({
                       </p>
                     )}
                   </div>
+                  <div className="flex min-w-0 flex-col gap-3">
+                    <Seg
+                      label={NOTIONS_CHOIX.parNotion}
+                      value={parNotions ? "notion" : "matiere"}
+                      onChange={(v) => setParNotions(v === "notion")}
+                      options={[
+                        { key: "matiere", label: NOTIONS_CHOIX.parMatiere },
+                        { key: "notion", label: NOTIONS_CHOIX.parNotion },
+                      ]}
+                    />
+                    {parNotions ? (
+                      <ChoixNotions source="practice" valeur={choix} onChange={(v, info) => { setChoix(v); setInfoChoix(info); }} />
+                    ) : (
                   <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none content-start gap-0.5 p-0" aria-label="Tes matières">
                     {rangees.map((t) => {
                       const on = selected.has(t.key);
@@ -503,6 +574,8 @@ export function PracticeSession({
                       );
                     })}
                   </ul>
+                    )}
+                  </div>
                 </section>
               }
             />

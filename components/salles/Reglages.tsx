@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { ChoixNotions, type InfoChoix } from "@/components/notions/ChoixNotions";
+import { NOTIONS_CHOIX } from "@/lib/voice-notions";
 import { ArrowLeft, ArrowRight, ChevronDown, Play } from "lucide-react";
 import { BoutonEnvoi, PAL } from "@/components/classement/Encre";
 import { EncreVive } from "@/components/nav/EncreVive";
@@ -176,6 +178,7 @@ export function Reglages({
   desactive = false,
   demoDispos,
   demoMocks,
+  salleId,
 }: {
   /** les réglages de la dernière partie, s'il y en a une */
   initial?: Partial<SalleParams> | null;
@@ -189,6 +192,8 @@ export function Reglages({
   /** aperçus : des effectifs d'exemple, sans lecture */
   demoDispos?: Partial<Record<SalleSource, QuestionsDisponibles[]>>;
   demoMocks?: MockDisponible[];
+  /** la salle : le choix par notion y signale ce que ses joueurs présents ont à travailler */
+  salleId?: string;
 }) {
   const uid = useId();
   const depart = useMemo(() => reglagesDeDepart(initial), [initial]);
@@ -196,6 +201,8 @@ export function Reglages({
   const [partMixte, setPartMixte] = useState(depart.type === "mixte" ? depart.partCalculs : SALLE_PART_CALCULS_DEFAUT);
   const [dispos, setDispos] = useState<Partial<Record<SalleSource, QuestionsDisponibles[] | null>>>(demoDispos ?? {});
   const [etape, setEtape] = useState<Etape>("source");
+  const [parNotions, setParNotions] = useState(Boolean(depart.notions?.length || depart.concepts?.length));
+  const [infoNotions, setInfoNotions] = useState<InfoChoix>({ topics: [], total: 0 });
   const [envoi, setEnvoi] = useState(false);
   const [retour, setRetour] = useState<RetourLancement | null>(null);
 
@@ -298,7 +305,7 @@ export function Reglages({
   }, [besoinSource, chargerDispos, dispos]);
 
   const dispoSource = besoinSource ? dispos[besoinSource] : undefined;
-  const dispo = surMock ? dispoMock : nbQuestions > 0 ? disponibles(dispoSource, reel.topics, reel.difficulte) : null;
+  const dispo = parNotions && infoNotions.total > 0 ? infoNotions.total : surMock ? dispoMock : nbQuestions > 0 ? disponibles(dispoSource, reel.topics, reel.difficulte) : null;
   /** ce qu'offre une matière : dans la banque (à la difficulté choisie) ou dans les sessions de mock cochées */
   function dispoTopic(k: TopicKey): number | null {
     if (surMock) return mocks ? disponiblesMock(mocks.filter((d) => d.topic === k), mock, [k]) : null;
@@ -325,7 +332,8 @@ export function Reglages({
     setEnvoi(true);
     setRetour(null);
     try {
-      setRetour(await onLancer(v.params));
+      const notions = !surMock && parNotions ? { notions: params.notions ?? [], concepts: params.concepts ?? [] } : {};
+      setRetour(await onLancer({ ...v.params, ...notions }));
     } catch {
       setRetour({ ok: false, erreur: REGLAGES.erreurReseau });
     }
@@ -409,12 +417,41 @@ export function Reglages({
         panneau(
           "matieres",
           <>
-            {grilleMatieres}
-            <p className={s.aide}>{REGLAGES.topicsCompte(reel.topics.length, SALLE_TOPIC_KEYS.length)}</p>
+            {parNotions ? (
+              <ChoixNotions
+                source={params.source === "mocks" ? "mocks" : "banque"}
+                salleId={salleId}
+                valeur={{ notions: params.notions ?? [], concepts: params.concepts ?? [] }}
+                onChange={(v, info) => {
+                  setInfoNotions(info);
+                  set({ notions: v.notions, concepts: v.concepts, topics: info.topics.length > 0 ? SALLE_TOPIC_KEYS.filter((k) => info.topics.includes(k)) : params.topics });
+                }}
+              />
+            ) : (
+              grilleMatieres
+            )}
+            <p className={s.aide}>
+              {parNotions ? (params.notions?.length || params.concepts?.length ? `${NOTIONS_CHOIX.resume(params.notions?.length ?? 0, params.concepts?.length ?? 0)} · ${NOTIONS_CHOIX.dispo(infoNotions.total)}` : NOTIONS_CHOIX.rienChoisi) : REGLAGES.topicsCompte(reel.topics.length, SALLE_TOPIC_KEYS.length)}
+            </p>
           </>,
           <div className={s.blocTete}>
             <h3 className={s.question}>{REGLAGES.questions.matieres}</h3>
-            {raccourcisMatieres}
+            <div className={s.raccourcis}>
+              {origine !== "calculs" && (
+                <button
+                  type="button"
+                  className={[s.btn, s.btnDiscret].join(" ")}
+                  aria-pressed={parNotions}
+                  onClick={() => {
+                    if (parNotions) set({ notions: undefined, concepts: undefined });
+                    setParNotions(!parNotions);
+                  }}
+                >
+                  {parNotions ? NOTIONS_CHOIX.retour : NOTIONS_CHOIX.bouton}
+                </button>
+              )}
+            </div>
+            {!parNotions && raccourcisMatieres}
           </div>,
         )}
 
@@ -612,6 +649,7 @@ export function ReglagesLecture({ params, titre }: { params: SalleParams; titre?
     );
   }
   lignes.push([REGLAGES.topics, params.topics.length === SALLE_TOPIC_KEYS.length ? REGLAGES.topicsCompte(params.topics.length, SALLE_TOPIC_KEYS.length) : params.topics.map((k) => MATIERES_COURTES[k] ?? k).join(", ")]);
+  if (params.notions?.length || params.concepts?.length) lignes.push([NOTIONS_CHOIX.lecture, NOTIONS_CHOIX.resume(params.notions?.length ?? 0, params.concepts?.length ?? 0)]);
   if (!m) lignes.push([REGLAGES.difficulte, SALLE_DIFFICULTE_LABELS[params.difficulte]]);
   const global = params.chrono === "global";
   lignes.push(
