@@ -1,39 +1,6 @@
 {
   "palettes": [
     {
-      "key": "eclair",
-      "nom": "Éclair",
-      "inspiration": "le courant des 5 du jour : noir, bleu électrique et blanc",
-      "voile": [
-        0.52,
-        0.76
-      ],
-      "liquide": [
-        "#0b0f18",
-        "#1f4f9c",
-        "#7fd0ff",
-        "#f4fbff"
-      ],
-      "couleurs": [
-        {
-          "nom": "noir",
-          "hex": "#0b0f18"
-        },
-        {
-          "nom": "bleu nuit",
-          "hex": "#1f4f9c"
-        },
-        {
-          "nom": "bleu éclair",
-          "hex": "#7fd0ff"
-        },
-        {
-          "nom": "blanc",
-          "hex": "#f4fbff"
-        }
-      ]
-    },
-    {
       "key": "vallee",
       "nom": "La vallée",
       "inspiration": "la peinture des 30 du jour : vert de vallée et brume",

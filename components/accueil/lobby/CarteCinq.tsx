@@ -68,7 +68,7 @@ export function CarteCinq({ c, className }: { c: CarteCinqLobby; className?: str
           {c.action.libelle}
         </Contour>
       ) : (
-        <Bouton href={c.action.href} taille="sm" sur palette="eclair">
+        <Bouton href={c.action.href} taille="sm" sur palette="glace">
           <Play size={15} aria-hidden />
           {c.action.libelle}
         </Bouton>
