@@ -1,11 +1,11 @@
-// Une vidéo de victoire trop lourde (souvent filmée en haute définition) est réencodée dans le
-// navigateur avant l'envoi : on la rejoue dans un canevas, le son passe à part, et on enregistre
-// le tout à un débit qui tient sous la limite. Ça prend le temps de la vidéo, 15 secondes au
+// Toute vidéo de victoire est réencodée dans le navigateur avant l'envoi, pour ménager le stockage
+// et le chargement chez les autres joueurs : on la rejoue dans un canevas, le son passe à part, et
+// on enregistre le tout à un débit modéré. Ça prend le temps de la vidéo, 15 secondes au
 // plus, sans rien jouer sur les haut-parleurs. Module client : importé par lib/arene/envoi.ts.
 
 const FORMATS = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
 const COTE_MAX = 1280;
-const DEBIT_MAX = 8_000_000;
+const DEBIT_MAX = 4_000_000;
 const DEBIT_SON = 128_000;
 /** On vise un peu sous la limite : l'encodeur ne respecte son débit qu'en moyenne. */
 const MARGE = 0.75;

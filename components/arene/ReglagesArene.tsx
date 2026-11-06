@@ -194,7 +194,7 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
                 <p className="t-small m-0">{R.aucune}</p>
               )}
               <ul className={s.limites}>
-                {R.limites(VICTOIRE_MAX_SECONDES, Mo(VICTOIRE_MAX_OCTETS)).map((l) => (
+                {R.limites(VICTOIRE_MAX_SECONDES).map((l) => (
                   <li key={l}>{l}</li>
                 ))}
               </ul>

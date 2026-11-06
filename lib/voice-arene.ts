@@ -42,7 +42,7 @@ export const ARENE = {
     compressionEnCours: "Compression…",
     aucune: "Sans vidéo, ta bannière et ton score s'affichent à ta place.",
     fichier: (duree: number | null, poids: string | null, format: "paysage" | "vertical") => [duree !== null ? `${Math.round(duree)} s` : null, poids, format].filter(Boolean).join(" · "),
-    limites: (secondes: number, poids: string) => [`${secondes} s au plus`, `Compressée au-delà de ${poids}`, "MP4, MOV ou WebM", "Paysage ou vertical"],
+    limites: (secondes: number) => [`${secondes} s au plus`, "Compressée à l'envoi", "MP4, MOV ou WebM", "Paysage ou vertical"],
     enregistre: "Enregistré.",
     basePasPrete: "Ces réglages arrivent bientôt : la base n'est pas encore prête.",
     enregistrementRate: "Enregistrement impossible, réessaie dans un instant.",
