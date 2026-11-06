@@ -55,7 +55,10 @@ const T = {
   lobby: 2.7,
   handoff: 3.8, // durée du film : la version dessinée s'aligne dessus
 };
-const FLIGHT_MS = 760;
+const FLIGHT_MS = 900;
+// Le vol : images clés calculées, et moment où l'anneau commence à se fondre dans le logo
+const VOL_IMAGES = 36;
+const RELEVE = 0.84;
 const FADE_MS = 520;
 // Pause avant l'envol de l'anneau (fin du film, ou T.handoff en version dessinée)
 const HOLD_MS = 1300;
@@ -127,6 +130,23 @@ function placeFilm(f: Film) {
   if (dw >= W) left = Math.min(0, Math.max(W - dw, left));
   if (dh >= H) top = Math.min(0, Math.max(H - dh, top));
   return { s, left, top, dw, dh, covers: dw >= W - 0.5 && dh >= H - 0.5 };
+}
+
+/**
+ * Le vol de l'anneau vers le logo. La taille suit une progression géométrique : il rétrécit au
+ * même rythme jusqu'au bout, sans fondre d'un coup à l'arrivée. Sur la fin, il se fond dans le
+ * vrai logo, resté caché jusque-là : la relève ne se voit pas.
+ */
+function voler(el: Element, logo: Element | null | undefined, dx: number, dy: number, s: number, delay: number) {
+  const images = Array.from({ length: VOL_IMAGES + 1 }, (_, i) => {
+    const t = i / VOL_IMAGES;
+    const p = t * t * t * (t * (t * 6 - 15) + 10);
+    return { transform: `translate(${dx * p}px, ${dy * p}px) scale(${Math.pow(s, p)})` };
+  });
+  const temps = { duration: FLIGHT_MS, delay };
+  el.animate(images, { ...temps, easing: "linear", fill: "forwards" });
+  el.animate([{ opacity: 1 }, { opacity: 1, offset: RELEVE }, { opacity: 0 }], { ...temps, fill: "forwards" });
+  logo?.animate([{ opacity: 0 }, { opacity: 0, offset: RELEVE }, { opacity: 1 }], { ...temps, fill: "backwards" });
 }
 
 function dropCover() {
@@ -333,7 +353,11 @@ export function Splash() {
     if (leaving.current) return;
     leaving.current = true;
     markSeen();
-    const to = document.querySelector("[data-rl-logo]")?.getBoundingClientRect();
+    // La barre de défilement revient avant la mesure : elle décale le logo d'une demi-largeur,
+    // et l'anneau, parti vers l'ancienne place, sautait à l'arrivée
+    document.documentElement.style.overflow = "";
+    const logo = document.querySelector<HTMLElement>("[data-rl-logo]");
+    const to = logo?.getBoundingClientRect();
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (modeRef.current === "film") {
       // Le calque de l'anneau, identique à celui du film, prend le relais de la vidéo
@@ -346,10 +370,7 @@ export function Splash() {
           const s = (to.width * (240 + 2 * MASK_MARGIN)) / 240 / from.width;
           const dx = to.left + to.width / 2 - (from.left + from.width / 2);
           const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-          el.animate(
-            [{ transform: "translate(0,0) scale(1)" }, { transform: `translate(${dx}px, ${dy}px) scale(${s})` }],
-            { duration: FLIGHT_MS, delay: ended ? 60 : 200, easing: "cubic-bezier(.7,0,.2,1)", fill: "forwards" }
-          );
+          voler(el, logo, dx, dy, s, ended ? 60 : 200);
         } else {
           el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, delay: 200, fill: "forwards" });
         }
@@ -370,10 +391,7 @@ export function Splash() {
           const s = to.width / from.width;
           const dx = to.left + to.width / 2 - (from.left + from.width / 2);
           const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-          ring.animate(
-            [{ transform: "translate(0,0) scale(1)" }, { transform: `translate(${dx}px, ${dy}px) scale(${s})` }],
-            { duration: FLIGHT_MS, easing: "cubic-bezier(.7,0,.2,1)", fill: "forwards" }
-          );
+          voler(ring, logo, dx, dy, s, 0);
         } else {
           ring.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: "forwards" });
         }
