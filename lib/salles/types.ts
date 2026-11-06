@@ -207,6 +207,8 @@ export type SalleItem = {
 /** La correction d'une question close. */
 export type SalleCorrection = {
   position: number;
+  /** la question d'origine, pour la marquer ; rien pour un calcul */
+  questionId?: string | null;
   /** QCM : l'indice de la bonne réponse */
   bonneIndex: number | null;
   /** calcul : la bonne valeur */

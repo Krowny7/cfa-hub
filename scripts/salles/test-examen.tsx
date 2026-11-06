@@ -10,6 +10,7 @@
 // ma copie » (le bloc, la confirmation dans la page, le verrouillage, le repère
 // « copie rendue » des joueurs, la fin quand tout le monde a rendu). Un dernier
 // contrôle lit Examen.module.css (classes utilisées, pas d'animation oubliée).
+import { revueSalle as revueDeSalle } from "@/lib/salles/examen";
 import "../codex/sans-css";
 import fs from "node:fs";
 import path from "node:path";
@@ -51,6 +52,7 @@ const compte = (html: string, re: RegExp) => (html.match(re) ?? []).length;
 {
   const deux = [{ userId: "moi", username: "Moi", avatarUrl: null }, { userId: "lui", username: "Lui", avatarUrl: null }];
   const avant = avancementJoueurs({ session: { params: {}, avancement: [] } as never, membres: deux, moiId: "moi", mesRepondues: 0 });
+  check("la correction d'une Salle garde l'identifiant de la question, pour la marquer", revueDeSalle([{ position: 0, choix: ["a", "b"], enonce: "x", topic: null } as never], [{ position: 0, bonneIndex: 0, bonneValeur: null, explication: null, etapes: [], questionId: "q1" }], [])?.[0]?.questionId === "q1");
   check("un joueur absent qui n'a rien répondu n'apparaît pas", avancementJoueurs({ session: { params: {}, avancement: [] } as never, membres: deux, moiId: "moi", mesRepondues: 0, presents: new Set(["moi"]) }).length === 1);
   check("un joueur qui n'a encore rien répondu apparaît, à 0", avant.length === 2 && avant.some((j) => j.userId === "lui" && j.n === 0 && !j.moi));
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { MarqueQuestion } from "@/components/MarqueQuestion";
 import { memo, useState } from "react";
 import { ArrowRight, Check, ListChecks, Minus, X } from "lucide-react";
 import { etiquettesDe } from "@/components/salles/CarteQuestion";
@@ -156,9 +157,12 @@ function CarteDebrief({ l, nb }: { l: LigneDebrief; nb: number }) {
             <span key={i}> · {e.texte}</span>
           ))}
         </p>
-        <span className={x.verdict} data-v={verdict}>
+        <span className="flex shrink-0 items-center gap-1.5">
+          {item.origine === "question" && c?.questionId && <MarqueQuestion questionId={c.questionId} source="examen" />}
+          <span className={x.verdict} data-v={verdict}>
           {verdict === "juste" ? <Check size={13} aria-hidden /> : verdict === "faux" ? <X size={13} aria-hidden /> : <Minus size={13} aria-hidden />}
           {verdict === "juste" ? EXAMEN.juste : verdict === "faux" ? EXAMEN.faux : EXAMEN.sans}
+        </span>
         </span>
       </div>
 

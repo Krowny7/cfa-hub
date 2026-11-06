@@ -35,7 +35,7 @@ export function revueSalle(items: SalleItem[], corrections: SalleCorrection[], m
     const choix = m?.choix ?? null;
     revue.push({
       position: it.position,
-      questionId: "",
+      questionId: c.questionId ?? "",
       prompt: it.enonce,
       choices: it.choix,
       correctIndex: c.bonneIndex ?? -1,

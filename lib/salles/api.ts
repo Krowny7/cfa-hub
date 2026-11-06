@@ -157,6 +157,7 @@ function toItem(r: Raw): SalleItem {
 function toCorrection(r: Raw): SalleCorrection {
   return {
     position: num(r.position),
+    questionId: str(r.question_id),
     bonneIndex: numOuNull(r.bonne_index),
     bonneValeur: numOuNull(r.bonne_valeur),
     explication: str(r.explication),

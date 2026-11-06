@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { lireEtatSalle } from "@/lib/salles/api";
-import { clockDe, delaiAvantLecture, heureServeur } from "@/lib/salles/logique";
+import { SALLE_LECTURE_EXAMEN_MS, SALLE_LECTURE_MS, clockDe, delaiAvantLecture, heureServeur } from "@/lib/salles/logique";
 import type { EtatSalle } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -81,7 +81,10 @@ export function useEtatSalle(salleId: string, initial: EtatSalle): SuiviSalle {
     let minuteur: ReturnType<typeof setTimeout> | undefined;
     const delai = () => {
       const { etat: e, decalageMs: d } = courant.current;
-      if (e.session && e.session.statut !== "terminee") return delaiAvantLecture(clockDe(e.session), heureServeur(d));
+      if (e.session && e.session.statut !== "terminee") {
+        const horloge = clockDe(e.session);
+        return delaiAvantLecture(horloge, heureServeur(d), horloge.global ? SALLE_LECTURE_EXAMEN_MS : SALLE_LECTURE_MS);
+      }
       return typeof document !== "undefined" && document.hidden ? IDLE_MASQUE_MS : IDLE_MS;
     };
     const boucle = async () => {

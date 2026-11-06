@@ -72,6 +72,7 @@ export function reponseVue(position: number, locales: Record<number, ReponseOk |
 
 /** La correction d'une question close. */
 export type CorrectionVue = {
+  questionId?: string | null;
   bonneIndex: number | null;
   bonneValeur: number | null;
   explication: string | null;
@@ -85,7 +86,7 @@ export type CorrectionVue = {
  */
 export function correctionVue(position: number, corrections: SalleCorrection[], locales: Record<number, ReponseOk | undefined>): CorrectionVue | null {
   const c = corrections.find((x) => x.position === position);
-  if (c) return { bonneIndex: c.bonneIndex, bonneValeur: c.bonneValeur, explication: c.explication, etapes: c.etapes };
+  if (c) return { questionId: c.questionId, bonneIndex: c.bonneIndex, bonneValeur: c.bonneValeur, explication: c.explication, etapes: c.etapes };
   const l = locales[position];
   if (l) return { bonneIndex: l.bonneIndex, bonneValeur: l.bonneValeur, explication: l.explication, etapes: l.etapes };
   return null;

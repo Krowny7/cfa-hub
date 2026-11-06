@@ -8,6 +8,7 @@ import { decimalsOf, formatCalc, parseCalcCandidates, UNIT_FIELD } from "@/lib/c
 import type { CalcUnit } from "@/lib/calc/types";
 import { messageErreurSalle } from "@/lib/salles/api";
 import { libelleDelai, libellePoints, type CorrectionVue, type ReponseVue, type Verdict } from "@/lib/salles/partie";
+import { MarqueQuestion } from "@/components/MarqueQuestion";
 import { TOPIC_LABELS } from "@/lib/practiceTopics";
 import type { ReponseResultat, SalleItem } from "@/lib/salles/types";
 import { PARTIE } from "@/lib/voice-salles";
@@ -292,6 +293,7 @@ export function CarteQuestion({
                 </div>
               )}
               {correction.explication && <Enonce texte={correction.explication} className={p.explication} />}
+              {!calcul && correction.questionId && <MarqueQuestion questionId={correction.questionId} source="examen" />}
               {calcul && correction.etapes.length > 0 && (
                 <>
                   <p className={s.libelle}>{PARTIE.etapes}</p>

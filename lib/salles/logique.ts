@@ -56,6 +56,8 @@ export const SALLE_NOM_MAX = 40;
 export const SALLE_DESCRIPTION_MAX = 120;
 /** Rythme de lecture de l'état pendant une partie (ms). */
 export const SALLE_LECTURE_MS = 2500;
+/** En chrono global, rien ne presse : seul l'avancement des autres joueurs change. Chaque lecture compte dans les quotas de Supabase. */
+export const SALLE_LECTURE_EXAMEN_MS = 8000;
 
 export const SALLE_TYPES: SalleType[] = ["questions", "calculs", "mixte"];
 /** Par question (une à la fois, correction tout de suite) ou global (comme les 30 du jour, correction à la fin). */
