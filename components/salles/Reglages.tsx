@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChoixNotions, type InfoChoix } from "@/components/notions/ChoixNotions";
+import type { NotionATravailler, NotionDispo } from "@/lib/notions-choix";
 import { NOTIONS_CHOIX } from "@/lib/voice-notions";
 import { ArrowLeft, ArrowRight, ChevronDown, Play } from "lucide-react";
 import { BoutonEnvoi, PAL } from "@/components/classement/Encre";
@@ -110,7 +111,9 @@ export function disponibles(dispos: QuestionsDisponibles[] | null | undefined, t
 export function reglagesDeDepart(precedents?: Partial<SalleParams> | null): SalleParams {
   const chrono = precedents?.chrono ?? "global";
   const v = validerParams({ ...paramsParDefaut(), ...(precedents ?? {}), chrono });
-  return v.ok ? v.params : { ...paramsParDefaut(), chrono: "global" };
+  if (!v.ok) return { ...paramsParDefaut(), chrono: "global" };
+  // validerParams ne garde pas le choix par notion
+  return precedents?.notions?.length || precedents?.concepts?.length ? { ...v.params, notions: precedents.notions ?? [], concepts: precedents.concepts ?? [] } : v.params;
 }
 
 /** Un groupe de choix uniques ; `souris` : le choix vient d'un vrai clic, pas du clavier. */
@@ -178,6 +181,7 @@ export function Reglages({
   desactive = false,
   demoDispos,
   demoMocks,
+  demoNotions,
   salleId,
 }: {
   /** les réglages de la dernière partie, s'il y en a une */
@@ -192,6 +196,7 @@ export function Reglages({
   /** aperçus : des effectifs d'exemple, sans lecture */
   demoDispos?: Partial<Record<SalleSource, QuestionsDisponibles[]>>;
   demoMocks?: MockDisponible[];
+  demoNotions?: { dispo: NotionDispo[]; faibles: NotionATravailler[] };
   /** la salle : le choix par notion y signale ce que ses joueurs présents ont à travailler */
   salleId?: string;
 }) {
@@ -227,7 +232,7 @@ export function Reglages({
   const sessions = useMemo(() => sessionsMock(mocks), [mocks]);
   const mock = useMemo(() => ajusterMock(params.mock ?? MOCK_DEFAUT, mocks), [params.mock, mocks]);
   const nomsMock = useMemo(() => [...new Set(sessions.map((x) => x.examen.split(" — ")[0]))], [sessions]);
-  const dispoMock = surMock ? disponiblesMock(mocks, mock, params.topics) : null;
+  const dispoMock = !surMock ? null : parNotions && infoNotions.total > 0 ? infoNotions.total : disponiblesMock(mocks, mock, params.topics);
   const maxPartie = Math.max(SALLE_NOMBRE_MIN, Math.min(SALLE_NOMBRE_MAX_MOCK, dispoMock ?? 90));
   const setMock = (m: Partial<SalleMock>) => set({ mock: { ...mock, ...m } });
 
@@ -249,15 +254,21 @@ export function Reglages({
 
   function choisirOrigine(cle: Origine, souris: boolean) {
     const temps = surMock && params.temps === TEMPS_EXAMEN ? SALLE_TEMPS_DEFAUT : params.temps;
+    // une autre source ne propose pas les mêmes notions : le choix repart de zéro
+    const sansNotions = cle === origine ? {} : { notions: undefined, concepts: undefined };
+    if (cle !== origine) {
+      setParNotions(false);
+      setInfoNotions({ topics: [], total: 0 });
+    }
     if (cle === "examen") {
       // un mock : questions seulement, toutes les matières, le temps du jour J si
       // rien n'a été réglé, et le chrono global (comme le jour J) ; l'admin peut
       // encore revenir au chrono par question
-      if (!surMock) set({ source: cle, type: "questions", topics: [...SALLE_TOPIC_KEYS], temps: params.temps === SALLE_TEMPS_DEFAUT ? TEMPS_EXAMEN : params.temps, mock, chrono: "global" });
+      if (!surMock) set({ source: cle, type: "questions", topics: [...SALLE_TOPIC_KEYS], temps: params.temps === SALLE_TEMPS_DEFAUT ? TEMPS_EXAMEN : params.temps, mock, chrono: "global", ...sansNotions });
     } else if (cle === "calculs") {
-      set({ type: "calculs", source: "banque", temps });
+      set({ type: "calculs", source: "banque", temps, ...sansNotions });
     } else {
-      set({ source: cle, type: params.type === "mixte" ? "mixte" : "questions", temps });
+      set({ source: cle, type: params.type === "mixte" ? "mixte" : "questions", temps, ...sansNotions });
     }
     if (souris) aller(cle === "examen" ? "version" : "matieres");
   }
@@ -332,7 +343,7 @@ export function Reglages({
     setEnvoi(true);
     setRetour(null);
     try {
-      const notions = !surMock && parNotions ? { notions: params.notions ?? [], concepts: params.concepts ?? [] } : {};
+      const notions = parNotions ? { notions: params.notions ?? [], concepts: params.concepts ?? [] } : {};
       setRetour(await onLancer({ ...v.params, ...notions }));
     } catch {
       setRetour({ ok: false, erreur: REGLAGES.erreurReseau });
@@ -361,6 +372,37 @@ export function Reglages({
       </button>
     </div>
   );
+  const nbChoisis = (params.notions?.length ?? 0) + (params.concepts?.length ?? 0);
+  const choixNotions = (
+    <ChoixNotions
+      source={surMock ? "examen" : params.source === "mocks" ? "mocks" : "banque"}
+      mock={surMock ? { examens: mock.examens, version: mock.version } : undefined}
+      salleId={salleId}
+      demo={demoNotions}
+      valeur={{ notions: params.notions ?? [], concepts: params.concepts ?? [] }}
+      onChange={(v, info) => {
+        setInfoNotions(info);
+        set({ notions: v.notions, concepts: v.concepts, topics: info.topics.length > 0 ? SALLE_TOPIC_KEYS.filter((k) => info.topics.includes(k)) : params.topics });
+      }}
+    />
+  );
+  const aideNotions = nbChoisis > 0 ? `${NOTIONS_CHOIX.resume(params.notions?.length ?? 0, params.concepts?.length ?? 0)} · ${NOTIONS_CHOIX.dispo(infoNotions.total)}` : NOTIONS_CHOIX.rienChoisi;
+  const boutonNotions = (
+    <div className={s.raccourcis}>
+      <button
+        type="button"
+        className={[s.btn, s.btnDiscret].join(" ")}
+        aria-pressed={parNotions}
+        onClick={() => {
+          if (parNotions) set({ notions: undefined, concepts: undefined });
+          setParNotions(!parNotions);
+        }}
+      >
+        {parNotions ? NOTIONS_CHOIX.retour : NOTIONS_CHOIX.bouton}
+      </button>
+    </div>
+  );
+
   const grilleMatieres = (
     <div className={s.topics}>
       {SALLE_TOPIC_KEYS.map((k) => {
@@ -417,40 +459,12 @@ export function Reglages({
         panneau(
           "matieres",
           <>
-            {parNotions ? (
-              <ChoixNotions
-                source={params.source === "mocks" ? "mocks" : "banque"}
-                salleId={salleId}
-                valeur={{ notions: params.notions ?? [], concepts: params.concepts ?? [] }}
-                onChange={(v, info) => {
-                  setInfoNotions(info);
-                  set({ notions: v.notions, concepts: v.concepts, topics: info.topics.length > 0 ? SALLE_TOPIC_KEYS.filter((k) => info.topics.includes(k)) : params.topics });
-                }}
-              />
-            ) : (
-              grilleMatieres
-            )}
-            <p className={s.aide}>
-              {parNotions ? (params.notions?.length || params.concepts?.length ? `${NOTIONS_CHOIX.resume(params.notions?.length ?? 0, params.concepts?.length ?? 0)} · ${NOTIONS_CHOIX.dispo(infoNotions.total)}` : NOTIONS_CHOIX.rienChoisi) : REGLAGES.topicsCompte(reel.topics.length, SALLE_TOPIC_KEYS.length)}
-            </p>
+            {parNotions ? choixNotions : grilleMatieres}
+            <p className={s.aide}>{parNotions ? aideNotions : REGLAGES.topicsCompte(reel.topics.length, SALLE_TOPIC_KEYS.length)}</p>
           </>,
           <div className={s.blocTete}>
             <h3 className={s.question}>{REGLAGES.questions.matieres}</h3>
-            <div className={s.raccourcis}>
-              {origine !== "calculs" && (
-                <button
-                  type="button"
-                  className={[s.btn, s.btnDiscret].join(" ")}
-                  aria-pressed={parNotions}
-                  onClick={() => {
-                    if (parNotions) set({ notions: undefined, concepts: undefined });
-                    setParNotions(!parNotions);
-                  }}
-                >
-                  {parNotions ? NOTIONS_CHOIX.retour : NOTIONS_CHOIX.bouton}
-                </button>
-              )}
-            </div>
+            {origine !== "calculs" && boutonNotions}
             {!parNotions && raccourcisMatieres}
           </div>,
         )}
@@ -567,9 +581,11 @@ export function Reglages({
                   <span id={`${uid}-matieres`} className={s.libelle}>
                     {REGLAGES.topics}
                   </span>
-                  {raccourcisMatieres}
+                  {boutonNotions}
+                  {!parNotions && raccourcisMatieres}
                 </div>
-                {grilleMatieres}
+                {parNotions ? choixNotions : grilleMatieres}
+                {parNotions && <p className={s.aide}>{aideNotions}</p>}
               </div>
             </>
           ) : (

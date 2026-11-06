@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
-import { lireNotionsATravailler, lireNotionsDisponibles, matieresDuChoix, plat, questionsDuChoix, type ChoixNotionsValeur, type NotionATravailler, type NotionDispo, type SourceNotions } from "@/lib/notions-choix";
+import { mesNotionsATravailler } from "@/app/practice/actions";
+import { choixDisponible, choixVide, lireNotionsATravailler, lireNotionsDisponibles, matieresDuChoix, plat, questionsDuChoix, type ChoixNotionsValeur, type MockNotions, type NotionATravailler, type NotionDispo, type SourceNotions } from "@/lib/notions-choix";
 import { TOPIC_LABELS, TOPICS } from "@/lib/practiceTopics";
 import { createClient } from "@/lib/supabase/browser";
 import { NOTIONS_CHOIX as V } from "@/lib/voice-notions";
@@ -28,6 +29,7 @@ export function ChoixNotions({
   valeur,
   onChange,
   salleId,
+  mock,
   demo,
 }: {
   source: SourceNotions;
@@ -35,6 +37,8 @@ export function ChoixNotions({
   onChange: (v: ChoixNotionsValeur, info: InfoChoix) => void;
   /** dans une Salle : le badge compte les joueurs présents */
   salleId?: string;
+  /** source « examen » : les sessions et la version du mock */
+  mock?: MockNotions;
   /** aperçus et tests : des données d'exemple, sans lecture */
   demo?: { dispo: NotionDispo[]; faibles: NotionATravailler[] };
 }) {
@@ -46,12 +50,16 @@ export function ChoixNotions({
   const [ouvertes, setOuvertes] = useState<Set<string>>(new Set());
   const [matieres, setMatieres] = useState<Set<string>>(new Set());
   const client = useRef(createClient());
+  const cleMock = mock ? `${mock.version}|${mock.examens.join("|")}` : "";
+  const dernier = useRef({ mock, valeur, onChange });
+  dernier.current = { mock, valeur, onChange };
 
   useEffect(() => {
     let fini = false;
     setDispo(null);
     setErreur(false);
-    Promise.all([demo ? demo.dispo : lireNotionsDisponibles(client.current, source), demo ? demo.faibles : lireNotionsATravailler(client.current, salleId), import("@/lib/notions")])
+    const faiblesLus = demo ? demo.faibles : salleId ? lireNotionsATravailler(client.current, salleId) : mesNotionsATravailler().catch(() => []);
+    Promise.all([demo ? demo.dispo : lireNotionsDisponibles(client.current, source, dernier.current.mock), faiblesLus, import("@/lib/notions")])
       .then(([d, f, lib]) => {
         if (fini) return;
         setNoms(new Map(lib.NOTIONS.map((n) => [n.id, n.court])));
@@ -62,7 +70,15 @@ export function ChoixNotions({
     return () => {
       fini = true;
     };
-  }, [source, salleId, demo]);
+  }, [source, salleId, demo, cleMock]);
+
+  // réglages rouverts, autres sessions de mock : le choix et son total suivent ce qui est disponible
+  useEffect(() => {
+    const { valeur: v, onChange: prevenir } = dernier.current;
+    if (!dispo || choixVide(v)) return;
+    const reste = choixDisponible(v, dispo);
+    prevenir(reste, { topics: matieresDuChoix(reste, dispo), total: questionsDuChoix(reste, dispo) });
+  }, [dispo]);
 
   const parNotion = useMemo(() => new Map(faibles.map((f) => [f.notion, f.joueurs])), [faibles]);
   const notions = useMemo(() => new Set(valeur.notions), [valeur.notions]);

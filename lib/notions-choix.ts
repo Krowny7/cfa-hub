@@ -3,7 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // Le choix par notion : ce qu'on peut cocher, ce qui est à travailler, et le calcul du résumé.
 // Partagé par l'entraînement ciblé et les Salles (migration_notions_choix.sql).
 
-export type SourceNotions = "practice" | "banque" | "mocks";
+export type SourceNotions = "practice" | "banque" | "mocks" | "examen";
+/** Un mock officiel : ses sessions et sa version (source « examen »). */
+export type MockNotions = { examens: string[]; version: string };
 export type ConceptDispo = { concept: string; total: number };
 export type NotionDispo = { notion: string; total: number; concepts: ConceptDispo[] };
 export type NotionATravailler = { notion: string; joueurs: number };
@@ -36,6 +38,13 @@ export function questionsDuChoix(v: ChoixNotionsValeur, dispo: NotionDispo[]): n
   return total;
 }
 
+/** Le choix, sans ce que la source ne propose plus (d'autres sessions de mock, par exemple). */
+export function choixDisponible(v: ChoixNotionsValeur, dispo: NotionDispo[]): ChoixNotionsValeur {
+  const notions = new Set(dispo.map((n) => n.notion));
+  const concepts = new Set(dispo.flatMap((n) => n.concepts.map((c) => c.concept)));
+  return { notions: v.notions.filter((n) => notions.has(n)), concepts: v.concepts.filter((c) => concepts.has(c)) };
+}
+
 /** Sans accents ni majuscules, pour la recherche. */
 export const plat = (t: string) =>
   t
@@ -45,14 +54,14 @@ export const plat = (t: string) =>
 
 const liste = <T,>(data: unknown): T[] => (Array.isArray(data) ? (data as T[]) : []);
 
-export async function lireNotionsDisponibles(sb: SupabaseClient, source: SourceNotions): Promise<NotionDispo[]> {
-  const { data, error } = await sb.rpc("notions_disponibles", { p_source: source });
+export async function lireNotionsDisponibles(sb: SupabaseClient, source: SourceNotions, mock?: MockNotions): Promise<NotionDispo[]> {
+  const { data, error } = await sb.rpc("notions_disponibles", mock ? { p_source: source, p_examens: mock.examens, p_version: mock.version } : { p_source: source });
   if (error) throw new Error(error.message);
   return liste<NotionDispo>(data);
 }
 
-/** Dans une Salle : celles des joueurs présents ; sinon les miennes. Une erreur ici n'empêche pas de choisir. */
-export async function lireNotionsATravailler(sb: SupabaseClient, salleId?: string): Promise<NotionATravailler[]> {
-  const { data, error } = salleId ? await sb.rpc("salle_notions_a_travailler", { p_salle_id: salleId }) : await sb.rpc("mes_notions_a_travailler");
+/** Dans une Salle : celles des joueurs présents. Une erreur ici n'empêche pas de choisir. */
+export async function lireNotionsATravailler(sb: SupabaseClient, salleId: string): Promise<NotionATravailler[]> {
+  const { data, error } = await sb.rpc("salle_notions_a_travailler", { p_salle_id: salleId });
   return error ? [] : liste<NotionATravailler>(data);
 }

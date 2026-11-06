@@ -52,6 +52,8 @@ const MOCKS = "Mocks Officiels (Système)";
 const EXAMEN_BLANC = "examen blanc";
 // Mocks officiels classés à la main (notion et concept relus), par empreinte de l'énoncé.
 const MOCKS_CLASSES = new Map(Object.entries(JSON.parse(fs.readFileSync("scripts/notions/mocks.json", "utf8"))));
+// Concepts posés après coup sur les questions qui n'en avaient pas (empreinte → concept), classés et relus le 2026-11-06.
+const CONCEPTS_CLASSES = JSON.parse(fs.readFileSync("scripts/notions/concepts-classes.json", "utf8"));
 // libellés des matières dans les titres des examens blancs (lib/practiceTopics.ts)
 const MATIERE_DU_MOCK = {
   "Éthique et Standards Professionnels": "ethics",
@@ -251,7 +253,7 @@ for (const c of conflits) notes.push(`doublon d'énoncé en désaccord (le premi
 const donnees = {};
 for (const e of [...parEmpreinte.keys()].sort()) {
   const v = parEmpreinte.get(e);
-  donnees[e] = [v.notion, v.concept];
+  donnees[e] = [v.notion, v.concept ?? CONCEPTS_CLASSES[e] ?? null];
 }
 fs.writeFileSync(
   SORTIE,

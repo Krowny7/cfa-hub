@@ -588,7 +588,7 @@ export function paramsVersJson(p: SalleParams): Record<string, unknown> {
     json.complet = p.mock.complet;
     json.ordre = p.mock.ordre;
   }
-  if (p.source !== "examen" && (p.notions?.length || p.concepts?.length)) {
+  if (p.notions?.length || p.concepts?.length) {
     json.notions = p.notions ?? [];
     json.concepts = p.concepts ?? [];
   }

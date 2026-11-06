@@ -171,6 +171,8 @@ console.log("# les réglages de l'admin");
   const effectifs = rendre(<Reglages onLancer={noop} demoDispos={{ banque: dispos }} />);
   check("l'effectif de chaque matière à côté de sa case", effectifs.includes('class="topicDispo" title="30">30<') && effectifs.includes('title="4">4<'));
 
+  const rouverts = reglagesDeDepart({ notions: ["fsa:3"], concepts: ["EPS"] });
+  check("reglagesDeDepart : les réglages rouverts gardent le choix par notion", rouverts.notions?.[0] === "fsa:3" && rouverts.concepts?.[0] === "EPS" && !("notions" in reglagesDeDepart(null)));
   const depart = reglagesDeDepart({ nombre: 999, type: "mixte" });
   check("des réglages invalides retombent sur les valeurs par défaut", depart.nombre === 10 && depart.type === "questions");
   const sans = rendre(<Reglages initial={{ topics: [] }} onLancer={noop} />);
