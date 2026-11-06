@@ -52,6 +52,13 @@ export const plat = (t: string) =>
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
 
+/** Le libellé répond-il à la recherche (déjà passée par plat) ? Une recherche courte vise le début d'un mot : « ips » ne tombe pas dans « relationships ». */
+export function contientRecherche(texte: string, q: string): boolean {
+  const p = plat(texte);
+  if (q.length > 4 || /[^a-z0-9]/.test(q)) return p.includes(q);
+  return p.split(/[^a-z0-9]+/).some((m) => m.startsWith(q));
+}
+
 const liste = <T,>(data: unknown): T[] => (Array.isArray(data) ? (data as T[]) : []);
 
 export async function lireNotionsDisponibles(sb: SupabaseClient, source: SourceNotions, mock?: MockNotions): Promise<NotionDispo[]> {

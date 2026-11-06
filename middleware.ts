@@ -86,5 +86,5 @@ export const config = {
   // intro/ : le film de l'intro et ses masques — statiques, publics, lus
   // par morceaux dès le chargement : ni aller-retour d'authentification à
   // chaque morceau (la vidéo calait), ni redirection
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|intro/|splash/|.*\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|woff2?)$).*)"]
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|intro/|splash/|notions-mots.json|.*\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|woff2?)$).*)"]
 };
