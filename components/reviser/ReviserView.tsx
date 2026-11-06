@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Icone } from "@/components/adn/icons";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
 import { CarteCoursComplets } from "@/components/reviser/ParcoursClient";
+import { PecheAnimee } from "@/components/reviser/PecheAnimee";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import type { DonneesReviser, EtatFiche } from "@/components/reviser/parcours";
 import { InkRing } from "@/components/ink/InkRing";
@@ -17,7 +18,7 @@ import s from "./Parcours.module.css";
 
 // Espace « Réviser », disposition choisie par Théo. Dans le cadre commun (.rl-cadre) : le
 // cours complet en grand, les fiches et les flashcards à sa droite. Dessous : les one-pagers
-// et la peinture de la pêche, puis la page blanche, les vidéos résumé et l'Atelier, enfin le
+// et la peinture animée de la pêche, puis la page blanche, les vidéos résumé et l'Atelier, enfin le
 // Codex et son aperçu (`codex`, lu en flux par app/reviser). Le carnet de ratures, les
 // questions marquées et les points faibles sont sur la page de l'Atelier (Registre).
 // Sans requête : app/reviser charge les données (parcours-data.ts), l'aperçu en fournit
@@ -128,7 +129,7 @@ function Pages() {
         </span>
       </Link>
       <div className={s.peche} aria-hidden>
-        <Illustration nom="reviser-peche" position="50% 50%" decorative className={s.fond} />
+        <PecheAnimee className={s.fond} />
       </div>
     </div>
   );
