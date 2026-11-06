@@ -11,7 +11,6 @@ import {
   LOGO_TAIL,
   LOGO_TRACK,
 } from "@/components/ink/paths";
-import { OUVERTURE } from "@/lib/voice";
 
 /*
  * Intro « L'encre » — joue une fois par session de navigation, par-dessus la
@@ -31,15 +30,12 @@ import { OUVERTURE } from "@/lib/voice";
  * vidéo ne démarre pas à temps (réseau lent, lecture automatique refusée), et
  * sert aussi d'image fixe quand l'utilisateur préfère réduire les animations.
  *
- * Sous « RANKED LOBBY », deux phrases en anglais (lib/voice.ts, OUVERTURE).
- * Dans le film, elles sont PEINTES (depuis le 2026-11-02, demande de
- * l'utilisateur : « le même effet d'apparition que le grand, tout pareil ») :
- * un troisième geste de pinceau, juste après LOBBY, rendu par le même moteur
- * (atelier hors dépôt ranked-lobby-intro-film). Changer le texte demande donc
- * de recalculer les deux films. Dans la version dessinée, elles restent en
- * HTML et apparaissent en fondu avec le nom. L'envol de l'anneau attend
- * ensuite HOLD_MS pour laisser le temps de lire (le film reste figé sur sa
- * dernière image). Avec le mouvement réduit, elles sont déjà là, sans fondu.
+ * Sur ordinateur, un ninja se peint en trois coups de pinceau à droite du nom
+ * (2026-11-06) : il est incrusté dans le film (atelier hors dépôt
+ * ranked-lobby-intro-film, dossier ninja), et les lettres passent en papier sur
+ * lui. Le film de téléphone et la version dessinée n'ont que l'anneau et le nom.
+ * L'envol de l'anneau attend HOLD_MS, pour laisser le temps de voir l'image (le
+ * film reste figé sur sa dernière image).
  *
  * Un clic, une touche ou « Passer » saute à l'envol de l'anneau.
  * `?splash=1` la rejoue, `?splash=svg` force la version dessinée,
@@ -58,24 +54,18 @@ const T = {
   ranked: 2.45,
   lobby: 2.7,
   handoff: 3.8, // durée du film : la version dessinée s'aligne dessus
-  // Les deux phrases de la version dessinée : en même temps que « RANKED LOBBY »
-  mot1: 2.45,
-  mot2: 2.45,
 };
 const FLIGHT_MS = 760;
 const FADE_MS = 520;
-// Temps de lecture ajouté avant l'envol de l'anneau (fin du film, ou T.handoff en version dessinée) :
-// la phrase est posée dès 3,05 s (avec le nom) : elle reste ainsi ≈ 2 s à lire avant l'envol
+// Pause avant l'envol de l'anneau (fin du film, ou T.handoff en version dessinée)
 const HOLD_MS = 1300;
-// Mouvement réduit : tout est déjà posé, l'anneau part après ce temps de lecture
+// Mouvement réduit : tout est déjà posé, l'anneau part après ce temps
 const REDUCE_MS = 2800;
-// Interligne des phrases de la version dessinée (en italique)
-const MOT_LH = 1.3;
 
 // Films : boîte du masque de l'anneau en pixels vidéo (x, y, côté — le logo
 // 240 × 240 plus 24 unités de marge de chaque côté), zone utile à garder
-// entièrement visible (centre x, centre y, largeur, hauteur). La zone utile
-// englobe les phrases peintes sous « LOBBY ».
+// entièrement visible (centre x, centre y, largeur, hauteur). En paysage, elle
+// englobe le ninja, à droite du nom.
 type Film = {
   src: string;
   mask: string;
@@ -85,7 +75,7 @@ type Film = {
   content: [number, number, number, number];
 };
 const FILMS: Record<"land" | "port", Film> = {
-  land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [960, 540, 1300, 560] },
+  land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [1050, 540, 1480, 680] },
   port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 482.4, 626.1], content: [540, 1044, 760, 992] },
 };
 const MASK_MARGIN = 24;
@@ -244,11 +234,7 @@ const CSS = `
 .rli-ring{width:min(27vw,330px);height:auto;overflow:visible;flex:none}
 .rli-wordcol{position:relative;width:min(46vw,560px);display:flex;flex-direction:column;align-items:center}
 .rli-words{width:100%;height:auto;overflow:visible}
-.rli-mot{font:italic 400 clamp(13px,1.15vw,17px)/${MOT_LH} var(--font-sans);letter-spacing:0;text-align:left;color:var(--ink);pointer-events:none}
-.rli-wordcol .rli-mot{position:absolute;top:100%;left:0;width:100%;margin-top:clamp(14px,2.6vh,28px)}
-.rli-mot span{display:inline-block}
-.rli-mot span+span{margin-left:.32em}
-@media (max-aspect-ratio:4/5){.rli-stage{flex-direction:column;gap:22px}.rli-ring{width:min(50vw,250px)}.rli-wordcol{width:min(86vw,470px)}.rli-mot{font-size:clamp(13px,3.6vw,15px)}}
+@media (max-aspect-ratio:4/5){.rli-stage{flex-direction:column;gap:22px}.rli-ring{width:min(50vw,250px)}.rli-wordcol{width:min(86vw,470px)}}
 .rli-skip{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;height:34px;padding:0 14px;border:2px solid var(--ink);border-radius:3px;background:var(--paper);color:var(--ink);font:700 13px var(--font-sans);cursor:pointer}
 .rli-out .rli-skip{opacity:0;transition:opacity .2s}
 .rli-pen{stroke-dasharray:100 130;animation:rliDraw .7s var(--d,0s) cubic-bezier(.4,0,.2,1) backwards,rliGone .5s 2.2s ease forwards}
@@ -260,12 +246,8 @@ const CSS = `
 .rli-drop{animation:rliFly .55s var(--d) cubic-bezier(.2,.8,.3,1) both}
 .rli-breathe{transform-box:fill-box;transform-origin:center;animation:rliBreathe .6s ${(T.brush + T.brushDur - 0.05).toFixed(2)}s ease-in-out both}
 .rli-paint{stroke-dasharray:100 130;animation:rliDraw .52s var(--d) cubic-bezier(.6,0,.3,1) backwards}
-.rli-m1{animation:rliMot .6s ${T.mot1}s ease both}
-.rli-m2{animation:rliMot .6s ${T.mot2}s ease both}
 .rli-out .rli-fadeaway{opacity:0;transition:opacity .28s ease}
-.rli-out .rli-mot{opacity:0;transition:opacity .25s ease}
 .rli-out .rli-bg{opacity:0;transition:opacity ${FADE_MS}ms ease .18s}
-@keyframes rliMot{from{opacity:0;transform:translateY(4px)}}
 @keyframes rliDraw{from{stroke-dashoffset:100}}
 @keyframes rliGone{to{opacity:0}}
 @keyframes rliFall{0%{opacity:0;transform:translateY(-190px) scale(.7,1.5)}12%{opacity:1}96%{opacity:1;transform:translateY(-6px) scale(.9,1.35)}100%{opacity:0;transform:translateY(0) scale(1.2,.6)}}
@@ -651,10 +633,6 @@ export function Splash() {
                 LOBBY
               </text>
             </svg>
-            <div className="rli-mot" aria-hidden>
-              <span className="rli-m1">{OUVERTURE.constat}</span>
-              <span className="rli-m2">{OUVERTURE.promesse}</span>
-            </div>
           </div>
         </div>
       )}
@@ -668,9 +646,7 @@ export function Splash() {
       >
         Passer ›
       </button>
-      <span className="sr-only">
-        Ranked Lobby. <span lang="en">{OUVERTURE.constat} {OUVERTURE.promesse}</span>
-      </span>
+      <span className="sr-only">Ranked Lobby.</span>
     </div>
   );
 }
