@@ -351,7 +351,7 @@ titre("# l'assemblage : les variantes qui retirent des cartes (la rangée se rec
 
   const neuf = rendre("nouveau");
   check("nouveau joueur : ni rival ni scores ni nouvelles ; le carnet est vide mais posé, les amis invitent à en ajouter", !neuf.includes('id="lobby-rival-titre"') && !neuf.includes('id="lobby-scores-titre"') && !neuf.includes('id="lobby-nouveau-titre"') && neuf.includes('id="lobby-carnet-titre"') && neuf.includes("Ajoute tes premiers amis"));
-  check("nouveau joueur : l'affiche de la rangée 3 accompagne la carte du jour (data-n=2) ; pas de colonne de déblocage donc pas d'affiche de la bibliothèque", neuf.includes('class="rangeeJour" data-n="2"') && !neuf.includes(">La Cascade<"));
+  check("nouveau joueur : l'affiche de la rangée 3 accompagne la carte du jour (data-n=2) ; pas de colonne de déblocage donc pas d'affiche de la bibliothèque", neuf.includes('class="rangeeJour" data-n="2"') && !neuf.includes("accueil-cascade.webp"));
 }
 
 titre("# du nouveau : les relances d'abord, cinq lignes au plus");
