@@ -43,7 +43,8 @@ export const RV = {
   // 3 · pour la fin
   fin: "pour la fin des révisions",
   opTitre: "One-pagers",
-  opSous: "Une page A4 par matière",
+  opSous: (n: number) => `${n} matières, ${n} pages`,
+  opAction: "Ouvrir",
   fcTitre: "Flashcards",
   fcSous: (parMatiere: number | null) => (parMatiere ? `${nombre(parMatiere)} cartes par matière` : "Termes, formules, pièges"),
   fcCarteTete: "À RETENIR",

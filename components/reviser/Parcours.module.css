@@ -1598,46 +1598,65 @@ button.onde {
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   gap: 14px;
 }
+/* les one-pagers : toutes les pages en mur, de biais, qui débordent du cadre. Le fond reste
+   sombre en thème nuit comme en jour. La tuile suit la largeur de la carte, pour que le mur la couvre. */
 .pages {
-  position: relative;
-  display: block;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
   height: 280px;
+  padding: 16px 18px;
+  overflow: hidden;
+  container-type: inline-size;
+  isolation: isolate;
+  background: #1a120b;
+  box-shadow: var(--shadow-1);
+  color: var(--sur-nuit);
 }
-.pagesFan img {
+.mur {
+  --tuile: max(98px, 24cqw);
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: auto;
-  height: 236px;
-  border: 1px solid var(--pencil-2);
-  border-radius: 5px;
-  background: var(--paper-2);
-  box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.45);
-  transform: translate(calc(-50% + var(--x)), -50%) rotate(var(--r));
-  transition: transform var(--dur-2) var(--ease-out);
+  top: calc(var(--tuile) * -0.63);
+  left: calc(var(--tuile) * -0.47);
+  z-index: -2;
+  display: grid;
+  grid-template-columns: repeat(6, var(--tuile));
+  gap: 8px;
+  transform: rotate(-7deg);
 }
-.pagesFan img:nth-child(1) {
-  --x: -76px;
-  --r: -9deg;
+.mur img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 3px;
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.7);
 }
-.pagesFan img:nth-child(2) {
-  --x: -38px;
-  --r: -4.5deg;
-  z-index: 1;
+.pagesTexte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
 }
-.pagesFan img:nth-child(3) {
-  --x: 0px;
-  --r: 0deg;
-  z-index: 2;
+.pagesTitre {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
 }
-.pagesFan img:nth-child(4) {
-  --x: 38px;
-  --r: 4.5deg;
-  z-index: 1;
+.pagesTexte small {
+  font-size: 13px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
 }
-.pagesFan img:nth-child(5) {
-  --x: 76px;
-  --r: 9deg;
+.pages .bouton {
+  flex-shrink: 0;
+}
+/* carte étroite : le titre garde sa ligne, toute la carte reste cliquable */
+@container (max-width: 310px) {
+  .pages .bouton {
+    display: none;
+  }
 }
 .peche {
   position: relative;

@@ -29,8 +29,9 @@ import s from "./Parcours.module.css";
 // l'onglet (.rl-encre) revient sur la page : le vrai fluide (EncreVive) dans les boutons, les
 // pastilles d'étape et les sceaux.
 
-/** Les one-pagers de la carte (vraies pages, public/one-pagers). */
-const EVENTAIL = ["ethics", "equity", "fixed-income", "portfolio", "derivatives"].filter((slug) => SUBJECTS.some((x) => x.onePager === slug));
+/** Les one-pagers de la carte (vraies pages, public/one-pagers) ; le mur en compte trois rangées de six. */
+const ONE_PAGERS = SUBJECTS.flatMap((x) => (x.onePager ? [x.onePager] : []));
+const MUR = [...ONE_PAGERS, ...ONE_PAGERS].slice(0, 18);
 
 const ONGLET: Record<EtatFiche, string | undefined> = { finie: s.ongletFini, entamee: s.ongletEntame, neuve: undefined };
 /** Les onglets du classeur : les matières qui ont une fiche, dans l'ordre du programme. */
@@ -122,16 +123,25 @@ function Haut({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
   );
 }
 
-/** Les one-pagers (la carte, ce sont les pages) et la peinture. */
+/** Les one-pagers (toutes les pages, en mur) et la peinture. */
 function Pages() {
   return (
     <div className={s.duo}>
-      <Link href="/fiches/one-pagers" className={s.pages} aria-label={RV.opTitre}>
-        <span className={s.pagesFan} aria-hidden>
-          {EVENTAIL.map((slug) => (
+      <Link href="/fiches/one-pagers" className={[s.carte, s.levable, s.pages].join(" ")}>
+        <span className={s.mur + " " + s.sombreNuit} aria-hidden>
+          {MUR.map((slug, i) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={slug} src={`/one-pagers/${slug}.webp`} alt="" width={300} height={425} loading="lazy" decoding="async" />
+            <img key={i} src={`/one-pagers/${slug}.webp`} alt="" width={300} height={425} loading="lazy" decoding="async" />
           ))}
+        </span>
+        <span className={s.c1Voile} aria-hidden />
+        <span className={s.pagesTexte}>
+          <b className={s.pagesTitre}>{RV.opTitre}</b>
+          <small>{RV.opSous(ONE_PAGERS.length)}</small>
+        </span>
+        <span className={encre(s.bouton)} data-palette={PAL.key}>
+          <EncreVive tons={PAL.liquide} />
+          {RV.opAction}
         </span>
       </Link>
       <div className={s.peche} aria-hidden>
