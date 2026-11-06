@@ -254,14 +254,14 @@ titre("# Léonard, la palette et l'inventaire des liquides");
 {
   check('data-leonard="defi" sur la carte héros (une fois) et data-leonard="anneau" sur l\'anneau (une fois)', compte(html, /data-leonard="defi"/g) === 1 && compte(html, /data-leonard="anneau"/g) === 1);
   check("la palette est posée sur la racine : noir, anthracite, gris perle, blanc, texture graphite.webp", html.includes("--pal-1:#111113") && html.includes("--pal-2:#3b3b3f") && html.includes("--pal-3:#8d8d92") && html.includes("--pal-4:#f1f1f2") && html.includes("/encres/graphite.webp"));
-  check('data-palette="graphite" sur chaque liquide, et aucune autre palette', compte(html, /data-palette="graphite"/g) === compte(html, /class="rl-encre-vif"/g) && !/data-palette="(?!graphite)/.test(html));
+  check("chaque liquide a l'encre de la page, sauf les 5 du jour (éclair) et les 30 (vallée)", compte(html, /data-palette="(graphite|eclair|vallee)"/g) === compte(html, /class="rl-encre-vif"/g) && !/data-palette="(?!graphite|eclair|vallee)/.test(html) && compte(html, /data-palette="eclair"/g) === 1 && compte(html, /data-palette="vallee"/g) === 1);
   check("exactement 4 liquides par défaut : Rendre ma copie, Jouer les 5 du jour, l'option active « Aujourd'hui » et Lui lancer un défi", compte(html, /class="rl-encre-vif"/g) === 4, String(compte(html, /class="rl-encre-vif"/g)));
   const iDefi = html.indexOf("Lui lancer un défi");
   const boutonDefi = html.slice(html.lastIndexOf("<a ", iDefi), iDefi);
   const iPlus = html.indexOf('class="plus"');
   const boutonPlus = html.slice(html.lastIndexOf("<button", iPlus), html.indexOf("</button>", iPlus));
   check("« Lui lancer un défi » porte le liquide du rival (palette graphite), « Relancer » reste un bouton à contour sans encre", boutonDefi.includes("rl-encre-vif") && boutonDefi.includes('data-palette="graphite"') && boutonPlus.includes("Relancer") && !boutonPlus.includes("rl-encre"), boutonPlus.slice(0, 80));
-  check("chaque liquide est l'enfant direct d'un .rl-encre positionné", compte(html, /rl-encre[^>]*data-palette="graphite"[^>]*><canvas[^>]*class="rl-encre-vif"/g) === 4 || compte(html, /class="rl-encre encre [^"]*"[^>]*><canvas/g) + compte(html, /class="rl-encre encre"[^>]*><canvas/g) === 4);
+  check("chaque liquide est l'enfant direct d'un .rl-encre positionné", compte(html, /rl-encre[^>]*data-palette="(?:graphite|eclair|vallee)"[^>]*><canvas[^>]*class="rl-encre-vif"/g) === 4 || compte(html, /class="rl-encre encre [^"]*"[^>]*><canvas/g) + compte(html, /class="rl-encre encre"[^>]*><canvas/g) === 4);
   const parCarte = html.split("<section").slice(1).map((x) => compte(x.slice(0, x.indexOf("</section>")), /class="rl-encre-vif"/g));
   check("un liquide au plus par carte, sauf la carte des 30 (son bouton et l'option active du classement)", parCarte.every((n, i) => n <= 1 || (i === 0 && n === 2)), parCarte.join());
   check("la carte du jour, panneau fermé : aucun liquide (« Enregistrer » n'existe qu'ouvert) ; la Grande Salle et l'affiche non plus", !/data-matiere="fsa"(?:(?!<\/section>).)*rl-encre-vif/s.test(html) && !/<figure(?:(?!<\/figure>).)*rl-encre/s.test(html));

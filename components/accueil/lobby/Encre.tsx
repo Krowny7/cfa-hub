@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { EncreVive } from "@/components/nav/EncreVive";
-import { PALETTES } from "@/lib/palettes";
+import { PALETTES, styleDePalette, type PaletteCle } from "@/lib/palettes";
 import type { Segment } from "@/lib/voice-moi";
 import s from "./Lobby.module.css";
 
@@ -27,6 +27,7 @@ export function Bouton({
   label,
   taille,
   sur = false,
+  palette,
 }: {
   href: string;
   children: React.ReactNode;
@@ -36,10 +37,13 @@ export function Bouton({
   taille?: "sm" | "gd";
   /** posé sur une peinture : liseré ivoire */
   sur?: boolean;
+  /** l'encre de la carte, quand elle a sa couleur à elle ; sinon celle de la page */
+  palette?: PaletteCle;
 }) {
+  const p = palette ? PALETTES[palette] : PAL;
   return (
-    <Link href={href} aria-label={label} className={classes("rl-encre", s.encre, s.bouton, taille && s[taille], sur && s.sur, className)} data-palette={PAL.key}>
-      <EncreVive tons={PAL.liquide} />
+    <Link href={href} aria-label={label} className={classes("rl-encre", s.encre, s.bouton, taille && s[taille], sur && s.sur, className)} data-palette={p.key} style={palette ? styleDePalette(p) : undefined}>
+      <EncreVive tons={p.liquide} />
       {children}
     </Link>
   );

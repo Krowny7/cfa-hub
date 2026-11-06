@@ -1,6 +1,72 @@
 {
   "palettes": [
     {
+      "key": "eclair",
+      "nom": "Éclair",
+      "inspiration": "le courant des 5 du jour : noir, bleu électrique et blanc",
+      "voile": [
+        0.52,
+        0.76
+      ],
+      "liquide": [
+        "#0b0f18",
+        "#1f4f9c",
+        "#7fd0ff",
+        "#f4fbff"
+      ],
+      "couleurs": [
+        {
+          "nom": "noir",
+          "hex": "#0b0f18"
+        },
+        {
+          "nom": "bleu nuit",
+          "hex": "#1f4f9c"
+        },
+        {
+          "nom": "bleu éclair",
+          "hex": "#7fd0ff"
+        },
+        {
+          "nom": "blanc",
+          "hex": "#f4fbff"
+        }
+      ]
+    },
+    {
+      "key": "vallee",
+      "nom": "La vallée",
+      "inspiration": "la peinture des 30 du jour : vert de vallée et brume",
+      "voile": [
+        0.52,
+        0.76
+      ],
+      "liquide": [
+        "#26362e",
+        "#5f7f52",
+        "#a9c09a",
+        "#eef1e4"
+      ],
+      "couleurs": [
+        {
+          "nom": "vert sombre",
+          "hex": "#26362e"
+        },
+        {
+          "nom": "vert mousse",
+          "hex": "#5f7f52"
+        },
+        {
+          "nom": "vert brume",
+          "hex": "#a9c09a"
+        },
+        {
+          "nom": "ivoire",
+          "hex": "#eef1e4"
+        }
+      ]
+    },
+    {
       "key": "san-romano",
       "nom": "San Romano",
       "inspiration": "La Bataille de San Romano, Uccello",
@@ -100,13 +166,13 @@
       "nom": "Le studiolo",
       "inspiration": "la marqueterie du studiolo de Gubbio",
       "voile": [
-        0.36,
-        0.64
+        0.5,
+        0.74
       ],
       "liquide": [
-        "#2f4a5a",
-        "#c98f2e",
-        "#efcf83",
+        "#2a5a68",
+        "#6fa84a",
+        "#e3b04b",
         "#f7f0dc"
       ],
       "couleurs": [
@@ -251,10 +317,10 @@
         0.76
       ],
       "liquide": [
-        "#1b1820",
-        "#7a2f2a",
-        "#e0603f",
-        "#f6ece0"
+        "#3c2a44",
+        "#3f7fc4",
+        "#e3b564",
+        "#f6ecd8"
       ],
       "couleurs": [
         {

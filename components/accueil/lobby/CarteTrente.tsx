@@ -69,7 +69,7 @@ export function CarteTrente({ d, classement, className }: { d: CarteDefi; classe
           </ul>
           <div className={s.herosActions}>
             {aFaire ? (
-              <Bouton href={d.action.href} taille="gd" sur>
+              <Bouton href={d.action.href} taille="gd" sur palette="vallee">
                 {cinq ? <Play size={17} aria-hidden /> : <PenLine size={17} aria-hidden />}
                 {d.action.libelle}
               </Bouton>

@@ -16,7 +16,7 @@ import { activeSpace, type Space } from "./nav";
 // (url de la texture), `--pal-voile-haut` / `--pal-voile-bas` (opacité du voile
 // sombre qui garde le texte blanc lisible) et `data-palette` pour les styles.
 
-export type PaletteCle = "san-romano" | "atelier" | "glace" | "studiolo" | "ebene" | "jade" | "florence" | "carnet" | "graphite";
+export type PaletteCle = "eclair" | "vallee" | "san-romano" | "atelier" | "glace" | "studiolo" | "ebene" | "jade" | "florence" | "carnet" | "graphite";
 
 export type CouleurNommee = { nom: string; hex: string };
 
