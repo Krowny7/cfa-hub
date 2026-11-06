@@ -335,7 +335,7 @@ titre("# l'assemblage : les variantes qui retirent des cartes (la rangée se rec
   check("sans clé de service : la carte du jour garde son affiche à côté du rival absent (deux cartes, data-n=2), la colonne du vainqueur ne tient que la bande", sansAdmin.includes('class="rangeeJour" data-n="2"') && sansAdmin.includes('id="lobby-vainqueur"') && compte(sansAdmin, /class="rl-encre-vif"/g) === 3);
 
   const sansRival = rendre("sansRival");
-  check("sans rival ni carte du jour : la rangée 3 disparaît, l'affiche ne reste pas seule", !sansRival.includes("rangeeJour") && !sansRival.includes("duel-lice.webp") && sansRival.includes('id="lobby-vainqueur"') && sansRival.includes(">La Bibliothèque<"));
+  check("sans rival ni carte du jour : la rangée 3 disparaît, l'affiche ne reste pas seule", !sansRival.includes("rangeeJour") && !sansRival.includes("duel-lice.webp") && sansRival.includes('id="lobby-vainqueur"') && sansRival.includes(">La Cascade<"));
   check("sans rival : « Lui lancer un défi » disparaît, 3 liquides", !sansRival.includes("Lui lancer un défi") && compte(sansRival, /class="rl-encre-vif"/g) === 3);
 
   const sansJour = rendre("sansJour");
@@ -351,7 +351,7 @@ titre("# l'assemblage : les variantes qui retirent des cartes (la rangée se rec
 
   const neuf = rendre("nouveau");
   check("nouveau joueur : ni rival ni scores ni nouvelles ; le carnet est vide mais posé, les amis invitent à en ajouter", !neuf.includes('id="lobby-rival-titre"') && !neuf.includes('id="lobby-scores-titre"') && !neuf.includes('id="lobby-nouveau-titre"') && neuf.includes('id="lobby-carnet-titre"') && neuf.includes("Ajoute tes premiers amis"));
-  check("nouveau joueur : l'affiche de la rangée 3 accompagne la carte du jour (data-n=2) ; pas de colonne de déblocage donc pas d'affiche de la bibliothèque", neuf.includes('class="rangeeJour" data-n="2"') && !neuf.includes(">La Bibliothèque<"));
+  check("nouveau joueur : l'affiche de la rangée 3 accompagne la carte du jour (data-n=2) ; pas de colonne de déblocage donc pas d'affiche de la bibliothèque", neuf.includes('class="rangeeJour" data-n="2"') && !neuf.includes(">La Cascade<"));
 }
 
 titre("# du nouveau : les relances d'abord, cinq lignes au plus");
