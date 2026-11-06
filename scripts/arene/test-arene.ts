@@ -5,6 +5,7 @@
 // joue, les bannières montrées, le vainqueur d'un duel et d'une Salle, le seuil
 // de l'examen blanc, ce qui se joue à la fin (vidéo, bannière, rien), le rideau,
 // les durées des règles de Théo et la lecture des réglages du joueur.
+import { debitPour, tailleCompressee } from "@/lib/arene/compression";
 import { ARENE_VIDE, FONDS, TRAITS, areneDepuis, areneValide, couleurTrait, fichiersArene, fondDe } from "@/lib/arene/perso";
 import {
   BANNIERE_DUREE_MS,
@@ -120,6 +121,15 @@ console.log("# Les réglages du joueur");
   check("la peinture choisie remplit sa bannière", fondDe({ ...ARENE_VIDE, fond: "glace" }, uid).src === FONDS[1].src);
   check("la peinture de départ est toujours la même pour lui", fondDe(ARENE_VIDE, uid).src === fondDe(ARENE_VIDE, uid).src);
   check("chaque trait a sa couleur", TRAITS.every((t) => /^#[0-9a-f]{6}$/.test(couleurTrait(t.key))));
+}
+
+console.log("# La compression des vidéos");
+{
+  const k = tailleCompressee(3840, 2160);
+  check("une vidéo 4K descend à 1280 de large, cadrage gardé, dimensions paires", k.l === 1280 && k.h === 720);
+  check("une vidéo verticale garde son sens", tailleCompressee(1080, 1920).h === 1280 && tailleCompressee(1080, 1920).l % 2 === 0);
+  check("une petite vidéo n'est pas agrandie", tailleCompressee(640, 360).l === 640);
+  check("le débit tient sous la limite, son compris", ((debitPour(50 * 1024 * 1024, 15) + 128000) * 15) / 8 < 50 * 1024 * 1024);
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\nTout est bon.");

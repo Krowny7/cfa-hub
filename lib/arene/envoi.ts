@@ -7,6 +7,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { VIDEO_TYPES } from "@/lib/profil/disposition";
 import { Mo, Refus, estFichierVideo, lireVideo, reduireImage } from "@/lib/profil/envoi-media";
+import { compresserVideo } from "@/lib/arene/compression";
 import { BUCKET_ARENE, VICTOIRE_MAX_OCTETS, VICTOIRE_MAX_SECONDES, type VideoVictoire } from "@/lib/arene/perso";
 import { ARENE } from "@/lib/voice-arene";
 
@@ -27,16 +28,28 @@ async function deposer(sb: SupabaseClient, nom: string, fichier: Blob, contentTy
   return sb.storage.from(BUCKET_ARENE).getPublicUrl(chemin).data.publicUrl;
 }
 
-/** Contrôle et envoie une vidéo : 15 secondes et 50 Mo au plus, MP4, MOV ou WebM. */
-export async function envoyerVideoVictoire(sb: SupabaseClient, file: File): Promise<VideoVictoire> {
+/** Contrôle et envoie une vidéo : 15 secondes au plus, MP4, MOV ou WebM. Au-delà de 50 Mo, elle est d'abord compressée ici. */
+export async function envoyerVideoVictoire(sb: SupabaseClient, file: File, surCompression?: () => void): Promise<VideoVictoire> {
   if (!estFichierVideo(file)) throw new Refus(R.refusType);
   const type = file.type || (/[.]mov$/i.test(file.name) ? "video/quicktime" : /[.]webm$/i.test(file.name) ? "video/webm" : "video/mp4");
   if (!VIDEO_TYPES.includes(type)) throw new Refus(R.refusType);
-  if (file.size > VICTOIRE_MAX_OCTETS) throw new Refus(R.refusLourde(Mo(VICTOIRE_MAX_OCTETS)));
   const m = await lireVideo(file);
   if (Number.isFinite(m.duree) && m.duree > VICTOIRE_MAX_SECONDES + 0.5) throw new Refus(R.refusLongue(VICTOIRE_MAX_SECONDES));
-  const ext = type === "video/quicktime" ? "mov" : type === "video/webm" ? "webm" : "mp4";
-  const url = await deposer(sb, `victoire-${Date.now()}.${ext}`, file, type);
+  let envoi: Blob = file;
+  let typeEnvoi = type;
+  if (file.size > VICTOIRE_MAX_OCTETS) {
+    surCompression?.();
+    try {
+      const c = await compresserVideo(file, Number.isFinite(m.duree) ? m.duree : VICTOIRE_MAX_SECONDES, VICTOIRE_MAX_OCTETS);
+      envoi = c.blob;
+      typeEnvoi = c.type;
+    } catch {
+      throw new Refus(R.refusLourde(Mo(VICTOIRE_MAX_OCTETS)));
+    }
+    if (envoi.size > VICTOIRE_MAX_OCTETS) throw new Refus(R.refusLourde(Mo(VICTOIRE_MAX_OCTETS)));
+  }
+  const ext = typeEnvoi === "video/quicktime" ? "mov" : typeEnvoi === "video/webm" ? "webm" : "mp4";
+  const url = await deposer(sb, `victoire-${Date.now()}.${ext}`, envoi, typeEnvoi);
   return { url, ratio: Math.round(m.ratio * 1000) / 1000, duree: Number.isFinite(m.duree) ? Math.round(m.duree * 10) / 10 : null, nom: file.name.slice(0, 120), poids: file.size };
 }
 

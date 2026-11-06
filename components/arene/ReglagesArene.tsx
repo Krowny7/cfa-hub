@@ -26,6 +26,7 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
   const [arene, setArene] = useState<Arene>(ARENE_VIDE);
   const [dispo, setDispo] = useState<boolean | null>(null);
   const [envoi, setEnvoi] = useState<"image" | "video" | null>(null);
+  const [compresse, setCompresse] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; texte: string } | null>(null);
   const [pending, start] = useTransition();
   const champImage = useRef<HTMLInputElement | null>(null);
@@ -72,6 +73,7 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
       setMsg({ ok: false, texte: e instanceof Refus ? e.message : R.envoiRate });
     } finally {
       setEnvoi(null);
+      setCompresse(false);
     }
   }
 
@@ -162,7 +164,7 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
             <div className="flex min-w-0 flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <button type="button" className="btn btn-secondary btn-sm max-sm:min-h-[44px]" disabled={fige} onClick={() => champVideo.current?.click()}>
-                  {envoi === "video" ? R.envoiEnCours : video ? R.remplacer : R.envoyer}
+                  {envoi === "video" ? (compresse ? R.compressionEnCours : R.envoiEnCours) : video ? R.remplacer : R.envoyer}
                 </button>
                 {video && (
                   <button type="button" className="btn btn-ghost btn-sm max-sm:min-h-[44px]" disabled={fige || pending} onClick={() => changer({ ...arene, video: null })}>
@@ -180,7 +182,7 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   e.target.value = "";
-                  void envoyer("video", f, (x) => envoyerVideoVictoire(sb, x), (v) => ({ ...arene, video: v }));
+                  void envoyer("video", f, (x) => envoyerVideoVictoire(sb, x, () => setCompresse(true)), (v) => ({ ...arene, video: v }));
                 }}
               />
               {video ? (
