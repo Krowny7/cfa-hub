@@ -1,4 +1,5 @@
 import { EncreVive } from "@/components/nav/EncreVive";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Icone } from "@/components/adn/icons";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
@@ -31,13 +32,12 @@ import s from "./Parcours.module.css";
 /** Les one-pagers de la carte (vraies pages, public/one-pagers). */
 const EVENTAIL = ["ethics", "equity", "fixed-income", "portfolio", "derivatives"].filter((slug) => SUBJECTS.some((x) => x.onePager === slug));
 
-const CASE: Record<EtatFiche, string | undefined> = { finie: s.f, entamee: s.e, neuve: undefined };
-const ORDRE: Record<EtatFiche, number> = { finie: 0, entamee: 1, neuve: 2 };
+const ONGLET: Record<EtatFiche, string | undefined> = { finie: s.ongletFini, entamee: s.ongletEntame, neuve: undefined };
+/** Les onglets du classeur : les matières qui ont une fiche, dans l'ordre du programme. */
+const MATIERES_FICHES = SUBJECTS.filter((x) => x.fiche);
 
 /** Les aperçus : l'écoute et « Sans calcul » d'exemple, à la place de l'appareil. */
 export type ApercuReviser = { ecoute?: EcouteCours | null; sansCalcul?: boolean };
-
-const levable = (...cls: string[]) => [s.carte, s.papier, s.levable, ...cls].join(" ");
 
 /** La palette de la page (celle de l'onglet « Réviser ») et l'encre de l'onglet : le vrai fluide (EncreVive) dans les boutons, les pastilles et les sceaux. */
 const PAL = PALETTES.studiolo;
@@ -46,52 +46,58 @@ const encre = (...cls: string[]) => ["rl-encre", s.encre, ...cls].join(" ");
 /** Le premier bloc de la page : le cours en grand, les fiches et les flashcards à sa droite. */
 function Haut({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
   const f = d.fiches;
+  const etats = new Map(f?.etats.map((e) => [e.key, e.etat]));
+  // la fiche à ouvrir ensuite : une entamée d'abord, sinon la première pas commencée
+  const suite = f ? (MATIERES_FICHES.find((m) => etats.get(m.key) === "entamee") ?? MATIERES_FICHES.find((m) => (etats.get(m.key) ?? "neuve") === "neuve")) : undefined;
   const fc = d.flashcards;
   return (
     <ol className={s.tete} aria-label={RV.parcours} data-leonard="bibliotheque">
       <CarteCoursComplets apercu={apercu?.ecoute} />
 
       <li className={s.case} data-leonard="fiches">
-          <Link href="/fiches" className={levable(s.c2)}>
-            <span className={s.feuillets} aria-hidden>
-              <i />
-              <i />
-              <i />
+        <div className={s.classeur}>
+          <i aria-hidden />
+          <i aria-hidden />
+          <nav className={s.onglets} aria-label={RV.fichesOnglets}>
+            {MATIERES_FICHES.map((m) => {
+              const etat = etats.get(m.key) ?? "neuve";
+              return (
+                <Link key={m.key} href={`/fiches/${m.fiche}`} className={ONGLET[etat]} title={RV.ficheOnglet(m.name, etat)} aria-label={RV.ficheOnglet(m.name, etat)}>
+                  {m.code}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className={s.chemise}>
+            <Link href="/fiches" className={s.chemiseLien} aria-label={RV.fichesAction} title={RV.fichesAide} />
+            <span className={s.chemiseHaut}>
+              <h3 className={s.c2Titre}>{RV.fichesTitre}</h3>
+              {f && (
+                <span className={[s.compteFiches, "t-num"].join(" ")}>
+                  {f.finies}
+                  <small>/{f.total}</small>
+                </span>
+              )}
             </span>
-            <span className={s.texteC2}>
-              <span className={s.haut}>
-                <span className={encre(s.etape, "t-num")} data-palette={PAL.key} aria-hidden>
-                  <EncreVive tons={PAL.liquide} echelle={48} />
-                  2
+            {suite && (
+              <Link href={`/fiches/${suite.fiche}`} className={s.suite}>
+                <span>
+                  <small>{etats.get(suite.key) === "entamee" ? RV.fichesReprendre : RV.fichesCommencer}</small>
+                  <b>{suite.name}</b>
                 </span>
-                <span className={s.eyebrow}>{RV.fichesEtape}</span>
-              </span>
-              <span>
-                <h3 className={s.c2Titre}>{RV.fichesTitre}</h3>
-                <span className={s.sous}>{RV.fichesSous}</span>
-              </span>
-            </span>
-            {f && (
-              <span className={s.avancement} title={RV.fichesAide}>
-                <span className={s.cases} aria-hidden>
-                  {[...f.etats]
-                    .sort((a, b) => ORDRE[a.etat] - ORDRE[b.etat])
-                    .map((e) => (
-                      <i key={e.key} className={CASE[e.etat]} />
-                    ))}
-                </span>
-                <span className={s.avancementTexte}>
-                  <span>{RV.fichesAvancement(f.finies, f.entamees)}</span>
-                  <span className={s.mono}>{RV.fichesSur(f.total)}</span>
-                </span>
-              </span>
+                <ArrowRight size={16} aria-hidden />
+              </Link>
             )}
-            <span className={encre(s.bouton)} data-palette={PAL.key}>
-              <EncreVive tons={PAL.liquide} />
-              {RV.fichesAction}
+            <span className={s.chemiseBas} aria-hidden>
+              <span className={encre(s.bouton)} data-palette={PAL.key}>
+                <EncreVive tons={PAL.liquide} />
+                {RV.fichesAction}
+              </span>
+              {f && <span className={s.avancementTexte}>{RV.fichesAvancement(f.finies, f.entamees)}</span>}
             </span>
-          </Link>
-        </li>
+          </div>
+        </div>
+      </li>
 
       <li className={s.case} data-leonard="fin">
         <Link href="/flashcards" className={s.paquet} aria-label={RV.fcTitre}>

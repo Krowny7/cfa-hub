@@ -29,14 +29,15 @@ export const RV = {
   coursMatieres: "Écoute par matière",
   coursMatiere: (nom: string, pct: number) => (pct >= 100 ? `${nom} : écouté en entier` : pct > 0 ? `${nom} : ${pct} % écouté` : `${nom} : pas encore écouté`),
   // 2 · Fiches de révision
-  fichesEtape: "Puis fixe",
   fichesTitre: "Fiches de révision",
-  fichesSous: "Le cours condensé, puis ses questions : QCM, corrigés, drills.",
+  fichesOnglets: "Les fiches, matière par matière",
+  fichesReprendre: "À reprendre",
+  fichesCommencer: "À commencer",
   fichesAvancement: (finies: number, entamees: number) =>
     finies === 0 && entamees === 0
       ? "Aucune fiche entamée"
       : [finies > 0 ? `${finies} fiche${s(finies)} finie${s(finies)}` : null, entamees > 0 ? `${entamees} entamée${s(entamees)}` : null].filter(Boolean).join(" · "),
-  fichesSur: (n: number) => `sur ${n}`,
+  ficheOnglet: (nom: string, etat: "finie" | "entamee" | "neuve") => `${nom} : ${etat === "finie" ? "finie" : etat === "entamee" ? "entamée" : "pas commencée"}`,
   fichesAide: "Une fiche est finie quand chaque question de ses pages de drill a reçu une réponse ; entamée dès la première.",
   fichesAction: "Ouvrir les fiches",
   // 3 · pour la fin

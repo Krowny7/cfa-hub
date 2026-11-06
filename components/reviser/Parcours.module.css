@@ -120,7 +120,6 @@
   box-shadow: var(--shadow-btn);
 }
 /* dans une petite pastille, une tuile plus fine : on y voit le marbré, pas une seule tache */
-.racine .etape:global(.rl-encre)[data-palette],
 .racine .sceau:global(.rl-encre)[data-palette] {
   --encre-pas: 112px;
 }
@@ -132,12 +131,6 @@
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--pal-4) 40%, transparent),
     var(--shadow-btn);
-}
-:global(html[data-theme="nuit"]:not([data-discreet="1"])) .papier .etape.encre,
-:global(html[data-theme="nuit"]:not([data-discreet="1"])) .finTete .etape.encre {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--pal-4) 40%, transparent),
-    0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* ——— le lieu peint (Bibliothèque, Atelier) ——— */
@@ -293,29 +286,6 @@
 }
 /* l'anneau de focus : celui du site (encre) sur le papier ; dans la carte sombre, l'encre claire */
 
-/* la pastille d'étape : remplie de l'encre (.encre), chiffre blanc en .t-num
-   (typo du logo, retirée en mode discret) */
-.etape {
-  display: inline-grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  font-size: 14px;
-  line-height: 1;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
-}
-.haut {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-.haut .eyebrow {
-  white-space: nowrap;
-  opacity: 0.75;
-}
 .droite {
   margin-left: auto;
   font-size: 12px;
@@ -345,18 +315,11 @@
     0 0 0 1px color-mix(in srgb, var(--pal-4) 14%, transparent),
     var(--shadow-2);
 }
-/* sur la carte sombre : un filet ivoire détache la pastille et le bouton encrés */
-.c1 .etape {
-  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--pal-4) 70%, transparent);
-}
+/* sur la carte sombre : un filet ivoire détache le bouton encré */
 .c1 .bouton.encre {
   box-shadow:
     0 0 0 1.5px color-mix(in srgb, var(--pal-4) 55%, transparent),
     0 8px 18px -8px rgba(0, 0, 0, 0.6);
-}
-.c1 .haut .eyebrow {
-  opacity: 1;
-  color: var(--sur-nuit-2);
 }
 .c1 :focus-visible {
   outline: 2px solid var(--sur-nuit);
@@ -502,108 +465,172 @@
   }
 }
 
-/* 2 · Fiches de révision : les feuillets */
-.c2 {
+/* 2 · Fiches de révision : le classeur, posé à côté du paquet de flashcards. Un onglet par
+   matière, dans l'ordre du programme : sa hauteur et son encre disent où en est la fiche. */
+.classeur {
+  position: relative;
   display: grid;
-  align-content: start;
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
-  padding: 20px;
-  overflow: hidden;
+  min-height: 190px;
+  padding: 0 8px 6px;
+  color: inherit;
+  text-decoration: none;
+  transition: transform var(--dur-2) var(--ease-out);
 }
-.c2 .haut .eyebrow {
-  color: var(--ink-3);
-  opacity: 1;
-}
-.c2Titre {
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1.05;
-}
-.c2 .sous {
-  max-width: 30ch;
-  color: var(--ink-2);
-}
-.texteC2 {
-  display: grid;
-  gap: 10px;
-}
-.feuillets {
-  position: absolute;
-  right: -10px;
-  bottom: -22px;
-  width: 104px;
-  height: 108px;
-  pointer-events: none;
-}
-.feuillets i {
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--pencil-2);
-  border-radius: 6px;
-  background: var(--surface);
-  background-image: repeating-linear-gradient(var(--surface) 0 13px, var(--pencil-2) 13px 14px);
-  background-position: 0 22px;
-  box-shadow: var(--shadow-1);
-}
-.feuillets i:nth-child(1) {
-  transform: rotate(-9deg) translate(-16px, 4px);
-}
-.feuillets i:nth-child(2) {
-  transform: rotate(-3deg) translate(-6px, 0);
-}
-.feuillets i:nth-child(3) {
-  transform: rotate(4deg);
-}
-.feuillets i:nth-child(3)::before {
-  content: "QCM";
-  position: absolute;
-  top: 6px;
-  left: 8px;
-  font: 700 9px var(--font-mono);
-  color: var(--acc);
-}
-.feuillets i:nth-child(3)::after {
-  content: "✓";
-  position: absolute;
-  right: 9px;
-  bottom: 10px;
-  font: 800 16px var(--font-sans);
-  color: var(--acc);
-  transform: rotate(-8deg);
-}
-@container (max-width: 520px) {
-  .feuillets {
-    width: 84px;
-    height: 88px;
+@media (hover: hover) {
+  .classeur:hover {
+    transform: translateY(-3px);
   }
 }
-.avancement {
-  display: grid;
-  gap: 6px;
-  margin-top: 2px;
-  padding-right: 70px;
+.classeur > i {
+  position: absolute;
+  inset: 32px 8px 6px;
+  border: 1.5px solid var(--acc-plein);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
 }
-.cases {
+.classeur > i:nth-child(1) {
+  opacity: 0.55;
+  transform: rotate(-2deg) translate(-3px, 2px);
+}
+.classeur > i:nth-child(2) {
+  opacity: 0.85;
+  transform: rotate(1deg);
+}
+.onglets {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 4px;
+  align-items: end;
+  gap: 3px;
+  height: 32px;
+  padding: 0 12px;
 }
-.cases i {
-  height: 8px;
-  border-radius: 3px;
-  background: var(--pencil-2);
+.onglets a {
+  display: grid;
+  place-items: center;
+  height: 20px;
+  margin-bottom: -1px;
+  border: 1.5px solid var(--pencil-2);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: var(--surface);
+  color: var(--ink-3);
+  font: 700 9px var(--font-mono);
+  text-decoration: none;
+  transition: transform var(--dur-2) var(--ease-out);
 }
-.cases i.f {
+@media (hover: hover) {
+  .onglets a:hover {
+    transform: translateY(-3px);
+  }
+}
+.onglets .ongletEntame {
+  height: 25px;
+  border-color: var(--acc-plein);
+  box-shadow: inset 0 3px 0 var(--acc-plein);
+  color: var(--ink-2);
+}
+.onglets .ongletFini {
+  height: 31px;
+  border-color: var(--acc-plein);
   background: var(--acc-plein);
+  color: var(--surface);
 }
-.cases i.e {
-  background: linear-gradient(90deg, var(--acc-plein) 50%, var(--pencil-2) 50%);
+.chemise {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 16px 18px;
+  border: 1.5px solid var(--acc-plein);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+/* toute la feuille ouvre les fiches ; seul le raccourci vers la suite passe au-dessus */
+.chemiseLien {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.chemiseHaut {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.c2Titre {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+.compteFiches {
+  flex-shrink: 0;
+  font-size: 18px;
+}
+.compteFiches small {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.suite {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-block: auto;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--acc-plein) 9%, var(--surface));
+  color: inherit;
+  text-decoration: none;
+  transition: background var(--dur-2) var(--ease-out);
+}
+.suite > span {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.suite small {
+  color: var(--ink-3);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.suite b {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suite svg {
+  flex-shrink: 0;
+  color: var(--acc-plein);
+}
+@media (hover: hover) {
+  .suite:hover {
+    background: color-mix(in oklab, var(--acc-plein) 18%, var(--surface));
+  }
+}
+.chemiseBas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: auto;
+  pointer-events: none;
 }
 .avancementTexte {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
   font-size: 12px;
   color: var(--ink-2);
 }
@@ -1341,9 +1368,6 @@
   color: #111111;
   text-shadow: none;
 }
-:global(html[data-discreet="1"]) .c1 .etape {
-  box-shadow: none;
-}
 :global(html[data-discreet="1"]) .c1 .bouton.encre {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.35),
@@ -1479,17 +1503,6 @@ button.onde {
   letter-spacing: inherit;
   cursor: pointer;
 }
-.tete .c2 {
-  align-content: space-between;
-  gap: 10px;
-  padding: 18px 20px;
-}
-.tete .c2Titre {
-  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
-  font-size: 21px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
 /* le paquet de flashcards : la carte, c'est lui */
 .paquet {
   position: relative;
@@ -1566,17 +1579,13 @@ button.onde {
   font-size: 14.5px;
   color: var(--ink);
 }
-/* écran bas : le premier bloc tient dans le cadre (.rl-cadre) sans le pousser. La carte des
-   fiches garde son titre, son avancement et son bouton ; sa phrase d'explication s'efface. */
+/* écran bas : le premier bloc tient dans le cadre (.rl-cadre) sans le pousser */
 @media (min-width: 1100px) and (max-height: 760px) {
-  .tete .c2 {
-    gap: 8px;
-    padding: 14px 20px;
+  .tete .chemise {
+    gap: 6px;
+    padding: 12px 16px;
   }
-  .tete .c2 .sous {
-    display: none;
-  }
-  .tete .c2 .bouton {
+  .tete .chemise .bouton {
     min-height: 38px;
   }
   .tete .paquet {
@@ -1750,10 +1759,6 @@ button.onde {
   position: absolute;
   right: 24px;
   bottom: 24px;
-}
-/* les feuillets de décor ne couvrent pas le compte des fiches */
-.tete .avancement {
-  max-width: calc(100% - 96px);
 }
 @container (max-width: 860px) {
   .tete {
