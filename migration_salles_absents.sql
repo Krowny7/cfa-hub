@@ -9,7 +9,10 @@
 -- 4. Le classement ne liste que ceux qui ont répondu ou qui sont là.
 -- 5. Une partie abandonnée se clôt à son heure, même si plus personne n'ouvre sa salle :
 --    sinon son XP et ses ratures ne tombent jamais.
--- Rien n'est supprimé. Idempotent : se recolle sans effet.
+-- 6. Une salle où il n'y a plus personne depuis 2 minutes sort des listes (24 heures avant),
+--    sauf si une partie y tourne. Choix de Théo le 2026-11-06.
+-- Rien n'est supprimé : une salle masquée garde ses parties, et son code marche encore.
+-- Idempotent : se recolle sans effet.
 
 CREATE INDEX IF NOT EXISTS salle_sessions_ouvertes ON public.salle_sessions (fin_at) WHERE statut <> 'terminee';
 
@@ -153,5 +156,19 @@ $a$SELECT count(*)::int INTO v_membres
     IF n = d THEN RAISE EXCEPTION 'rendre_copie : compte des membres introuvable'; END IF;
     EXECUTE n;
   END IF;
+END;
+$m$;
+
+DO $m$
+DECLARE
+  f text;
+  d text;
+BEGIN
+  FOREACH f IN ARRAY ARRAY['public.salles_publiques()', 'public.mes_salles()'] LOOP
+    d := pg_get_functiondef(f::regprocedure);
+    IF position($a$interval '24 hours'$a$ IN d) > 0 THEN
+      EXECUTE replace(d, $a$interval '24 hours'$a$, $a$interval '2 minutes'$a$);
+    END IF;
+  END LOOP;
 END;
 $m$;
