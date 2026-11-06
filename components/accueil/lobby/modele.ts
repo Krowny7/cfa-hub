@@ -346,7 +346,7 @@ export function carteRang(o: {
 /** Les deux affiches par défaut (images du site, légendes courtes, aucun lien). */
 export const AFFICHES: { rival: AfficheLobby; scores: AfficheLobby } = {
   rival: { nom: "duel-lice", position: "50% 50%" },
-  scores: { nom: "accueil-cascade", legende: "La Cascade", position: "50% 78%" },
+  scores: { nom: "accueil-cascade", position: "50% 78%" },
 };
 
 /** Tout ce que lit `construireLobby` : des valeurs déjà lues, aucune requête. */

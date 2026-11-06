@@ -276,7 +276,7 @@ titre("# la Grande Salle");
 titre("# les deux affiches");
 {
   check("les deux peintures existent dans lib/illustrations", AFFICHES.rival.nom in ILLUSTRATIONS && AFFICHES.scores.nom in ILLUSTRATIONS);
-  check("à la place de la ligue : le Colisée de la Lice, sans légende ; rangée des scores : La Cascade", AFFICHES.rival.nom === "duel-lice" && AFFICHES.rival.legende === undefined && AFFICHES.scores.nom === "accueil-cascade" && AFFICHES.scores.legende === "La Cascade");
+  check("à la place de la ligue : le Colisée de la Lice, sans légende ; rangée des scores : la cascade, sans légende", AFFICHES.rival.nom === "duel-lice" && AFFICHES.rival.legende === undefined && AFFICHES.scores.nom === "accueil-cascade" && AFFICHES.scores.legende === undefined);
   for (const cle of ["rival", "scores"] as const) {
     const h = rendre(<Affiche a={AFFICHES[cle]} className="place" />);
     const legende = AFFICHES[cle].legende;

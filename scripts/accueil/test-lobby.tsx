@@ -226,7 +226,7 @@ const html = rendre("base");
     'id="lobby-deblocage-titre"',
     'id="lobby-quete-titre"',
     'id="lobby-scores-titre"',
-    ">La Cascade<",
+    "/illustrations/accueil-cascade.webp",
     'id="lobby-salle-titre"',
     'id="lobby-nouveau-titre"',
     'id="lobby-amis-titre"',
@@ -335,7 +335,7 @@ titre("# l'assemblage : les variantes qui retirent des cartes (la rangée se rec
   check("sans clé de service : la carte du jour garde son affiche à côté du rival absent (deux cartes, data-n=2), la colonne du vainqueur ne tient que la bande", sansAdmin.includes('class="rangeeJour" data-n="2"') && sansAdmin.includes('id="lobby-vainqueur"') && compte(sansAdmin, /class="rl-encre-vif"/g) === 3);
 
   const sansRival = rendre("sansRival");
-  check("sans rival ni carte du jour : la rangée 3 disparaît, l'affiche ne reste pas seule", !sansRival.includes("rangeeJour") && !sansRival.includes("duel-lice.webp") && sansRival.includes('id="lobby-vainqueur"') && sansRival.includes(">La Cascade<"));
+  check("sans rival ni carte du jour : la rangée 3 disparaît, l'affiche ne reste pas seule", !sansRival.includes("rangeeJour") && !sansRival.includes("duel-lice.webp") && sansRival.includes('id="lobby-vainqueur"') && sansRival.includes("accueil-cascade.webp"));
   check("sans rival : « Lui lancer un défi » disparaît, 3 liquides", !sansRival.includes("Lui lancer un défi") && compte(sansRival, /class="rl-encre-vif"/g) === 3);
 
   const sansJour = rendre("sansJour");
@@ -343,7 +343,7 @@ titre("# l'assemblage : les variantes qui retirent des cartes (la rangée se rec
 
   const socle = rendre("sansExtras");
   check("socle seul (rien des lots 2 à 5) : la page tient, une seule h1, les cartes du socle sont là", compte(socle, /<h1/g) === 1 && socle.includes('id="lobby-defi"') && socle.includes('id="lobby-traits"') && socle.includes('id="lobby-rang"') && socle.includes('id="lobby-vainqueur"'));
-  check("socle seul : ni rangée 3, ni lobby, ni scores, ni affiche, ni Grande Salle, ni du nouveau, ni amis, ni carnet", ["rangeeJour", "lobby-direct-titre", "lobby-scores-titre", "lobby-deblocage-titre", "lobby-quete-titre", ">La Cascade<", "duel-lice.webp", "lobby-salle-titre", "lobby-nouveau-titre", "lobby-amis-titre", "lobby-carnet-titre"].every((x) => !socle.includes(x)));
+  check("socle seul : ni rangée 3, ni lobby, ni scores, ni affiche, ni Grande Salle, ni du nouveau, ni amis, ni carnet", ["rangeeJour", "lobby-direct-titre", "lobby-scores-titre", "lobby-deblocage-titre", "lobby-quete-titre", "/illustrations/accueil-cascade.webp", "duel-lice.webp", "lobby-salle-titre", "lobby-nouveau-titre", "lobby-amis-titre", "lobby-carnet-titre"].every((x) => !socle.includes(x)));
   check("socle seul : le vainqueur remplit seul sa colonne (il s'étire), le rang à côté", socle.includes("etire") && socle.indexOf('id="lobby-vainqueur"') < socle.indexOf('id="lobby-rang"'));
 
   const sansMig = rendre("sansMigrations");

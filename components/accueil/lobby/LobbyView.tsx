@@ -31,7 +31,7 @@ import s from "@/components/accueil/lobby/Lobby.module.css";
 //   4. le vainqueur d'hier (et son personnage), le lobby en direct dessous | ton
 //      rang et ta phase de révision ;
 //   5. le prochain déblocage et ta prochaine quête | tes meilleurs scores | une
-//      affiche (« La Cascade ») ;
+//      affiche (la cascade) ;
 //   6. la Grande Salle (le prochain examen blanc) ;
 //   7. du nouveau | tes amis ;
 //   8. ton carnet de jours (la carte sombre), tout en bas.
