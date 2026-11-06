@@ -10,6 +10,7 @@ import { duelTopicLabel } from "@/lib/duels";
 import { avancementJoueurs, chronoBas, copieRendue, libelleChrono, positionDeDepart, prochaineNonRepondue, refusCopieRendue, reponsesRetenues } from "@/lib/salles/examen";
 import { DEFI } from "@/lib/voice-z2c";
 import { EXAMEN, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
+import { titreSession } from "@/lib/salles/partie";
 
 const LETTRES = ["A", "B", "C", "D", "E"];
 
@@ -138,7 +139,7 @@ export function RunnerSalle({
     return () => window.removeEventListener("keydown", touche);
   }, [aller, courante, q, rendue]);
 
-  const titre = session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : SALLES.partieTitre(session.numero);
+  const titre = session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : titreSession(session);
 
   return (
     // la salle passe en mode sobre (SalonView) : le papier du site, l'encre du site, thème nuit compris
@@ -147,7 +148,7 @@ export function RunnerSalle({
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 md:gap-5">
           <div className="min-w-0">
             <div className="truncate text-[14px] font-bold md:text-[16px]">{titre}</div>
-            <div className="t-micro truncate">{SALLES.partieTitre(session.numero)} · {EXAMEN.kicker}</div>
+            <div className="t-micro truncate">{titreSession(session)} · {EXAMEN.kicker}</div>
           </div>
           <span className={"t-num text-[26px] md:text-[38px] " + (bas ? "text-pen" : "")} role="timer" aria-live="off" aria-label={`${EXAMEN.tempsRestant} ${libelleChrono(restantMs)}`}>
             {libelleChrono(restantMs)}

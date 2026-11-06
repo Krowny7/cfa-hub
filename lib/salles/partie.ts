@@ -7,7 +7,9 @@
 // L'horloge de la partie, le score et le classement serveur sont dans
 // lib/salles/logique.ts ; ce module n'en est que la mise en forme pour l'écran.
 
-import type { ReponseResultat, SalleClassementLigne, SalleCorrection, SalleMaReponse, SalleSession } from "./types";
+import { PARTIE, SALLES } from "@/lib/voice-salles";
+import { libelleParams } from "./logique";
+import type { ReponseResultat, SalleChrono, SalleClassementLigne, SalleCorrection, SalleMaReponse, SalleSerie, SalleSession } from "./types";
 
 /** Une réponse enregistrée par le serveur, telle que repondreSalle la rend. */
 export type ReponseOk = Extract<ReponseResultat, { ok: true }>;
@@ -209,7 +211,38 @@ export const placeOrdinale = (n: number): string => (n === 1 ? "1er" : `${n}e`);
 
 /** Les réglages d'une partie terminée, débarrassés du décompte des tirages : de quoi relancer la même. */
 export function paramsPourRejouer(p: SalleSession["params"]) {
-  return { type: p.type, nombre: p.nombre, source: p.source, topics: p.topics, difficulte: p.difficulte, temps: p.temps, partCalculs: p.partCalculs, mock: p.mock, chrono: p.chrono };
+  return { type: p.type, nombre: p.nombre, source: p.source, topics: p.topics, difficulte: p.difficulte, temps: p.temps, partCalculs: p.partCalculs, mock: p.mock, chrono: p.chrono, notions: p.notions, concepts: p.concepts, rounds: p.rounds };
+}
+
+// ---------------------------------------------------------------------------
+// Les rounds
+
+/** Le nom d'une partie : « Partie 4 », ou « Round 2 sur 3 ». */
+export function titreSession(s: Pick<SalleSession, "numero" | "params">): string {
+  return s.params.rounds && s.params.round ? PARTIE.roundTitre(s.params.round, s.params.rounds) : SALLES.partieTitre(s.numero);
+}
+
+/** La partie en rounds, une fois finie et son classement général lu (il arrive quand le serveur confirme la fin). */
+export const serieFinale = (serie: SalleSerie | null | undefined): SalleSerie | null => (serie?.finie && serie.classement.length > 0 ? serie : null);
+
+/** Le résumé d'une partie : celui du round en cours quand il y en a, car params garde le total de la série. */
+export function libelleSession(s: Pick<SalleSession, "nb" | "params">, chrono?: SalleChrono): string {
+  const p = chrono ? { ...s.params, chrono } : s.params;
+  return libelleParams(p.rounds ? { ...p, nombre: s.nb } : p);
+}
+
+/**
+ * Ce que joue le rideau de fin : le round, ou toute la partie une fois la série finie.
+ * La partie entière a sa propre clé : « Terminer ici », joué après le rideau du round, ouvre le sien.
+ */
+export function rideauDeFin<S extends { id: string; nb: number; params: { rounds?: number } }>(
+  session: S,
+  classement: SalleClassementLigne[],
+  serie: SalleSerie | null | undefined,
+): { session: S; classement: SalleClassementLigne[]; titre?: string } {
+  const finale = serieFinale(serie);
+  if (finale) return { session: { ...session, id: `${session.id}:finale`, nb: finale.total }, classement: finale.classement };
+  return { session, classement, titre: session.params.rounds ? PARTIE.roundFini : undefined };
 }
 
 /**

@@ -4,21 +4,25 @@ import { useState } from "react";
 import { Hourglass, Square } from "lucide-react";
 import { CarteQuestion, etiquettesDe, type Repondre } from "@/components/salles/CarteQuestion";
 import { ClassementDirect } from "@/components/salles/ClassementDirect";
+import type { RetourRound } from "@/components/salles/ActionsRound";
+import { ClassementSerie } from "@/components/salles/ClassementSerie";
 import { FinPartie } from "@/components/salles/FinPartie";
 import { TetePanneau } from "@/components/salles/Stage";
-import { clockDe, horlogeSession, libelleParams, pointsAu } from "@/lib/salles/logique";
+import { clockDe, horlogeSession, pointsAu } from "@/lib/salles/logique";
 import {
   chiffreDecompte,
   correctionVue,
   enUrgence,
   fractionTemps,
+  libelleSession,
   reponseVue,
   secondesAffichees,
+  titreSession,
   totalPoints,
   type MoiPourClassement,
   type ReponseOk,
 } from "@/lib/salles/partie";
-import type { SalleClassementLigne, SalleCorrection, SalleItem, SalleMaReponse, SalleSession } from "@/lib/salles/types";
+import type { SalleClassementLigne, SalleCorrection, SalleItem, SalleMaReponse, SalleSerie, SalleSession } from "@/lib/salles/types";
 import { PARTIE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 import p from "./Partie.module.css";
@@ -51,6 +55,9 @@ export type PropsVuePartie = {
   onArreter?: () => Promise<void>;
   onRejouer?: () => Promise<{ ok: boolean; erreur?: string }>;
   onRetour?: () => void;
+  serie?: SalleSerie | null;
+  onLancerRound?: () => Promise<RetourRound>;
+  onTerminerSerie?: () => Promise<RetourRound>;
 };
 
 /** « Arrêter la partie » (admin), avec confirmation : la correction s'ouvre, les points marqués restent. */
@@ -76,37 +83,62 @@ export function BoutonArreter({ onArreter }: { onArreter: () => Promise<void> })
   );
 }
 
-function Decompte({ session, avantMs, onArreter }: { session: SalleSession; avantMs: number; onArreter?: () => Promise<void> }) {
+/** Pendant le décompte d'un round : le classement général d'avant lui, pour qui aurait manqué les résultats. */
+export function ClassementAvantRound({ serie, moiId }: { serie: SalleSerie | null | undefined; moiId: string }) {
+  if (!serie || serie.round <= 1 || serie.classement.length === 0) return null;
+  return <ClassementSerie key={`${serie.id}:avant:${serie.round}`} serie={{ ...serie, round: serie.round - 1, finie: false }} moiId={moiId} />;
+}
+
+function Decompte({ session, avantMs, onArreter, serie, moiId }: { session: SalleSession; avantMs: number; onArreter?: () => Promise<void>; serie?: SalleSerie | null; moiId: string }) {
   const secondes = secondesAffichees(avantMs);
   const fin = chiffreDecompte(avantMs) !== null;
   return (
+    <div className={p.fin}>
     <section className={s.panneau} aria-label={PARTIE.decompteTitre}>
       <TetePanneau icone={<Hourglass size={16} />} droite={<span className={s.compte}>{session.nb} questions</span>}>
-        {SALLES.partieTitre(session.numero)}
+        {titreSession(session)}
       </TetePanneau>
       <div className={p.decompte}>
-        <p className={p.decompteTitre}>{PARTIE.decompteTitre}</p>
+        <p className={p.decompteTitre}>{(session.params.round ?? 1) > 1 ? PARTIE.decompteRound(session.params.round ?? 1) : PARTIE.decompteTitre}</p>
         {/* la clé relance l'animation à chaque seconde */}
         <p key={secondes} className={p.decompteChiffre} data-fin={fin ? "1" : "0"} aria-live="off">
           {secondes}
         </p>
-        <p className={p.decompteParams}>{libelleParams(session.params)}</p>
+        <p className={p.decompteParams}>{libelleSession(session)}</p>
         <p className={p.decompteRegle}>{PARTIE.decompteRegle}</p>
-        {onArreter && <BoutonArreter onArreter={onArreter} />}
+        {/* un round lancé a déjà sorti ses questions : l'arrêter ici le perdrait sans qu'il soit joué */}
+        {onArreter && !session.params.rounds && <BoutonArreter onArreter={onArreter} />}
       </div>
     </section>
+    <ClassementAvantRound serie={serie} moiId={moiId} />
+    </div>
   );
 }
 
 export function VuePartie(props: PropsVuePartie) {
-  const { session, items, corrections, mesReponses, locales, classement, monClassement, moi, estAdmin, t, repondre, onArreter, onRejouer, onRetour } = props;
+  const { session, items, corrections, mesReponses, locales, classement, monClassement, moi, estAdmin, t, repondre, onArreter, onRejouer, onRetour, serie, onLancerRound, onTerminerSerie } = props;
   const clock = clockDe(session);
   const h = horlogeSession(clock, t);
 
   if (h.phase === "fin" || session.statut === "terminee") {
-    return <FinPartie session={session} items={items} corrections={corrections} mesReponses={mesReponses} classement={classement} monClassement={monClassement} moiId={moi.userId} estAdmin={estAdmin} onRejouer={onRejouer} onRetour={onRetour} />;
+    // le dernier round : on attend le classement général avant d'ouvrir le rideau de toute la partie
+    if (serie?.finie && serie.classement.length === 0 && session.statut !== "terminee") {
+      return (
+        <section className={s.panneau} aria-label={PARTIE.synchro}>
+          <div className={p.synchro} role="status">
+            <span className={s.barres} aria-hidden>
+              <i />
+              <i />
+              <i />
+            </span>
+            <span>{PARTIE.synchro}</span>
+          </div>
+        </section>
+      );
+    }
+    return <FinPartie session={session} items={items} corrections={corrections} mesReponses={mesReponses} classement={classement} monClassement={monClassement} moiId={moi.userId} estAdmin={estAdmin} onRejouer={onRejouer} onRetour={onRetour} serie={serie} onLancerRound={onLancerRound} onTerminerSerie={onTerminerSerie} />;
   }
-  if (h.phase === "decompte") return <Decompte session={session} avantMs={h.avantProchainMs ?? 0} onArreter={onArreter} />;
+  if (h.phase === "decompte") return <Decompte session={session} avantMs={h.avantProchainMs ?? 0} onArreter={onArreter} serie={serie} moiId={moi.userId} />;
 
   const index = h.index;
   const ouverte = h.phase === "question";
@@ -129,6 +161,7 @@ export function VuePartie(props: PropsVuePartie) {
               <div>
                 <h2 id="partie-question" className={p.numero}>
                   {PARTIE.question} <b>{index + 1}</b> {PARTIE.sur(session.nb)}
+                  {session.params.rounds && session.params.round ? ` · ${PARTIE.roundCourt(session.params.round, session.params.rounds)}` : ""}
                 </h2>
                 {etiquettes.length > 0 && (
                   <div className={p.etiquettes}>

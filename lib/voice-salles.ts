@@ -102,6 +102,7 @@ export const SALLES = {
   lecturePlaceholder: "Les réglages s'affichent ici dès que l'admin lance la partie.",
   historiqueTitre: "Dernières parties",
   historiqueLigne: (numero: number) => `Partie ${numero}`,
+  historiqueRounds: (rounds: number) => `Partie en ${rounds} rounds`,
   gagnant: (pseudo: string, points: string) => `${pseudo} gagne avec ${points} points`,
   monRang: (rang: number, nb: number) => `Tu finis ${rang}${rang === 1 ? "er" : "e"} sur ${nb}`,
   introuvable: "Salle introuvable",
@@ -121,6 +122,13 @@ export const SALLES = {
 /** Les réglages de l'admin. */
 export const REGLAGES = {
   titre: "Réglages de la partie",
+  rounds: "Rounds",
+  roundsUn: "Un seul",
+  roundsAide: (tailles: number[]) => {
+    const min = Math.min(...tailles);
+    const max = Math.max(...tailles);
+    return `${tailles.length} rounds de ${min === max ? min : `${min} à ${max}`} questions. Les résultats tombent à chaque round, tu lances le suivant quand tout le monde est prêt, et les points s'additionnent.`;
+  },
   lectureTitre: "Réglages de la partie",
   /** le parcours : une question à la fois */
   etapesAria: "Les étapes des réglages",
@@ -294,6 +302,32 @@ export const PARTIE = {
   rejouerMembre: "L'admin peut relancer une partie avec les mêmes réglages.",
   retourSalon: "Retour au salon",
   gagnant: (pseudo: string) => `${pseudo} gagne la partie`,
+  /** les rounds */
+  roundMot: "Round",
+  roundTitre: (round: number, rounds: number) => `Round ${round} sur ${rounds}`,
+  roundCourt: (round: number, rounds: number) => `Round ${round}/${rounds}`,
+  roundInitiale: (round: number) => `R${round}`,
+  roundSur: (rounds: number) => `sur ${rounds}`,
+  decompteRound: (round: number) => `Le round ${round} démarre`,
+  roundFini: "Round terminé",
+  roundResultats: (round: number, rounds: number) => `Round ${round} sur ${rounds} · résultats`,
+  roundGagnant: (pseudo: string, round: number) => `${pseudo} gagne le round ${round}`,
+  serieTitre: "Classement final",
+  serieGagnant: (pseudo: string) => `${pseudo} remporte la partie`,
+  classementGeneral: "Classement général",
+  bilanRoundTitre: "Ton round",
+  bilanFinalTitre: "Ton bilan final",
+  revueDernier: "Revoir les questions du dernier round",
+  sansPoints: "+0",
+  monte: (n: number) => `Gagne ${n} place${n > 1 ? "s" : ""}`,
+  baisse: (n: number) => `Perd ${n} place${n > 1 ? "s" : ""}`,
+  lancerRound: (round: number) => `Lancer le round ${round}`,
+  lancerRoundAide: (nb: number) => `${nb} question${nb > 1 ? "s" : ""}, et le décompte démarre pour tous.`,
+  attenteRound: (round: number) => `L'admin lance le round ${round} quand tout le monde est prêt.`,
+  roundAttenteSalon: (round: number, rounds: number) => `La partie continue : round ${round} sur ${rounds}.`,
+  terminerSerie: "Terminer ici",
+  terminerSerieConfirme: "Terminer maintenant ? Le classement actuel devient le classement final.",
+  roundErreur: "Le lancement n'a pas abouti. Réessaie dans un instant.",
 } as const;
 
 /**

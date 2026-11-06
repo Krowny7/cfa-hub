@@ -3,6 +3,8 @@
 import { memo, useState, type ComponentProps } from "react";
 import { ArrowLeft, ChartNoAxesColumn, Crown, RotateCcw, Trophy } from "lucide-react";
 import { RideauSalle } from "@/components/arene/Rideaux";
+import { ActionsRound, type RetourRound } from "@/components/salles/ActionsRound";
+import { ClassementSerie } from "@/components/salles/ClassementSerie";
 import { Avatar } from "@/components/classement/Avatar";
 import { BoutonEnvoi } from "@/components/classement/Encre";
 import { fmtInt } from "@/components/classement/format";
@@ -10,9 +12,8 @@ import { useCompteur } from "@/components/salles/anim";
 import { TetePanneau } from "@/components/salles/Stage";
 import { formatCalc } from "@/lib/calc/engine";
 import type { CalcUnit } from "@/lib/calc/types";
-import { bilanJoueur, libelleDelai, placeOrdinale, podium, type Verdict } from "@/lib/salles/partie";
-import { libelleParams } from "@/lib/salles/logique";
-import type { SalleClassementLigne, SalleCorrection, SalleItem, SalleMaReponse, SalleSession } from "@/lib/salles/types";
+import { bilanJoueur, libelleDelai, libelleSession, placeOrdinale, podium, rideauDeFin, serieFinale, type Verdict } from "@/lib/salles/partie";
+import type { SalleClassementLigne, SalleCorrection, SalleItem, SalleMaReponse, SalleSerie, SalleSession } from "@/lib/salles/types";
 import { PARTIE, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 import p from "./Partie.module.css";
@@ -41,6 +42,9 @@ function FinPartieBase({
   onRejouer,
   onRetour,
   revue = true,
+  serie = null,
+  onLancerRound,
+  onTerminerSerie,
 }: {
   session: SalleSession;
   items: SalleItem[];
@@ -55,13 +59,23 @@ function FinPartieBase({
   onRetour?: () => void;
   /** « Revoir les questions » et le délai moyen (faux en chrono global : le débrief les remplace) */
   revue?: boolean;
+  /** une partie en rounds : son classement général et, tant qu'il en reste, le round suivant */
+  serie?: SalleSerie | null;
+  onLancerRound?: () => Promise<RetourRound>;
+  onTerminerSerie?: () => Promise<RetourRound>;
 }) {
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const bilan = bilanJoueur({ session, mesReponses, classement, monClassement, moiId });
-  const aDesPoints = classement.some((l) => l.points > 0);
-  const marches = aDesPoints ? podium(classement.filter((l) => l.points > 0)) : [];
-  const gagnant = aDesPoints ? classement[0] : null;
+  // après le dernier round, tout parle de la partie entière : le podium, le gagnant, le bilan
+  const finale = serieFinale(serie);
+  const enRounds = serie !== null && !serie.finie;
+  const lignes: SalleClassementLigne[] = finale ? finale.classement : classement;
+  const moiSerie = finale?.classement.find((l) => l.userId === moiId) ?? null;
+  const bilanRound = bilanJoueur({ session, mesReponses, classement, monClassement, moiId });
+  const bilan = finale ? { ...bilanRound, bonnes: moiSerie?.bonnes ?? 0, nb: finale.total, points: moiSerie?.points ?? 0, rang: moiSerie?.rang ?? null, sur: finale.classement.length } : bilanRound;
+  const aDesPoints = lignes.some((l) => l.points > 0);
+  const marches = aDesPoints ? podium(lignes.filter((l) => l.points > 0)) : [];
+  const gagnant = aDesPoints ? lignes[0] : null;
   const points = useCompteur(bilan.points, 1100, 0);
 
   async function rejouer() {
@@ -79,11 +93,11 @@ function FinPartieBase({
   return (
     <div className={p.fin}>
       <section className={s.panneau} aria-labelledby="partie-fin">
-        <TetePanneau id="partie-fin" icone={<Trophy size={16} />} droite={<span className={s.compte}>{PARTIE.finKicker}</span>}>
-          {PARTIE.finTitre(session.numero)}
+        <TetePanneau id="partie-fin" icone={<Trophy size={16} />} droite={<span className={s.compte}>{enRounds ? PARTIE.roundFini : PARTIE.finKicker}</span>}>
+          {finale ? PARTIE.serieTitre : serie ? PARTIE.roundResultats(serie.round, serie.rounds) : PARTIE.finTitre(session.numero)}
         </TetePanneau>
         <p className={s.sous} style={{ padding: "6px 20px 0" }}>
-          {libelleParams(session.params)}
+          {libelleSession(session)}
         </p>
 
         <div className={p.podiumCadre} aria-label={PARTIE.podiumTitre}>
@@ -91,7 +105,7 @@ function FinPartieBase({
             <>
               {gagnant && (
                 <p className={s.libelle} style={{ textAlign: "center" }}>
-                  {PARTIE.gagnant(nomDe(gagnant))}
+                  {finale ? PARTIE.serieGagnant(nomDe(gagnant)) : serie ? PARTIE.roundGagnant(nomDe(gagnant), serie.round) : PARTIE.gagnant(nomDe(gagnant))}
                 </p>
               )}
               <ol className={p.podium} style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -121,9 +135,12 @@ function FinPartieBase({
         </div>
       </section>
 
+      {/* remonté quand le classement arrive : l'animation part de là */}
+      {serie && <ClassementSerie key={`${serie.id}:${serie.round}:${serie.classement.length > 0}:${serie.finie}`} serie={serie} moiId={moiId} />}
+
       <section className={s.panneau} aria-labelledby="partie-bilan">
         <TetePanneau id="partie-bilan" icone={<ChartNoAxesColumn size={16} />}>
-          {PARTIE.bilanTitre}
+          {finale ? PARTIE.bilanFinalTitre : serie ? PARTIE.bilanRoundTitre : PARTIE.bilanTitre}
         </TetePanneau>
         <div className={p.bilan}>
           <div className={p.stat}>
@@ -147,16 +164,19 @@ function FinPartieBase({
             <span className={p.statLibelle}>{PARTIE.bilanPlace}</span>
           </div>
         </div>
-        <div className={p.serie} role="img" aria-label={PARTIE.bilanSerie}>
-          {bilan.serie.map((v, i) => (
-            <i key={i} data-v={v} title={`${i + 1} · ${v === "juste" ? PARTIE.revueJuste : v === "faux" ? PARTIE.revueFaux : PARTIE.revueSans}`} />
-          ))}
-        </div>
-        {revue && bilan.delaiMoyenMs !== null && <p className={p.bilanNote}>{PARTIE.bilanDelai(libelleDelai(bilan.delaiMoyenMs))}</p>}
+        {/* ces deux-là ne couvrent que le dernier round : pas dans un bilan de toute la partie */}
+        {!finale && (
+          <div className={p.serie} role="img" aria-label={PARTIE.bilanSerie}>
+            {bilan.serie.map((v, i) => (
+              <i key={i} data-v={v} title={`${i + 1} · ${v === "juste" ? PARTIE.revueJuste : v === "faux" ? PARTIE.revueFaux : PARTIE.revueSans}`} />
+            ))}
+          </div>
+        )}
+        {revue && !finale && bilan.delaiMoyenMs !== null && <p className={p.bilanNote}>{PARTIE.bilanDelai(libelleDelai(bilan.delaiMoyenMs))}</p>}
 
         {revue && (
           <details className={p.revue}>
-            <summary>{PARTIE.revue}</summary>
+            <summary>{finale ? PARTIE.revueDernier : PARTIE.revue}</summary>
             <ol className={p.revueListe}>
               {items.map((it) => {
                 const rep = mesReponses.find((r) => r.position === it.position);
@@ -189,7 +209,8 @@ function FinPartieBase({
         )}
 
         <div className={p.finActions}>
-          {estAdmin && onRejouer && (
+          {enRounds && estAdmin && onLancerRound && <ActionsRound serie={serie} pret={session.statut === "terminee"} surPeinture onLancerRound={onLancerRound} onTerminerSerie={onTerminerSerie} />}
+          {!enRounds && estAdmin && onRejouer && (
             <BoutonEnvoi type="button" surPeinture disabled={occupe} onClick={() => void rejouer()}>
               <RotateCcw size={17} aria-hidden /> {occupe ? PARTIE.rejouerEnCours : PARTIE.rejouer}
             </BoutonEnvoi>
@@ -198,7 +219,7 @@ function FinPartieBase({
             <ArrowLeft size={16} aria-hidden /> {PARTIE.retourSalon}
           </button>
         </div>
-        <p className={[s.aide, p.bilanNote].join(" ")}>{estAdmin ? PARTIE.rejouerAide : PARTIE.rejouerMembre}</p>
+        <p className={[s.aide, p.bilanNote].join(" ")}>{enRounds ? (estAdmin ? PARTIE.lancerRoundAide(serie.prochain) : PARTIE.attenteRound(serie.round + 1)) : estAdmin ? PARTIE.rejouerAide : PARTIE.rejouerMembre}</p>
         {erreur && (
           <p className={s.erreur} role="alert" style={{ margin: "10px 20px 18px" }}>
             {erreur}
@@ -217,8 +238,9 @@ function FinPartieBase({
  */
 export const FinPartie = memo(function FinPartie({ rideau = true, ...props }: ComponentProps<typeof FinPartieBase> & { rideau?: boolean }) {
   const fin = <FinPartieBase {...props} />;
+  const scene = rideauDeFin(props.session, props.classement, props.serie);
   return rideau ? (
-    <RideauSalle session={props.session} classement={props.classement}>
+    <RideauSalle key={scene.session.id} session={scene.session} classement={scene.classement} titre={scene.titre}>
       {fin}
     </RideauSalle>
   ) : (

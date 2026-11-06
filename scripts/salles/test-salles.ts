@@ -799,8 +799,8 @@ async function main() {
     const api = lire("lib/salles/api.ts");
     const appelees = [...api.matchAll(/(?:appeler|lire)\(supabase, "(\w+)"/g)].map((m) => m[1]);
     // les migrations suivantes des salles ajoutent leurs RPC (rendre_copie…)
-    const suites = ["migration_salles_chrono_global.sql", "migration_salles_rendre_copie.sql"].map(lire).join("\n");
-    const toutes = new Set([...publiques, ...[...suites.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g)].map((m) => m[1]).filter((f) => !f.startsWith("_"))]);
+    const suites = ["migration_salles_chrono_global.sql", "migration_salles_rendre_copie.sql", "migration_salles_rounds.sql"].map(lire).join("\n");
+    const toutes = new Set([...publiques, ...[...suites.matchAll(/CREATE OR REPLACE FUNCTION (?:public\.)?(\w+)\(/g)].map((m) => m[1]).filter((f) => !f.startsWith("_"))]);
     ok("tout appel de api.ts correspond à une RPC du SQL", appelees.length >= 13 && appelees.every((f) => toutes.has(f)), appelees.filter((f) => !toutes.has(f)).join(","));
 
     // les clés JSON lues par toEtat existent côté SQL

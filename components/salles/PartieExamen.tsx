@@ -35,11 +35,16 @@ import {
   revueSalle,
   type ReponseRetenue,
 } from "@/lib/salles/examen";
-import { libelleDuree, libelleParams } from "@/lib/salles/logique";
+import { libelleDuree } from "@/lib/salles/logique";
 import { chiffreDecompte, fractionTemps, secondesAffichees, type MoiPourClassement, type ReponseOk } from "@/lib/salles/partie";
 import type { CopieRendue, SalleClassementLigne, SalleCorrection, SalleItem, SalleMaReponse, SalleMembre, SalleSession } from "@/lib/salles/types";
 import { ARENE } from "@/lib/voice-arene";
 import { EXAMEN, PARTIE, SALLES } from "@/lib/voice-salles";
+import { AnnonceRound } from "@/components/salles/AnnonceRound";
+import type { RetourRound } from "@/components/salles/ActionsRound";
+import { libelleSession, rideauDeFin, titreSession } from "@/lib/salles/partie";
+import { ClassementAvantRound } from "@/components/salles/VuePartie";
+import type { SalleSerie } from "@/lib/salles/types";
 import s from "./Salles.module.css";
 import p from "./Partie.module.css";
 import x from "./Examen.module.css";
@@ -87,6 +92,9 @@ export type PropsPartieExamen = {
   rendreCopie: () => Promise<CopieRendue>;
   onArreter?: () => Promise<void>;
   onRejouer?: () => Promise<{ ok: boolean; erreur?: string }>;
+  serie?: SalleSerie | null;
+  onLancerRound?: () => Promise<RetourRound>;
+  onTerminerSerie?: () => Promise<RetourRound>;
   onRetour?: () => void;
 };
 
@@ -97,33 +105,37 @@ function libelleRetenue(item: SalleItem | null, r: ReponseRetenue): string {
   return "—";
 }
 
-function DecompteExamen({ session, avantMs, onArreter }: { session: SalleSession; avantMs: number; onArreter?: () => Promise<void> }) {
+function DecompteExamen({ session, avantMs, onArreter, serie, moiId }: { session: SalleSession; avantMs: number; onArreter?: () => Promise<void>; serie?: SalleSerie | null; moiId: string }) {
   const secondes = secondesAffichees(avantMs);
   const fin = chiffreDecompte(avantMs) !== null;
   return (
+    <div className={p.fin}>
     <section className={s.panneau} aria-label={EXAMEN.decompteTitre}>
       <TetePanneau icone={<Hourglass size={16} />} droite={<span className={s.compte}>{session.nb} questions</span>}>
-        {SALLES.partieTitre(session.numero)}
+        {titreSession(session)}
       </TetePanneau>
       <div className={p.decompte}>
-        <p className={p.decompteTitre}>{EXAMEN.decompteTitre}</p>
+        <p className={p.decompteTitre}>{(session.params.round ?? 1) > 1 ? PARTIE.decompteRound(session.params.round ?? 1) : EXAMEN.decompteTitre}</p>
         <p key={secondes} className={p.decompteChiffre} data-fin={fin ? "1" : "0"} aria-live="off">
           {secondes}
         </p>
-        <p className={p.decompteParams}>{libelleParams({ ...session.params, chrono: "global" })}</p>
+        <p className={p.decompteParams}>{libelleSession(session, "global")}</p>
         <p className={p.decompteRegle}>{EXAMEN.decompteRegle}</p>
-        {onArreter && <BoutonArreter onArreter={onArreter} />}
+        {/* un round lancé a déjà sorti ses questions : l'arrêter ici le perdrait sans qu'il soit joué */}
+        {onArreter && !session.params.rounds && <BoutonArreter onArreter={onArreter} />}
       </div>
     </section>
+    <ClassementAvantRound serie={serie} moiId={moiId} />
+    </div>
   );
 }
 
 /** Le temps est écoulé, le serveur n'a pas encore rendu la correction ni le classement. */
 function FinEnAttente({ session }: { session: SalleSession }) {
   return (
-    <section className={s.panneau} aria-label={SALLES.partieTitre(session.numero)}>
+    <section className={s.panneau} aria-label={titreSession(session)}>
       <TetePanneau icone={<Hourglass size={16} />} droite={<span className={s.compte}>{session.nb} questions</span>}>
-        {SALLES.partieTitre(session.numero)}
+        {titreSession(session)}
       </TetePanneau>
       <div className={s.attente} role="status">
         <span className={s.barres} aria-hidden>
@@ -139,7 +151,7 @@ function FinEnAttente({ session }: { session: SalleSession }) {
 }
 
 export function PartieExamen(props: PropsPartieExamen) {
-  const { session, items, corrections, mesReponses, locales, classement, monClassement, membres, moi, estAdmin, t, repondre, onArreter, onRejouer, onRetour } = props;
+  const { session, items, corrections, mesReponses, locales, classement, monClassement, membres, moi, estAdmin, t, repondre, onArreter, onRejouer, onRetour, serie, onLancerRound, onTerminerSerie } = props;
   const h = horlogeExamen(session, t);
   const presents = usePresents();
 
@@ -150,8 +162,9 @@ export function PartieExamen(props: PropsPartieExamen) {
     // QCM seulement : la revue des 30 du jour (filtres, matières, « Copier pour l'IA ») ; sinon l'ancien débrief
     const revue = session.params.type === "questions" ? revueSalle(items, corrections, mesReponses) : null;
     // le rideau couvre tout ce qui dit le résultat : le podium, le bilan et la correction
+    const scene = rideauDeFin(session, classement, serie);
     return (
-      <RideauSalle session={session} classement={classement}>
+      <RideauSalle key={scene.session.id} session={scene.session} classement={scene.classement} titre={scene.titre}>
         <div className={p.ecran}>
           <FinPartie
             session={session}
@@ -164,11 +177,14 @@ export function PartieExamen(props: PropsPartieExamen) {
             estAdmin={estAdmin}
             onRejouer={onRejouer}
             onRetour={onRetour}
+            serie={serie}
+            onLancerRound={onLancerRound}
+            onTerminerSerie={onTerminerSerie}
             revue={false}
             rideau={false}
           />
           {revue ? (
-            <RevueSalle revue={revue} numero={session.numero} titre={session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : SALLES.partieTitre(session.numero)} />
+            <RevueSalle revue={revue} numero={session.numero} titre={session.params.mock?.examens.length ? session.params.mock.examens.join(" + ") : titreSession(session)} />
           ) : (
             <DebriefExamen nb={session.nb} items={items} corrections={corrections} mesReponses={mesReponses} />
           )}
@@ -180,8 +196,12 @@ export function PartieExamen(props: PropsPartieExamen) {
     // l'écran VS vit dans le décompte : la partie démarre, il disparaît avec lui
     return (
       <>
-        <DecompteExamen session={session} avantMs={h.avantDebutMs} onArreter={onArreter} />
-        <EcranVs cle={`salle:${session.id}`} joueurs={joueursPresents(membres, presents, moi.userId).map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl }))} moiId={moi.userId} hud={ARENE.hudSalle(membres.length)} />
+        <DecompteExamen session={session} avantMs={h.avantDebutMs} onArreter={onArreter} serie={serie} moiId={moi.userId} />
+        {(session.params.round ?? 1) > 1 ? (
+          <AnnonceRound round={session.params.round ?? 1} rounds={session.params.rounds ?? 1} />
+        ) : (
+          <EcranVs cle={`salle:${session.id}`} joueurs={joueursPresents(membres, presents, moi.userId).map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl }))} moiId={moi.userId} hud={ARENE.hudSalle(membres.length)} />
+        )}
       </>
     );
   }
@@ -306,9 +326,9 @@ function JeuExamen({
         <div className={x.tete}>
           <div className={x.teteTitre}>
             <h2 id="examen-tete" className={x.titre}>
-              {SALLES.partieTitre(session.numero)}
+              {titreSession(session)}
             </h2>
-            <p className={x.kicker}>{libelleParams({ ...session.params, chrono: "global" })}</p>
+            <p className={x.kicker}>{libelleSession(session, "global")}</p>
           </div>
           <div className={x.chrono} data-bas={bas ? "1" : "0"}>
             <span className={x.chronoNombre} role="timer" aria-live="off" aria-label={EXAMEN.tempsRestantAria(libelleDuree(Math.ceil(restantMs / 1000)))}>

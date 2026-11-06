@@ -77,12 +77,16 @@ export type SalleParams = {
   /** le choix par notion : les questions sont tirées là, à parts égales ; absent = toutes celles des matières */
   notions?: string[];
   concepts?: string[];
+  /** la partie découpée en rounds, que l'admin lance un par un ; absent : une seule partie */
+  rounds?: number;
 };
 
 /** Les réglages tels que le serveur les a gardés : avec ce qui a vraiment été tiré. */
 export type SalleParamsStockes = SalleParams & {
   nbQuestions: number;
   nbCalculs: number;
+  /** le round que joue cette partie, si elle en a */
+  round?: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -245,6 +249,35 @@ export type SalleClassementLigne = {
   tempsMs: number;
 };
 
+/** Une ligne du classement général d'une partie en rounds. */
+export type SalleSerieLigne = SalleClassementLigne & {
+  /** sa place avant le dernier round joué */
+  rangAvant: number;
+  /** ses points du dernier round joué */
+  pointsRound: number;
+  pointsAvant: number;
+  /** ses points, round par round */
+  parRound: Record<number, number>;
+};
+
+/** Une partie en rounds : chaque round est une partie, leurs points s'additionnent. */
+export type SalleSerie = {
+  id: string;
+  /** le round de la dernière partie */
+  round: number;
+  rounds: number;
+  /** plus de round à lancer : le dernier est parti, ou l'admin s'est arrêté là */
+  finie: boolean;
+  /** quand l'admin s'est arrêté là */
+  termineeAt: string | null;
+  /** combien de questions compte le round suivant */
+  prochain: number;
+  /** combien de questions ont été jouées, tous rounds confondus */
+  total: number;
+  /** à la fin d'un round ; pendant le décompte du suivant, celui d'avant ; vide pendant le jeu */
+  classement: SalleSerieLigne[];
+};
+
 export type SalleHistorique = {
   sessionId: string;
   numero: number;
@@ -278,6 +311,8 @@ export type EtatSalle = {
   monClassement: Omit<SalleClassementLigne, "userId" | "username" | "avatarUrl"> | null;
   /** les 5 dernières parties terminées */
   historique: SalleHistorique[];
+  /** la partie en rounds de la dernière partie, s'il y en a une */
+  serie?: SalleSerie | null;
 };
 
 /** Résultat de repondre_salle. */

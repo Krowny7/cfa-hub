@@ -67,6 +67,20 @@ export const SALLE_POINTS_GLOBAL = 1000;
 export const SALLE_SOURCES: SalleSource[] = ["banque", "mocks", "examen"];
 /** Mocks officiels : jusqu'à 600 questions (toutes les sessions, variantes comprises). */
 export const SALLE_NOMBRE_MAX_MOCK = 600;
+
+/** Une partie se découpe en 10 rounds au plus, de 3 questions au moins (le serveur applique la même règle). */
+export const SALLE_ROUNDS_MAX = 10;
+export const SALLE_ROUND_MIN_QUESTIONS = 3;
+export const SALLE_ROUNDS_PROPOSES = [1, 2, 3, 4, 5, 6, 8, 10];
+
+/** Le plus de rounds possible pour ce nombre de questions. */
+export const roundsMax = (nombre: number): number => Math.max(1, Math.min(SALLE_ROUNDS_MAX, Math.floor(nombre / SALLE_ROUND_MIN_QUESTIONS)));
+
+/** La taille de chaque round : les premiers prennent les questions en plus. */
+export function tailleRounds(nombre: number, rounds: number): number[] {
+  const n = Math.max(1, rounds);
+  return Array.from({ length: n }, (_, i) => Math.floor(nombre / n) + (i < nombre % n ? 1 : 0));
+}
 export const SALLE_MOCK_VERSIONS: SalleMockVersion[] = ["base", "variantes", "tout"];
 export const SALLE_MOCK_ORDRES: SalleMockOrdre[] = ["examen", "melange"];
 /** « Mock A — Session 1 », « Variantes 1 — Session 1 », « Variantes inverses 1 — Session 1 » : le nom d'une session (même motif qu'en SQL). */
@@ -445,13 +459,29 @@ export function validerParams(brut: unknown): { ok: true; params: SalleParams } 
     mock = { examens, version: version as SalleMockVersion, complet, ordre: ordre as SalleMockOrdre };
   }
 
+  let rounds = 1;
+  if (r.rounds !== undefined && r.rounds !== null && r.rounds !== "") {
+    const n = entier(r.rounds);
+    if (n === null || n < 1 || n > SALLE_ROUNDS_MAX) erreurs.push({ champ: "rounds", message: "Le nombre de rounds va de 1 à 10." });
+    else rounds = n;
+  }
+
+  // le choix par notion et les rounds traversent tels quels : c'est par ici que part le lancement
+  const textes = (x: unknown) => (Array.isArray(x) ? x.filter((e): e is string => typeof e === "string") : []);
+  const notions = textes(r.notions);
+  const concepts = textes(r.concepts);
+  const options: Pick<SalleParams, "notions" | "concepts" | "rounds"> = {
+    ...(notions.length + concepts.length > 0 ? { notions, concepts } : {}),
+    ...(rounds > 1 ? { rounds } : {}),
+  };
+
   if (erreurs.length || !type || nombre === null) return { ok: false, erreurs };
   if (mock) {
-    return { ok: true, params: { type: "questions", nombre, source: "examen", topics, difficulte: "melange", temps, partCalculs: 0, mock, chrono } };
+    return { ok: true, params: { type: "questions", nombre, source: "examen", topics, difficulte: "melange", temps, partCalculs: 0, mock, chrono, ...options } };
   }
   return {
     ok: true,
-    params: { type, nombre, source: type === "calculs" ? "banque" : source, topics, difficulte, temps, partCalculs, chrono },
+    params: { type, nombre, source: type === "calculs" ? "banque" : source, topics, difficulte, temps, partCalculs, chrono, ...options },
   };
 }
 
@@ -547,7 +577,9 @@ export function libelleDuree(secondes: number): string {
  * difficile · 45 s » ; en chrono global, le temps devient « chrono global
  * 15 min » (nombre × temps).
  */
-export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" | "topics" | "difficulte" | "temps" | "mock" | "chrono">): string {
+export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" | "topics" | "difficulte" | "temps" | "mock" | "chrono" | "rounds" | "notions" | "concepts">): string {
+  const nbNotions = (p.notions?.length ?? 0) + (p.concepts?.length ?? 0);
+  const notions = nbNotions > 0 ? [`${nbNotions} notion${nbNotions > 1 ? "s" : ""}`] : [];
   const temps = p.chrono === "global" ? `chrono global ${libelleDuree(chronoGlobalS(p))}` : `${p.temps} s`;
   const quoi = p.type === "calculs" ? "calculs" : p.type === "mixte" ? "questions et calculs" : "questions";
   const matieres = p.topics.length === SALLE_TOPIC_KEYS.length ? "toutes les matières" : `${p.topics.length} matière${p.topics.length > 1 ? "s" : ""}`;
@@ -558,12 +590,15 @@ export function libelleParams(p: Pick<SalleParams, "type" | "nombre" | "source" 
       p.mock.examens.map(examenCourt).join(", ") || "aucune session",
       version,
       p.mock.ordre === "examen" ? "ordre de l'examen" : "mélangées",
+      ...notions,
       temps,
+      ...(p.rounds ? [`${p.rounds} rounds`] : []),
     ].join(" · ");
   }
   const parts = [`${p.nombre} ${quoi}`];
   if (p.type !== "calculs") parts.push(p.source === "mocks" ? "mocks" : "banque complète");
-  parts.push(matieres, p.difficulte === "melange" ? "difficulté mélangée" : p.difficulte, temps);
+  parts.push(matieres, ...notions, p.difficulte === "melange" ? "difficulté mélangée" : p.difficulte, temps);
+  if (p.rounds) parts.push(`${p.rounds} rounds`);
   return parts.join(" · ");
 }
 
@@ -592,6 +627,7 @@ export function paramsVersJson(p: SalleParams): Record<string, unknown> {
     json.notions = p.notions ?? [];
     json.concepts = p.concepts ?? [];
   }
+  if (p.rounds && p.rounds > 1) json.rounds = p.rounds;
   return json;
 }
 
@@ -607,15 +643,11 @@ export function paramsDepuisJson(raw: unknown): SalleParamsStockes {
   // partie suivante puissent proposer le chrono global (reglagesDeDepart)
   const lus: SalleParams = { ...base };
   if (r.chrono === undefined || r.chrono === null || r.chrono === "") delete lus.chrono;
-  const textes = (x: unknown) => (Array.isArray(x) ? x.filter((e): e is string => typeof e === "string") : []);
-  if (textes(r.notions).length + textes(r.concepts).length > 0) {
-    lus.notions = textes(r.notions);
-    lus.concepts = textes(r.concepts);
-  }
   return {
     ...lus,
     nbQuestions: r.nb_questions === undefined ? rep.questions : n(r.nb_questions),
     nbCalculs: r.nb_calculs === undefined ? rep.calculs : n(r.nb_calculs),
+    ...(r.round === undefined || r.round === null ? {} : { round: n(r.round) }),
   };
 }
 

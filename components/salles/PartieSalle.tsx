@@ -17,6 +17,9 @@ import type { CopieRendue, ReponseResultat } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
 import { ARENE } from "@/lib/voice-arene";
 import { PARTIE, SALLES } from "@/lib/voice-salles";
+import { AnnonceRound } from "@/components/salles/AnnonceRound";
+import type { RetourRound } from "@/components/salles/ActionsRound";
+import { titreSession } from "@/lib/salles/partie";
 import s from "./Salles.module.css";
 import p from "./Partie.module.css";
 
@@ -43,6 +46,8 @@ export function PartieSalle({
   onArreter,
   onRejouer,
   onRetour,
+  onLancerRound,
+  onTerminerSerie,
   effets = effetsParDefaut,
   repondre,
   rendre,
@@ -54,6 +59,10 @@ export function PartieSalle({
   onRejouer?: () => Promise<{ ok: boolean; erreur?: string }>;
   /** ferme l'écran de fin et revient au salon */
   onRetour?: () => void;
+  /** admin, entre deux rounds : lance le suivant */
+  onLancerRound?: () => Promise<RetourRound>;
+  /** admin, entre deux rounds : s'arrête là */
+  onTerminerSerie?: () => Promise<RetourRound>;
   effets?: Effets;
   /** aperçus : remplace l'appel au serveur */
   repondre?: (sessionId: string, position: number, rep: { choix: number } | { saisie: string }) => Promise<ReponseResultat>;
@@ -166,7 +175,7 @@ export function PartieSalle({
   // avant le montage, ou tant que l'horloge n'est pas calée sur celle du serveur
   if (t === null || !cale) {
     return (
-      <section className={s.panneau} aria-label={SALLES.partieTitre(ses.numero)}>
+      <section className={s.panneau} aria-label={titreSession(ses)}>
         <div className={p.synchro} role="status">
           <span className={s.barres} aria-hidden>
             <i />
@@ -198,13 +207,17 @@ export function PartieSalle({
         onArreter={onArreter}
         onRejouer={onRejouer}
         onRetour={onRetour}
+        serie={etat.serie}
+        onLancerRound={onLancerRound}
+        onTerminerSerie={onTerminerSerie}
       />
     );
   }
 
   return (
     <>
-      {h?.phase === "decompte" && <EcranVs cle={`salle:${ses.id}`} joueurs={joueursPresents(etat.membres, presents, etat.moi.userId).map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl, elo: m.elo }))} moiId={etat.moi.userId} hud={ARENE.hudSalle(etat.membres.length)} />}
+      {h?.phase === "decompte" && (ses.params.round ?? 1) > 1 && <AnnonceRound round={ses.params.round ?? 1} rounds={ses.params.rounds ?? 1} />}
+      {h?.phase === "decompte" && (ses.params.round ?? 1) <= 1 && <EcranVs cle={`salle:${ses.id}`} joueurs={joueursPresents(etat.membres, presents, etat.moi.userId).map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl, elo: m.elo }))} moiId={etat.moi.userId} hud={ARENE.hudSalle(etat.membres.length)} />}
       <VuePartie
         session={ses}
         items={etat.items}
@@ -220,6 +233,9 @@ export function PartieSalle({
         onArreter={onArreter}
         onRejouer={onRejouer}
         onRetour={onRetour}
+        serie={etat.serie}
+        onLancerRound={onLancerRound}
+        onTerminerSerie={onTerminerSerie}
       />
     </>
   );

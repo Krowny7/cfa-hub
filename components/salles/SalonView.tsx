@@ -169,7 +169,7 @@ export function SalonView({
                 <ul className={s.historique}>
                   {historique.map((h) => (
                     <li key={h.sessionId} className={s.historiqueLigne}>
-                      <span className={s.historiqueNum}>{SALLES.historiqueLigne(h.numero)}</span>
+                      <span className={s.historiqueNum}>{h.params.rounds ? SALLES.historiqueRounds(h.params.rounds) : SALLES.historiqueLigne(h.numero)}</span>
                       <span className={s.historiqueTexte}>
                         {h.gagnant ? SALLES.gagnant(h.gagnant.username?.trim() || "Un joueur", fmtInt(h.gagnant.points)) : `${h.nb} questions`}
                         {h.moi ? ` · ${SALLES.monRang(h.moi.rang, h.nbJoueurs)}` : ""}

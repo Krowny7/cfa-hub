@@ -33,6 +33,9 @@ import {
   sessionJouable,
   sessionsMock,
   validerParams,
+  SALLE_ROUNDS_PROPOSES,
+  roundsMax,
+  tailleRounds,
 } from "@/lib/salles/logique";
 import type { MockDisponible, QuestionsDisponibles, SalleChrono, SalleDifficulte, SalleMock, SalleMockOrdre, SalleMockVersion, SalleParams, SalleSource, TopicKey } from "@/lib/salles/types";
 import { flechesOnglets, flechesRadios } from "@/components/salles/radios";
@@ -111,9 +114,7 @@ export function disponibles(dispos: QuestionsDisponibles[] | null | undefined, t
 export function reglagesDeDepart(precedents?: Partial<SalleParams> | null): SalleParams {
   const chrono = precedents?.chrono ?? "global";
   const v = validerParams({ ...paramsParDefaut(), ...(precedents ?? {}), chrono });
-  if (!v.ok) return { ...paramsParDefaut(), chrono: "global" };
-  // validerParams ne garde pas le choix par notion
-  return precedents?.notions?.length || precedents?.concepts?.length ? { ...v.params, notions: precedents.notions ?? [], concepts: precedents.concepts ?? [] } : v.params;
+  return v.ok ? v.params : { ...paramsParDefaut(), chrono: "global" };
 }
 
 /** Un groupe de choix uniques ; `souris` : le choix vient d'un vrai clic, pas du clavier. */
@@ -283,7 +284,7 @@ export function Reglages({
     setMock({ examens: sessions.map((x) => x.examen).filter((x) => choisies.has(x)) });
   }
 
-  const reel: SalleParams = surMock
+  const reelBrut: SalleParams = surMock
     ? {
         ...params,
         type: "questions",
@@ -300,6 +301,10 @@ export function Reglages({
         source: params.type === "calculs" || params.source === "examen" ? "banque" : params.source,
         mock: undefined,
       };
+  // les rounds suivent le nombre de questions : moins de questions, moins de rounds possibles
+  const maxRounds = roundsMax(reelBrut.nombre);
+  const nbRounds = SALLE_ROUNDS_PROPOSES.filter((n) => n <= Math.min(params.rounds ?? 1, maxRounds)).at(-1) ?? 1;
+  const reel: SalleParams = { ...reelBrut, rounds: nbRounds > 1 ? nbRounds : undefined };
   const { questions: nbQuestions, calculs: nbCalculs } = repartirNombre(reel);
 
   // les effectifs de la source choisie, lus une fois par source (sauf calculs seuls et mocks officiels)
@@ -343,8 +348,7 @@ export function Reglages({
     setEnvoi(true);
     setRetour(null);
     try {
-      const notions = parNotions ? { notions: params.notions ?? [], concepts: params.concepts ?? [] } : {};
-      setRetour(await onLancer({ ...v.params, ...notions }));
+      setRetour(await onLancer(v.params));
     } catch {
       setRetour({ ok: false, erreur: REGLAGES.erreurReseau });
     }
@@ -372,6 +376,21 @@ export function Reglages({
       </button>
     </div>
   );
+  const choixRounds =
+    maxRounds >= 2 ? (
+      <div className={s.bloc}>
+        <span className={s.libelle}>{REGLAGES.rounds}</span>
+        <Choix
+          petits
+          titre={REGLAGES.rounds}
+          options={SALLE_ROUNDS_PROPOSES.filter((n) => n <= maxRounds).map((n) => ({ cle: String(n), nom: n === 1 ? REGLAGES.roundsUn : String(n) }))}
+          valeur={String(nbRounds)}
+          onChoix={(n) => set({ rounds: Number(n) })}
+        />
+        {nbRounds > 1 && <p className={s.aide}>{REGLAGES.roundsAide(tailleRounds(reel.nombre, nbRounds))}</p>}
+      </div>
+    ) : null;
+
   const nbChoisis = (params.notions?.length ?? 0) + (params.concepts?.length ?? 0);
   const choixNotions = (
     <ChoixNotions
@@ -394,7 +413,10 @@ export function Reglages({
         className={[s.btn, s.btnDiscret].join(" ")}
         aria-pressed={parNotions}
         onClick={() => {
-          if (parNotions) set({ notions: undefined, concepts: undefined });
+          if (parNotions) {
+            set({ notions: undefined, concepts: undefined });
+            setInfoNotions({ topics: [], total: 0 });
+          }
           setParNotions(!parNotions);
         }}
       >
@@ -533,11 +555,15 @@ export function Reglages({
                 onChoix={(c) => setMock({ complet: c === "tout" })}
               />
               {!mock.complet && <Curseur id={`${uid}-nombre-mock`} titre={REGLAGES.nombre} valeur={reel.nombre} unite={REGLAGES.nombreUnite} min={SALLE_NOMBRE_MIN} max={maxPartie} onChange={(n) => set({ nombre: n })} />}
+              {choixRounds}
             </>,
           )
         : panneau(
             "combien",
-            <Curseur id={`${uid}-nombre`} titre={REGLAGES.questions.combien} grand valeur={reel.nombre} unite={REGLAGES.nombreUnite} min={SALLE_NOMBRE_MIN} max={SALLE_NOMBRE_MAX} onChange={(n) => set({ nombre: n })} />,
+            <>
+              <Curseur id={`${uid}-nombre`} titre={REGLAGES.questions.combien} grand valeur={reel.nombre} unite={REGLAGES.nombreUnite} min={SALLE_NOMBRE_MIN} max={SALLE_NOMBRE_MAX} onChange={(n) => set({ nombre: n })} />
+              {choixRounds}
+            </>,
             null,
           )}
 
@@ -665,6 +691,7 @@ export function ReglagesLecture({ params, titre }: { params: SalleParams; titre?
     );
   }
   lignes.push([REGLAGES.topics, params.topics.length === SALLE_TOPIC_KEYS.length ? REGLAGES.topicsCompte(params.topics.length, SALLE_TOPIC_KEYS.length) : params.topics.map((k) => MATIERES_COURTES[k] ?? k).join(", ")]);
+  if (params.rounds) lignes.push([REGLAGES.rounds, String(params.rounds)]);
   if (params.notions?.length || params.concepts?.length) lignes.push([NOTIONS_CHOIX.lecture, NOTIONS_CHOIX.resume(params.notions?.length ?? 0, params.concepts?.length ?? 0)]);
   if (!m) lignes.push([REGLAGES.difficulte, SALLE_DIFFICULTE_LABELS[params.difficulte]]);
   const global = params.chrono === "global";

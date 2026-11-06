@@ -21,7 +21,7 @@ const pct = (bonnes: number, total: number) => ARENE.pct(Math.round((100 * bonne
  * (PartieSalle attend l'heure du serveur) : `serveur="resultat"` garde lisibles
  * les tests de rendu, sans navigateur.
  */
-export function RideauSalle({ session, classement, children }: { session: Pick<SalleSession, "id" | "nb" | "nbJoueurs" | "params">; classement: SalleClassementLigne[]; children: React.ReactNode }) {
+export function RideauSalle({ session, classement, titre, children }: { session: Pick<SalleSession, "id" | "nb" | "nbJoueurs" | "params">; classement: SalleClassementLigne[]; titre?: string; children: React.ReactNode }) {
   const nb = session.nb;
   const id = gagnantSalle(classement, nb, session.nbJoueurs);
   const ligne = classement.find((l) => l.userId === id) ?? null;
@@ -30,7 +30,7 @@ export function RideauSalle({ session, classement, children }: { session: Pick<S
   const suite = !ligne ? null : session.nbJoueurs <= 1 ? pct(ligne.bonnes, nb) : second ? ARENE.scoreAdverse(second.username?.trim() || ARENE.joueur, second.bonnes, nb) : null;
   const gagnant: GagnantFin | null = ligne && pseudo ? { id: ligne.userId, pseudo, photo: ligne.avatarUrl, score: ARENE.score(ligne.bonnes, nb), ligne: suite } : null;
   return (
-    <RideauFin cle={`salle:${session.id}`} kicker={session.params.mock ? ARENE.kickerExamen(nb) : ARENE.kickerSalle(nb)} gagnant={gagnant} serveur="resultat">
+    <RideauFin cle={`salle:${session.id}`} kicker={session.params.mock ? ARENE.kickerExamen(nb) : ARENE.kickerSalle(nb)} gagnant={gagnant} serveur="resultat" titre={titre}>
       {children}
     </RideauFin>
   );

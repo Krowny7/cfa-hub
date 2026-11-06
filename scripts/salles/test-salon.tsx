@@ -139,7 +139,8 @@ console.log("# les réglages de l'admin");
   check("l'étape ouverte est un onglet d'encre, comme ceux du Classement général", /role="tab" aria-selected="true"[^>]*class="onglet rl-encre encre"[^>]*data-palette=/.test(html) && compte(html, /aria-selected="true"/g) === 1);
   check("quatre sources : banque complète, questions d'examen, mock officiel, calculs", ["Banque complète", "Questions d'examen", "Mock exam officiel", "Calculs"].every((n) => html.includes(`<b>${n}</b>`)));
   check("les 10 matières, toutes cochées", compte(html, /type="checkbox"/g) === 10 && compte(html, /checked=""/g) === 10 && html.includes("Toutes les matières"));
-  check("quatre sources, deux chronos, sept temps, quatre difficultés, deux types", compte(html, /role="radio"/g) === 4 + 2 + 7 + 4 + 2);
+  check("quatre sources, deux chronos, sept temps, quatre difficultés, deux types, trois choix de rounds", compte(html, /role="radio"/g) === 4 + 2 + 7 + 4 + 2 + 3);
+  check("les rounds : une seule partie par défaut, jusqu'à 3 pour 10 questions", /aria-checked="true"[^>]*><b>Un seul</.test(html) && html.includes("<b>3</b>") && !html.includes("<b>4</b>"));
   check("le rythme et le reste dans « Plus d'options », replié, avec le réglage en cours", /<details class="options"><summary/.test(html) && html.includes("Plus d'options") && html.includes("Chrono global · 45 s") && html.indexOf("Plus d'options") < html.indexOf("<b>Global</b>") && html.indexOf("Plus d'options") < html.indexOf("<b>Facile</b>"));
   check("le chrono : « Global » coché par défaut (correction à la fin, comme les 30 du jour), « Par question » proposé", /aria-checked="true"[^>]*><b>Global<\/b><span>Un seul chrono, correction à la fin, comme les 30 du jour/.test(html) && /aria-checked="false"[^>]*><b>Par question<\/b><span>Correction après chaque question/.test(html) && html.includes("Temps moyen par question"));
   check("le curseur du nombre va de 5 à 50 par 5", /type="range"[^>]*min="5"[^>]*max="50"[^>]*step="5"/.test(html));
@@ -265,7 +266,7 @@ console.log("# la peau du site");
   check("seuls les joueurs présents s'affichent, et on se voit toujours soi-même", (() => {
     const html = rendre(
       <PresentsContext.Provider value={new Set(["u1"])}>
-        <SalonView donnees={donnees(3, "u0")} reglages={<Reglages onLancer={noop} />} />
+        <SalonView donnees={donnees(3, "u0")} reglages={null} />
       </PresentsContext.Provider>,
     );
     return (html.match(/<b>2<\/b>/g) ?? []).length >= 1 && !html.includes("<b>3</b>");

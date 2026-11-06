@@ -63,6 +63,7 @@ export function RideauFin({
   actif = true,
   pret = true,
   serveur = "attente",
+  titre = ARENE.finTitre,
   children,
 }: {
   /** la partie (« duel:<id> », « salle:<id> ») : le rideau ne se joue qu'une fois pour elle */
@@ -77,6 +78,8 @@ export function RideauFin({
   pret?: boolean;
   /** ce que rend un serveur : rien (le score ne se devine pas dans la page) ou le résultat (écran jamais rendu par le serveur du site) */
   serveur?: "attente" | "resultat";
+  /** le grand titre : « Partie terminée », ou la fin d'un round */
+  titre?: string;
   children: React.ReactNode;
 }) {
   const [etape, setEtape] = useState<Etape>(() => (!actif || (serveur === "resultat" && typeof window === "undefined") ? "resultat" : "attente"));
@@ -158,12 +161,12 @@ export function RideauFin({
   return (
     <div className={s.place} aria-hidden>
       {createPortal(
-        <div ref={calque} className={s.calque} role="dialog" aria-modal="true" aria-label={ARENE.finTitre} tabIndex={-1}>
+        <div ref={calque} className={s.calque} role="dialog" aria-modal="true" aria-label={titre} tabIndex={-1}>
           {etape === "cache" && (
             <div className={s.scene}>
               <p className={s.rideauKicker}>{kicker}</p>
               <div className={s.rideauTrait} />
-              <h2 className={s.rideauTitre}>{ARENE.finTitre}</h2>
+              <h2 className={s.rideauTitre}>{titre}</h2>
               <p className={s.rideauSous}>{ARENE.finSous}</p>
               <div className={s.rideauBouton}>
                 <PorteeEncre>

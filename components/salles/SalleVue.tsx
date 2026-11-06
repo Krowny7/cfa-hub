@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ActionsRound, type RetourRound } from "@/components/salles/ActionsRound";
 import { PartieSalle } from "@/components/salles/PartieSalle";
 import { Reglages, type RetourLancement } from "@/components/salles/Reglages";
 import { SalonView, type ActionsSalon } from "@/components/salles/SalonView";
@@ -11,11 +12,11 @@ import { PresentsContext, useSuiviPresence } from "@/components/salles/presence"
 import { Stage } from "@/components/salles/Stage";
 import { useEtatSalle } from "@/components/salles/useEtatSalle";
 import { lancerPartie } from "@/app/salles/actions";
-import { arreterSession, getMocksDisponibles, getQuestionsDisponibles, messageErreurSalle, modifierSalle, quitterSalle, supprimerSalle } from "@/lib/salles/api";
+import { arreterSession, getMocksDisponibles, getQuestionsDisponibles, lancerRound, messageErreurSalle, modifierSalle, quitterSalle, supprimerSalle, terminerSerie } from "@/lib/salles/api";
 import { finRecente, paramsPourRejouer } from "@/lib/salles/partie";
 import type { EtatSalle, SalleParams, SalleSource } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
-import { REGLAGES, SALLES } from "@/lib/voice-salles";
+import { PARTIE, REGLAGES, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 
 // La salle, branchée : suit l'état en direct (useEtatSalle, une lecture toutes
@@ -43,6 +44,19 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
   useEffect(() => {
     if (enCours && idSession) setVueEnCours(idSession);
   }, [enCours, idSession]);
+
+  // entre deux rounds, la partie n'est pas finie : l'écran du round reste ouvert, quelle que soit l'attente
+  const serie = etat.serie ?? null;
+  const entreRounds = etat.session !== null && etat.session.statut === "terminee" && serie !== null && !serie.finie;
+  // l'admin s'arrête là : le classement final s'ouvre pour tous, même pour qui attendait au salon
+  const etaitEntreRounds = useRef(false);
+  useEffect(() => {
+    if (etaitEntreRounds.current && !entreRounds && !enCours && idSession) {
+      setVueEnCours(idSession);
+      setFermee(null);
+    }
+    etaitEntreRounds.current = entreRounds;
+  }, [entreRounds, enCours, idSession]);
 
   const chargerDispos = useCallback(
     async (source: SalleSource) => {
@@ -108,6 +122,24 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
     return r.ok ? { ok: true } : { ok: false, erreur: r.erreur };
   }, [etat.session, onLancer]);
 
+  // entre deux rounds : l'admin lance le suivant, ou s'arrête là
+  const agirRound = useCallback(
+    async (f: () => Promise<void>): Promise<RetourRound> => {
+      try {
+        await f();
+      } catch (e) {
+        return { ok: false, erreur: messageErreurSalle(e) };
+      }
+      // une lecture déjà en vol rendrait l'état d'avant : on en relance une derrière
+      await rafraichir();
+      await rafraichir();
+      return { ok: true };
+    },
+    [rafraichir],
+  );
+  const lancerSuivant = useCallback(() => agirRound(() => lancerRound(sb(), salleId)), [agirRound, sb, salleId]);
+  const terminerIci = useCallback(() => agirRound(() => terminerSerie(sb(), salleId)), [agirRound, sb, salleId]);
+
   const arreter = useCallback(async () => {
     try {
       await arreterSession(sb(), salleId);
@@ -134,7 +166,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
 
   const session = etat.session;
   const active = enCours;
-  const finAffichee = session !== null && session.statut === "terminee" && fermee !== session.id && (vueEnCours === session.id || finRecente(session.finAt, etat.serverNow));
+  const finAffichee = session !== null && session.statut === "terminee" && fermee !== session.id && (entreRounds || vueEnCours === session.id || finRecente(serie?.termineeAt ?? session.finAt, etat.serverNow));
   const partieAffichee = session !== null && (active || finAffichee);
   return (
     <PresentsContext.Provider value={presents}>
@@ -142,7 +174,21 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
       donnees={etat}
       hors={suivi.hors}
       actions={actions}
-      reglages={etat.moi.estAdmin ? <Reglages salleId={salleId} initial={session ? session.params : null} chargerDispos={chargerDispos} chargerMocks={chargerMocks} onLancer={onLancer} desactive={active} /> : null}
+      reglages={
+        etat.moi.estAdmin ? (
+          <>
+            {entreRounds && serie && (
+              <div className={s.panneauCorps}>
+                <p className={s.sous}>{PARTIE.roundAttenteSalon(serie.round + 1, serie.rounds)}</p>
+                <div className={s.piedActions}>
+                  <ActionsRound serie={serie} onLancerRound={lancerSuivant} onTerminerSerie={terminerIci} />
+                </div>
+              </div>
+            )}
+            <Reglages salleId={salleId} initial={session ? session.params : null} chargerDispos={chargerDispos} chargerMocks={chargerMocks} onLancer={onLancer} desactive={active || entreRounds} />
+          </>
+        ) : null
+      }
       partie={
         partieAffichee && session ? (
           <PartieSalle
@@ -151,6 +197,8 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
             onArreter={etat.moi.estAdmin ? arreter : undefined}
             onRejouer={etat.moi.estAdmin ? rejouer : undefined}
             onRetour={() => setFermee(session.id)}
+            onLancerRound={etat.moi.estAdmin ? lancerSuivant : undefined}
+            onTerminerSerie={etat.moi.estAdmin ? terminerIci : undefined}
           />
         ) : null
       }

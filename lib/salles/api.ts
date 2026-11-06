@@ -13,6 +13,7 @@ import type {
   SalleClassementLigne,
   SalleCorrection,
   SalleHistorique,
+  SalleSerie,
   SalleInfos,
   SalleItem,
   SalleMaReponse,
@@ -190,6 +191,28 @@ function toLigne(r: Raw): SalleClassementLigne {
   };
 }
 
+function toSerie(r: Raw): SalleSerie {
+  return {
+    id: String(r.id),
+    round: num(r.round, 1),
+    rounds: num(r.rounds, 1),
+    finie: r.finie === true,
+    termineeAt: str(r.terminee_at),
+    prochain: num(r.prochain),
+    total: num(r.total),
+    classement: liste(r.classement).map((l) => {
+      const o = obj(l);
+      return {
+        ...toLigne(o),
+        rangAvant: num(o.rang_avant, 1),
+        pointsRound: num(o.points_round),
+        pointsAvant: num(o.points_avant),
+        parRound: Object.fromEntries(Object.entries(obj(o.par_round)).map(([k, v]) => [Number(k), num(v)])),
+      };
+    }),
+  };
+}
+
 function toHistorique(r: Raw): SalleHistorique {
   const g = r.gagnant ? obj(r.gagnant) : null;
   const m = r.moi ? obj(r.moi) : null;
@@ -238,6 +261,7 @@ export function toEtat(raw: unknown): EtatSalle {
       ? { rang: num(mc.rang), points: num(mc.points), bonnes: num(mc.bonnes), repondues: num(mc.repondues), tempsMs: num(mc.temps_ms) }
       : null,
     historique: liste(r.historique).map((h) => toHistorique(obj(h))),
+    serie: r.serie ? toSerie(obj(r.serie)) : null,
   };
 }
 
@@ -462,6 +486,16 @@ export async function supprimerSalle(supabase: SupabaseClient, salleId: string):
 /** Arrête la partie en cours (admin seul) : elle est terminée, les corrections s'ouvrent. */
 export async function arreterSession(supabase: SupabaseClient, salleId: string): Promise<void> {
   await appeler(supabase, "arreter_session", { p_salle_id: salleId });
+}
+
+/** Lance le round suivant (admin seul) : ses questions sont déjà tirées, le décompte démarre pour tous. */
+export async function lancerRound(supabase: SupabaseClient, salleId: string): Promise<void> {
+  await appeler(supabase, "lancer_round", { p_salle_id: salleId });
+}
+
+/** S'arrête là (admin seul) : le classement du moment devient le classement final. */
+export async function terminerSerie(supabase: SupabaseClient, salleId: string): Promise<void> {
+  await appeler(supabase, "terminer_serie", { p_salle_id: salleId });
 }
 
 /**
