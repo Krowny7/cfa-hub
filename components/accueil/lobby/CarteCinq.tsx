@@ -1,5 +1,6 @@
 import { Play, Zap } from "lucide-react";
 import { Bouton, Contour, Phrase, SceauUni } from "@/components/accueil/lobby/Encre";
+import { InkRing } from "@/components/ink/InkRing";
 import { ArcCoin } from "@/components/ui/ArcCoin";
 import type { CarteCinqLobby } from "@/components/accueil/lobby/types";
 import { nombre } from "@/lib/voice";
@@ -27,6 +28,9 @@ export function CarteCinq({ c, className }: { c: CarteCinqLobby; className?: str
   const repondues = c.cases.filter((x) => x !== null).length;
   return (
     <section className={[s.carte, s.petite, s.inverse, className].filter(Boolean).join(" ")} aria-labelledby={ID}>
+      <span className={s.cinqAnneau} aria-hidden>
+        <InkRing size={250} className="rl-deco absolute -right-[46px] top-1/2 -translate-y-1/2 text-[#fff] opacity-[0.08]" />
+      </span>
       <header className={s.tete}>
         <SceauUni clair>
           <Zap size={15} aria-hidden />

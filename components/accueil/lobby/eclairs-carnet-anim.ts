@@ -9,12 +9,15 @@ import { bruit, rgb } from "@/components/ui/arc-coin-anim";
 /** l'instant dessiné quand rien ne bouge */
 const POSE = 2.4;
 const POINTS = 44;
-/** l'écart entre la case et le courant, en px */
-const RETRAIT = 1.6;
+/** l'écart entre la case et le courant, en px : il court sur son bord */
+const RETRAIT = 0.3;
+/** la décharge : elle passe de case en case, à la même cadence que l'arc de la carte des 5 */
+const DECHARGE = { periode: 4.2, duree: 1.2, decalage: 0.22 };
 const IMAGE_MS = 33;
 const FILS = [
-  { ampl: 1.9, graine: 0, epais: 1, force: 1 },
-  { ampl: 2.6, graine: 7.3, epais: 0.6, force: 0.6 },
+  { ampl: 1.7, graine: 0, epais: 1.7, force: 1 },
+  { ampl: 2.4, graine: 7.3, epais: 1, force: 0.6 },
+  { ampl: 3, graine: 13.1, epais: 0.8, force: 0.42 },
 ];
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -25,7 +28,8 @@ function tracer(ctx: CanvasRenderingContext2D, q: Rect, t: number, graine: numbe
     const a = (i / POINTS) * Math.PI * 2;
     const c = Math.cos(a);
     const s = Math.sin(a);
-    const carre = 1 / Math.max(Math.abs(c), Math.abs(s));
+    // un carré aux coins arrondis, comme la case
+    const carre = 1 / (Math.abs(c) ** 6 + Math.abs(s) ** 6) ** (1 / 6);
     const d = ampl * (0.6 * bruit(c * 1.3 + graine, s * 1.3 + t * 1.1) + 0.4 * bruit(c * 3.1 + graine + 5, s * 3.1 + t * 3.2));
     const x = q.x + q.w / 2 + (q.w / 2 + RETRAIT + d) * c * carre;
     const y = q.y + q.h / 2 + (q.h / 2 + RETRAIT + d) * s * carre;
@@ -42,14 +46,16 @@ function dessiner(ctx: CanvasRenderingContext2D, cases: Rect[], w: number, h: nu
   ctx.lineJoin = "round";
   cases.forEach((q, i) => {
     const o = i * 11.7;
-    ctx.globalAlpha = 0.82 + 0.18 * Math.sin(t * 1.7 + i * 1.3);
+    const u = (t - i * DECHARGE.decalage + DECHARGE.periode * 8) % DECHARGE.periode;
+    const pic = u < DECHARGE.duree ? Math.sin((Math.PI * u) / DECHARGE.duree) : 0;
+    ctx.globalAlpha = Math.min(1, 0.82 + 0.18 * Math.sin(t * 1.7 + i * 1.3) + 0.2 * pic);
     for (const f of FILS) {
-      tracer(ctx, q, t, f.graine + o, f.ampl);
+      tracer(ctx, q, t, f.graine + o, f.ampl * (1 + 0.6 * pic));
       // halo flou, cœur coloré, âme blanche : les trois couches de l'arc du coin
       ctx.shadowColor = `rgba(${r},${v},${b},0.9)`;
-      ctx.shadowBlur = 7 * dpr;
+      ctx.shadowBlur = (11 + 9 * pic) * dpr;
       ctx.strokeStyle = `rgba(${r},${v},${b},${0.6 * f.force})`;
-      ctx.lineWidth = 2.4 * f.epais;
+      ctx.lineWidth = 2.4 * f.epais * (1 + 0.35 * pic);
       ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.shadowColor = "transparent";

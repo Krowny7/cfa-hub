@@ -966,8 +966,18 @@
 
 /* ——— Les 5 du jour ——— */
 /* la carte aux couleurs inversées : fond noir, texte clair (les cases, le chiffre et la phrase suivent) */
+/* l'anneau du logo en fond de la carte des 5, comme sur la carte de rang du profil */
+.cinqAnneau {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
 .inverse {
   /* un noir fixe : --noir devient clair en thème nuit */
+  isolation: isolate;
   background: #1a120b;
   border-color: rgba(255, 255, 255, 0.1);
   color: #fff;

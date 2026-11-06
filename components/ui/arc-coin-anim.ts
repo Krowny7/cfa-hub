@@ -27,13 +27,18 @@ type Fil = { ampl: number; ecart: number; graine: number; force: number; epais: 
 const POSE = 2.4;
 /** un point tous les 2,5 px le long de l'arc */
 const PAS = 2.5;
-/** le bord est à 2 px : l'arc reste dans la carte, même quand il ondule */
-const RETRAIT = 2.2;
+/** l'arc est collé au bord de la carte, il ne s'en écarte que vers l'intérieur */
+const RETRAIT = 0.7;
 const FILS: Fil[] = [
   { ampl: 3, ecart: 7, graine: 0, force: 1, epais: 1.15 },
   { ampl: 4.2, ecart: 9, graine: 1, force: 0.6, epais: 0.6 },
 ];
 const VAGUE = { periode: 4.2, course: 1.5, largeur: 38 };
+
+/** la présence de l'arc, choisie par Théo le 2026-11-06 : coin chargé, décharge qui parcourt le bord, trait épais */
+type ReglageArc = { long: number; gain: number; epais: number; halo: number; vague: number; retrait: number };
+const ARC: ReglageArc = { long: 1.25, gain: 1.45, epais: 2, halo: 1.9, vague: 2.1, retrait: RETRAIT };
+const FIL_3: Fil = { ampl: 5.4, ecart: 11, graine: 2, force: 0.42, epais: 0.5 };
 
 // —— bruit de gradient 2D (espace le long de l'arc × temps), continu partout ——
 function hache(i: number, j: number): number {
@@ -62,9 +67,9 @@ const palier = (a: number, b: number, x: number) => {
   return k * k * (3 - 2 * k);
 };
 
-function geometrie(w: number, h: number, r: number): Geo {
-  const bas = Math.max(40, Math.min(w * 0.5 - r, 280));
-  const droite = Math.max(30, Math.min(h * 0.72 - r, 170));
+function geometrie(w: number, h: number, r: number, q: ReglageArc): Geo {
+  const bas = Math.max(40, Math.min(w * 0.5 * q.long - r, 280 * q.long));
+  const droite = Math.max(30, Math.min(h * 0.72 * q.long - r, 170 * q.long));
   const quart = (Math.PI / 2) * r;
   return { w, h, r, bas, quart, droite, l: bas + quart + droite };
 }
@@ -136,7 +141,7 @@ function lumiere(ctx: CanvasRenderingContext2D, c: [number, number, number], dpr
   trace(0.6 * epais);
 }
 
-function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number, c: [number, number, number], branches: Branche[] | null) {
+function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number, c: [number, number, number], branches: Branche[] | null, q: ReglageArc) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, g.w, g.h);
   ctx.save();
@@ -160,14 +165,14 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
   for (let i = 0; i < n; i++) {
     const s = (i / (n - 1)) * g.l;
     const vg = v ? v(s) * enveloppe(g, s, 0.62) : 0;
-    base[i] = enveloppe(g, s, 0.45) ** 1.3 * souffle + vg * 0.95;
+    base[i] = enveloppe(g, s, 0.45) ** 1.3 * souffle + vg * 0.95 * q.vague;
     pic = Math.max(pic, vg);
   }
 
   // la lueur posée sur le noir de la carte, au coin
   const [r, vv, b] = c;
-  const halo = ctx.createRadialGradient(g.w - g.r * 0.4, g.h - g.r * 0.4, 0, g.w - g.r * 0.4, g.h - g.r * 0.4, 110);
-  halo.addColorStop(0, `rgba(${r},${vv},${b},${(0.11 * souffle + 0.07 * pic).toFixed(3)})`);
+  const halo = ctx.createRadialGradient(g.w - g.r * 0.4, g.h - g.r * 0.4, 0, g.w - g.r * 0.4, g.h - g.r * 0.4, 110 * Math.sqrt(q.halo) * (1 + 0.5 * pic * (q.vague - 1)));
+  halo.addColorStop(0, `rgba(${r},${vv},${b},${((0.11 * souffle + 0.07 * pic * q.vague) * q.halo).toFixed(3)})`);
   halo.addColorStop(1, `rgba(${r},${vv},${b},0)`);
   ctx.fillStyle = halo;
   ctx.fillRect(0, 0, g.w, g.h);
@@ -179,7 +184,7 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
     const ns = Math.ceil(g.l / f.ecart) + 1;
     for (let j = 0; j < ns; j++) {
       const sj = j * f.ecart;
-      sommets[j] = f.ampl * (0.55 * bruit(sj / 40 + o, t * 0.7 + o) + 0.45 * bruit(sj / 9 + o + 5.3, t * 3.2 + o));
+      sommets[j] = f.ampl * q.gain * (0.55 * bruit(sj / 40 + o, t * 0.7 + o) + 0.45 * bruit(sj / 9 + o + 5.3, t * 3.2 + o));
     }
     for (let i = 0; i < n; i++) {
       const s = (i / (n - 1)) * g.l;
@@ -187,7 +192,7 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
       const j = Math.min(ns - 2, Math.floor(s / f.ecart));
       const k = s / f.ecart - j;
       const d = (sommets[j] + (sommets[j + 1] - sommets[j]) * k) * (0.45 + 0.55 * base[i]);
-      const off = Math.max(0.6, RETRAIT + d);
+      const off = Math.max(0.6, q.retrait + d);
       xs[i] = x + ax * off;
       ys[i] = y + ay * off;
       nx[i] = ax;
@@ -196,9 +201,9 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
       lg[i] = base[i] * f.force * (0.72 + 0.28 * bruit(s / 26 + o + 50, t * 2.6));
     }
   };
-  for (const f of FILS) {
+  for (const f of [...FILS, FIL_3]) {
     pointsFil(f);
-    lumiere(ctx, c, dpr, (k) => ruban(ctx, xs, ys, nx, ny, lg, k, n), f.epais);
+    lumiere(ctx, c, dpr, (k) => ruban(ctx, xs, ys, nx, ny, lg, k, n), f.epais * q.epais);
   }
 
   // les branches partent du fil principal
@@ -241,7 +246,7 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
 }
 
 /** Fait vivre l'arc du coin dans ce canvas ; renvoie de quoi l'arrêter. */
-export function animerArcCoin(toile: HTMLCanvasElement, couleur: string): () => void {
+export function animerArcCoin(toile: HTMLCanvasElement, couleur: string, q: ReglageArc = ARC): () => void {
   const ctx = toile.getContext("2d");
   if (!ctx || typeof window === "undefined") return () => {};
   const c = rgb(couleur);
@@ -270,7 +275,7 @@ export function animerArcCoin(toile: HTMLCanvasElement, couleur: string): () => 
     if (toile.width !== lw) toile.width = lw;
     if (toile.height !== lh) toile.height = lh;
     const r = parseFloat(getComputedStyle(toile.parentElement ?? toile).borderBottomRightRadius);
-    g = geometrie(w, h, Number.isFinite(r) ? r : 16);
+    g = geometrie(w, h, Number.isFinite(r) ? r : 16, q);
   };
 
   const vivre = (t: number) => {
@@ -294,7 +299,7 @@ export function animerArcCoin(toile: HTMLCanvasElement, couleur: string): () => 
   };
 
   const image = (t: number, vivant: boolean) => {
-    if (g) dessiner(ctx, g, dpr, t, c, vivant ? branches : null);
+    if (g) dessiner(ctx, g, dpr, t, c, vivant ? branches : null, q);
   };
   const boucle = (ms: number) => {
     raf = 0;
