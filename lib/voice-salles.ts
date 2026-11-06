@@ -89,7 +89,7 @@ export const SALLES = {
   horsLigne: "Hors ligne",
   quitter: "Quitter la salle",
   quitterConfirme: "Quitter cette salle ? Tu pourras la rejoindre à nouveau avec son code.",
-  quitterAdminConfirme: "Tu es l'admin : si tu pars, le plus ancien membre le devient. Quitter quand même ?",
+  quitterAdminConfirme: "Tu es l'admin : si tu pars, un joueur présent le devient. Quitter quand même ?",
   quitterDernier: "Tu es le dernier : la salle sera supprimée. Quitter quand même ?",
   supprimer: "Supprimer la salle",
   supprimerConfirme: "Supprimer cette salle pour tout le monde ? Les parties et leurs scores disparaissent.",

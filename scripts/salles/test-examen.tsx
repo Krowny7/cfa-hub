@@ -21,6 +21,7 @@ import { PartieExamen, RendreCopie } from "@/components/salles/PartieExamen";
 import {
   avancementBrut,
   avancementJoueurs,
+  joueursPresents,
   chronoBas,
   clicTropTot,
   copieRendue,
@@ -51,6 +52,10 @@ const check = (label: string, cond: boolean, extra = "") => {
 const compte = (html: string, re: RegExp) => (html.match(re) ?? []).length;
 {
   const deux = [{ userId: "moi", username: "Moi", avatarUrl: null }, { userId: "lui", username: "Lui", avatarUrl: null }];
+  const vs = (presents: ReadonlySet<string> | null) => joueursPresents(deux, presents, "moi").map((m) => m.userId);
+  check("VS : seul dans la salle, aucun adversaire", vs(new Set(["moi"])).join() === "moi");
+  check("VS : je reste listé même avant mon premier signal", vs(new Set()).join() === "moi");
+  check("VS : présence inconnue, personne plutôt qu'un absent", vs(null).length === 0);
   const avant = avancementJoueurs({ session: { params: {}, avancement: [] } as never, membres: deux, moiId: "moi", mesRepondues: 0 });
   check("la correction d'une Salle garde l'identifiant de la question, pour la marquer", revueDeSalle([{ position: 0, choix: ["a", "b"], enonce: "x", topic: null } as never], [{ position: 0, bonneIndex: 0, bonneValeur: null, explication: null, etapes: [], questionId: "q1" }], [])?.[0]?.questionId === "q1");
   check("un joueur absent qui n'a rien répondu n'apparaît pas", avancementJoueurs({ session: { params: {}, avancement: [] } as never, membres: deux, moiId: "moi", mesRepondues: 0, presents: new Set(["moi"]) }).length === 1);

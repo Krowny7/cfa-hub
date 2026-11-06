@@ -17,7 +17,7 @@ export const PresentsContext = createContext<ReadonlySet<string> | null>(null);
 
 export const usePresents = () => useContext(PresentsContext);
 
-export function useSuiviPresence(salleId: string, nbMembres: number): ReadonlySet<string> | null {
+export function useSuiviPresence(salleId: string, relire: string): ReadonlySet<string> | null {
   const [presents, setPresents] = useState<ReadonlySet<string> | null>(null);
   const client = useRef<SupabaseClient | null>(null);
   const battre = useRef<() => void>(() => undefined);
@@ -46,10 +46,10 @@ export function useSuiviPresence(salleId: string, nbMembres: number): ReadonlySe
     };
   }, [salleId]);
 
-  // quelqu'un vient d'entrer : on relit sans attendre le prochain battement
+  // quelqu'un vient d'entrer, ou une partie démarre : on relit sans attendre le prochain battement
   useEffect(() => {
     battre.current();
-  }, [nbMembres]);
+  }, [relire]);
 
   return presents;
 }

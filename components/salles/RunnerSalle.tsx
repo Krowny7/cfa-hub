@@ -49,7 +49,8 @@ export function RunnerSalle({
   const presents = usePresents();
   const autres = avancementJoueurs({ session, membres, moiId: moi.userId, mesRepondues: repondues, moiRendu: rendue, presents }).filter((j) => !j.moi);
   // seul dans la salle : ni chat ni autres joueurs, la question prend toute la place
-  const aCote = (presents ? presents.size > 1 : membres.length > 1) || autres.length > 0;
+  const accompagne = presents ? presents.size > 1 : membres.length > 1;
+  const aCote = accompagne || autres.length > 0;
 
   const aller = useCallback(
     (p: number) => {
@@ -194,7 +195,7 @@ export function RunnerSalle({
       {/* à droite : le chat, puis où en sont les autres ; au téléphone, sous la question */}
       {aCote && (
         <aside className="order-2 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 p-px lg:sticky lg:top-[166px] lg:max-h-[calc(100svh-176px)] lg:overflow-y-auto">
-          {membres.length > 1 && <ChatSalle canal={session.id} moi={{ userId: moi.userId, nom: membres.find((j) => j.userId === moi.userId)?.username ?? RUNNER_SALLE.chatAnonyme }} />}
+          {accompagne && <ChatSalle canal={session.id} moi={{ userId: moi.userId, nom: membres.find((j) => j.userId === moi.userId)?.username ?? RUNNER_SALLE.chatAnonyme }} />}
           {autres.length > 0 && (
             <section className="card-quiet grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 p-4" aria-label={RUNNER_SALLE.joueursTitre}>
               <p className="t-micro m-0">{RUNNER_SALLE.joueursTitre}</p>

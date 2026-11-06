@@ -34,7 +34,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
   const client = useRef<SupabaseClient | null>(null);
   const sb = useCallback(() => (client.current ??= createClient()), []);
   const { etat, rafraichir } = suivi;
-  const presents = useSuiviPresence(salleId, etat.nbMembres);
+  const presents = useSuiviPresence(salleId, `${etat.nbMembres}:${etat.session?.id ?? ""}`);
   // la partie vue en cours pendant cette visite, et la dernière dont on a fermé l'écran de fin
   const [vueEnCours, setVueEnCours] = useState<string | null>(null);
   const [fermee, setFermee] = useState<string | null>(null);

@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { EcranVs } from "@/components/arene/EcranVs";
 import { PartieExamen } from "@/components/salles/PartieExamen";
+import { usePresents } from "@/components/salles/presence";
 import { VuePartie } from "@/components/salles/VuePartie";
 import { effetsParDefaut, type Effets } from "@/components/salles/effets";
 import { useHeureServeur } from "@/components/salles/anim";
 import type { SuiviSalle } from "@/components/salles/useEtatSalle";
 import { rendreCopie, repondreSalle } from "@/lib/salles/api";
-import { estChronoGlobal, horlogeExamen } from "@/lib/salles/examen";
+import { estChronoGlobal, horlogeExamen, joueursPresents } from "@/lib/salles/examen";
 import { clockDe, horlogeSession } from "@/lib/salles/logique";
 import { chiffreDecompte, reponseVue, type ReponseOk } from "@/lib/salles/partie";
 import type { CopieRendue, ReponseResultat } from "@/lib/salles/types";
@@ -153,6 +154,7 @@ export function PartieSalle({
   }, [manqueCorrections, nbCorrections, statut, rafraichir]);
 
   // ma ligne pour le classement : un objet stable, pour que les lignes ne se redessinent pas à chaque tic
+  const presents = usePresents();
   const moiMembre = etat.membres.find((m) => m.userId === etat.moi.userId);
   const moiId = etat.moi.userId;
   const moiNom = moiMembre?.username ?? null;
@@ -202,7 +204,7 @@ export function PartieSalle({
 
   return (
     <>
-      {h?.phase === "decompte" && <EcranVs cle={`salle:${ses.id}`} joueurs={etat.membres.map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl, elo: m.elo }))} moiId={etat.moi.userId} hud={ARENE.hudSalle(etat.membres.length)} />}
+      {h?.phase === "decompte" && <EcranVs cle={`salle:${ses.id}`} joueurs={joueursPresents(etat.membres, presents, etat.moi.userId).map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl, elo: m.elo }))} moiId={etat.moi.userId} hud={ARENE.hudSalle(etat.membres.length)} />}
       <VuePartie
         session={ses}
         items={etat.items}

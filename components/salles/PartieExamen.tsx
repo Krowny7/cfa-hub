@@ -21,6 +21,7 @@ import type { CalcUnit } from "@/lib/calc/types";
 import { messageErreurSalle } from "@/lib/salles/api";
 import {
   avancementJoueurs,
+  joueursPresents,
   chronoBas,
   clicTropTot,
   copieRendue,
@@ -140,6 +141,7 @@ function FinEnAttente({ session }: { session: SalleSession }) {
 export function PartieExamen(props: PropsPartieExamen) {
   const { session, items, corrections, mesReponses, locales, classement, monClassement, membres, moi, estAdmin, t, repondre, onArreter, onRejouer, onRetour } = props;
   const h = horlogeExamen(session, t);
+  const presents = usePresents();
 
   if (h.phase === "fin") {
     // la fin tombe à l'horloge avant que le serveur ne la confirme : l'état lu est encore celui
@@ -179,7 +181,7 @@ export function PartieExamen(props: PropsPartieExamen) {
     return (
       <>
         <DecompteExamen session={session} avantMs={h.avantDebutMs} onArreter={onArreter} />
-        <EcranVs cle={`salle:${session.id}`} joueurs={membres.map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl }))} moiId={moi.userId} hud={ARENE.hudSalle(membres.length)} />
+        <EcranVs cle={`salle:${session.id}`} joueurs={joueursPresents(membres, presents, moi.userId).map((m) => ({ id: m.userId, pseudo: m.username, photo: m.avatarUrl }))} moiId={moi.userId} hud={ARENE.hudSalle(membres.length)} />
       </>
     );
   }

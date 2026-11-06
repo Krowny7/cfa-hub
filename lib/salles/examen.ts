@@ -5,7 +5,7 @@
 // justesse, ni points, ni classement : seulement combien de réponses chacun a
 // données). À la fin : les corrections, le classement et le débrief.
 // Chacun peut rendre sa copie avant la fin du chrono : ses réponses se
-// verrouillent, et quand tous les membres ont rendu la leur, la partie se
+// verrouillent, et quand tous les joueurs présents ont rendu la leur, la partie se
 // termine sur-le-champ (migration_salles_rendre_copie.sql : rendre_copie,
 // avancement[].rendu).
 // Aucun accès réseau ni horloge lue ici : l'heure (du serveur) est passée en
@@ -237,6 +237,14 @@ export function clicTropTot(ouverteA: number | null, maintenant: number): boolea
  * serveur, et figure même si je n'ai encore rien répondu ; elle est « rendue »
  * si le serveur le dit ou si je viens de rendre ma copie (`moiRendu`).
  */
+/**
+ * Ceux qui jouent vraiment : moi et les membres sur la page. Un membre absent n'a pas sa place sur
+ * l'écran VS. `null` : on ne sait pas encore, on attend plutôt que de montrer un absent.
+ */
+export function joueursPresents<T extends { userId: string }>(membres: readonly T[], presents: ReadonlySet<string> | null, moiId: string): T[] {
+  return presents ? membres.filter((m) => m.userId === moiId || presents.has(m.userId)) : [];
+}
+
 export function avancementJoueurs(opts: {
   session: Pick<SalleSession, "params"> | null | undefined;
   membres: Pick<SalleMembre, "userId" | "username" | "avatarUrl">[];
