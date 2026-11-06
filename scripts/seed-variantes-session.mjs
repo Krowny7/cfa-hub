@@ -9,10 +9,11 @@
 // « Complet (N questions) » dans l'ordre de la session, comme pour un mock officiel.
 //
 // Usage : node scripts/seed-variantes-session.mjs variantes_1_session1 "Variantes 1 — Session 1"
+// Avec --garder : met les séries à jour en place, l'historique des réponses reste (syncQuizSets).
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
+import { getOwnerId, ensureFolder, seedQuizSets, syncQuizSets } from "./lib/seed-core.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FOLDER_NAME = "Mocks Officiels (Système)";
@@ -63,7 +64,8 @@ async function main() {
   sets.push({ title: `${examLabel} — Complet (${questions.length} questions)`, difficulty: 2, questions: questions.map(toSeedFormat) });
 
   console.log(`Import ${examLabel} : ${sets.length - 1} matières + la série complète…`);
-  const total = await seedQuizSets({ ownerId, folderId, sets });
+  const importer = process.argv.includes("--garder") ? syncQuizSets : seedQuizSets;
+  const total = await importer({ ownerId, folderId, sets });
   console.log(`\n✅ Terminé. ${total} lignes de questions insérées.`);
 }
 
