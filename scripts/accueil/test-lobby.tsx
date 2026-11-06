@@ -226,7 +226,7 @@ const html = rendre("base");
     'id="lobby-deblocage-titre"',
     'id="lobby-quete-titre"',
     'id="lobby-scores-titre"',
-    ">La Bibliothèque<",
+    ">La Cascade<",
     'id="lobby-salle-titre"',
     'id="lobby-nouveau-titre"',
     'id="lobby-amis-titre"',
@@ -235,7 +235,7 @@ const html = rendre("base");
   check("l'ordre final : salut, les 30 + classement, les 5, traits, carte du jour, rival, affiche, vainqueur, lobby, rang, déblocage, quête, scores, affiche, Grande Salle, du nouveau, amis, carnet", croissant(positions(html, final)), positions(html, final).join());
   check("(a) la ligue de la semaine est remplacée par une affiche : plus de ligue ni d'XP entre amis, une figure sans lien", !/ligue/i.test(html.replace(/Ligue d/g, "")) && !html.includes("Zone de montée") && /<figure[^>]*>(?:(?!<\/figure>).)*duel-lice\.webp(?:(?!<\/figure>).)*<\/figure>/s.test(html) && !/<figure[^>]*>(?:(?!<\/figure>).)*<a /s.test(html));
   check("(b) le carnet de jours est la DERNIÈRE carte : plus aucune carte après lui", !html.slice(html.indexOf('id="lobby-carnet-titre"')).includes("<section"), html.slice(html.indexOf('id="lobby-carnet-titre"')).split("<section").length - 1 + " section(s) après");
-  check("les deux affiches sont des peintures du site (public/illustrations), jamais /_blob/", html.includes("/illustrations/duel-lice.webp") && html.includes("/illustrations/reviser-bibliotheque.webp") && html.includes("/illustrations/mock-grande-salle.webp") && !html.includes("/_blob/"));
+  check("les deux affiches sont des peintures du site (public/illustrations), jamais /_blob/", html.includes("/illustrations/duel-lice.webp") && html.includes("/illustrations/accueil-cascade.webp") && html.includes("/illustrations/mock-grande-salle.webp") && !html.includes("/_blob/"));
   check("la rangée 3 a ses trois cartes (data-n absent), la rangée du vainqueur a sa colonne (vainqueur puis lobby)", /class="rangeeJour"/.test(html) && !/class="rangeeJour" data-n/.test(html) && html.indexOf('id="lobby-vainqueur"') < html.indexOf('id="lobby-direct-titre"') && html.indexOf('id="lobby-direct-titre"') < html.indexOf('id="lobby-rang"'));
   check("la Grande Salle a un bouton NOIR en aplat, sans liquide", html.includes("Voir l'examen blanc") && !/lobby-salle-titre(?:(?!<\/section>).)*rl-encre/s.test(html));
   check("du nouveau garde sa cible de Léonard et liste la relance de Marie en premier (« ce matin »)", compte(html, /data-leonard="du-nouveau"/g) === 1 && html.indexOf("t'a relancé") > 0 && html.indexOf("t'a relancé") < html.indexOf("t'a battu") && html.includes("ce matin"));
@@ -343,7 +343,7 @@ titre("# l'assemblage : les variantes qui retirent des cartes (la rangée se rec
 
   const socle = rendre("sansExtras");
   check("socle seul (rien des lots 2 à 5) : la page tient, une seule h1, les cartes du socle sont là", compte(socle, /<h1/g) === 1 && socle.includes('id="lobby-defi"') && socle.includes('id="lobby-traits"') && socle.includes('id="lobby-rang"') && socle.includes('id="lobby-vainqueur"'));
-  check("socle seul : ni rangée 3, ni lobby, ni scores, ni affiche, ni Grande Salle, ni du nouveau, ni amis, ni carnet", ["rangeeJour", "lobby-direct-titre", "lobby-scores-titre", "lobby-deblocage-titre", "lobby-quete-titre", ">La Bibliothèque<", "duel-lice.webp", "lobby-salle-titre", "lobby-nouveau-titre", "lobby-amis-titre", "lobby-carnet-titre"].every((x) => !socle.includes(x)));
+  check("socle seul : ni rangée 3, ni lobby, ni scores, ni affiche, ni Grande Salle, ni du nouveau, ni amis, ni carnet", ["rangeeJour", "lobby-direct-titre", "lobby-scores-titre", "lobby-deblocage-titre", "lobby-quete-titre", ">La Cascade<", "duel-lice.webp", "lobby-salle-titre", "lobby-nouveau-titre", "lobby-amis-titre", "lobby-carnet-titre"].every((x) => !socle.includes(x)));
   check("socle seul : le vainqueur remplit seul sa colonne (il s'étire), le rang à côté", socle.includes("etire") && socle.indexOf('id="lobby-vainqueur"') < socle.indexOf('id="lobby-rang"'));
 
   const sansMig = rendre("sansMigrations");

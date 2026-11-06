@@ -239,6 +239,13 @@ export const ILLUSTRATIONS = {
     emplacement: "/calculs et /calculs/[matiere] : médaillon rond dans la bande d'encre (68 px sur ordinateur, 56 px sur téléphone), 1024×1024 px conseillés, sujet centré.",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : un grand volant d'inertie en bois et fer forgé, tiré des machines de Léonard de Vinci, posé sur l'établi de son atelier à Florence vers 1500. Lumière dorée de fin de journée venant de la gauche, palette chaude (ocre, terre de Sienne brûlée, brun noisette, ivoire, touches de vert sauge). Cadrage carré, sujet parfaitement centré avec une marge régulière pour un recadrage en cercle, fond sombre et chaud peu détaillé. Sans personnage, sans texte, sans cadre ni bordure. Format 1:1, 1024×1024.",
   },
+  "accueil-cascade": {
+    src: "/illustrations/accueil-cascade.webp",
+    alt: "Deux ninjas méditent, immobiles, sur des rochers au pied d'une grande cascade, dans une forêt de bambous",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-06), d'après le prompt ci-dessous, avec la peinture de la pêche jointe pour le style.",
+    emplacement: "/ (accueil) : à droite de la carte « Tes meilleurs scores », environ 505×535 px sur ordinateur.",
+    prompt: "Peinture à l'huile au couteau, décor de jeu vidéo : une gigantesque cascade tombe dans un bassin vert jade, au cœur d'une forêt de bambous, tôt le matin. Au pied de la chute, deux ninjas minuscules, tout en noir, méditent en tailleur sur deux rochers plats et encaissent l'eau sans bouger ; l'un porte une écharpe vermillon. Format carré 1:1.",
+  },
   "reviser-peche": {
     src: "/illustrations/reviser-peche.webp",
     alt: "Deux samouraïs pêchent côte à côte sur une pierre plate, au bord d'une rivière turquoise, entre de hauts pitons de roche",
