@@ -103,6 +103,12 @@
         0.36,
         0.64
       ],
+      "liquide": [
+        "#2f4a5a",
+        "#c98f2e",
+        "#efcf83",
+        "#f7f0dc"
+      ],
       "couleurs": [
         {
           "nom": "noyer",
@@ -156,6 +162,12 @@
       "voile": [
         0.52,
         0.76
+      ],
+      "liquide": [
+        "#1f5e4b",
+        "#4fa585",
+        "#b9dcae",
+        "#f3f0d6"
       ],
       "couleurs": [
         {
@@ -237,6 +249,12 @@
       "voile": [
         0.52,
         0.76
+      ],
+      "liquide": [
+        "#1b1820",
+        "#7a2f2a",
+        "#e0603f",
+        "#f6ece0"
       ],
       "couleurs": [
         {

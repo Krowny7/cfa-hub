@@ -40,7 +40,7 @@ console.log("# palette jade");
 {
   const j = PALETTES.jade;
   check("la palette jade existe, 4 couleurs triées du plus sombre au plus clair", !!j && j.couleurs.length === 4 && j.couleurs[0].hex === "#121016" && j.couleurs[3].hex === "#f4f2f7", j?.couleurs.map((c) => c.hex).join());
-  check("le liquide : noir, améthyste, jade, blanc lilas", j.liquide.join() === ["#121016", "#5a3a8f", "#2f8f5f", "#f4f2f7"].join(), j.liquide.join());
+  check("le liquide : jade profond, jade, jade clair, ivoire", j.liquide.join() === ["#1f5e4b", "#4fa585", "#b9dcae", "#f3f0d6"].join(), j.liquide.join());
   check("la texture de repli est /encres/jade.webp", j.encre === "/encres/jade.webp");
   check("/moi et ses sous-pages prennent jade ; ébène reste définie (bannières)", paletteDeChemin("/moi")?.key === "jade" && paletteDeChemin("/moi/x")?.key === "jade" && !!PALETTES.ebene);
 }
