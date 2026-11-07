@@ -1,0 +1,1082 @@
+[
+  {
+    "num": 1,
+    "topic": "ethics",
+    "prompt": "Marta Ilves, CFA, learns that a new local regulation allows asset managers to keep, without telling clients, the volume rebates they receive from brokers on client trades. Her head of trading tells her that every competitor already does this and that it is perfectly legal. Which statement about Ilves's situation is most accurate?",
+    "choices": [
+      "Because the practice is legal under local regulation, it is also ethical, and no further analysis is needed.",
+      "The argument that competitors already follow the practice is a situational influence that can lead her to underestimate the ethical issue.",
+      "Ethical principles apply only where the law is silent, so the new regulation settles the question."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : l'argument « tous les concurrents le font » est une influence situationnelle (pression des pairs, normes du secteur) qui pousse à sous-estimer la dimension éthique d'une décision. La loi ne fixe qu'un minimum : une pratique légale peut rester contraire à l'éthique, comme garder sans le dire des rabais payés avec l'argent des clients. Le piège « légal donc éthique » est faux, car loi et éthique ne se recouvrent que partiellement."
+  },
+  {
+    "num": 2,
+    "topic": "ethics",
+    "prompt": "A portfolio manager uses the ethical decision-making framework of the CFA Program (Identify, Consider, Act, Reflect) to decide whether to accept an unusual request from a client. Which of the following activities most likely belongs to the Consider phase?",
+    "choices": [
+      "Determining the relevant facts, the stakeholders affected and the duties owed to each of them",
+      "Assessing, after the decision, whether the outcome matched what was anticipated and why",
+      "Weighing situational influences, seeking additional guidance from compliance or a trusted colleague, and evaluating alternative actions"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la phase Consider consiste à repérer les influences situationnelles, chercher un avis supplémentaire (conformité, collègue, politiques de la firme) et comparer les actions possibles. Les faits, les parties prenantes et les devoirs envers chacune relèvent de la phase Identify, qui vient avant. Juger après coup si le résultat était celui attendu correspond à la phase Reflect, pas à Consider."
+  },
+  {
+    "num": 3,
+    "topic": "ethics",
+    "prompt": "Which of the following is least likely one of the six components of the CFA Institute Code of Ethics?",
+    "choices": [
+      "Maintain and improve their professional competence and strive to maintain and improve the competence of other investment professionals.",
+      "Promote the integrity and viability of the global capital markets for the ultimate benefit of society.",
+      "Keep information about current, former, and prospective clients confidential unless disclosure is required by law."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la confidentialité des informations des clients est une règle précise des Standards of Professional Conduct (Standard III(E)), pas une des six composantes du Code of Ethics. Le Code énonce des principes généraux : intégrité, priorité aux clients, jugement indépendant, pratique professionnelle, intégrité des marchés et compétence. Les deux autres propositions sont des composantes du Code ; le piège est de croire que tout devoir envers les clients figure dans le Code plutôt que dans les Standards."
+  },
+  {
+    "num": 4,
+    "topic": "ethics",
+    "prompt": "Kenji Arai, CFA, is notified that the CFA Institute Professional Conduct Program has opened an inquiry into his conduct after a written complaint from a former client. Which statement about the disciplinary process is most accurate?",
+    "choices": [
+      "If Arai rejects the sanction proposed by Professional Conduct staff, the matter is referred to a hearing panel of Disciplinary Review Committee members and CFA Institute member volunteers.",
+      "An inquiry can be opened only after a written complaint; information in the media or in a member's annual Professional Conduct Statement cannot trigger one.",
+      "Public censure is the most severe sanction available, because only a court can revoke a member's right to use the CFA designation."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : si le membre refuse la sanction proposée par l'équipe Professional Conduct, le dossier passe devant un panel formé de membres du Disciplinary Review Committee et de bénévoles membres de CFA Institute. Une enquête peut aussi naître de la déclaration annuelle du membre, d'articles de presse, de rapports de surveillants d'examen ou de l'analyse des copies, pas seulement d'une plainte écrite. Les sanctions vont jusqu'à la suspension ou la révocation de l'adhésion et du droit d'utiliser la désignation, sans passer par un tribunal."
+  },
+  {
+    "num": 5,
+    "topic": "ethics",
+    "prompt": "Lena Fischer, CFA, a portfolio manager, is asked by her firm's marketing department to approve a client brochure. She notices that the brochure presents fund performance in a way that breaches local securities rules. Her supervisor tells her to approve it anyway because the brochure must go out today. Under Standard I(A), which action is Fischer required to take?",
+    "choices": [
+      "Report the matter to the local securities regulator before the brochure is distributed",
+      "Approve the brochure, because responsibility for its content lies with marketing and her supervisor",
+      "Refuse to approve the brochure and dissociate from the activity, for example by escalating the issue to compliance"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le Standard I(A) interdit de participer sciemment à une violation de la loi ou de l'aider ; Fischer doit refuser de signer et se dissocier, en alertant la conformité et, si rien ne change, en allant jusqu'à quitter la firme. Le Standard n'oblige pas à signaler l'affaire au régulateur, même si cela peut être conseillé : c'est le piège principal. Approuver sur ordre de son supérieur reviendrait à participer à la violation."
+  },
+  {
+    "num": 6,
+    "topic": "ethics",
+    "prompt": "Daniel Moreau, CFA, a buy-side analyst, is invited by a mining company he covers to visit its new mine in a remote region. The company offers to pay for a charter flight, because no commercial flights serve the area, and for a weekend at a luxury resort after the visit. Which response is most consistent with Standard I(B)?",
+    "choices": [
+      "Accept both the charter flight and the resort weekend, provided he discloses them to his employer",
+      "Accept the charter flight because no commercial option exists, but have his firm pay for his lodging and decline the resort weekend",
+      "Decline the visit entirely, because any travel paid for by an issuer violates Standard I(B)"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : quand aucun vol commercial ne dessert le site, l'analyste peut accepter un transport modeste fourni par l'émetteur, comme un vol charter, mais sa firme doit payer l'hébergement et les autres frais normaux. Le week-end dans un hôtel de luxe est un avantage excessif qui menace son objectivité, même s'il est déclaré à l'employeur. Refuser toute visite payée par l'émetteur va plus loin que ce que demande le Standard I(B)."
+  },
+  {
+    "num": 7,
+    "topic": "ethics",
+    "prompt": "A small listed company hires Sofia Lindqvist, CFA, an independent research analyst, to write a report on its shares. Which compensation arrangement is most appropriate under Standard I(B)?",
+    "choices": [
+      "A flat fee agreed in advance, paid whatever the report concludes, with the arrangement disclosed in the report",
+      "A fee equal to 1% of the increase in the company's market capitalization over the six months after publication, disclosed in the report",
+      "A flat fee paid in company shares, not disclosed in the report so that readers are not biased against her conclusions"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : pour une recherche payée par l'émetteur, l'analyste doit accepter une rémunération fixe décidée d'avance, indépendante des conclusions et de l'évolution du cours, et la déclarer dans le rapport. Une commission liée à la hausse de la capitalisation pousse à recommander l'achat et compromet son indépendance, même si elle est déclarée : c'est le piège principal. Être payée en actions sans le dire cumule un conflit d'intérêts et un défaut de transparence."
+  },
+  {
+    "num": 8,
+    "topic": "ethics",
+    "prompt": "Arjun Mehta, CFA, follows a listed retailer. By combining public store-opening data, satellite images of store parking lots bought from a data vendor, and conversations with regional suppliers about general industry conditions, he concludes that quarterly sales will fall well short of consensus. He issues a sell recommendation before the results are released. Mehta has most likely:",
+    "choices": [
+      "violated Standard II(A), because his conclusion is material and not yet known to the market",
+      "not violated Standard II(A), because he combined public information with nonmaterial nonpublic information",
+      "violated Standard II(A), because the satellite images were purchased and are not free to all investors"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : c'est la mosaic theory : un analyste peut tirer une conclusion importante en assemblant des informations publiques et des informations non publiques mais non importantes, sans violer le Standard II(A). Des données vendues par un fournisseur à qui veut les acheter sont publiques, même si elles sont payantes. Le piège est de croire que la conclusion elle-même devient une information privilégiée : ce sont les sources, pas la conclusion, qui comptent."
+  },
+  {
+    "num": 9,
+    "topic": "ethics",
+    "prompt": "A broker-dealer's investment banking department is advising a client on a confidential takeover bid for a listed company that the firm's research department covers. Which procedure is most appropriate for the firm to prevent the misuse of material nonpublic information?",
+    "choices": [
+      "Placing the target on a restricted list and keeping information barriers between investment banking and research, with compliance controlling communications between them",
+      "Asking research analysts to sign a quarterly statement that they did not trade on inside information, with no other control",
+      "Letting research keep updating its rating on the target, because analysts are not told the name of the bidder"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la parade type est une barrière d'information (firewall) : contrôle par la conformité des échanges entre banque d'affaires et recherche, liste restreinte ou de surveillance sur la société concernée, et revue des transactions des employés et de la firme. Une simple attestation trimestrielle ne contrôle rien en pratique. Laisser la recherche publier sur la cible expose la firme à une fuite de l'information, même sans le nom de l'acheteur."
+  },
+  {
+    "num": 10,
+    "topic": "ethics",
+    "prompt": "Priya Nandakumar, CFA, manages a small-cap fund. On the last trading day of the quarter, she places several large buy orders for an illiquid stock the fund already holds in size, timing them just before the close. The fund does not need more of the stock, and the trades lift its closing price by 9%, which raises the fund's reported quarterly return. Which statement is most accurate?",
+    "choices": [
+      "She has violated Standard II(B), because the trades were intended to mislead market participants about the stock's price and the fund's value",
+      "She has not violated Standard II(B), because the trades were genuine transactions executed at market prices",
+      "She has violated Standard III(B) Fair Dealing only, because other funds holding the stock were treated unfairly"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : acheter juste avant la clôture, sans besoin d'investissement, pour gonfler le cours de fin de trimestre est une manipulation fondée sur des transactions : l'intention est de tromper sur le prix et sur la performance du fonds. Le fait que les ordres soient réels et exécutés au prix du marché n'excuse rien, car c'est l'intention de tromper qui fait la violation du Standard II(B). Le Fair Dealing concerne le traitement équitable des clients entre eux, pas ce cas."
+  },
+  {
+    "num": 11,
+    "topic": "ethics",
+    "prompt": "Tomás Herrera, CFA, manages pension accounts and sends their trades to a broker whose commissions are above the market average. In return, the broker pays for a research database that Herrera uses to manage those accounts, and also pays part of his firm's office rent. Which statement is most accurate?",
+    "choices": [
+      "Using client commissions for both the database and the office rent is acceptable if total commissions are disclosed to clients",
+      "Using client commissions for the research database can be acceptable, but using them to pay office rent breaches his duty to clients",
+      "Using client commissions for any service violates Standard III(A), because commissions are the property of the broker"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les commissions de courtage appartiennent au client et ne peuvent payer que des services qui l'aident directement, comme une recherche utilisée pour gérer ses comptes (soft dollars). Le loyer des bureaux profite à la firme, pas aux clients : le payer avec leurs commissions viole le devoir de loyauté du Standard III(A), même si le montant total est déclaré. Le troisième choix se trompe de propriétaire : la commission est un actif du client, pas du courtier."
+  },
+  {
+    "num": 12,
+    "topic": "ethics",
+    "prompt": "Hannah Bauer, CFA, manages discretionary accounts for 40 individual clients with different objectives. After reading a strategist's report, she decides to add a 15% allocation to emerging market high-yield bonds in every account at once to raise portfolio yields. Which statement is most accurate under Standard III(C)?",
+    "choices": [
+      "The change is suitable if it improves the expected return of the average client portfolio",
+      "The change is acceptable as long as she describes it in the next quarterly report to clients",
+      "She must assess the change against each client's objectives, constraints and investment policy statement before making it in that client's account"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le Standard III(C) impose de juger l'adéquation compte par compte, au regard des objectifs, des contraintes et de l'IPS de chaque client, avant de changer sa stratégie. Une allocation de 15 % en obligations high-yield émergentes peut convenir à certains clients et pas à d'autres, quel que soit l'effet sur le client moyen. L'informer après coup dans le rapport trimestriel ne rend pas acceptable un placement inadapté."
+  },
+  {
+    "num": 13,
+    "topic": "ethics",
+    "prompt": "Omar Haddad, CFA, is the subject of a CFA Institute Professional Conduct Program inquiry about trades in one client's account. The investigators ask him for that client's account records. The client has not consented, and no law requires disclosure. Under Standard III(E), Haddad:",
+    "choices": [
+      "may provide the records, because sharing confidential information with the Professional Conduct Program is permitted",
+      "must refuse, because client information may be disclosed only when the law requires it",
+      "may provide the records only after obtaining a court order or the client's written consent"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le Standard III(E) prévoit une exception : un membre peut transmettre des informations confidentielles au Professional Conduct Program de CFA Institute, qui les traite de façon confidentielle. Les autres exceptions sont une obligation légale, une activité illégale du client et l'accord du client. Le piège est de croire que seule la loi permet de lever la confidentialité ; aucune décision de justice n'est nécessaire pour coopérer avec le PCP."
+  },
+  {
+    "num": 14,
+    "topic": "ethics",
+    "prompt": "Chloe Martin, CFA, manages accounts at a wealth management firm. A large client offers her two business-class plane tickets for each year in which his portfolio beats its benchmark by more than 3%. Which action is required under Standard IV(B)?",
+    "choices": [
+      "Decline the offer, because Standard IV(B) prohibits any benefit from clients beyond the firm's fees",
+      "Disclose the offer to the client's other advisers; employer consent is not needed because the benefit comes from a client",
+      "Disclose the terms to her employer and obtain its written consent before accepting the arrangement"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un avantage promis par un client en fonction de la performance future est une rémunération supplémentaire qui peut entrer en conflit avec l'intérêt de l'employeur, par exemple en poussant à favoriser ce compte. Le Standard IV(B) exige d'en décrire les termes à l'employeur et d'obtenir son accord écrit (un courriel suffit) avant d'accepter. Le Standard n'interdit pas l'avantage en soi : c'est le piège du premier choix."
+  },
+  {
+    "num": 15,
+    "topic": "ethics",
+    "prompt": "Robert Klein, CFA, has just been promoted to head of a trading desk. He finds that the firm's compliance procedures for employee personal trading are inadequate and out of date, and senior management has not yet acted on the concerns he raised. Under Standard IV(C), Klein should most appropriately:",
+    "choices": [
+      "supervise his team under the existing procedures, because writing compliance procedures is the job of the compliance department",
+      "decline in writing to accept supervisory responsibility until the firm adopts adequate procedures, and document his concerns",
+      "resign immediately, because any supervision under inadequate procedures violates the Standards"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : un responsable qui constate que le système de conformité est insuffisant doit le signaler à la direction et, si rien n'est fait, refuser par écrit d'assumer la supervision tant que des procédures adéquates ne sont pas adoptées. Superviser avec des règles qu'il sait inadaptées ne le décharge pas de sa responsabilité, même si la rédaction des procédures revient à la conformité. La démission immédiate n'est pas exigée par le Standard IV(C)."
+  },
+  {
+    "num": 16,
+    "topic": "ethics",
+    "prompt": "Nadia Petrova, CFA, sits on an investment committee that votes 4 to 1 to add a stock to the firm's recommended list. Petrova voted against, but she agrees that the committee's research process was thorough and that the decision has a reasonable and adequate basis. The recommendation will be published in the committee's name. Which action is most appropriate for Petrova?",
+    "choices": [
+      "Ask for her name to be removed from the recommendation, because she disagrees with its conclusion",
+      "Send a separate note to her clients explaining why she disagrees with the committee",
+      "Let the recommendation be published and document her dissenting opinion, without having to dissociate from it"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon le Standard V(A), un membre d'un groupe de recherche en désaccord avec la conclusion n'a pas à s'en dissocier si le processus repose sur une base raisonnable et suffisante ; il est conseillé de consigner son désaccord. Faire retirer son nom ne serait justifié que si elle jugeait le processus sans fondement sérieux, ce qui n'est pas le cas. Écrire à ses clients pour contredire la recommandation officielle sèmerait la confusion sans être requis."
+  },
+  {
+    "num": 17,
+    "topic": "ethics",
+    "prompt": "Fatima Ali, CFA, leaves Firm X to join Firm Y. At Firm X she built a valuation model and kept detailed notes supporting her published recommendations. No regulation in her country sets a retention period for such records. Which statement is most consistent with Standard V(C)?",
+    "choices": [
+      "The notes belong to Firm X, which should keep them for at least seven years, and Ali may not take copies to Firm Y without permission",
+      "The notes belong to Ali because she created them, and she should keep them for at least seven years at Firm Y",
+      "Because no regulation applies, the records need to be kept only until the recommendations are withdrawn"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : les dossiers qui étayent les recommandations appartiennent à la firme, pas à l'analyste, et, faute de règle locale, CFA Institute recommande de les garder au moins sept ans. Ali ne peut pas emporter de copies sans l'accord de Firm X ; chez Firm Y, elle devra refaire son analyse à partir de sources accessibles. Le piège est de croire que l'auteur des notes en est propriétaire."
+  },
+  {
+    "num": 18,
+    "topic": "ethics",
+    "prompt": "Gabriel Nunes, CFA, a sell-side analyst, inherits a large block of shares in a company he covers. His firm also earns underwriting fees from the same company. Nunes's next report reiterates his buy rating on the stock. Which statement is most accurate under Standard VI(A)?",
+    "choices": [
+      "Nunes must sell the inherited shares before publishing any further research on the company",
+      "The report should disclose both Nunes's ownership of the shares and his firm's investment banking relationship with the company",
+      "Only the firm's underwriting relationship must be disclosed, because the shares were inherited rather than purchased"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le Standard VI(A) exige de déclarer de façon claire et visible tout ce qui peut raisonnablement nuire à l'objectivité, ce qui inclut la détention personnelle d'actions de la société suivie et les relations de banque d'affaires de la firme. Le Standard n'oblige pas à vendre les actions ; il demande de déclarer le conflit. La façon dont les actions ont été obtenues ne change rien : héritées ou achetées, elles créent le même conflit."
+  },
+  {
+    "num": 19,
+    "topic": "ethics",
+    "prompt": "Wei Zhang, CFA, manages accounts for 30 fee-paying clients, one of whom is his sister. Zhang has no beneficial interest in her account. Whenever he buys a stock for all suitable accounts, he executes his sister's order last, after every other client, to avoid any appearance of favoritism. Which statement is most accurate?",
+    "choices": [
+      "The practice complies with Standard VI(B), because all clients must have priority over a member's family",
+      "The practice is inconsistent with the Standards, because his sister's account is a client account and should be treated like any other",
+      "The practice is required by Standard VI(B), because any family member's account must be treated as his own personal account"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : un compte familial qui est un compte client payant, sans intérêt économique pour le membre, doit être traité comme les autres comptes clients ; le faire passer systématiquement en dernier désavantage ce client. L'ordre clients, puis employeur, puis membre vise les comptes dont le membre est bénéficiaire, ce qui n'est pas le cas ici. Le piège est d'assimiler tout compte familial au compte personnel du membre."
+  },
+  {
+    "num": 20,
+    "topic": "ethics",
+    "prompt": "Isabel Duarte, CFA, an independent adviser, pays a local accounting firm 10% of the first-year advisory fee of every client it refers to her. A prospective client referred by the accounting firm is meeting Duarte to discuss a management agreement. Under Standard VI(C), when must Duarte disclose the arrangement?",
+    "choices": [
+      "Only if the prospective client asks whether she pays anyone for referrals",
+      "In the first account statement sent after the agreement is signed",
+      "Before the client enters into a formal agreement for services, including the nature and estimated value of the payment"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le Standard VI(C) exige d'informer le client ou le prospect, avant toute entrée en relation formelle, de toute rémunération ou avantage reçu ou versé pour une recommandation, avec sa nature (en argent ou non) et sa valeur estimée. Le client peut ainsi juger le conseil et son coût réel avant de s'engager. Attendre le premier relevé est trop tard : c'est le piège principal, et une déclaration seulement sur demande ne suffit pas."
+  },
+  {
+    "num": 21,
+    "topic": "ethics",
+    "prompt": "After sitting the CFA Level I exam, Lucas Ferreira posts on a candidate forum: 'Expect a lot of questions on currency forwards, and you can safely skip the GIPS reading.' He does not reveal any specific question or answer. Which statement is most accurate?",
+    "choices": [
+      "Ferreira has violated Standard VII(A), because he disclosed which broad topics were or were not tested",
+      "Ferreira has not violated Standard VII(A), because he did not disclose any specific question or answer",
+      "Ferreira has violated Standard VII(B), because he misrepresented the content of the CFA Program curriculum"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le Standard VII(A) interdit de révéler le contenu de l'examen, y compris les grands thèmes, les formules ou les sujets testés ou absents. Dire qu'un thème tombe beaucoup ou qu'une lecture n'est pas testée compromet l'intégrité de l'examen, même sans citer de question précise : c'est le piège principal. Le Standard VII(B) porte sur la façon de citer CFA Institute et la désignation, pas sur la confidentialité de l'examen."
+  },
+  {
+    "num": 22,
+    "topic": "ethics",
+    "prompt": "Which of the following statements is most likely consistent with Standard VII(B) Reference to CFA Institute, the CFA Designation, and the CFA Program?",
+    "choices": [
+      "Maria Costa, whose membership lapsed when she stopped paying dues and filing her Professional Conduct Statement, keeps 'CFA' after her name on her business card.",
+      "Ahmed Saleh's firm biography states: 'As a CFA charterholder, Ahmed delivers investment returns superior to those of other managers.'",
+      "John Park's resume states that he passed all three levels of the CFA exam on his first attempt, which is accurate."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un membre peut mentionner des faits exacts, comme avoir réussi les trois niveaux du premier coup, tant qu'il n'en tire pas de promesse de performance. Saleh laisse entendre que la désignation garantit des rendements supérieurs, ce qui est interdit. Costa n'est plus membre actif : sans cotisation ni Professional Conduct Statement, elle n'a plus le droit d'utiliser la désignation, même si elle a obtenu le charter."
+  },
+  {
+    "num": 23,
+    "topic": "ethics",
+    "prompt": "Atlas Capital claims compliance with the GIPS standards. Its internal audit department, which is independent of portfolio management, has reviewed the firm's flagship equity composite, and Atlas now wants to state in its marketing that this composite 'has been verified'. Which statement is most accurate?",
+    "choices": [
+      "Atlas may describe the composite as verified, because internal audit is independent of the investment team",
+      "The internal review is not a GIPS verification, which is performed by an independent third party and covers the firm as a whole",
+      "Atlas was not allowed to claim compliance with the GIPS standards before obtaining a verification"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la verification GIPS est recommandée, non obligatoire ; elle est confiée à un tiers indépendant et porte sur toute la firme, pas sur un composite isolé. Un audit interne, même indépendant des gérants, n'est pas une verification au sens des GIPS. Le troisième choix est faux, car une firme peut se déclarer conforme sans verification."
+  },
+  {
+    "num": 24,
+    "topic": "ethics",
+    "prompt": "A firm's Global Value composite includes all fee-paying discretionary portfolios managed to its global value strategy. Over the year, the firm manages three portfolios in this strategy: Portfolio 1, discretionary, beginning value 60 million, return 5.0%; Portfolio 2, discretionary, beginning value 40 million, return 10.0%; Portfolio 3, non-discretionary because client restrictions prevent the strategy from being implemented, beginning value 100 million, return 2.0%. Using beginning values as weights, the composite return for the year is closest to:",
+    "choices": [
+      "4.5%",
+      "7.0%",
+      "7.5%"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le portefeuille 3, non discrétionnaire, est exclu du composite ; le rendement pondéré par les actifs de début de période vaut (60 × 5,0 % + 40 × 10,0 %) ÷ 100 = 3,0 % + 4,0 % = 7,0 %. Le résultat 7,5 % est la moyenne simple des deux portefeuilles, alors que les GIPS demandent une pondération par les actifs. Le résultat 4,5 % inclut à tort le portefeuille non discrétionnaire : (300 + 400 + 200) ÷ 200."
+  },
+  {
+    "num": 25,
+    "topic": "ethics",
+    "prompt": "Three organizations would like to state that they comply with the GIPS standards. Which of them is allowed to make such a claim?",
+    "choices": [
+      "A public pension fund that manages assets for its beneficiaries and meets all applicable requirements of the GIPS standards for asset owners",
+      "A software vendor whose performance-measurement system calculates returns in line with the GIPS methodology",
+      "An individual portfolio manager who has applied every GIPS requirement to all the accounts she manages"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : seules les firmes de gestion et, depuis les GIPS 2020, les asset owners comme un fonds de pension peuvent se déclarer conformes, à condition de respecter toutes les exigences applicables. Un éditeur de logiciel ou un consultant ne gère pas les actifs et ne peut pas revendiquer la conformité, même si son outil calcule les rendements selon la méthode GIPS. Le piège du troisième choix est que la conformité se juge à l'échelle de la firme entière, jamais pour une personne."
+  },
+  {
+    "num": 26,
+    "topic": "ethics",
+    "prompt": "Ines Romero, CFA, was one of four portfolio managers on the team that ran a large-cap equity strategy at her previous firm. She has now launched her own advisory firm. Her marketing brochure presents the strategy's full eight-year record as 'my track record', without naming the previous firm or mentioning the other team members. The brochure ends with the warning that past performance does not guarantee future results. Which statement is most accurate?",
+    "choices": [
+      "The brochure complies with the Standards, because it warns that past performance does not guarantee future results",
+      "The brochure violates the Standards only because a new firm may never show performance achieved before it was founded",
+      "The brochure violates the Standards, because Romero overstates her role and does not disclose that the record was achieved by a team at another firm"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la brochure attribue à Romero seule les résultats d'une équipe de quatre gérants et ne dit pas qu'ils ont été obtenus dans une autre firme, ce qui est une présentation trompeuse (Standards I(C) et III(D)). Elle pourrait montrer cet historique en précisant où il a été obtenu et quel était son rôle exact. L'avertissement sur les performances passées ne corrige pas une attribution fausse : c'est le piège principal."
+  },
+  {
+    "num": 27,
+    "topic": "ethics",
+    "prompt": "Leila Karimi, CFA, buys a quantitative allocation model from a vendor and starts using it for all her clients' portfolios. She back-tests it only over a period of rising markets and never asks the vendor about its key assumptions. In her letter to clients, she describes the new approach as 'our proprietary low-risk strategy'. Which statement is most accurate?",
+    "choices": [
+      "Karimi has violated the Standards, both by not exercising diligence in understanding the model and by misdescribing the strategy to clients",
+      "Karimi has violated the Standards only by calling the strategy proprietary; her testing is sufficient because the vendor is reputable",
+      "Karimi has not violated the Standards, because members may rely on third-party models without reviewing their assumptions"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : avant d'utiliser le modèle quantitatif d'un tiers, Karimi doit comprendre ses hypothèses et le tester dans des marchés variés, y compris en baisse (Standard V(A)) ; un test limité aux marchés haussiers ne suffit pas. Le présenter comme une stratégie maison « à faible risque » trompe les clients sur sa nature et ses risques (Standards V(B) et I(C)). Le deuxième choix oublie que la réputation du fournisseur ne dispense pas de diligence."
+  },
+  {
+    "num": 28,
+    "topic": "quant",
+    "prompt": "A bank trains an algorithm on 50,000 past loans, each labeled as 'defaulted' or 'repaid', so that it can classify new loan applicants. This approach is best described as:",
+    "choices": [
+      "supervised learning, because the training data include the outcome to be predicted.",
+      "unsupervised learning, because the algorithm discovers by itself which borrower features matter.",
+      "unsupervised learning, because the output is a category rather than a number."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : l'apprentissage supervisé s'entraîne sur des données étiquetées, ici le défaut ou le remboursement de chaque prêt, pour prédire cette étiquette sur de nouveaux cas ; une sortie par catégorie en fait un problème de classification. L'apprentissage non supervisé travaille sur des données sans étiquette, par exemple pour regrouper des clients en segments. Une sortie qualitative ne rend pas l'apprentissage non supervisé : la classification est une forme d'apprentissage supervisé."
+  },
+  {
+    "num": 29,
+    "topic": "economics",
+    "prompt": "Which statement about a firm in monopolistic competition in long-run equilibrium is most accurate?",
+    "choices": [
+      "It earns positive economic profit because its product is differentiated.",
+      "It earns zero economic profit and produces less than the output at which average total cost is minimized.",
+      "It produces the output at which price equals marginal cost."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : en longue période, l'entrée libre fait disparaître le profit économique (le prix égale le coût moyen), mais la demande étant décroissante, ce point de tangence se situe avant le minimum du coût moyen, d'où une capacité excédentaire. La différenciation ne procure un profit économique qu'à court terme, avant l'arrivée de concurrents. Le prix reste supérieur au coût marginal, contrairement à la concurrence parfaite."
+  },
+  {
+    "num": 30,
+    "topic": "fsa",
+    "prompt": "At the start of the year, after a technology review, a company revises the remaining useful life of its machinery from 8 years to 5 years. Under IFRS, this change is most likely:",
+    "choices": [
+      "applied retrospectively by restating prior-period financial statements.",
+      "treated as a prior-period error and corrected through opening retained earnings.",
+      "applied prospectively to the current and future periods."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : réviser une durée d'utilité est un changement d'estimation comptable, appliqué de façon prospective à l'exercice en cours et aux suivants, sans retraiter le passé. Le retraitement rétrospectif concerne les changements de méthode comptable. La correction par les bénéfices non distribués d'ouverture vise les erreurs, or une information technique nouvelle n'est pas une erreur."
+  },
+  {
+    "num": 31,
+    "topic": "fsa",
+    "prompt": "A company acquires 100% of Target for $90 million in cash. Target's identifiable assets have a book value of $70 million and a fair value of $85 million; its liabilities have a book and fair value of $25 million. Goodwill recognized is closest to:",
+    "choices": [
+      "$5 million.",
+      "$30 million.",
+      "$45 million."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le goodwill est le prix payé moins la juste valeur des actifs nets identifiables : 90 − (85 − 25) = 90 − 60 = 30 millions $. Le choix de 45 millions $ utilise la valeur comptable des actifs (70 − 25 = 45) au lieu de leur juste valeur. 5 millions $ oublie de retrancher les passifs repris."
+  },
+  {
+    "num": 32,
+    "topic": "fsa",
+    "prompt": "A company reports under US GAAP, so interest paid is already deducted in cash flow from operations (CFO). Free cash flow to equity is best calculated as:",
+    "choices": [
+      "CFO − fixed capital investment + net borrowing.",
+      "CFO + interest paid × (1 − tax rate) − fixed capital investment.",
+      "CFO − fixed capital investment − net borrowing."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le FCFE part du CFO, qui a déjà supporté les intérêts, retire l'investissement en capital fixe et ajoute l'emprunt net, car la dette nouvelle reste disponible pour les actionnaires : FCFE = CFO − FCInv + emprunt net. Rajouter les intérêts après impôt donne le FCFF, le flux destiné à tous les apporteurs de capitaux. Soustraire l'emprunt net inverse le signe, alors qu'un nouvel emprunt augmente le flux disponible pour l'actionnaire."
+  },
+  {
+    "num": 33,
+    "topic": "quant",
+    "prompt": "An analyst tests whether a fund's mean monthly alpha is zero at the 5% significance level and obtains a p-value of 0.03. Which statement is most accurate?",
+    "choices": [
+      "Using a 1% significance level with the same sample, she would not reject the null hypothesis, and the probability of a Type II error would be higher.",
+      "There is a 3% probability that the null hypothesis is true.",
+      "The power of the test is the probability of rejecting the null hypothesis when it is true."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : avec une p-value de 0,03, on rejette l'hypothèse nulle à 5 % mais pas à 1 % ; abaisser le seuil réduit le risque d'erreur de type I et, à taille d'échantillon égale, augmente celui d'erreur de type II. La p-value est la probabilité d'obtenir un résultat au moins aussi extrême si l'hypothèse nulle est vraie, pas la probabilité que l'hypothèse nulle soit vraie. La puissance est la probabilité de rejeter une hypothèse nulle fausse ; rejeter une hypothèse nulle vraie, c'est l'erreur de type I."
+  },
+  {
+    "num": 34,
+    "topic": "corporate",
+    "prompt": "According to Modigliani and Miller with corporate taxes but no costs of financial distress, as a company increases its use of debt:",
+    "choices": [
+      "its cost of equity rises and its WACC falls.",
+      "its cost of equity stays constant and its WACC falls.",
+      "its cost of equity rises and its WACC stays constant."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : avec impôts, le coût des fonds propres monte toujours avec le levier, mais moins vite (facteur 1 − t), et l'économie d'impôt sur les intérêts fait baisser le WACC et monter la valeur de l'entreprise, jusqu'à un optimum théorique à 100 % de dette. Un WACC constant correspond à la proposition sans impôts. Un coût des fonds propres constant contredit la proposition II, car les actionnaires portent davantage de risque financier."
+  },
+  {
+    "num": 35,
+    "topic": "fsa",
+    "prompt": "Under IFRS, which component of the periodic cost of a defined benefit pension plan is recognized in other comprehensive income rather than in profit or loss?",
+    "choices": [
+      "Current service cost.",
+      "Net interest expense on the net pension liability.",
+      "Remeasurements, such as actuarial losses."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : sous IFRS, le coût des services et l'intérêt net sur le passif net passent en résultat, tandis que les réévaluations (écarts actuariels, écart entre rendement réel et rendement implicite des actifs) vont en autres éléments du résultat global, sans recyclage ultérieur. L'intérêt net est le piège fréquent : c'est une charge du compte de résultat sous IFRS, pas un élément d'OCI."
+  },
+  {
+    "num": 36,
+    "topic": "fsa",
+    "prompt": "A company reporting under IFRS tests a machine for impairment: carrying amount $48 million, undiscounted expected cash flows $50 million, fair value less costs to sell $40 million, value in use $43 million. The impairment loss is closest to:",
+    "choices": [
+      "$0.",
+      "$5 million.",
+      "$8 million."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : sous IFRS, la valeur recouvrable est la plus élevée entre la juste valeur nette des coûts de sortie (40) et la valeur d'utilité (43), soit 43 millions $ ; la perte vaut 48 − 43 = 5 millions $. Le choix de 0 applique le test de recouvrabilité des US GAAP sur flux non actualisés (50 > 48), qui n'existe pas sous IFRS. 8 millions $ retient à tort la plus basse des deux valeurs."
+  },
+  {
+    "num": 37,
+    "topic": "quant",
+    "prompt": "A company's revenue has grown at a roughly constant percentage rate each year for 20 years. An analyst wants to regress revenue on time, measured in years. Which functional form is most appropriate?",
+    "choices": [
+      "Lin-log model: revenue = b0 + b1 × ln(time)",
+      "Log-lin model: ln(revenue) = b0 + b1 × time",
+      "Log-log model: ln(revenue) = b0 + b1 × ln(time)"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une croissance à taux constant rend le logarithme du chiffre d'affaires linéaire dans le temps, d'où le modèle log-lin, dont la pente s'interprète comme un taux de croissance relatif par an. Le modèle log-log sert à estimer une élasticité, c'est-à-dire une variation relative de Y pour une variation relative de X. Le modèle lin-log décrirait une variable qui augmente de moins en moins vite en valeur absolue."
+  },
+  {
+    "num": 38,
+    "topic": "fsa",
+    "prompt": "Over two years, a company's net profit margin stayed at 6% and its total asset turnover stayed at 1.5, yet its return on equity rose from 13.5% to 18.0%. The increase is most likely explained by:",
+    "choices": [
+      "higher financial leverage.",
+      "a lower interest burden.",
+      "improved operating efficiency."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le ROE vaut marge nette × rotation de l'actif × levier ; marge (6 %) et rotation (1,5) étant constantes, leur produit vaut 9 %, et le levier passe de 13,5 ÷ 9 = 1,5 à 18 ÷ 9 = 2,0. La hausse vient donc d'un endettement accru. Un fardeau d'intérêt plus léger ou une meilleure efficacité opérationnelle aurait modifié la marge nette ou la rotation, qui n'ont pas bougé."
+  },
+  {
+    "num": 39,
+    "topic": "economics",
+    "prompt": "Which of the following is most likely a lagging economic indicator?",
+    "choices": [
+      "Average weekly hours worked in manufacturing",
+      "Industrial production",
+      "Average duration of unemployment"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la durée moyenne du chômage continue de s'allonger après le creux de l'activité, car les entreprises réembauchent tardivement : c'est un indicateur retardé. Les heures hebdomadaires dans l'industrie sont un indicateur avancé, car on ajuste les heures avant d'embaucher ou de licencier. La production industrielle est un indicateur coïncident, qui évolue en même temps que le cycle."
+  },
+  {
+    "num": 40,
+    "topic": "fsa",
+    "prompt": "A company writes its inventory down to net realizable value. Compared with not recording the write-down, in that period its inventory turnover and debt-to-equity ratio will most likely be:",
+    "choices": [
+      "higher for both.",
+      "higher for turnover, lower for debt-to-equity.",
+      "lower for turnover, higher for debt-to-equity."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la dépréciation réduit le stock, dénominateur de la rotation, et augmente en général le coût des ventes, son numérateur : la rotation monte. La perte diminue les capitaux propres alors que la dette ne bouge pas, donc le ratio dette sur capitaux propres monte aussi. Le choix qui fait baisser ce ratio oublie que la perte passe en résultat et ampute les capitaux propres."
+  },
+  {
+    "num": 41,
+    "topic": "corporate",
+    "prompt": "A utility builds a power plant that can switch between natural gas and fuel oil, depending on which fuel is cheaper. In capital allocation, this feature is best described as a(n):",
+    "choices": [
+      "timing option.",
+      "abandonment option.",
+      "flexibility option."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : pouvoir changer d'intrant selon les prix est une option de flexibilité (flexibilité de production), qui ajoute de la valeur au projet au-delà de la VAN classique. Une option de calendrier permet de retarder l'investissement pour attendre plus d'information. Une option d'abandon permet d'arrêter le projet et d'en récupérer la valeur de revente si les flux déçoivent."
+  },
+  {
+    "num": 42,
+    "topic": "economics",
+    "prompt": "Short-term interest rates are close to zero, and households and banks prefer to hold cash rather than spend or lend it. In this situation, a further increase in the money supply is most likely to:",
+    "choices": [
+      "have little effect on spending, which is why central banks may turn to quantitative easing.",
+      "push interest rates sharply negative and boost bank lending.",
+      "raise inflation immediately in proportion to the increase in money."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : c'est une trappe à liquidité : quand les taux sont au plancher et que la demande de monnaie devient très forte, la monnaie créée en plus est thésaurisée et ne relance ni le crédit ni la dépense. Pour contourner cette limite, la banque centrale peut acheter des titres à grande échelle (assouplissement quantitatif). Le troisième choix applique mécaniquement la théorie quantitative, alors que la vitesse de circulation de la monnaie s'effondre."
+  },
+  {
+    "num": 43,
+    "topic": "corporate",
+    "prompt": "A company plans to sharply increase its leverage to fund a large share buyback. Which stakeholder group is most likely to support the plan?",
+    "choices": [
+      "Shareholders, because higher leverage can raise the expected return on equity while their losses remain limited to their investment",
+      "Existing bondholders, because the larger amount of debt outstanding increases the value of their claims",
+      "Key suppliers, because a more leveraged customer is less likely to delay its payments"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le levier augmente le rendement attendu des fonds propres, et la responsabilité limitée plafonne la perte des actionnaires, qui gardent le gain et laissent une partie du risque de défaut aux créanciers. Les obligataires existants y perdent : plus de dette sans clause protectrice signifie plus de risque de défaut et une baisse du prix de leurs titres. Les fournisseurs craignent eux aussi la détresse financière d'un client plus endetté."
+  },
+  {
+    "num": 44,
+    "topic": "fsa",
+    "prompt": "An online platform sells hotel stays for $400 each. It never controls the rooms, does not set prices, keeps a $60 commission and passes $340 to the hotel. Per stay, the platform should most likely report revenue of:",
+    "choices": [
+      "$60.",
+      "$340.",
+      "$400."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la plateforme ne contrôle jamais le service avant son transfert au client, elle agit donc comme mandataire (agent) et ne comptabilise que sa commission nette, soit 60 $. Le montant brut de 400 $ ne serait retenu que si elle était le principal, avec le contrôle du service et la fixation du prix. 340 $ est la part reversée à l'hôtel, qui n'est pas un revenu de la plateforme."
+  },
+  {
+    "num": 45,
+    "topic": "fsa",
+    "prompt": "A lessee reporting under US GAAP classifies a lease as an operating lease. Compared with classifying it as a finance lease, the operating lease will most likely result in:",
+    "choices": [
+      "no lease liability on the balance sheet.",
+      "a single straight-line lease expense and lower cash flow from operations.",
+      "separate depreciation and interest expense in the income statement."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : sous US GAAP, une location simple figure aussi au bilan (droit d'utilisation et dette locative), mais elle donne une seule charge de loyer linéaire et la totalité du paiement passe en flux d'exploitation. En location-financement, la part de principal va en flux de financement, ce qui laisse un CFO plus élevé, et la charge se divise en amortissement et intérêts. Croire que la dette n'est pas comptabilisée renvoie aux règles d'avant ASC 842."
+  },
+  {
+    "num": 46,
+    "topic": "economics",
+    "prompt": "The spot exchange rate is 1.3640 CAD/USD, and the 6-month forward points are quoted as −45.6. The 6-month forward rate in CAD/USD is closest to:",
+    "choices": [
+      "1.3686",
+      "1.3184",
+      "1.3594"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : pour une cotation à quatre décimales, les points se divisent par 10 000 puis s'ajoutent au spot avec leur signe : 1,3640 + (−45,6 ÷ 10 000) = 1,3640 − 0,00456 = 1,3594. 1,3686 ajoute les points en ignorant leur signe négatif. 1,3184 divise les points par 1 000 au lieu de 10 000."
+  },
+  {
+    "num": 47,
+    "topic": "economics",
+    "prompt": "A country's trend real GDP growth is estimated at 1.8%, and its central bank's inflation target is 2.0%. The policy rate is currently 3.0%. The stance of monetary policy is best described as:",
+    "choices": [
+      "contractionary, because the policy rate exceeds the inflation target.",
+      "expansionary, because the policy rate is below the neutral rate of 3.8%.",
+      "neutral, because the real policy rate is positive."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le taux neutre s'estime comme la croissance tendancielle plus la cible d'inflation, soit 1,8 % + 2,0 % = 3,8 %. Un taux directeur de 3,0 %, inférieur au taux neutre, est donc accommodant (expansionniste). Comparer le taux directeur à la seule cible d'inflation oublie la composante de croissance réelle du taux neutre."
+  },
+  {
+    "num": 48,
+    "topic": "economics",
+    "prompt": "Which condition is least likely to help the members of an oligopoly sustain a collusive agreement?",
+    "choices": [
+      "A large number of firms with very different cost structures",
+      "Products that are close substitutes for one another",
+      "A credible threat of retaliation against firms that cheat"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la collusion tient mieux avec peu d'entreprises aux coûts proches, des produits similaires et une menace crédible de représailles contre les tricheurs ; de nombreuses entreprises aux coûts très différents s'accordent mal sur un prix et surveillent mal les écarts. Sans sanction, l'équilibre de Nash pousse chacun à tricher, d'où le rôle de la menace de représailles. Des produits proches facilitent l'accord, car un prix commun est plus simple à fixer et à contrôler."
+  },
+  {
+    "num": 49,
+    "topic": "quant",
+    "prompt": "A portfolio is invested 60% in Fund X (standard deviation 20%) and 40% in Fund Y (standard deviation 10%). The correlation between the two funds' returns is 0.25. The portfolio's standard deviation is closest to:",
+    "choices": [
+      "13.6%",
+      "16.0%",
+      "12.6%"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la variance du portefeuille vaut σp² = 0,6² × 0,20² + 0,4² × 0,10² + 2 × 0,6 × 0,4 × 0,25 × 0,20 × 0,10 = 0,0144 + 0,0016 + 0,0024 = 0,0184, soit σp = √0,0184 = 13,6 %. 16,0 % est la moyenne pondérée des écarts-types, qui ne vaut que pour une corrélation de +1. 12,6 % oublie le terme de covariance, comme si la corrélation était nulle."
+  },
+  {
+    "num": 50,
+    "topic": "corporate",
+    "prompt": "A company sells printers at a price close to cost and earns most of its profit on the proprietary ink cartridges that customers must buy repeatedly. This pricing approach is best described as:",
+    "choices": [
+      "a freemium model.",
+      "a razors-and-blades model.",
+      "a bundling model."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le modèle « rasoir et lames » vend l'équipement à bas prix pour attacher le client et se rémunère sur les consommables achetés de façon répétée, ici les cartouches d'encre. Le freemium offre gratuitement une version de base et fait payer les fonctions avancées. Le bundling vend plusieurs produits ensemble à un prix global, ce que le cas ne décrit pas."
+  },
+  {
+    "num": 51,
+    "topic": "economics",
+    "prompt": "A firm in a perfectly competitive market finds that the market price is below its average total cost but above its average variable cost. The firm should most likely:",
+    "choices": [
+      "shut down immediately, because it is incurring an economic loss.",
+      "continue operating in both the short run and the long run, because its revenue covers its variable costs.",
+      "continue operating in the short run, but exit the market in the long run if the price stays at this level."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : tant que le prix dépasse le coût variable moyen, produire couvre les coûts variables et une partie des coûts fixes, ce qui réduit la perte par rapport à un arrêt où l'on paierait tous les coûts fixes. En longue période, tous les coûts deviennent variables : un prix durablement inférieur au coût total moyen conduit à quitter le marché. Fermer tout de suite serait la règle si le prix passait sous le coût variable moyen, pas sous le coût total moyen."
+  },
+  {
+    "num": 52,
+    "topic": "fsa",
+    "prompt": "A company reports cost of goods sold of $500 million. During the year, inventory increased by $30 million and accounts payable decreased by $20 million. Cash paid to suppliers is closest to:",
+    "choices": [
+      "$490 million.",
+      "$510 million.",
+      "$550 million."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les achats valent coût des ventes + hausse des stocks = 500 + 30 = 530 millions $ ; la baisse des dettes fournisseurs signifie qu'on a payé plus qu'on n'a acheté, d'où 530 + 20 = 550 millions $. Le choix de 510 millions $ traite la baisse des dettes fournisseurs comme une ressource de trésorerie, avec le mauvais signe."
+  },
+  {
+    "num": 53,
+    "topic": "quant",
+    "prompt": "An analyst wants a 200-bond sample whose mix of credit ratings and maturity buckets matches that of a 5,000-bond index. She divides the index into rating-and-maturity groups and randomly selects bonds from each group in proportion to its weight in the index. This method is best described as:",
+    "choices": [
+      "cluster sampling.",
+      "stratified random sampling.",
+      "systematic sampling."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : elle découpe la population en sous-groupes (strates) selon la note et la maturité, puis tire au hasard dans chaque strate au prorata de son poids, ce qui définit l'échantillonnage aléatoire stratifié. L'échantillonnage par grappes tirerait au hasard des groupes entiers, sans chercher à respecter le poids de chaque groupe. L'échantillonnage systématique prendrait une obligation toutes les k de la liste."
+  },
+  {
+    "num": 54,
+    "topic": "fsa",
+    "prompt": "After a company announces a major contract that clearly lifts its growth outlook, an analyst raises her revenue forecast only slightly, keeping it close to her previous estimate. This behavior best illustrates:",
+    "choices": [
+      "overconfidence bias.",
+      "representativeness bias.",
+      "conservatism bias."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le biais de conservatisme consiste à rester ancré sur sa prévision initiale et à intégrer trop peu une information nouvelle, comme ce contrat. Le biais de représentativité pousse plutôt à juger une situation d'après un cas typique ou une catégorie familière. L'excès de confiance se traduit par des fourchettes de prévision trop étroites, pas par une révision trop timide."
+  },
+  {
+    "num": 55,
+    "topic": "economics",
+    "prompt": "A central bank raises its policy rate by 50 basis points. Which effect is least likely to follow through the monetary transmission mechanism?",
+    "choices": [
+      "The domestic currency tends to appreciate, which reduces net exports",
+      "Banks raise the interest rates they charge on new loans",
+      "Prices of assets such as equities and property tend to rise"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : une hausse du taux directeur relève les taux de marché et le taux d'actualisation des flux futurs, ce qui fait plutôt baisser les prix des actions et de l'immobilier. Les deux autres effets font bien partie de la transmission : les banques répercutent la hausse sur leurs taux de crédit, et le rendement plus élevé attire des capitaux qui apprécient la monnaie et pèsent sur les exportations nettes."
+  },
+  {
+    "num": 56,
+    "topic": "corporate",
+    "prompt": "The board of a listed retailer approves a plan to pay suppliers faster and fund employee training, even though the plan lowers next year's earnings per share. The board explains that the company must balance the interests of all the groups affected by its activities. This approach is most consistent with:",
+    "choices": [
+      "shareholder theory, under which the company's primary goal is to maximize shareholder value.",
+      "an agency conflict, in which managers put their own interests ahead of shareholders' interests.",
+      "stakeholder theory, under which the company considers the interests of all groups that have an interest in it."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la théorie des parties prenantes demande de tenir compte des intérêts de tous les groupes concernés (fournisseurs, salariés, clients, collectivités), et pas des seuls actionnaires, ce qui correspond à la justification du conseil. La théorie de l'actionnaire fixe comme objectif premier la maximisation de la valeur actionnariale et ne justifierait pas le plan par un équilibre entre groupes. Rien n'indique que les dirigeants servent leur intérêt personnel, donc il ne s'agit pas d'un conflit d'agence."
+  },
+  {
+    "num": 57,
+    "topic": "economics",
+    "prompt": "A domestic carmaker moves part of its assembly to a lower-cost country and starts selling cars to that country's consumers. Which statement about this decision is most accurate?",
+    "choices": [
+      "It reflects the profit and market-access motivations for globalization, but makes the carmaker more exposed to supply chain disruptions if relations between the two countries deteriorate.",
+      "It reduces the carmaker's exposure to geopolitical risk, because its production is spread across two countries.",
+      "Its benefits are likely to be shared evenly between the carmaker's home-country workers and its foreign workers."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : réduire ses coûts et accéder à de nouveaux consommateurs sont deux moteurs classiques de la mondialisation, mais l'interdépendance qui en résulte expose la chaîne d'approvisionnement aux tensions entre pays (droits de douane, sanctions, blocages). Répartir la production sur deux pays n'efface pas ce risque, il en crée un nouveau. La mondialisation répartit ses gains de façon inégale, et les ouvriers du pays d'origine peuvent y perdre."
+  },
+  {
+    "num": 58,
+    "topic": "economics",
+    "prompt": "Under a currency board arrangement, the monetary authority most likely:",
+    "choices": [
+      "can act as a full lender of last resort to domestic banks in a crisis.",
+      "issues domestic currency only when it is fully backed by holdings of the anchor currency.",
+      "lets the exchange rate float but intervenes to smooth large movements."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une caisse d'émission s'engage par la loi à échanger sa monnaie à un taux fixe contre la devise d'ancrage et n'émet de monnaie nationale qu'en contrepartie de réserves dans cette devise. Elle renonce ainsi à une politique monétaire discrétionnaire et ne peut pas jouer pleinement le rôle de prêteur en dernier ressort. Un flottement avec interventions ponctuelles décrit un flottement dirigé, pas une caisse d'émission."
+  },
+  {
+    "num": 59,
+    "topic": "corporate",
+    "prompt": "A company finances all of its seasonal current assets and part of its permanent current assets with short-term borrowing. Compared with a conservative approach, this working capital financing approach most likely has:",
+    "choices": [
+      "higher financing costs and lower refinancing risk.",
+      "lower financing costs but higher refinancing and liquidity risk.",
+      "lower financing costs and lower refinancing risk."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : financer une partie des actifs courants permanents par de la dette à court terme est une approche agressive : le coût est en général plus faible, mais il faut refinancer souvent, ce qui expose à une hausse des taux ou à un refus des prêteurs. L'approche prudente finance les besoins permanents, et une partie des besoins saisonniers, par des ressources longues, plus chères mais plus sûres. Le troisième choix prête à l'approche agressive un risque de refinancement plus faible, ce qui confond les deux approches."
+  },
+  {
+    "num": 60,
+    "topic": "economics",
+    "prompt": "An analyst classifies the geopolitical risks facing a portfolio. The steady rise of state-sponsored cyberattacks on financial infrastructure, a known risk that has been building and spreading for years, is best described as:",
+    "choices": [
+      "event risk.",
+      "exogenous risk.",
+      "thematic risk."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un risque thématique est un risque connu qui s'étend et évolue dans la durée, comme les cyberattaques ou le changement climatique. Le risque d'événement tourne autour de dates connues à l'avance, par exemple une élection ou l'entrée en vigueur d'une loi. Le risque exogène survient de façon soudaine et imprévue, comme un soulèvement ou une catastrophe naturelle."
+  },
+  {
+    "num": 61,
+    "topic": "quant",
+    "prompt": "An investor buys €1,200 of a fund at the start of each quarter for three quarters. The fund's unit prices on the three purchase dates are €20, €25, and €40. The investor's average cost per unit is closest to:",
+    "choices": [
+      "€28.33",
+      "€27.14",
+      "€26.09"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : avec un montant investi constant à chaque date, le coût moyen par part est la moyenne harmonique des prix : 3 ÷ (1/20 + 1/25 + 1/40) = 3 ÷ 0,115 = 26,09 €. On le vérifie : 3 600 € achètent 60 + 48 + 30 = 138 parts, soit 26,09 € la part. 28,33 € est la moyenne arithmétique, qui oublie qu'on achète plus de parts quand le prix est bas, et 27,14 € la moyenne géométrique."
+  },
+  {
+    "num": 62,
+    "topic": "quant",
+    "prompt": "An analyst models next year's return on a stock as follows: 12% with probability 0.30, 6% with probability 0.50, and −5% with probability 0.20. The standard deviation of the return is closest to:",
+    "choices": [
+      "7.0%",
+      "5.9%",
+      "8.6%"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : l'espérance vaut 0,30 × 12 + 0,50 × 6 + 0,20 × (−5) = 5,6 %. La variance pondère les écarts au carré par les probabilités : 0,30 × 6,4² + 0,50 × 0,4² + 0,20 × 10,6² = 12,288 + 0,08 + 22,472 = 34,84, d'où un écart-type de √34,84 = 5,9 %. 7,0 % et 8,6 % traitent les trois scénarios comme équiprobables (variance de population ou d'échantillon), ce qui ignore les probabilités données."
+  },
+  {
+    "num": 63,
+    "topic": "corporate",
+    "prompt": "Four investors set up a business in which one partner manages operations and has unlimited personal liability, while the other three contribute capital, take no part in management, and can lose no more than their investment. The business's profits are taxed only on the partners' personal tax returns. This business structure is best described as a:",
+    "choices": [
+      "limited partnership.",
+      "general partnership.",
+      "corporation."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la société en commandite (limited partnership) réunit au moins un commandité (general partner) qui gère et répond des dettes sur ses biens personnels, et des commanditaires dont la perte est limitée à leur apport ; les bénéfices sont imposés chez les associés (pass-through). Dans une société en nom collectif (general partnership), tous les associés ont une responsabilité illimitée. Une société par actions donnerait une responsabilité limitée à tous, mais avec une double imposition des bénéfices."
+  },
+  {
+    "num": 64,
+    "topic": "fsa",
+    "prompt": "A company has net income of $12 million, no preferred stock and 10 million common shares outstanding all year. It also has 1 million options exercisable at $20; the average share price was $25. Diluted EPS is closest to:",
+    "choices": [
+      "$1.09.",
+      "$1.18.",
+      "$1.20."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : selon la méthode du rachat d'actions (treasury stock method), l'exercice rapporte 1 million × 20 $ = 20 millions $, qui rachètent 20 ÷ 25 = 0,8 million d'actions au cours moyen. Il ne reste que 0,2 million d'actions nouvelles nettes, et l'EPS dilué vaut 12 ÷ 10,2 = 1,18 $. Ajouter le million d'options en entier (12 ÷ 11 = 1,09 $) oublie le rachat financé par le produit de l'exercice, et 1,20 $ est l'EPS de base."
+  },
+  {
+    "num": 65,
+    "topic": "fsa",
+    "prompt": "A company has days of inventory on hand of 65, days of sales outstanding of 40 and days of payables of 50. Its cash conversion cycle is closest to:",
+    "choices": [
+      "15 days.",
+      "25 days.",
+      "55 days."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : cycle de conversion de trésorerie = jours de stock + DSO − jours fournisseurs = 65 + 40 − 50 = 55 jours. Le crédit fournisseurs finance une partie du cycle et se soustrait, tandis que le délai d'encaissement des clients l'allonge et s'ajoute. 15 jours oublie le délai d'encaissement, et 25 jours (40 + 50 − 65) inverse le rôle des stocks et des dettes fournisseurs."
+  },
+  {
+    "num": 66,
+    "topic": "quant",
+    "prompt": "An analyst wants to estimate the distribution of a portfolio's one-year return from 15 years of observed monthly returns, without assuming any particular probability distribution. Which method is most appropriate?",
+    "choices": [
+      "Monte Carlo simulation with monthly returns drawn from a normal distribution fitted to the sample mean and standard deviation",
+      "Monte Carlo simulation, because it relies only on the observed monthly returns and needs no distributional assumption",
+      "Bootstrapping, which repeatedly draws observed monthly returns at random, with replacement, to build many simulated years"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le bootstrap rééchantillonne avec remise les rendements réellement observés, l'échantillon tenant lieu de population, sans hypothèse de loi. La simulation de Monte-Carlo exige au contraire de choisir une loi de probabilité et ses paramètres, ici une loi normale, ce qui contredit la consigne. Le deuxième choix prête à Monte-Carlo une propriété qui est celle du bootstrap."
+  },
+  {
+    "num": 67,
+    "topic": "economics",
+    "prompt": "Which fiscal policy tool can most likely be adjusted, and influence spending behavior, most quickly?",
+    "choices": [
+      "A change in indirect taxes, such as excise or sales taxes",
+      "A new public infrastructure program",
+      "A reform of social security transfer payments"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : les impôts indirects (TVA, accises) peuvent être modifiés presque immédiatement après leur annonce et agissent tout de suite sur les dépenses, pour un coût de collecte faible. Les dépenses d'investissement public, comme un programme d'infrastructures, demandent planification et appels d'offres et sont notoirement lentes à ajuster. Une réforme des transferts sociaux passe par un processus législatif long avant de toucher les ménages."
+  },
+  {
+    "num": 68,
+    "topic": "economics",
+    "prompt": "Countries X, Y, and Z remove all tariffs on trade among themselves, adopt a common tariff on imports from non-members, and allow workers and capital to move freely among the three countries. They keep separate currencies and separate economic policies. This arrangement is best described as a:",
+    "choices": [
+      "customs union.",
+      "common market.",
+      "economic union."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : un marché commun réunit le libre-échange entre membres, une politique commerciale commune envers les pays tiers et la libre circulation des facteurs de production (travail et capital). Une union douanière s'arrête au tarif extérieur commun, sans libre circulation des travailleurs et des capitaux. Une union économique ajoute des institutions communes et une coordination des politiques économiques, absentes ici."
+  },
+  {
+    "num": 69,
+    "topic": "fsa",
+    "prompt": "A company accrues $5 million of warranty expense in its financial statements, but tax rules allow the deduction only when repairs are paid, next year. With a 25% tax rate, this difference most likely creates a:",
+    "choices": [
+      "deferred tax asset of $1.25 million.",
+      "deferred tax liability of $1.25 million.",
+      "permanent difference with no deferred tax."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la charge est constatée en comptabilité avant d'être déductible fiscalement, donc le résultat imposable de l'année dépasse le résultat comptable : l'impôt est payé d'avance et un actif d'impôt différé apparaît, de 5 × 25 % = 1,25 million $. Un passif d'impôt différé naîtrait au contraire d'une charge déduite fiscalement avant d'être comptabilisée, comme un amortissement fiscal accéléré. La différence s'inversera l'an prochain, elle n'est donc pas permanente."
+  },
+  {
+    "num": 70,
+    "topic": "corporate",
+    "prompt": "A company's founder owns 15% of its equity but controls 70% of the votes through high-voting shares. The founder also chairs the board, and most directors are former employees. The governance risk most evident is a conflict between:",
+    "choices": [
+      "shareholders and creditors.",
+      "the board and the company's customers.",
+      "controlling shareholders and minority shareholders."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : grâce aux actions à droits de vote multiples, le fondateur contrôle 70 % des voix pour 15 % du capital et peut imposer des décisions qui le servent au détriment des minoritaires ; un conseil peu indépendant, qu'il préside, affaiblit encore le contrôle. Le conflit entre actionnaires et créanciers porte sur le niveau de risque et d'endettement, ce que le cas ne décrit pas. Les clients ne sont pas en cause ici."
+  },
+  {
+    "num": 71,
+    "topic": "corporate",
+    "prompt": "A company's debt has a book value of €450 million and a market value of €400 million. Its equity has a book value of €300 million and a market value of €600 million. The pre-tax cost of debt is 6%, the cost of equity is 11%, and the marginal tax rate is 25%. The company's WACC is closest to:",
+    "choices": [
+      "8.4%",
+      "7.1%",
+      "9.0%"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : on pondère en valeur de marché, soit D/V = 400/1 000 = 40 % et E/V = 60 %, d'où WACC = 0,40 × 6 % × (1 − 0,25) + 0,60 × 11 % = 1,8 % + 6,6 % = 8,4 %. 7,1 % utilise les poids comptables (60 % de dette, 40 % de fonds propres). 9,0 % oublie l'économie d'impôt sur la dette."
+  },
+  {
+    "num": 72,
+    "topic": "fsa",
+    "prompt": "An auditor concludes that a company's financial statements contain a material misstatement, but its effect is confined to the valuation of one inventory line and is not pervasive. The auditor will most likely issue:",
+    "choices": [
+      "an adverse opinion.",
+      "a qualified opinion.",
+      "a disclaimer of opinion."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une anomalie significative mais non généralisée, limitée à un seul poste, conduit à une opinion avec réserve (qualified opinion), qui signale l'exception tout en validant le reste des états financiers. L'opinion défavorable (adverse) est réservée aux anomalies à la fois significatives et généralisées. L'impossibilité d'exprimer une opinion (disclaimer) vise le cas où l'auditeur n'a pas pu réunir assez d'éléments probants, ce qui n'est pas la situation décrite."
+  },
+  {
+    "num": 73,
+    "topic": "fsa",
+    "prompt": "Over three years, a company's revenue grew 8% per year while its days sales outstanding rose from 42 to 71 days. This pattern is most likely a warning sign of:",
+    "choices": [
+      "overly conservative estimates of bad debts.",
+      "premature or fictitious revenue recognition.",
+      "stretching payments to suppliers to inflate operating cash flow."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : des créances qui gonflent bien plus vite que les ventes (DSO de 42 à 71 jours) suggèrent des ventes enregistrées trop tôt ou sans encaissement réel, par exemple par du channel stuffing ou des délais de paiement allongés. Une provision prudente pour créances douteuses réduirait au contraire les créances nettes et le DSO. L'étirement des paiements aux fournisseurs se lirait dans les jours fournisseurs, pas dans le DSO."
+  },
+  {
+    "num": 74,
+    "topic": "quant",
+    "prompt": "A 3-year bond pays a 5% annual coupon and has a par value of 100. The 1-year, 2-year, and 3-year spot rates are 3%, 4%, and 5%. The bond's price is closest to:",
+    "choices": [
+      "100.00",
+      "102.78",
+      "100.18"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : chaque flux s'actualise à son propre taux spot : 5/1,03 + 5/1,04² + 105/1,05³ = 4,854 + 4,623 + 90,703 = 100,18. Actualiser les trois flux à 5 % donne exactement le pair, 100,00, ce qui oublie que les coupons des années 1 et 2 s'actualisent à des taux plus bas. 102,78 applique le taux moyen de 4 % à tous les flux."
+  },
+  {
+    "num": 75,
+    "topic": "quant",
+    "prompt": "A pension plan hires an external equity manager who has no control over the timing of contributions. The portfolio returned +8% in the first half of the year. The plan sponsor then made a large contribution, and the portfolio returned −12% in the second half. Which statement is most accurate?",
+    "choices": [
+      "The time-weighted return is the appropriate measure of the manager's skill, and it is higher than the money-weighted return for the year.",
+      "The money-weighted return is the appropriate measure of the manager's skill, because it reflects the amounts actually invested.",
+      "The time-weighted return is lower than the money-weighted return, because the contribution was invested during the weaker period."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le gérant ne décide pas des apports, on le juge donc sur le rendement pondéré par le temps, qui neutralise les flux : (1,08 × 0,88) − 1 = −4,96 %. Le rendement pondéré par les capitaux donne plus de poids au second semestre, où l'essentiel de l'argent était investi, donc il est inférieur à −4,96 %. Le troisième choix inverse le raisonnement : c'est justement parce que le gros apport a subi la baisse de 12 % que le rendement pondéré par les capitaux est le plus faible."
+  },
+  {
+    "num": 76,
+    "topic": "fsa",
+    "prompt": "Over the past year, a retailer's gross profit margin was unchanged while its net profit margin fell sharply. Which explanation is most consistent with this pattern?",
+    "choices": [
+      "Supplier prices rose faster than selling prices.",
+      "Interest expense increased after new borrowing.",
+      "The sales mix shifted toward lower-markup products."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la marge brute ne dépend que des ventes et du coût des ventes ; si elle reste stable alors que la marge nette chute, la cause se situe plus bas dans le compte de résultat, par exemple dans les charges d'intérêts d'une nouvelle dette. Une hausse des prix d'achat ou un mix de produits moins rémunérateur ferait baisser la marge brute elle-même, ce qui contredit l'énoncé."
+  },
+  {
+    "num": 77,
+    "topic": "quant",
+    "prompt": "An investor holds a €10 million portfolio financed with €6 million of equity and €4 million borrowed at 5%. The portfolio earns a total return of 9% for the year. Ignoring taxes and fees, the return on the investor's equity is closest to:",
+    "choices": [
+      "15.0%",
+      "11.7%",
+      "9.0%"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le rendement avec levier rapporte le gain net des intérêts aux seuls fonds propres : (9 % × 10 − 5 % × 4) ÷ 6 = (0,90 − 0,20) ÷ 6 = 11,7 %. Autre écriture : 9 % + (4/6) × (9 % − 5 %) = 11,7 %. 15,0 % oublie de retrancher les 0,20 million d'intérêts payés sur l'emprunt, et 9,0 % ignore le levier."
+  },
+  {
+    "num": 78,
+    "topic": "fsa",
+    "prompt": "Which of the following costs is most likely capitalized in inventory rather than expensed as incurred?",
+    "choices": [
+      "Abnormal amounts of wasted materials in production.",
+      "Storage costs for finished goods awaiting sale.",
+      "Freight-in to bring raw materials to the factory."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le transport à l'achat (freight-in) fait partie des coûts nécessaires pour amener le stock à son lieu et dans son état actuels, il est donc inscrit au stock. Les gaspillages anormaux sont passés en charges dès qu'ils sont engagés. Le stockage n'est capitalisé que s'il est nécessaire au processus de production, ce qui n'est pas le cas de produits finis en attente de vente."
+  },
+  {
+    "num": 79,
+    "topic": "quant",
+    "prompt": "The sample correlation between two funds' monthly returns over 27 months is 0.40. The critical t-value for a two-tailed test at the 5% level with 25 degrees of freedom is 2.060. For a test of whether the population correlation is zero, the test statistic and the conclusion are:",
+    "choices": [
+      "2.00; fail to reject the null hypothesis.",
+      "2.18; reject the null hypothesis.",
+      "2.38; reject the null hypothesis."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : t = r × √(n − 2) ÷ √(1 − r²) = 0,40 × √25 ÷ √0,84 = 2,00 ÷ 0,9165 = 2,18, supérieur à 2,060, donc on rejette l'hypothèse d'une corrélation nulle. 2,00 oublie de diviser par √(1 − r²) et mène à tort à ne pas rejeter. 2,38 divise par (1 − r²) sans prendre la racine."
+  },
+  {
+    "num": 80,
+    "topic": "quant",
+    "prompt": "An analyst regresses a stock's monthly excess return (Y) on the market's monthly excess return (X) and estimates Y = 0.2% + 1.3X. Which interpretation is most accurate?",
+    "choices": [
+      "The stock's predicted excess return is 1.3% in a month when the market's excess return is zero.",
+      "The market's excess return explains 1.3% of the variation in the stock's excess return.",
+      "A 1 percentage point increase in the market's excess return is associated with a 1.3 percentage point increase in the stock's predicted excess return."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la pente mesure la variation prévue de Y pour une hausse d'une unité de X, ici 1,3 point de rendement excédentaire de l'action par point de rendement excédentaire du marché. Quand X vaut zéro, la prévision est l'ordonnée à l'origine, 0,2 %, et non 1,3 %. La part de variation expliquée est le R², que la pente ne mesure pas."
+  },
+  {
+    "num": 81,
+    "topic": "fsa",
+    "prompt": "A company reporting under IFRS owns an office building that it leases to unrelated tenants and measures it with the fair value model for investment property. An increase in the building's fair value is:",
+    "choices": [
+      "recognized in profit or loss.",
+      "recognized in other comprehensive income as a revaluation surplus.",
+      "not recognized until the building is sold."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : pour un immeuble de placement évalué selon le modèle de la juste valeur, toutes les variations de juste valeur passent en résultat net, à la hausse comme à la baisse. L'écart de réévaluation en autres éléments du résultat global est propre au modèle de réévaluation des immobilisations corporelles, qui ne s'applique pas ici. Ne rien constater correspondrait au modèle du coût, que la société n'a pas choisi."
+  },
+  {
+    "num": 82,
+    "topic": "quant",
+    "prompt": "A fund's monthly returns over ten years have a mean of 0.6%, a median of 0.9%, and an excess kurtosis of 2.1. The return distribution is best described as:",
+    "choices": [
+      "negatively skewed, with fatter tails than the normal distribution.",
+      "positively skewed, with fatter tails than the normal distribution.",
+      "negatively skewed, with thinner tails than the normal distribution."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : une moyenne inférieure à la médiane signale une asymétrie négative, la moyenne étant tirée vers le bas par quelques fortes pertes. Un excès de kurtosis positif (2,1) caractérise une distribution leptokurtique, aux queues plus épaisses que la loi normale. Le troisième choix confond excès de kurtosis positif et négatif : seul un excès négatif donnerait des queues plus fines (distribution platykurtique)."
+  },
+  {
+    "num": 83,
+    "topic": "fsa",
+    "prompt": "Under the IFRS revaluation model, a building carried at $10 million is revalued to $8 million. An earlier upward revaluation of this building created a $3 million revaluation surplus that remains in equity. The $2 million decrease is:",
+    "choices": [
+      "recognized entirely in profit or loss.",
+      "recognized in other comprehensive income, reducing the revaluation surplus.",
+      "split between profit or loss and other comprehensive income."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une baisse qui annule une réévaluation antérieure passe d'abord en autres éléments du résultat global, en réduisant l'écart de réévaluation de cet actif, ici 3 millions $, ce qui suffit à absorber les 2 millions $. Seule la part qui dépasserait l'écart existant toucherait le résultat, d'où l'erreur du partage. Tout passer en résultat ignore l'écart de réévaluation déjà constitué."
+  },
+  {
+    "num": 84,
+    "topic": "fsa",
+    "prompt": "A US company using LIFO reports cost of goods sold of $820 million. Its LIFO reserve rose from $95 million to $120 million during the year. Cost of goods sold on a FIFO basis is closest to:",
+    "choices": [
+      "$795 million.",
+      "$845 million.",
+      "$940 million."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : on passe du coût des ventes LIFO au FIFO en retranchant la variation de la réserve LIFO : 820 − (120 − 95) = 795 millions $, car en période de hausse des prix le FIFO sort les stocks les plus anciens et les moins chers. Ajouter la variation (845 millions $) inverse le sens de l'ajustement. 940 millions $ ajoute en plus le solde total de la réserve au lieu de sa variation."
+  },
+  {
+    "num": 85,
+    "topic": "corporate",
+    "prompt": "Which statement comparing the financial claims of a company's lenders and its shareholders is most accurate?",
+    "choices": [
+      "Shareholders hold a residual claim with unlimited upside, so they may favor riskier projects than lenders would.",
+      "Lenders benefit more than shareholders when a risky investment turns out to be very successful.",
+      "Shareholders' claims rank ahead of lenders' claims if the company is liquidated."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : les prêteurs ont un droit fixe (intérêts et principal) et prioritaire dont le gain est plafonné, tandis que les actionnaires détiennent un droit résiduel au gain illimité et à la perte limitée à leur mise. Ce profil pousse les actionnaires à accepter plus de risque que les prêteurs. En cas de liquidation, les prêteurs passent avant les actionnaires, et ils ne profitent pas du succès d'un projet risqué au-delà de ce qui leur est dû."
+  },
+  {
+    "num": 86,
+    "topic": "corporate",
+    "prompt": "An analyst is estimating a company's WACC to evaluate a new project. Which approach is most appropriate?",
+    "choices": [
+      "Use the coupon rate on the company's outstanding bonds as the pre-tax cost of debt",
+      "Use the yield to maturity currently available on the company's outstanding bonds as the pre-tax cost of debt",
+      "Weight debt and equity by their book values from the latest balance sheet"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le coût de la dette doit refléter le taux auquel l'entreprise emprunterait aujourd'hui, donc le rendement actuariel actuel de sa dette en circulation. Le coupon n'est qu'un taux historique, fixé à l'émission, sans lien avec le coût de la dette nouvelle. Les poids doivent suivre la structure cible en valeur de marché, pas les valeurs comptables."
+  },
+  {
+    "num": 87,
+    "topic": "fsa",
+    "prompt": "Which of the following transactions would most likely decrease a company's debt-to-equity ratio?",
+    "choices": [
+      "Repurchasing common shares with cash.",
+      "Recognizing a new right-of-use lease liability.",
+      "Converting convertible bonds into common shares."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la conversion d'obligations en actions réduit la dette et augmente les capitaux propres du même montant, ce qui fait baisser le ratio par ses deux termes. Un rachat d'actions payé en trésorerie diminue les capitaux propres sans toucher à la dette, donc le ratio monte. Une nouvelle dette locative augmente la dette, et le ratio avec."
+  },
+  {
+    "num": 88,
+    "topic": "corporate",
+    "prompt": "A company spent €50,000 last year on a feasibility study for a new product line. The project requires an initial investment of €1,200,000 today and is expected to generate after-tax cash flows of €400,000, €500,000, and €600,000 at the end of years 1, 2, and 3. At a 9% cost of capital, the project's NPV is closest to:",
+    "choices": [
+      "€1,123",
+      "€51,123",
+      "€300,000"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : l'étude de faisabilité est un coût irrécupérable, payé quel que soit le choix, donc on l'exclut. VAN = −1 200 000 + 400 000/1,09 + 500 000/1,09² + 600 000/1,09³ = −1 200 000 + 366 972 + 420 840 + 463 310 ≈ 51 123 €. 1 123 € retranche à tort les 50 000 € de l'étude, et 300 000 € oublie d'actualiser les flux."
+  },
+  {
+    "num": 89,
+    "topic": "economics",
+    "prompt": "Data released in May show that an economy entered a recession in the first quarter. Parliament passes an infrastructure spending bill in November, and the spending starts to affect output the following year. The period from May to November is best described as the:",
+    "choices": [
+      "recognition lag.",
+      "action lag.",
+      "impact lag."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le délai d'action sépare le moment où le problème est reconnu (mai) de la décision de politique budgétaire (vote de novembre). Le délai de reconnaissance est le temps qu'il a fallu pour constater la récession, du premier trimestre à mai. Le délai d'impact vient ensuite, entre la décision et l'effet sur la production l'année suivante."
+  },
+  {
+    "num": 90,
+    "topic": "corporate",
+    "prompt": "According to the pecking order theory, which financing decision would investors most likely interpret as a sign that managers believe the company's shares are overvalued?",
+    "choices": [
+      "Funding a new project with retained earnings",
+      "Issuing straight debt",
+      "Issuing new common shares"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : selon la théorie du financement hiérarchique, les dirigeants, mieux informés, préfèrent l'autofinancement, puis la dette, et n'émettent des actions qu'en dernier recours, surtout quand ils jugent le cours trop élevé ; une émission d'actions est donc lue comme un signal négatif. L'autofinancement n'envoie aucun signal de ce type. Émettre de la dette signale plutôt la confiance des dirigeants dans leur capacité à payer les intérêts."
+  }
+]

@@ -1,0 +1,1082 @@
+[
+  {
+    "num": 1,
+    "topic": "fixed_income",
+    "prompt": "A bond with a 6% annual coupon and par value of 100 settles 73 days into a 365-day coupon period. Its full price is 101.80. Using actual/actual, the flat price is closest to:",
+    "choices": [
+      "101.20",
+      "103.00",
+      "100.60"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l'intérêt couru vaut 6 × 73/365 = 6 × 0,20 = 1,20, et le prix flat est le prix plein moins l'intérêt couru : 101,80 − 1,20 = 100,60. Ajouter l'intérêt couru (103,00) inverse la relation, car c'est le prix plein qui l'inclut. 101,20 vient d'un demi-coupon, alors que le coupon est annuel."
+  },
+  {
+    "num": 2,
+    "topic": "equity",
+    "prompt": "An asset-based valuation approach is most appropriate for a company that:",
+    "choices": [
+      "derives most of its value from brands, patents and human capital.",
+      "is a rapidly growing technology firm with few tangible assets.",
+      "holds mainly marketable securities and other assets with readily observable market values."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l'approche par l'actif (valeur des actifs moins valeur des passifs) fonctionne bien quand les actifs sont surtout tangibles ou cotés, donc faciles à évaluer au prix du marché, comme un portefeuille de titres négociables, ou en cas de liquidation. Elle convient mal aux entreprises dont la valeur repose sur des actifs incorporels ou sur la croissance future, que le bilan ne capte pas."
+  },
+  {
+    "num": 3,
+    "topic": "fixed_income",
+    "prompt": "An investor with a 7-year investment horizon buys a bond with a Macaulay duration of 5.2. If yields rise right after the purchase and stay at that level, the investor's realized return will most likely be:",
+    "choices": [
+      "higher than the yield at purchase.",
+      "lower than the yield at purchase.",
+      "equal to the yield at purchase."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : l'écart de duration vaut 5,2 − 7 = −1,8 ; il est négatif, donc le risque de réinvestissement domine le risque de prix. Une hausse des taux fait plus gagner sur le réinvestissement des coupons qu'elle ne fait perdre sur le prix de revente, et le rendement réalisé dépasse le rendement initial. Le piège est de raisonner comme pour un horizon plus court que la duration, où la perte de prix l'emporte."
+  },
+  {
+    "num": 4,
+    "topic": "derivatives",
+    "prompt": "Viewing a firm's securities as options on its assets, the firm's equity holders are best described as holding:",
+    "choices": [
+      "a put option on the firm's assets with an exercise price equal to the face value of debt.",
+      "a call option on the firm's assets with an exercise price equal to the face value of debt.",
+      "a risk-free bond plus a short put option on the firm's assets."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : à l'échéance de la dette, les actionnaires reçoivent la valeur des actifs moins la dette si elle est positive, et rien sinon grâce à la responsabilité limitée : c'est le profil d'un call sur les actifs, de prix d'exercice égal au nominal de la dette. La combinaison obligation sans risque et vente d'un put décrit la position des créanciers, pas celle des actionnaires."
+  },
+  {
+    "num": 5,
+    "topic": "portfolio",
+    "prompt": "A portfolio is invested 60% in Fund X, which has a standard deviation of 20%, and 40% in Fund Y, which has a standard deviation of 10%. The correlation between the two funds' returns is 0.25. The portfolio's standard deviation is closest to:",
+    "choices": [
+      "12.6%",
+      "13.6%",
+      "16.0%"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : variance = 0,6² × 0,20² + 0,4² × 0,10² + 2 × 0,6 × 0,4 × 0,25 × 0,20 × 0,10 = 0,0144 + 0,0016 + 0,0024 = 0,0184, et √0,0184 ≈ 13,6 %. 16,0 % est la moyenne pondérée des écarts-types, qui ne vaut que si la corrélation est de +1. 12,6 % oublie le terme de covariance, comme si la corrélation était nulle."
+  },
+  {
+    "num": 6,
+    "topic": "equity",
+    "prompt": "Compared with equity indexes, fixed-income indexes are most likely harder to construct and replicate because:",
+    "choices": [
+      "the bond universe is smaller and more stable over time.",
+      "many bonds trade infrequently in dealer markets, so current prices are hard to obtain.",
+      "bond issuers rarely change the amount of debt they have outstanding."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le marché obligataire se négocie surtout de gré à gré auprès de teneurs de marché, et beaucoup de titres s'échangent rarement, ce qui rend les prix récents difficiles à obtenir et la réplication coûteuse. L'univers obligataire est au contraire plus vaste que celui des actions et change sans cesse, car les titres arrivent à échéance et de nouvelles émissions les remplacent."
+  },
+  {
+    "num": 7,
+    "topic": "fixed_income",
+    "prompt": "A bond has a modified duration of 7.4 and an annual convexity of 68. If its yield falls by 75 bp, the estimated percentage price change is closest to:",
+    "choices": [
+      "+5.36%",
+      "+5.74%",
+      "+5.93%"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : on a %ΔP ≈ −7,4 × (−0,0075) + ½ × 68 × (0,0075)² = 5,550 % + 0,191 % ≈ +5,74 %. Retrancher l'effet de convexité (+5,36 %) est une erreur de signe : la convexité d'une obligation sans option ajoute au prix, que les taux montent ou baissent. Oublier le ½ donne +5,93 %."
+  },
+  {
+    "num": 8,
+    "topic": "derivatives",
+    "prompt": "Using put-call parity, a synthetic long European put on a non-dividend-paying stock can be created by combining a long call with:",
+    "choices": [
+      "a short position in the stock and a long risk-free bond paying the exercise price.",
+      "a long position in the stock and a short risk-free bond paying the exercise price.",
+      "a short position in the stock and a short risk-free bond paying the exercise price."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la parité s'écrit S + p = c + PV(X), donc p = c − S + PV(X) : on achète le call, on vend l'action à découvert et on place la valeur actuelle du prix d'exercice au taux sans risque. Le deuxième choix inverse les signes de l'action et de l'obligation. Le piège du troisième est le signe de l'obligation : le put synthétique contient un prêt, pas un emprunt."
+  },
+  {
+    "num": 9,
+    "topic": "equity",
+    "prompt": "A stock in a price-weighted index undergoes a 2-for-1 split, and the index provider adjusts the divisor. After the split, that stock's weight in the index:",
+    "choices": [
+      "is unchanged, because the divisor adjustment offsets the split.",
+      "decreases, and the divisor is reduced.",
+      "increases, and the divisor is raised."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : dans un indice pondéré par les prix, le poids d'un titre est son prix rapporté à la somme des prix ; après un split 2 pour 1 son prix est divisé par deux, donc son poids baisse, et le diviseur est abaissé pour que le niveau de l'indice ne change pas. L'ajustement du diviseur préserve la valeur de l'indice, pas le poids de chaque titre, d'où l'erreur du premier choix."
+  },
+  {
+    "num": 10,
+    "topic": "equity",
+    "prompt": "An investor sells short 100 shares at $50. While the position is open, the company pays a $1.50 dividend per share, and the investor later covers at $42. Ignoring interest and commissions, the profit is closest to:",
+    "choices": [
+      "$650.",
+      "$800.",
+      "$950."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le vendeur à découvert gagne la baisse du cours, (50 − 42) × 100 = 800 $, mais doit reverser au prêteur des titres le dividende versé, 1,50 × 100 = 150 $, d'où un profit de 650 $. Ajouter le dividende (950 $) suppose à tort que le vendeur à découvert le perçoit, alors que c'est lui qui le paie. 800 $ oublie simplement ce dividende."
+  },
+  {
+    "num": 11,
+    "topic": "fixed_income",
+    "prompt": "An investor holds a fixed-rate mortgage pass-through security. If mortgage rates rise sharply, the investor most likely faces:",
+    "choices": [
+      "extension risk, as prepayments slow and the security's expected life lengthens.",
+      "contraction risk, as prepayments accelerate.",
+      "no prepayment risk, because the underlying mortgages are fixed rate."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : quand les taux hypothécaires montent, les emprunteurs ont moins intérêt à refinancer, les remboursements anticipés ralentissent et la durée de vie du titre s'allonge, au moment où l'investisseur voudrait réinvestir à des taux plus élevés : c'est le risque d'extension. Le risque de contraction est l'inverse, il survient quand les taux baissent et que les remboursements anticipés s'accélèrent."
+  },
+  {
+    "num": 12,
+    "topic": "fixed_income",
+    "prompt": "Which of the following is best described as a negative covenant in a bond indenture?",
+    "choices": [
+      "The issuer must maintain insurance on the assets pledged as collateral.",
+      "The issuer may not pledge the same assets to other lenders.",
+      "The issuer must pay interest and principal on the scheduled dates."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une clause négative (negative covenant) interdit ou limite une action de l'émetteur, ici donner en garantie à d'autres prêteurs des actifs déjà promis. Maintenir une assurance et payer coupons et principal à date sont des obligations de faire, donc des clauses positives (affirmative covenants). Le piège est de voir une clause négative dans toute clause qui protège le prêteur : une clause positive le protège aussi, mais elle impose une action au lieu d'en interdire une."
+  },
+  {
+    "num": 13,
+    "topic": "equity",
+    "prompt": "A profitable company pays no dividends, and its dividend policy bears no relation to its capacity to pay. Which present value model is most appropriate for valuing its shares?",
+    "choices": [
+      "Free cash flow to equity model.",
+      "Gordon growth dividend discount model.",
+      "Perpetual preferred share model."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : quand une société ne verse pas de dividende, ou quand ses dividendes s'écartent durablement de sa capacité de distribution, on valorise ses actions avec le flux de trésorerie disponible pour l'actionnaire (FCFE), qui mesure ce qui pourrait être distribué. Le modèle de Gordon suppose des dividendes versés et en croissance constante. La formule D ÷ r ne vaut que pour un dividende fixe à perpétuité, comme celui d'une action de préférence."
+  },
+  {
+    "num": 14,
+    "topic": "fixed_income",
+    "prompt": "The 1-year spot rate is 2.50% and the 3-year spot rate is 3.50%, both with annual compounding. The implied 2-year rate starting one year from today (1y2y) is closest to:",
+    "choices": [
+      "3.50%",
+      "8.17%",
+      "4.00%"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : on pose (1,035)³ = 1,10872 et (1,025) × (1 + f)² = 1,10872, donc (1 + f)² = 1,08168 et f = √1,08168 − 1 ≈ 4,00 %. Le chiffre 8,17 % oublie la racine carrée : c'est le taux cumulé sur deux ans, pas un taux annuel. Reprendre 3,50 % confond le taux spot à 3 ans avec le taux forward qui démarre dans un an."
+  },
+  {
+    "num": 15,
+    "topic": "portfolio",
+    "prompt": "A portfolio earned 11% with a standard deviation of 18% and a beta of 1.2. Over the same period, the market returned 8% with a standard deviation of 15%, and the risk-free rate was 2%. The portfolio's M-squared (M²) is closest to:",
+    "choices": [
+      "1.5%",
+      "1.8%",
+      "3.0%"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le ratio de Sharpe du portefeuille vaut (11 − 2) ÷ 18 = 0,50 et celui du marché (8 − 2) ÷ 15 = 0,40, donc M² = (0,50 − 0,40) × 15 % = 1,5 %. 1,8 % est l'alpha de Jensen, 11 % − (2 % + 1,2 × 6 %), qui ajuste pour le risque systématique et non pour le risque total. 3,0 % est la simple différence de rendements, sans aucun ajustement pour le risque."
+  },
+  {
+    "num": 16,
+    "topic": "equity",
+    "prompt": "In a quote-driven market, investors most likely trade:",
+    "choices": [
+      "with dealers, who post bid and ask prices and trade from their own inventory.",
+      "with each other, under an exchange's order-matching rules.",
+      "through brokers who search for a counterparty for large or unusual positions."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : dans un marché dirigé par les prix (quote-driven), les investisseurs traitent avec des teneurs de marché qui affichent un prix acheteur et un prix vendeur et livrent les titres depuis leur propre stock. La confrontation des ordres selon des règles de priorité définit le marché dirigé par les ordres (order-driven). La recherche d'une contrepartie par un courtier caractérise le marché de courtage, utile pour les positions peu liquides."
+  },
+  {
+    "num": 17,
+    "topic": "derivatives",
+    "prompt": "Which statement about futures margining is most accurate?",
+    "choices": [
+      "Gains and losses are settled daily using the contract's settlement price.",
+      "If the margin balance falls below the maintenance margin, the trader must deposit only enough to restore the maintenance margin.",
+      "Futures margin is a down payment on a loan used to buy the underlying."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : les futures sont réévalués chaque jour au prix de règlement (settlement price) fixé par la bourse, et les gains et pertes passent d'un compte de marge à l'autre (mark-to-market). Après un appel de marge, il faut revenir à la marge initiale, pas seulement à la marge de maintenance. La marge est un dépôt de garantie, pas l'acompte d'un emprunt comme dans un achat d'actions à crédit."
+  },
+  {
+    "num": 18,
+    "topic": "portfolio",
+    "prompt": "Value stocks have historically outperformed growth stocks over long periods. Which behavioral explanation is most consistent with this finding?",
+    "choices": [
+      "Loss aversion, because investors hold value stocks that have fallen for too long, which keeps their prices high.",
+      "Herding, because investors crowd into value stocks during market declines and push their prices above fundamental value.",
+      "The halo effect, because investors extend the favorable attributes of well-known, fast-growing companies to their stocks and overpay for them."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : avec l'effet de halo, les investisseurs prêtent à l'action d'une entreprise brillante et connue les qualités de l'entreprise elle-même ; ils surpayent les valeurs de croissance, qui rapportent ensuite moins que les valeurs décotées délaissées. Les deux autres explications pousseraient au contraire le prix des valeurs « value » au-dessus de leur valeur fondamentale. Elles prédiraient donc des rendements futurs plus faibles pour ces titres, soit l'inverse du constat."
+  },
+  {
+    "num": 19,
+    "topic": "derivatives",
+    "prompt": "A trader writes a put option with an exercise price of 50 for a premium of 3.20. At expiration, the underlying trades at 44.50. The writer's profit is closest to:",
+    "choices": [
+      "−2.30",
+      "+2.30",
+      "+3.20"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le put est dans la monnaie et sera exercé ; le vendeur paie 50 − 44,50 = 5,50 après avoir encaissé 3,20 de prime, soit un profit de 3,20 − 5,50 = −2,30. +2,30 est le profit de l'acheteur, exactement opposé. +3,20 suppose à tort que le put expire sans valeur, alors que le cours est sous le prix d'exercice."
+  },
+  {
+    "num": 20,
+    "topic": "alternatives",
+    "prompt": "Which statement about the compensation terms of a private fund is most accurate?",
+    "choices": [
+      "A high-water mark prevents the manager from earning an incentive fee on gains that merely recover earlier losses.",
+      "Under a soft hurdle rate, the incentive fee is earned only on the portion of the return that exceeds the hurdle.",
+      "A clawback provision allows limited partners to recover management fees paid in years when the fund lost money."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : un high-water mark impose que la valeur du fonds dépasse son plus haut précédent avant qu'une commission de performance soit de nouveau due, donc récupérer des pertes ne rapporte rien au gérant. Avec un soft hurdle, une fois le seuil franchi, la commission porte sur la totalité du rendement ; c'est le hard hurdle qui ne la calcule que sur l'excédent. Le clawback porte sur l'intéressement (carried interest) versé en trop au GP, pas sur les frais de gestion."
+  },
+  {
+    "num": 21,
+    "topic": "alternatives",
+    "prompt": "Return indexes for private real estate funds are often based on periodic appraisals rather than transaction prices. Compared with true economic values, such appraisal-based returns most likely:",
+    "choices": [
+      "overstate volatility and understate correlations with public markets.",
+      "understate volatility and understate correlations with public markets.",
+      "understate volatility and overstate correlations with public markets."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les estimations périodiques lissent les variations de valeur, si bien que les rendements fondés sur des expertises paraissent moins volatils et moins corrélés aux marchés cotés qu'ils ne le sont réellement. Le risque est donc sous-estimé et le bénéfice de diversification surestimé. Le piège est de croire que le lissage gonfle la corrélation : il la réduit, car les valeurs estimées réagissent avec retard aux chocs de marché."
+  },
+  {
+    "num": 22,
+    "topic": "derivatives",
+    "prompt": "Which of the following derivatives is best classified as a contingent claim rather than a firm commitment?",
+    "choices": [
+      "An interest rate swap",
+      "A credit default swap",
+      "A futures contract on crude oil"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : dans un credit default swap, le vendeur de protection ne paie que si un événement de crédit survient ; le paiement dépend d'une condition, c'est donc un droit conditionnel, comme une option. Le swap de taux et le future obligent les deux parties à exécuter aux dates prévues quoi qu'il arrive : ce sont des engagements fermes. Le piège est le mot « swap », qui fait penser à tort à un engagement ferme."
+  },
+  {
+    "num": 23,
+    "topic": "alternatives",
+    "prompt": "A private fund with $200 million of beginning capital charges a 2% management fee on beginning capital and a 20% incentive fee on returns above an 8% hard hurdle rate. The incentive fee is calculated independently of the management fee. If the fund earns a 15% gross return for the year, the incentive fee is closest to:",
+    "choices": [
+      "$2.0 million",
+      "$2.8 million",
+      "$6.0 million"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : avec un hard hurdle, la commission ne porte que sur le rendement au-delà du seuil : 20 % × (15 % − 8 %) × 200 M$ = 2,8 M$, et comme elle est calculée indépendamment, on ne retranche pas d'abord les frais de gestion. 6,0 M$ correspond à un soft hurdle (20 % × 15 % × 200 M$). 2,0 M$ revient à retrancher à tort les 2 % de frais de gestion avant d'appliquer le seuil (20 % × 5 % × 200 M$)."
+  },
+  {
+    "num": 24,
+    "topic": "portfolio",
+    "prompt": "A portfolio has a 1-day 5% value at risk (VaR) of $2 million. This measure is best interpreted as meaning that:",
+    "choices": [
+      "the portfolio cannot lose more than $2 million in a single day.",
+      "the average loss on the 5% worst days is $2 million.",
+      "there is a 5% probability that the portfolio will lose at least $2 million in a single day."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : une VaR à 5 % sur un jour de 2 M$ signifie qu'il y a 5 % de chances de perdre au moins 2 M$ en une journée, c'est-à-dire une perte minimale dans les 5 % de cas les plus défavorables. Ce n'est pas une perte maximale : les pertes peuvent dépasser 2 M$. La perte moyenne au-delà de ce seuil est la conditional VaR (expected shortfall), une autre mesure."
+  },
+  {
+    "num": 25,
+    "topic": "portfolio",
+    "prompt": "An analyst regresses a stock's excess returns on the market's excess returns to estimate the stock's security characteristic line. The slope and the intercept of this line are best interpreted as, respectively, the:",
+    "choices": [
+      "market risk premium and the risk-free rate.",
+      "stock's correlation with the market and its Jensen's alpha.",
+      "stock's beta and its Jensen's alpha."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la droite caractéristique (SCL) régresse Ri − Rf sur Rm − Rf ; sa pente est le bêta du titre et son ordonnée à l'origine est l'alpha de Jensen. Une pente égale à la prime de risque de marché et une ordonnée égale au taux sans risque décrivent la SML, qui relie le rendement requis au bêta. La pente n'est pas la corrélation : elle vaut la corrélation multipliée par σi ÷ σm."
+  },
+  {
+    "num": 26,
+    "topic": "derivatives",
+    "prompt": "A stock trading at 50 will be worth either 60 or 42.50 in one year. The risk-free rate is 4%. Using a one-period binomial model, the value of a European call with an exercise price of 52 is closest to:",
+    "choices": [
+      "3.85",
+      "4.18",
+      "4.34"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : avec u = 1,20 et d = 0,85, la probabilité risque-neutre vaut (1,04 − 0,85) ÷ (1,20 − 0,85) = 0,19 ÷ 0,35 ≈ 0,543 ; le call vaut 8 en hausse et 0 en baisse, d'où c = 0,543 × 8 ÷ 1,04 ≈ 4,18. 4,34 oublie d'actualiser au taux sans risque. 3,85 prend une probabilité de 50 %, alors que la probabilité risque-neutre découle de u, d et du taux sans risque."
+  },
+  {
+    "num": 27,
+    "topic": "fixed_income",
+    "prompt": "A 6-year corporate bond yields 5.10%. Government bonds yield 3.60% at 5 years and 3.90% at 7 years. Using linear interpolation, the bond's G-spread is closest to:",
+    "choices": [
+      "120 bp",
+      "135 bp",
+      "150 bp"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le rendement d'État interpolé à 6 ans vaut 3,60 % + (3,90 % − 3,60 %) × 1/2 = 3,75 %, donc le G-spread est 5,10 % − 3,75 % = 1,35 %, soit 135 pb. Prendre directement le titre d'État à 5 ans (150 pb) ou à 7 ans (120 pb) mesure l'écart contre un benchmark d'une autre échéance."
+  },
+  {
+    "num": 28,
+    "topic": "portfolio",
+    "prompt": "A 35-year-old surgeon has a high and stable income, substantial savings and no near-term spending needs, but she says she would lose sleep over any decline in her portfolio. Her overall risk tolerance is most appropriately assessed as:",
+    "choices": [
+      "above average, because her ability to take risk takes precedence over her willingness.",
+      "average, as the midpoint between her high ability and her low willingness.",
+      "below average, because when willingness and ability conflict, the more conservative assessment generally prevails."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : sa capacité à prendre du risque est élevée (revenu, épargne, horizon long) mais sa volonté est faible ; en cas de désaccord, on retient en général l'évaluation la plus prudente, quitte à faire de la pédagogie pour la faire évoluer. La capacité ne l'emporte pas d'office : imposer un risque que la cliente ne supporte pas l'exposerait à vendre au pire moment. Faire la moyenne des deux n'est pas l'approche retenue."
+  },
+  {
+    "num": 29,
+    "topic": "alternatives",
+    "prompt": "A lender provides a middle-market company with a single loan that combines senior and subordinated debt in one facility with one blended interest rate. This type of private debt is best described as:",
+    "choices": [
+      "mezzanine debt.",
+      "unitranche debt.",
+      "venture debt."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : un financement unitranche regroupe dette senior et dette subordonnée en un seul prêt, avec un taux unique intermédiaire entre les deux. La dette mezzanine n'est que la tranche subordonnée, souvent assortie de warrants, placée sous la dette senior. La venture debt finance des start-up qui n'ont pas encore de flux de trésorerie positifs, ce que l'énoncé ne décrit pas."
+  },
+  {
+    "num": 30,
+    "topic": "alternatives",
+    "prompt": "A hedge fund charges a 2% management fee based on year-end assets and a 20% incentive fee calculated net of the management fee, subject to a high-water mark. The fund starts the year with assets of $95 million and a high-water mark of $100 million. Before fees, assets grow to $115 million by year-end. The investor's net return for the year is closest to:",
+    "choices": [
+      "14.9%",
+      "15.5%",
+      "16.0%"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : frais de gestion = 2 % × 115 = 2,30 M$, il reste 112,70 M$ ; la commission de performance ne porte que sur ce qui dépasse le high-water mark : 20 % × (112,70 − 100) = 2,54 M$. Valeur nette = 112,70 − 2,54 = 110,16 M$, soit 110,16 ÷ 95 − 1 ≈ 16,0 %. Calculer la commission à partir des 95 M$ de départ (14,9 %) revient à oublier le high-water mark, et la calculer sur le gain brut au-delà de 100 M$ (15,5 %) applique la convention indépendante au lieu de « net of »."
+  },
+  {
+    "num": 31,
+    "topic": "fixed_income",
+    "prompt": "A bank sells a pool of auto loans to a special purpose entity (SPE), which issues asset-backed securities. If the bank later goes bankrupt, the ABS investors most likely:",
+    "choices": [
+      "become unsecured creditors of the bank.",
+      "lose their claim, because the bank was the servicer of the loans.",
+      "retain their claim on the loan pool, which the bank's creditors cannot reach."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la cession des prêts à la SPE est une vente véritable (true sale) et la SPE est conçue pour être à l'abri de la faillite de l'originateur ; les créanciers de la banque ne peuvent pas saisir le portefeuille de prêts. Le piège est de lier le sort des investisseurs au rôle de servicer : si la banque fait faillite, un autre servicer peut reprendre la gestion des encaissements."
+  },
+  {
+    "num": 32,
+    "topic": "portfolio",
+    "prompt": "A stock has a beta of 1.3. The risk-free rate is 3% and the expected return on the market is 8%. An analyst forecasts a return of 10.4% for the stock. Based on the CAPM, the stock most likely plots:",
+    "choices": [
+      "above the SML and is undervalued.",
+      "on the SML and is fairly valued.",
+      "below the SML and is overvalued."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : rendement requis = 3 % + 1,3 × (8 % − 3 %) = 9,5 % ; la prévision de 10,4 % dépasse ce rendement, donc le titre se place au-dessus de la SML et il est sous-évalué. Conclure « bien évalué », c'est avoir calculé 1,3 × 8 % = 10,4 % en oubliant de retirer le taux sans risque du rendement du marché. Le titre ne serait surévalué que si sa prévision était inférieure à 9,5 %."
+  },
+  {
+    "num": 33,
+    "topic": "alternatives",
+    "prompt": "A hedge fund database adds a fund's past returns only when its manager decides to start reporting, which managers typically do after a period of strong performance. The resulting bias in the database's index is best described as:",
+    "choices": [
+      "survivorship bias, which causes index returns to be overstated.",
+      "backfill bias, which causes index returns to be understated.",
+      "backfill bias, which causes index returns to be overstated."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : quand un gérant ajoute ses performances passées au moment où il commence à publier, généralement après de bons résultats, l'indice intègre après coup un historique flatteur : c'est le biais de remplissage (backfill), qui surestime les rendements. Le biais du survivant vient d'autre chose : les fonds qui ferment ou cessent de publier, souvent après de mauvais résultats, sortent de la base. Les deux biais vont dans le même sens, une surestimation des rendements, donc « understated » est faux."
+  },
+  {
+    "num": 34,
+    "topic": "portfolio",
+    "prompt": "Which of the following best describes risk budgeting?",
+    "choices": [
+      "Determining the overall amount of risk the organization is willing to accept.",
+      "Allocating the organization's total risk tolerance across asset classes, strategies or managers.",
+      "Transferring a risk to a third party, such as an insurer, in exchange for a premium."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le risk budgeting répartit le risque total accepté entre les classes d'actifs, les stratégies ou les gérants, pour que chaque unité de risque soit placée là où elle rapporte le plus. Fixer le niveau global de risque accepté, c'est définir la tolérance au risque, étape qui précède le budget. Transférer un risque à un assureur est une méthode de modification du risque (risk transfer), pas une allocation."
+  },
+  {
+    "num": 35,
+    "topic": "equity",
+    "prompt": "A company earns 70% of its revenue from medical devices and 30% from consumer electronics, and its earnings are highly cyclical. Under GICS, it is most likely classified in:",
+    "choices": [
+      "consumer discretionary, because its earnings are cyclical.",
+      "health care, because medical devices are its principal business.",
+      "information technology, because its stock returns correlate most with technology peers."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les classifications commerciales comme GICS rangent une société selon son activité principale, en général celle qui produit l'essentiel du chiffre d'affaires, ici les dispositifs médicaux. La sensibilité au cycle sert à distinguer secteurs cycliques et défensifs, pas à classer une société dans GICS. La corrélation statistique des rendements est une autre méthode de regroupement, que GICS n'utilise pas."
+  },
+  {
+    "num": 36,
+    "topic": "portfolio",
+    "prompt": "Which statement about the minimum-variance frontier is most accurate?",
+    "choices": [
+      "The efficient frontier is the portion of the minimum-variance frontier that lies above the global minimum-variance portfolio.",
+      "All portfolios on the minimum-variance frontier are efficient, because each has the lowest risk for its level of expected return.",
+      "The global minimum-variance portfolio is the optimal risky portfolio for every investor."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la frontière efficiente est la partie de la frontière de variance minimale située au-dessus du portefeuille de variance minimale globale. En dessous, chaque portefeuille a le même risque qu'un portefeuille de la branche haute mais un rendement espéré plus faible, il n'est donc pas efficient. Le portefeuille risqué optimal est le point de tangence entre la CAL et la frontière efficiente, pas le portefeuille de variance minimale globale."
+  },
+  {
+    "num": 37,
+    "topic": "equity",
+    "prompt": "If a market is semi-strong-form efficient, which investor is most likely to earn consistent abnormal returns?",
+    "choices": [
+      "A technical analyst studying past price and volume patterns.",
+      "A fundamental analyst studying published financial statements.",
+      "A board member trading on undisclosed merger negotiations."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l'efficience semi-forte intègre dans les prix toute l'information publique, y compris les cours passés ; seule une information privée, comme des négociations de fusion non publiées, peut encore procurer des rendements anormaux. L'analyse technique et l'analyse fondamentale reposent sur des informations publiques et ne battent donc pas le marché de façon régulière. La forme semi-forte implique la forme faible, mais pas la forme forte."
+  },
+  {
+    "num": 38,
+    "topic": "derivatives",
+    "prompt": "All else equal, which change would most likely increase the value of a European put option on a stock?",
+    "choices": [
+      "A decrease in the stock's volatility",
+      "An increase in the risk-free rate",
+      "An increase in the dividends expected before expiration"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un dividende versé avant l'échéance fait baisser le cours de l'action, ce qui augmente la valeur du put (et réduit celle du call). Une hausse du taux sans risque réduit la valeur actuelle du prix d'exercice que touchera le détenteur du put, donc la valeur du put. Une volatilité plus faible réduit la valeur de toute option."
+  },
+  {
+    "num": 39,
+    "topic": "portfolio",
+    "prompt": "Compared with investing in a mutual fund, investing through a separately managed account most likely offers the investor:",
+    "choices": [
+      "direct ownership of the individual securities and the ability to tailor the portfolio to the investor's tax situation.",
+      "a lower minimum investment and lower fees.",
+      "fund shares that are bought and redeemed at the net asset value calculated at the end of each day."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : dans un compte géré séparément (SMA), l'investisseur détient lui-même les titres, ce qui permet d'adapter le portefeuille à sa fiscalité ou à ses exclusions. En contrepartie, le ticket d'entrée est bien plus élevé que celui d'un fonds commun. Des parts souscrites et rachetées à la valeur liquidative de fin de journée, c'est le fonctionnement d'un fonds ouvert, pas d'un SMA."
+  },
+  {
+    "num": 40,
+    "topic": "portfolio",
+    "prompt": "When specifying asset classes for a strategic asset allocation, which criterion is least appropriate?",
+    "choices": [
+      "Assets within each class should be relatively homogeneous.",
+      "Asset classes should be mutually exclusive.",
+      "Asset classes should be highly correlated with one another so that their risks are comparable."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les classes d'actifs doivent au contraire se diversifier entre elles ; des classes très corrélées n'apportent rien à l'allocation et rendent l'optimisation instable. Elles doivent être homogènes à l'intérieur, mutuellement exclusives (aucun titre dans deux classes à la fois) et, ensemble, couvrir l'essentiel de la richesse investissable. Les deux premières propositions sont donc des critères attendus."
+  },
+  {
+    "num": 41,
+    "topic": "fixed_income",
+    "prompt": "When benchmark yields fall well below a callable bond's coupon rate, the bond most likely exhibits:",
+    "choices": [
+      "positive convexity, with its price rising faster than that of an option-free bond.",
+      "zero duration, because the bond will certainly be called.",
+      "negative convexity, with price appreciation limited near the call price."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : quand les taux baissent nettement, l'émetteur a intérêt à rembourser, si bien que le prix de l'obligation callable plafonne près du prix de rachat ; sa hausse ralentit, c'est la convexité négative. Le premier choix décrit une obligation sans option ou putable. La duration ne tombe pas à zéro : elle se raccourcit vers la date de rachat, mais le titre reste sensible aux taux."
+  },
+  {
+    "num": 42,
+    "topic": "fixed_income",
+    "prompt": "During the lockout (revolving) period of a credit card receivable ABS, principal repayments received from cardholders are most likely:",
+    "choices": [
+      "used to buy additional receivables, so investors receive only interest.",
+      "passed through to investors as scheduled principal payments.",
+      "held in reserve to repay the senior tranche at maturity."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : un ABS adossé à des créances de cartes de crédit est non amortissable pendant la période de blocage (lockout) : les remboursements de principal servent à acheter de nouvelles créances et les investisseurs ne perçoivent que les intérêts. Le principal n'est distribué qu'après cette période, ou plus tôt si une clause de remboursement anticipé se déclenche. Le piège est de traiter ce titre comme un ABS amortissable, tel un ABS de prêts auto."
+  },
+  {
+    "num": 43,
+    "topic": "alternatives",
+    "prompt": "A private equity fund sells a portfolio company to a company in the same industry that is willing to pay a premium for expected synergies. This exit route is best described as a:",
+    "choices": [
+      "secondary sale.",
+      "recapitalization.",
+      "trade sale."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la cession à un industriel (trade sale) se fait au profit d'un concurrent ou d'une société du secteur, qui peut payer une prime pour les synergies attendues. Une secondary sale est une vente à un autre investisseur financier, comme un autre fonds de private equity. Une recapitalisation consiste à réendetter la société pour verser un dividende à ses propriétaires, sans la céder."
+  },
+  {
+    "num": 44,
+    "topic": "equity",
+    "prompt": "A company sells video game consoles close to cost and earns most of its profit from high-margin game licenses that run only on its consoles. This pricing model is best described as:",
+    "choices": [
+      "freemium.",
+      "bundling.",
+      "razor-razorblade."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le modèle razor-razorblade vend le produit de base à faible marge pour générer ensuite des ventes récurrentes et très rentables de compléments indispensables, ici les jeux. Le freemium offre gratuitement une version de base et fait payer les fonctions avancées. Le bundling vend plusieurs produits ensemble à un prix global, ce qui n'est pas le cas ici."
+  },
+  {
+    "num": 45,
+    "topic": "alternatives",
+    "prompt": "A commodity's futures curve is in backwardation. An investor who maintains a long futures position by rolling expiring contracts into longer-dated contracts will most likely earn a:",
+    "choices": [
+      "negative roll return, because longer-dated contracts trade above the near-term contract.",
+      "positive roll return, because the expiring contract is sold at a higher price than the new contract is bought.",
+      "roll return of zero, because the convenience yield exactly offsets storage costs."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : en backwardation, les échéances lointaines cotent sous les échéances proches ; en vendant le contrat qui expire plus cher que le nouveau qu'il achète, l'investisseur long gagne un rendement de roulement positif. Une courbe où les échéances lointaines sont plus chères est un contango, qui donne un roll return négatif aux positions longues. La backwardation traduit justement un convenience yield supérieur aux coûts de stockage, et non une compensation exacte."
+  },
+  {
+    "num": 46,
+    "topic": "equity",
+    "prompt": "A company gives its existing shareholders the right to buy new shares, in proportion to their holdings, at a price below the current market price. This method of raising equity is a:",
+    "choices": [
+      "shelf registration.",
+      "private placement.",
+      "rights offering."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : une émission de droits (rights offering) permet aux actionnaires existants d'acheter des actions nouvelles au prorata de leur participation, à un prix inférieur au cours, ce qui leur évite la dilution. Le shelf registration permet de vendre progressivement, au fil du temps, des titres déjà enregistrés auprès du régulateur. Le placement privé vend les titres à un petit nombre d'investisseurs qualifiés, pas aux actionnaires au prorata."
+  },
+  {
+    "num": 47,
+    "topic": "alternatives",
+    "prompt": "After a takeover is announced, a hedge fund buys the shares of the target company and short sells the shares of the acquirer. This strategy is best classified as:",
+    "choices": [
+      "event driven.",
+      "relative value.",
+      "equity hedge."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : l'arbitrage de fusion (merger arbitrage) achète la cible et vend à découvert l'acquéreur pour capter l'écart de prix jusqu'à la réalisation de l'opération ; c'est une stratégie event driven, dont le résultat dépend de la conclusion de l'opération. Les stratégies relative value exploitent des écarts de prix entre titres liés, comme l'arbitrage de convertibles, sans opération d'entreprise à attendre. L'equity hedge prend des positions longues et courtes sur des actions selon leur valorisation, pas selon une opération annoncée."
+  },
+  {
+    "num": 48,
+    "topic": "portfolio",
+    "prompt": "A client asks his adviser not to invest in companies involved in gambling, for religious reasons. In the client's investment policy statement, this request is best classified as a:",
+    "choices": [
+      "legal and regulatory constraint.",
+      "unique circumstances constraint.",
+      "risk objective."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : les exclusions demandées pour des raisons éthiques ou religieuses relèvent des circonstances particulières (unique circumstances) de l'IPS. Ce n'est pas une contrainte légale ou réglementaire, puisqu'aucune loi n'interdit à ce client de détenir ces titres. Ce n'est pas non plus un objectif de risque, car la demande ne dit rien du niveau de risque qu'il accepte."
+  },
+  {
+    "num": 49,
+    "topic": "alternatives",
+    "prompt": "Compared with an American (deal-by-deal) distribution waterfall, a European (whole-of-fund) waterfall is most likely to:",
+    "choices": [
+      "pay carried interest to the general partner earlier in the life of the fund.",
+      "make clawback provisions more important, because carried interest is paid on each profitable deal as it is exited.",
+      "be more favorable to limited partners, because the general partner receives carried interest only after they have recovered their contributed capital and the preferred return."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : dans une cascade européenne (whole-of-fund), le GP ne touche son carried interest qu'une fois que les LP ont récupéré tout leur capital investi et le rendement préférentiel sur l'ensemble du fonds, ce qui protège les LP. Le paiement anticipé, deal par deal, est la marque de la cascade américaine. C'est aussi dans la cascade américaine que le clawback compte le plus, car un deal gagnant suivi de pertes peut laisser le GP trop payé."
+  },
+  {
+    "num": 50,
+    "topic": "fixed_income",
+    "prompt": "For the same sovereign issuer, rating agencies most often assign its local currency debt a rating that is:",
+    "choices": [
+      "lower than its foreign currency debt, because the local currency can be devalued.",
+      "equal to its foreign currency debt, because the issuer is the same.",
+      "higher than its foreign currency debt, because the government can raise taxes and print its own currency."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un État peut honorer sa dette en monnaie locale en levant l'impôt ou en créant de la monnaie, alors que sa dette en devises l'oblige à se procurer des devises étrangères ; la note en monnaie locale est donc souvent plus élevée. Le piège est de croire qu'un même émetteur n'a qu'une seule note : les agences notent séparément la dette en monnaie locale et la dette en devises."
+  },
+  {
+    "num": 51,
+    "topic": "fixed_income",
+    "prompt": "Two bonds from the same issuer have identical coupon, maturity and seniority. Bond X is putable; Bond Y is option-free. Compared with Bond Y, Bond X most likely has:",
+    "choices": [
+      "a higher yield, because investors bear the risk of the put.",
+      "the same yield, because the put is rarely exercised.",
+      "a lower yield, because the put option benefits the investor."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : l'option de vente appartient à l'investisseur, qui peut revendre le titre à l'émetteur si les taux montent ; il paie cette protection par un prix plus élevé, donc un rendement plus faible que celui de l'obligation sans option. Le piège consiste à appliquer le raisonnement de l'obligation callable : c'est l'option de rachat, détenue par l'émetteur, qui exige un rendement plus élevé."
+  },
+  {
+    "num": 52,
+    "topic": "equity",
+    "prompt": "A Brazilian company issues depository receipts in London, and they trade outside both Brazil and the United States. These securities are best described as:",
+    "choices": [
+      "global depository receipts.",
+      "American depository receipts.",
+      "global registered shares."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : un global depository receipt (GDR) est émis hors du pays de l'émetteur et hors des États-Unis, souvent à Londres ou au Luxembourg. Un ADR se négocie aux États-Unis, en dollars. Une global registered share est une action ordinaire cotée directement sur plusieurs places et dans plusieurs devises, sans certificat représentatif."
+  },
+  {
+    "num": 53,
+    "topic": "equity",
+    "prompt": "An analyst compares two companies in the same industry: one is financed almost entirely with equity, the other carries heavy debt. Which multiple is most appropriate for this comparison?",
+    "choices": [
+      "Price-to-earnings.",
+      "Enterprise value to EBITDA.",
+      "Price-to-book."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : l'EV/EBITDA rapporte la valeur de toute l'entreprise (actions plus dette moins trésorerie) à un résultat avant intérêts, indépendant du mode de financement ; il convient donc pour comparer des sociétés au levier très différent. Le P/E est faussé par les charges d'intérêts et le risque financier de la société endettée. Le P/B dépend lui aussi de la structure du bilan."
+  },
+  {
+    "num": 54,
+    "topic": "alternatives",
+    "prompt": "An investor gains exposure to a cryptocurrency by buying shares of a publicly traded closed-end trust that holds that cryptocurrency. Compared with owning the cryptocurrency directly, this investment most likely:",
+    "choices": [
+      "eliminates exposure to the volatility of the cryptocurrency.",
+      "can trade at a significant premium or discount to the value of the cryptocurrency it holds.",
+      "requires the investor to manage private keys and a digital wallet."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une structure fermée cotée a un nombre de parts fixe, si bien que son cours dépend de l'offre et de la demande sur ses parts et peut s'écarter fortement de la valeur des cryptomonnaies détenues. La volatilité de l'actif sous-jacent reste entièrement présente. La gestion des clés privées et d'un portefeuille numérique concerne la détention directe, que ce type de véhicule évite justement."
+  },
+  {
+    "num": 55,
+    "topic": "equity",
+    "prompt": "Investors who buy a stock mainly because many other investors are buying it, setting aside their own analysis, are most likely displaying:",
+    "choices": [
+      "loss aversion.",
+      "overconfidence.",
+      "herding."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le comportement moutonnier (herding) consiste à imiter les transactions des autres en écartant sa propre information ou analyse, ce qui peut éloigner durablement les prix de leur valeur fondamentale. L'aversion aux pertes désigne le fait de ressentir une perte plus fortement qu'un gain de même montant. L'excès de confiance est la surestimation de ses propres capacités de prévision, pas l'imitation des autres."
+  },
+  {
+    "num": 56,
+    "topic": "fixed_income",
+    "prompt": "All else equal, which change would most likely increase the repo margin (haircut) required by the lender in a repurchase agreement?",
+    "choices": [
+      "The collateral is replaced by a short-term government bill.",
+      "The collateral becomes less liquid and harder to price.",
+      "The repo term is shortened from one month to overnight."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la marge (haircut) protège le prêteur contre une baisse de valeur du collatéral ; plus celui-ci est illiquide et difficile à évaluer, plus le prêteur exige une marge élevée. Un bon du Trésor à court terme et une durée plus courte réduisent au contraire le risque du prêteur, donc la marge. Le piège est de confondre ce qui augmente le risque du prêteur avec ce qui le réduit."
+  },
+  {
+    "num": 57,
+    "topic": "portfolio",
+    "prompt": "An investor inherited shares from her father. She says she would never sell them for less than $60 a share, although she would not pay more than $40 a share to buy the same stock today. This behavior is best described as:",
+    "choices": [
+      "endowment bias, which is an emotional bias.",
+      "endowment bias, which is a cognitive error.",
+      "anchoring bias, which is a cognitive error."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : exiger pour vendre un bien bien plus que ce qu'on paierait pour l'acheter, simplement parce qu'on le possède, est le biais de dotation (endowment bias), classé parmi les biais émotionnels. Le classer comme erreur cognitive est le piège : il ne vient pas d'un mauvais traitement de l'information mais d'un attachement. L'ancrage supposerait un point de référence chiffré, comme un ancien prix d'achat, auquel l'investisseur resterait accroché, ce que l'énoncé ne décrit pas."
+  },
+  {
+    "num": 58,
+    "topic": "portfolio",
+    "prompt": "Which type of institutional investor most likely has the shortest investment time horizon and the highest liquidity needs?",
+    "choices": [
+      "A university endowment",
+      "A bank",
+      "A defined benefit pension plan with a young workforce"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une banque place ses actifs en face de dépôts exigibles à court terme, d'où un horizon court et un fort besoin de liquidité ; elle détient surtout des titres liquides de qualité. Une fondation universitaire vise la perpétuité et peut détenir des actifs illiquides. Un régime à prestations définies dont les salariés sont jeunes a des engagements lointains, donc un horizon long et peu de besoins de liquidité."
+  },
+  {
+    "num": 59,
+    "topic": "equity",
+    "prompt": "An investor holds a stock trading at $45 and wants to limit her losses if the price falls. She should most likely place a:",
+    "choices": [
+      "limit buy order at $40.",
+      "stop sell order at $40.",
+      "limit sell order at $50."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : un ordre stop de vente à 40 $ ne s'active que si le cours descend à 40 $ et devient alors un ordre de vente : c'est l'ordre stop-loss classique. Un ordre limite de vente à 50 $ prend un gain si le cours monte mais ne protège pas contre une baisse. Un ordre limite d'achat à 40 $ renforcerait la position en cas de baisse, à l'inverse de l'objectif."
+  },
+  {
+    "num": 60,
+    "topic": "fixed_income",
+    "prompt": "A callable bond is priced at 98.50. A valuation model gives prices of 100.70 if the benchmark yield curve shifts down 25 bp and 96.10 if it shifts up 25 bp. The bond's effective duration is closest to:",
+    "choices": [
+      "8.93",
+      "9.34",
+      "18.68"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : la duration effective vaut (100,70 − 96,10) ÷ (2 × 0,0025 × 98,50) = 4,60 ÷ 0,4925 ≈ 9,34. Oublier le facteur 2 au dénominateur double le résultat (18,68), alors que l'écart de prix couvre un choc total de 50 pb. 8,93 n'utilise que la hausse de prix d'un seul côté."
+  },
+  {
+    "num": 61,
+    "topic": "portfolio",
+    "prompt": "Which statement about correlation and portfolio diversification is most accurate?",
+    "choices": [
+      "When the correlation between two risky assets is zero, the portfolio standard deviation equals the weighted average of their standard deviations.",
+      "Combining two risky assets reduces portfolio risk only when the correlation between them is negative.",
+      "Diversification benefits increase as correlation decreases, and at a correlation of −1 a portfolio with zero standard deviation can be formed."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : plus la corrélation est faible, plus l'écart-type du portefeuille descend sous la moyenne pondérée des écarts-types, et à −1 on peut choisir des poids qui annulent tout le risque. L'écart-type égale la moyenne pondérée seulement quand la corrélation vaut +1, pas 0. Toute corrélation inférieure à +1 apporte un gain de diversification, même si elle est positive."
+  },
+  {
+    "num": 62,
+    "topic": "alternatives",
+    "prompt": "Which of the following is least likely a characteristic of direct investment in real estate?",
+    "choices": [
+      "Each property is unique, which makes price determination difficult.",
+      "A large unit size, which limits diversification for smaller investors.",
+      "Low transaction costs relative to the value of the asset."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : les coûts de transaction de l'immobilier détenu en direct sont élevés (expertise, courtage, frais juridiques, taxes), ce n'est donc pas une caractéristique de cette classe d'actifs. Chaque bien est unique, ce qui rend son prix difficile à établir, et sa taille unitaire élevée limite la diversification des petits investisseurs. Ces deux propositions décrivent bien l'immobilier direct."
+  },
+  {
+    "num": 63,
+    "topic": "equity",
+    "prompt": "A company just paid an annual dividend of $2.50 per share. Dividends are expected to grow at 3% indefinitely, and the required return is 8%. The intrinsic value per share is closest to:",
+    "choices": [
+      "$32.19.",
+      "$50.00.",
+      "$51.50."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le modèle de Gordon actualise le dividende de l'an prochain : D1 = 2,50 × 1,03 = 2,575 $, puis V = 2,575 ÷ (0,08 − 0,03) = 51,50 $. Utiliser le dividende déjà versé (2,50 ÷ 0,05 = 50,00 $) est le piège classique D0/D1. Diviser par 8 % seulement (32,19 $) oublie de retrancher le taux de croissance."
+  },
+  {
+    "num": 64,
+    "topic": "equity",
+    "prompt": "A stock trades at $46 just before the company pays a 15% stock dividend, and an investor owns 1,000 shares. Immediately afterward, the share price and the value of her holding are closest to:",
+    "choices": [
+      "$40.00 and $46,000.",
+      "$39.10 and $44,965.",
+      "$46.00 and $52,900."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : un dividende en actions de 15 % porte la détention à 1 150 actions sans créer de valeur ; le cours s'ajuste à 46 ÷ 1,15 = 40,00 $ et la position vaut toujours 1 150 × 40 = 46 000 $. Multiplier le cours par 0,85 (39,10 $) confond une division par 1,15 avec une baisse de 15 %. Garder le cours à 46 $ revient à croire que la distribution enrichit l'actionnaire."
+  },
+  {
+    "num": 65,
+    "topic": "fixed_income",
+    "prompt": "All else equal, which of the following option-free bonds most likely has the highest Macaulay duration?",
+    "choices": [
+      "10-year bond, 2% coupon, priced at a 6% yield",
+      "10-year bond, 6% coupon, priced at a 6% yield",
+      "10-year bond, 2% coupon, priced at a 3% yield"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : à échéance égale, la duration est plus longue quand le coupon est bas (plus de poids sur le remboursement final) et quand le rendement est bas (les flux lointains pèsent davantage après actualisation). L'obligation à 2 % de coupon actualisée à 3 % cumule les deux effets. Le piège est de ne regarder que le coupon : à coupon égal, le titre actualisé à 6 % a une duration plus courte."
+  },
+  {
+    "num": 66,
+    "topic": "fixed_income",
+    "prompt": "In a bond offering, the investment bank agrees to sell as much of the issue as it can but does not guarantee the amount raised by the issuer. This arrangement is best described as a:",
+    "choices": [
+      "best-efforts offering.",
+      "firm commitment (underwritten) offering.",
+      "shelf registration."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : dans un best-efforts offering, la banque agit comme simple agent et place ce qu'elle peut, sans garantir le montant levé ; le risque de placement reste à l'émetteur. Dans une émission garantie (underwritten), la banque achète toute l'émission et supporte le risque de ne pas la revendre. La shelf registration est un enregistrement unique qui permet d'émettre plus tard en plusieurs fois, elle ne dit rien de la garantie de placement."
+  },
+  {
+    "num": 67,
+    "topic": "fixed_income",
+    "prompt": "An analyst must value an infrequently traded corporate bond. She estimates its yield from the yields of actively traded bonds with similar credit quality, coupon and maturity. This approach is best described as:",
+    "choices": [
+      "bootstrapping.",
+      "matrix pricing.",
+      "yield-to-worst analysis."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le matrix pricing estime le rendement d'une obligation peu liquide à partir de titres comparables (même qualité de crédit, coupon et échéance proches), souvent par interpolation, puis actualise ses flux à ce rendement. Le bootstrapping sert à extraire des taux spot d'une courbe de titres au pair, pas à évaluer un titre illiquide par comparables. Le yield-to-worst est le plus faible des rendements possibles d'une obligation callable."
+  },
+  {
+    "num": 68,
+    "topic": "derivatives",
+    "prompt": "A company entered a pay-fixed, receive-floating interest rate swap at a swap rate of 3.0%. Six months later, swap rates for the remaining term have risen to 3.6%. To the company, the swap's value is most likely:",
+    "choices": [
+      "zero, because the swap rate was set at par.",
+      "negative, because the company pays a fixed rate.",
+      "positive, because it pays a fixed rate below the current market swap rate."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le prix du swap, le taux fixe de 3,0 %, a été choisi pour que sa valeur soit nulle à l'initiation ; quand les taux de swap montent à 3,6 %, le payeur fixe verse moins que ce qu'exigerait un swap neuf et sa position prend une valeur positive. Le piège est de croire que la valeur reste nulle : seul le prix est fixé à la signature, la valeur varie ensuite avec les taux."
+  },
+  {
+    "num": 69,
+    "topic": "derivatives",
+    "prompt": "A call option is out of the money with three months remaining to expiration. Which statement about this option is most accurate?",
+    "choices": [
+      "Its exercise value is zero, so its entire premium is time value.",
+      "Its exercise value is negative, which reduces its premium.",
+      "Its time value is zero, because it would not be exercised today."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : une option hors de la monnaie a une valeur d'exercice nulle, jamais négative, puisque le détenteur n'est pas obligé d'exercer ; toute sa prime est donc de la valeur temps, qui reflète la chance de passer dans la monnaie avant l'échéance. La valeur temps ne tombe à zéro qu'à l'échéance. Le piège est de croire qu'une valeur d'exercice puisse être négative."
+  },
+  {
+    "num": 70,
+    "topic": "portfolio",
+    "prompt": "The correlation between a stock's returns and the market's returns is 0.6. The stock's standard deviation is 30% and the market's standard deviation is 15%. The stock's beta is closest to:",
+    "choices": [
+      "0.30",
+      "1.20",
+      "2.00"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le bêta vaut Cov(i, m) ÷ σm² = ρ × σi ÷ σm = 0,6 × 30 % ÷ 15 % = 1,20. 2,00 oublie la corrélation et ne garde que le rapport des écarts-types, comme si le titre était parfaitement corrélé au marché. 0,30 inverse les écarts-types (0,6 × 15 % ÷ 30 %)."
+  },
+  {
+    "num": 71,
+    "topic": "equity",
+    "prompt": "An investor buys a stock at $60 per share with an initial margin of 40% and a maintenance margin of 25%. The price below which she receives a margin call is closest to:",
+    "choices": [
+      "$36.00.",
+      "$45.00.",
+      "$48.00."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : le prêt par action vaut 60 × (1 − 0,40) = 36 $ ; l'appel de marge survient quand (P − 36) ÷ P = 25 %, soit P = 36 ÷ 0,75 = 48,00 $. Le choix de 45 $ applique simplement la marge de maintien au prix d'achat, sans tenir compte du montant emprunté. 36 $ est le montant de la dette, pas le prix d'appel."
+  },
+  {
+    "num": 72,
+    "topic": "derivatives",
+    "prompt": "Compared with exchange-traded derivatives, over-the-counter derivatives are least likely to:",
+    "choices": [
+      "be customized to the specific needs of the end user.",
+      "expose the parties to counterparty credit risk.",
+      "offer greater transparency and standardized terms."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : la standardisation et la transparence sont des traits des dérivés négociés en bourse, où une chambre de compensation s'interpose entre acheteur et vendeur. Les dérivés de gré à gré sont au contraire faits sur mesure et exposent davantage chaque partie au risque de contrepartie. Le piège est de lire « least likely » comme « most likely » et de choisir un trait réel des dérivés OTC."
+  },
+  {
+    "num": 73,
+    "topic": "equity",
+    "prompt": "An analyst forecasts a company's revenue by projecting total market sales from expected GDP growth and then applying the company's expected market share. This approach is best described as:",
+    "choices": [
+      "a top-down approach.",
+      "a bottom-up approach.",
+      "a hybrid approach."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : partir d'une variable macroéconomique (la croissance du PIB), en déduire la taille du marché puis appliquer une part de marché est la démarche descendante (top-down). Une démarche ascendante (bottom-up) part d'éléments propres à l'entreprise, comme le nombre de magasins, la capacité de production ou les volumes par produit. Une démarche hybride combinerait explicitement les deux, ce qui n'est pas le cas ici."
+  },
+  {
+    "num": 74,
+    "topic": "portfolio",
+    "prompt": "A pension fund's strategic asset allocation targets 60% equities, with a rebalancing range of plus or minus 5 percentage points. After a strong rally, equities have grown to 66% of the portfolio, while long-term capital market expectations are unchanged. The most appropriate action is to:",
+    "choices": [
+      "sell equities to bring the weight back toward 60%, because the allocation is outside its permitted range.",
+      "raise the strategic equity target to 66%, because the market has rewarded equities.",
+      "keep the 66% weight as a tactical overweight, because recent momentum is likely to continue."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le poids de 66 % sort du couloir de 55 % à 65 %, et comme les anticipations de long terme n'ont pas changé, on rééquilibre en vendant des actions pour revenir vers la cible. La SAA ne se modifie que si les objectifs, les contraintes ou les anticipations de long terme changent, pas après une simple hausse de marché. Garder l'écart sur un pari de court terme serait une décision tactique, que rien ne justifie ici."
+  },
+  {
+    "num": 75,
+    "topic": "derivatives",
+    "prompt": "A 3-month interest rate futures contract is quoted at 96.40, using the convention 100 minus the annualized reference rate. Which statement is most accurate?",
+    "choices": [
+      "The implied reference rate is 3.60%, and a long position gains if rates fall.",
+      "The implied reference rate is 3.60%, and a long position gains if rates rise.",
+      "The implied reference rate is 0.90%, because the contract covers three months."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le prix coté vaut 100 − 3,60 = 96,40, donc le taux annualisé implicite est 3,60 % ; si les taux baissent, le prix coté monte et la position longue gagne. Ce contrat se comporte comme un prêt, à l'inverse d'un FRA long qui gagne à la hausse des taux. 0,90 % est le taux de la période de trois mois, pas le taux annualisé qui sert à la cotation."
+  },
+  {
+    "num": 76,
+    "topic": "derivatives",
+    "prompt": "A manufacturer uses a forward contract to fix the price of a raw material it expects to buy in six months. For financial reporting purposes, this hedge is best described as a:",
+    "choices": [
+      "fair value hedge.",
+      "net investment hedge.",
+      "cash flow hedge."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : couvrir la variabilité d'un flux futur, ici le prix d'un achat prévu, est une couverture de flux de trésorerie (cash flow hedge). Une fair value hedge protège la valeur d'un actif ou d'un passif déjà au bilan, par exemple une dette à taux fixe émise. La net investment hedge couvre le risque de change d'un investissement dans une filiale étrangère."
+  },
+  {
+    "num": 77,
+    "topic": "fixed_income",
+    "prompt": "A floating-rate note pays MRR + 0.80%. Since issuance, the issuer's credit quality has declined, and investors now require a discount margin of 1.20%. On a reset date, the note will most likely trade:",
+    "choices": [
+      "at par, because the coupon resets to the market rate.",
+      "above par.",
+      "below par."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : à une date de refixation, la note ne cote au pair que si la marge cotée égale la marge exigée (discount margin) ; ici la marge exigée (1,20 %) dépasse la marge payée (0,80 %), les coupons sont trop faibles et le titre cote sous le pair. Le piège est de croire que la refixation suffit : elle ne corrige que le taux de référence, pas la variation du risque de crédit de l'émetteur."
+  },
+  {
+    "num": 78,
+    "topic": "fixed_income",
+    "prompt": "A bond has a 2.0% annual probability of default and an expected recovery rate of 40%. The expected loss over one year per 1,000,000 of exposure is closest to:",
+    "choices": [
+      "12,000",
+      "8,000",
+      "20,000"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la perte attendue est la probabilité de défaut multipliée par la perte en cas de défaut : 2 % × (1 − 40 %) × 1 000 000 = 12 000. Utiliser le taux de recouvrement à la place de la perte en cas de défaut donne 8 000, et ignorer le recouvrement donne 20 000."
+  },
+  {
+    "num": 79,
+    "topic": "equity",
+    "prompt": "A company retains 60% of its earnings and earns a 10% return on equity, both expected to persist. Its required return on equity is 11%. The justified trailing P/E is closest to:",
+    "choices": [
+      "8.0.",
+      "8.5.",
+      "12.0."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : g = b × ROE = 0,60 × 10 % = 6 % et le taux de distribution vaut 1 − 0,60 = 0,40 ; le P/E justifié sur bénéfices passés vaut 0,40 × 1,06 ÷ (0,11 − 0,06) = 0,424 ÷ 0,05 = 8,48, soit environ 8,5. 8,0 est le P/E prospectif (leading), sans le facteur (1 + g). 12,0 met à tort le taux de rétention au numérateur à la place du taux de distribution."
+  },
+  {
+    "num": 80,
+    "topic": "portfolio",
+    "prompt": "An investor measures utility as U = E(r) − 0.5 × A × σ², with a risk aversion coefficient A of 4. Portfolio 1: expected return 12%, standard deviation 20%. Portfolio 2: expected return 9%, standard deviation 10%. Portfolio 3: expected return 5%, standard deviation 4%. The investor should choose:",
+    "choices": [
+      "Portfolio 1.",
+      "Portfolio 2.",
+      "Portfolio 3."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : l'utilité vaut U1 = 0,12 − 0,5 × 4 × 0,20² = 0,040, U2 = 0,09 − 2 × 0,10² = 0,070 et U3 = 0,05 − 2 × 0,04² ≈ 0,047, donc le portefeuille 2 l'emporte. Choisir le portefeuille 1, c'est raisonner comme un investisseur neutre au risque qui ne regarde que le rendement. Choisir le 3 vient d'une pénalité calculée avec l'écart-type au lieu de la variance (0,05 − 2 × 0,04 = −0,03, le moins négatif des trois)."
+  },
+  {
+    "num": 81,
+    "topic": "derivatives",
+    "prompt": "A company plans to borrow at a floating rate for six months, starting three months from today. To hedge against rising rates, it should most likely:",
+    "choices": [
+      "take a short position in a 3×6 FRA.",
+      "take a long position in a 3×9 FRA.",
+      "take a short position in a 3×9 FRA."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : l'emprunt démarre dans 3 mois et dure 6 mois, ce qui correspond à un FRA 3×9 ; la position longue paie le taux fixe du FRA et reçoit le taux de référence, elle gagne si les taux montent et compense le surcoût de l'emprunt. La position courte gagnerait au contraire en cas de baisse des taux. Le FRA 3×6 porte sur un taux à 3 mois, pas à 6 mois."
+  },
+  {
+    "num": 82,
+    "topic": "derivatives",
+    "prompt": "All else equal, an increase in the convenience yield of a physical commodity will most likely cause its no-arbitrage forward price to:",
+    "choices": [
+      "increase.",
+      "decrease.",
+      "remain unchanged, because the spot price is unchanged."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : le prix forward de non-arbitrage vaut le prix comptant capitalisé au taux sans risque, plus la valeur des coûts de portage, moins celle des bénéfices de détention ; le convenience yield est un bénéfice lié à la détention physique, il réduit donc le prix forward. Le piège est de le traiter comme un coût de stockage, qui lui augmente le prix forward."
+  },
+  {
+    "num": 83,
+    "topic": "alternatives",
+    "prompt": "A new investor in a hedge fund is not allowed to redeem any shares during the first two years after the initial investment. This provision is best described as a:",
+    "choices": [
+      "lockup period.",
+      "notice period.",
+      "redemption gate."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : la période de blocage (lockup) interdit tout rachat pendant une durée fixée après la souscription. Le notice period n'est que le préavis à donner avant chaque rachat, une fois le blocage terminé. Une gate plafonne la part des actifs du fonds qui peut être retirée à une date donnée, sans interdire tout rachat."
+  },
+  {
+    "num": 84,
+    "topic": "equity",
+    "prompt": "From the investor's perspective, which preference share is most likely the least risky, all else equal?",
+    "choices": [
+      "Callable, non-cumulative preference share.",
+      "Putable, cumulative preference share.",
+      "Callable, cumulative preference share."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : l'option de vente (put) appartient à l'investisseur, qui peut revendre le titre à l'émetteur à un prix fixé, et le caractère cumulatif impose de rattraper les dividendes non versés avant tout dividende ordinaire. L'option de remboursement anticipé (call) profite à l'émetteur et accroît le risque de l'investisseur. Le titre callable et non cumulatif est donc le plus risqué des trois."
+  },
+  {
+    "num": 85,
+    "topic": "equity",
+    "prompt": "A non-callable, non-convertible perpetual preferred share has a par value of $80 and pays an annual dividend of 5% of par. If investors require a 6.4% return, its value is closest to:",
+    "choices": [
+      "$62.50.",
+      "$80.00.",
+      "$102.40."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : le dividende vaut 5 % × 80 = 4,00 $ par an, et la valeur d'une perpétuité est V = D ÷ r = 4,00 ÷ 0,064 = 62,50 $. Le choix de 80 $ actualise au taux du coupon (5 %) au lieu du rendement exigé. 102,40 $ inverse le rapport des deux taux : quand le rendement exigé dépasse le taux de dividende, le titre vaut moins que le pair."
+  },
+  {
+    "num": 86,
+    "topic": "alternatives",
+    "prompt": "Compared with direct ownership of commercial property, investing in publicly traded REITs most likely provides:",
+    "choices": [
+      "greater liquidity, but returns that are more highly correlated with the equity market.",
+      "greater control over property management decisions.",
+      "lower correlation with equities, because REIT prices are based on appraisals."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : les REITs se négocient en Bourse, ce qui les rend liquides, mais leurs cours suivent en partie le marché actions, d'où une corrélation plus forte qu'un immeuble détenu en direct et valorisé par expertise. L'investisseur en REIT ne contrôle pas la gestion des immeubles, que décident les dirigeants du REIT. Les cours des REITs sont des prix de marché, pas des estimations, ce qui augmente leur corrélation avec les actions au lieu de la réduire."
+  },
+  {
+    "num": 87,
+    "topic": "equity",
+    "prompt": "Because hedge funds report their performance to index providers voluntarily, hedge fund indexes most likely:",
+    "choices": [
+      "understate returns, because poorly performing funds join the index.",
+      "accurately reflect returns, because reporting rules are set by regulators.",
+      "overstate returns, because funds tend to stop reporting after poor results."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct : un fonds qui obtient de mauvais résultats tend à cesser de publier, voire à fermer, et sort de l'indice ; seuls les meilleurs restent, ce qui gonfle les rendements (biais du survivant). Les indices de hedge funds sont donc plutôt surestimés que sous-estimés. Aucune règle réglementaire n'impose cette déclaration : c'est justement son caractère volontaire qui crée le biais."
+  },
+  {
+    "num": 88,
+    "topic": "fixed_income",
+    "prompt": "A liquidating company has three debt classes outstanding: senior unsecured bonds, second lien loans and subordinated bonds. Which class most likely ranks first in the priority of claims?",
+    "choices": [
+      "Senior unsecured bonds",
+      "Second lien loans",
+      "Subordinated bonds"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct : une dette garantie, même de second rang (second lien), passe avant la dette non garantie sur les actifs qui la garantissent ; l'ordre est donc second lien, puis senior unsecured, puis subordonnée. Le piège est le mot « senior » : il classe la dette au premier rang des créances non garanties, mais ne la place pas devant une dette sécurisée."
+  },
+  {
+    "num": 89,
+    "topic": "fixed_income",
+    "prompt": "A government-sponsored housing agency issues bonds without an explicit guarantee from the national government. Compared with that government's sovereign bonds of similar maturity, these bonds most likely:",
+    "choices": [
+      "offer a slightly higher yield.",
+      "offer a lower yield, because they fund public policy goals.",
+      "offer the same yield, because the agency is government-sponsored."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : une agence (quasi-government) bénéficie souvent d'un soutien implicite de l'État, mais pas de sa garantie pleine et explicite, et ses titres sont moins liquides que les emprunts souverains ; les investisseurs exigent donc un léger supplément de rendement. Le piège est de supposer que le parrainage public suffit à donner exactement le risque de l'État lui-même."
+  },
+  {
+    "num": 90,
+    "topic": "fixed_income",
+    "prompt": "Which statement about the notching of corporate bond ratings is most accurate?",
+    "choices": [
+      "Notching is generally wider for issuers with lower credit ratings.",
+      "Senior secured bonds are always rated at the issuer rating.",
+      "Notching is generally wider for investment-grade issuers, because their spreads are tighter."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct : plus la probabilité de défaut est élevée, plus le rang de la créance et le taux de recouvrement comptent, d'où des écarts de notation (notching) plus larges pour les émetteurs mal notés. Une dette senior garantie peut au contraire être notée au-dessus de la note de l'émetteur. Le piège est de croire que l'ajustement est le même pour tous : pour un émetteur investment grade, la note des titres reste proche de celle de l'émetteur."
+  }
+]
