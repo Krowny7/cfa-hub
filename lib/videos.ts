@@ -1,7 +1,9 @@
 // Vidéos résumé : un cours filmé (voix « Rémy » des cours complets, écran façon one-pager, formules en KaTeX).
 // Chaque vidéo est une suite de parties (un sujet de 4 à 6 min par fichier, sous la limite d'envoi de Supabase),
 // jouées à la suite comme un seul film. Fichiers dans le bucket privé "courses" sous `<fichier>.mp4` et
-// `<fichier>.jpg` (affiche) ; envoi : scripts/upload-video.mjs. Fabrication hors dépôt (atelier cfa-work/videos).
+// `<fichier>.jpg` (affiche) ; envoi : scripts/upload-video.mjs. Fabrication hors dépôt (atelier cfa-work/videos,
+// dont moteur/publier.py écrit les blocs `parties`). La vidéo d'exemple de 5 min (duration et convexité) a été
+// retirée de la page : son contenu est devenu le sujet 3 de Fixed Income dans la vidéo 3.
 
 export type ChapitreVideo = { titre: string; debut: number };
 export type PartieVideo = {
@@ -13,8 +15,8 @@ export type PartieVideo = {
 };
 export type VideoResume = {
   slug: string;
-  /** numéro de la série d'une heure, null pour l'exemple */
-  numero: number | null;
+  /** numéro de la vidéo d'une heure */
+  numero: number;
   titre: string;
   matieres: string[];
   etat: "en-ligne" | "a-venir";
@@ -22,30 +24,6 @@ export type VideoResume = {
 };
 
 export const VIDEOS: VideoResume[] = [
-  {
-    slug: "exemple",
-    numero: null,
-    titre: "Duration et convexité",
-    matieres: ["Fixed Income"],
-    etat: "en-ligne",
-    parties: [
-      {
-        titre: "Duration et convexité",
-        fichier: "videos/exemple-duration-convexite",
-        secondes: 298,
-        chapitres: [
-          { titre: "Ouverture", debut: 0 },
-          { titre: "Prix et taux", debut: 18.1 },
-          { titre: "Macaulay duration", debut: 55.3 },
-          { titre: "Modified duration", debut: 91.8 },
-          { titre: "Convexité", debut: 132.9 },
-          { titre: "Ce qui allonge la duration", debut: 194.1 },
-          { titre: "Pièges d'examen", debut: 218.6 },
-          { titre: "À retenir", debut: 266.3 },
-        ],
-      },
-    ],
-  },
   {
     slug: "video-1",
     numero: 1,
@@ -474,3 +452,32 @@ export const VIDEOS: VideoResume[] = [
 
 export const dureeVideo = (v: VideoResume): number => v.parties.reduce((t, p) => t + p.secondes, 0);
 export const videosEnLigne = (): VideoResume[] => VIDEOS.filter((v) => v.etat === "en-ligne" && v.parties.length > 0);
+
+/** La matière d'une partie, lue dans le nom de son fichier (`videos/v1-q2-…` : q = Quantitative Methods). */
+const MATIERES: Record<string, string> = {
+  e: "Ethics",
+  q: "Quant",
+  ec: "Economics",
+  f: "FSA",
+  c: "Corporate",
+  eq: "Equity",
+  fi: "Fixed Income",
+  d: "Derivatives",
+  a: "Alternatives",
+  p: "Portfolio",
+};
+export const matiereDe = (p: PartieVideo): string => MATIERES[/^videos\/v\d+-([a-z]+)\d/.exec(p.fichier)?.[1] ?? ""] ?? "";
+
+/** Les parties d'une vidéo regroupées par matière, dans l'ordre, avec leur rang dans la vidéo. */
+export function groupesDeMatiere(v: VideoResume): { matiere: string; secondes: number; parties: { partie: PartieVideo; i: number }[] }[] {
+  const groupes: { matiere: string; secondes: number; parties: { partie: PartieVideo; i: number }[] }[] = [];
+  v.parties.forEach((partie, i) => {
+    const m = matiereDe(partie);
+    const g = groupes[groupes.length - 1];
+    if (g && g.matiere === m) {
+      g.parties.push({ partie, i });
+      g.secondes += partie.secondes;
+    } else groupes.push({ matiere: m, secondes: partie.secondes, parties: [{ partie, i }] });
+  });
+  return groupes;
+}
