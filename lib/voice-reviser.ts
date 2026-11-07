@@ -52,7 +52,7 @@ export const RV = {
   pbSous: "Récite tes formules sur papier",
   videosTitre: "Vidéos résumé",
   videosSous: "Une matière en quelques minutes",
-  videosBientot: "Bientôt",
+  videosEtiquette: "Nouveau",
   codexTitre: "Le Codex",
   codexSous: "Tes quêtes, tes sceaux et tout ce qui reste à conquérir.",
   codexAction: "Ouvrir le Codex",

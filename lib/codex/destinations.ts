@@ -131,6 +131,7 @@ export const ROUTES: ReadonlySet<string> = new Set([
   "/session",
   "/settings",
   "/terminal",
+  "/videos",
   "/share/flashcards/[token]",
   "/share/qcm/[token]",
 ]);

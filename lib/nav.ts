@@ -14,7 +14,7 @@ export type Space = {
 };
 
 export const SPACES: Space[] = [
-  { key: "reviser", label: "Réviser", href: "/reviser", match: ["/reviser", "/fiches", "/courses", "/flashcards", "/page-blanche"] },
+  { key: "reviser", label: "Réviser", href: "/reviser", match: ["/reviser", "/fiches", "/courses", "/flashcards", "/page-blanche", "/videos"] },
   { key: "entrainer", label: "S'entraîner", href: "/entrainement", match: ["/entrainement", "/cas-pratiques", "/qcm", "/practice", "/official-exams", "/session", "/exam", "/defi", "/eclair", "/calculs", "/atelier"] },
   { key: "classement", label: "S'affronter", href: "/classement", match: ["/classement", "/duel", "/mock-exams", "/people", "/salles"] },
   { key: "moi", label: "Moi", href: "/moi", match: ["/moi", "/revoir", "/settings", "/onboarding", "/codex"] },

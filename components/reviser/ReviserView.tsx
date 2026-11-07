@@ -186,7 +186,7 @@ function Outils({ d }: { d: DonneesReviser }) {
         </Link>
       </li>
       <li className={s.case}>
-        <div className={[s.carte, s.outil, s.outilSombre].join(" ")}>
+        <Link href="/videos" className={[s.carte, s.levable, s.outil, s.outilSombre].join(" ")}>
           <InkRing size={230} className="rl-deco pointer-events-none absolute -right-[40px] top-1/2 -z-[1] -translate-y-1/2 text-[#fff] opacity-[0.08]" />
           <span className={s.outilLecture} aria-hidden>
             <svg viewBox="0 0 24 24" fill="currentColor">
@@ -197,8 +197,8 @@ function Outils({ d }: { d: DonneesReviser }) {
             <h3 className={"font-brand " + s.outilTitre}>{RV.videosTitre}</h3>
             <span>{RV.videosSous}</span>
           </span>
-          <span className={s.outilEtiquette}>{RV.videosBientot}</span>
-        </div>
+          <span className={s.outilEtiquette}>{RV.videosEtiquette}</span>
+        </Link>
       </li>
     </ul>
   );
