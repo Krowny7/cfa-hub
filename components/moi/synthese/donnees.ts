@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { loadActivity } from "@/components/accueil/queries";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { countPlayers } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
@@ -108,7 +109,7 @@ async function lireNotions(supabase: SupabaseClient, syn: { notions: Record<stri
 export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClient | null, user: Pick<User, "id" | "user_metadata">, now: number): Promise<SyntheseMoi> {
   const id = user.id;
   const dates = datesSynthese(now);
-  const [profil, maitrise, mesures, etat, classe, joueurs, temps, codex, questions, cartes, trophees, examen, syn, ryt, act] = await Promise.all([
+  const [profil, maitrise, mesures, etat, classe, joueurs, temps, codex, questions, cartes, trophees, examen, syn, ryt, act, jour] = await Promise.all([
     lireProfil(supabase, id).catch(() => null),
     getMaitrise(supabase, id).catch(() => null),
     getTopicMastery(supabase, id).catch(() => null),
@@ -130,6 +131,13 @@ export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClie
     lireRythme(admin, id).catch(() => null),
     // les réponses depuis 3, 30, 60 et 90 jours (migration_moi_activite.sql) : null sans clé de service ou sans la migration
     lireActivite(admin, id, dates).catch(() => null),
+    // la réussite du jour : les mêmes sources que l'objectif du jour de l'accueil, lues depuis minuit seulement
+    loadActivity(supabase, id, new Date(now), true)
+      .then((a) => {
+        const d = a.days.find((x) => x.isToday);
+        return d ? { n: d.count, justes: Math.min(d.correct, d.count) } : null;
+      })
+      .catch(() => null),
   ]);
   const rang = rangSynthese({
     elo: classe?.elo ?? DEFAULT_ELO,
@@ -156,6 +164,7 @@ export async function lireSynthese(supabase: SupabaseClient, admin: SupabaseClie
       jn,
       rang,
       temps: tempsSynthese(temps),
+      reussite: jour,
       codex: codexSynthese(codex),
       marquees: marqueesSynthese(questions, cartes),
     },

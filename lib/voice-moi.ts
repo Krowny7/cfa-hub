@@ -165,6 +165,13 @@ export const SYN = {
     placementReste: (reste: number) => `Plus que ${pluriel(reste, "partie classée", "parties classées")} pour avoir ton rang`,
     sommet: "Tu fais partie des 10 meilleurs.",
     sommetElo: "Dernier palier d'ELO : le Top 10 se gagne à la place.",
+    reussite: {
+      titre: "Réussite du jour",
+      sous: (justes: number, n: number) => `${nombre(justes)} juste${justes > 1 ? "s" : ""} sur ${pluriel(n, "question", "questions")}`,
+      vide: "aucune question corrigée aujourd'hui",
+      aucune: "—",
+      valeur: (justes: number, n: number) => `${Math.round((justes / n) * 100)}${NBSP}%`,
+    },
     temps: { titre: "Temps sur le site", semaine: (duree: string) => `${duree} ces 7 jours`, depuis: (jour: string) => `depuis le ${jour}` },
     codex: { titre: "Codex", sous: (xp: number) => `quêtes faites · ${nombre(xp)} XP`, vide: "aucune quête faite pour l'instant", aRecuperer: (n: number) => `${nombre(n)} à récupérer`, recuperer: (n: number) => (n === 1 ? "Récupérer ma quête →" : `Récupérer mes ${nombre(n)} quêtes →`) },
     marquees: {

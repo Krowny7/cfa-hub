@@ -267,6 +267,7 @@ export function exemple(v: Variante = "base"): SyntheseMoi {
       jn: v === "sansDate" ? null : neuf ? null : "J-110",
       rang,
       temps: neuf || v === "sansTemps" ? null : { total: "34 h 20", semaine: "4 h 10", depuis: "16 juin" },
+      reussite: neuf ? { n: 0, justes: 0 } : { n: 45, justes: 35 },
       codex: neuf ? { faites: 0, xp: 0, aRecuperer: 0 } : v === "sansCodex" ? null : { faites: 37, xp: 2140, aRecuperer: 2 },
       marquees: neuf ? { questions: 0, cartes: 0 } : { questions: 15, cartes: 8 },
     },

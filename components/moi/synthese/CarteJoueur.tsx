@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bookmark, Clock, UserRound } from "lucide-react";
+import { Bookmark, Clock, Target, UserRound } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
 import { LigneCodex } from "@/components/moi/CodexMoi";
 import { Bouton, Phrase, SceauUni } from "@/components/moi/synthese/Encre";
@@ -12,8 +12,9 @@ import s from "@/components/moi/synthese/Synthese.module.css";
 
 // La carte du joueur (4 colonnes) : la peinture de ton cabinet avec ton visage
 // et ton pseudo, ton rang (insigne, ELO, place, barre jusqu'à la division
-// suivante), puis trois lignes : le temps passé sur le site, le Codex (avec ce
-// qui attend « Récupérer ») et les marquées. Une ligne dont la source manque
+// suivante), puis quatre lignes : la réussite du jour (justes sur questions
+// corrigées depuis minuit, toutes sources), le temps passé sur le site, le Codex
+// (avec ce qui attend « Récupérer ») et les marquées. Une ligne dont la source manque
 // disparaît sans bruit (sauf les marquées, qui restent avec « — »). Aplats
 // seulement : aucun liquide sur cette carte. Composant serveur, aucun hook.
 
@@ -79,6 +80,20 @@ export function CarteJoueur({ j, className }: { j: JoueurSynthese; className?: s
           <p className={s.rangTexteSeul}>{barre.texte}</p>
         )}
         <ul className={s.stats}>
+          {j.reussite && (
+            <li>
+              <div className={s.stat}>
+                <SceauUni>
+                  <Target size={15} aria-hidden />
+                </SceauUni>
+                <span className={s.statTexte}>
+                  <b>{SYN.joueur.reussite.titre}</b>
+                  <span>{j.reussite.n > 0 ? SYN.joueur.reussite.sous(j.reussite.justes, j.reussite.n) : SYN.joueur.reussite.vide}</span>
+                </span>
+                <b className={s.mono + " " + s.statValeur}>{j.reussite.n > 0 ? SYN.joueur.reussite.valeur(j.reussite.justes, j.reussite.n) : SYN.joueur.reussite.aucune}</b>
+              </div>
+            </li>
+          )}
           {j.temps && (
             <li>
               <div className={s.stat}>

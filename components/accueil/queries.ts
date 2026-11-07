@@ -49,15 +49,18 @@ async function safeRows<T>(run: () => PromiseLike<{ data: unknown; error: unknow
  * migrations sont appliquées ; sinon la lecture échoue et ne compte rien.
  * `todayCalc` : la part des calculs dans `today` (l'infobulle de l'anneau).
  * Lit aussi les 8 derniers jours (série) : `activeDays`.
+ * `jourSeul` : ne lit que depuis minuit (Paris) ; seule la journée d'aujourd'hui est alors juste
+ * (la réussite du jour de la page Moi), les autres jours et la série valent zéro.
  */
-export async function loadActivity(supabase: Client, userId: string, now = new Date()): Promise<ActivityWeek> {
+export async function loadActivity(supabase: Client, userId: string, now = new Date(), jourSeul = false): Promise<ActivityWeek> {
   const today = parisDay(now);
   const dow = (new Date(today + "T12:00:00Z").getUTCDay() + 6) % 7;
   const monday = shiftDay(today, -dow);
   // Depuis le lundi, ou 8 jours en arrière (la série) si c'est plus tôt ; un
   // jour de marge : le lundi à Paris commence la veille au soir en UTC.
+  // Pour la journée seule : la veille à 22 h UTC, avant minuit à Paris (UTC+1 ou +2) ; le tri par jour fait le reste.
   const from = shiftDay(today, -8) < monday ? shiftDay(today, -8) : monday;
-  const since = new Date(shiftDay(from, -1) + "T00:00:00Z").toISOString();
+  const since = jourSeul ? new Date(shiftDay(today, -1) + "T22:00:00Z").toISOString() : new Date(shiftDay(from, -1) + "T00:00:00Z").toISOString();
 
   type DuelRow = {
     challenger_id: string;

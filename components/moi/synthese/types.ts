@@ -59,6 +59,8 @@ export type JoueurSynthese = {
   jn: string | null;
   rang: RangSynthese;
   temps: TempsSynthese | null;
+  /** les questions corrigées aujourd'hui (Paris), toutes sources, et les justes ; null si la lecture échoue */
+  reussite: { n: number; justes: number } | null;
   /** null sans Codex lisible : la ligne disparaît (et la cible de Léonard avec elle) */
   codex: CodexSynthese | null;
   marquees: MarqueesSynthese | null;
