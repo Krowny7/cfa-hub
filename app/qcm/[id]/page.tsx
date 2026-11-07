@@ -117,11 +117,11 @@ export default async function QuizSetPage({ params }: PageProps) {
     sharedGroupIds = (shares ?? []).map((s: { group_id: string }) => s.group_id).filter(Boolean);
   }
 
-  // Use admin client for questions when the set is official (questions RLS mirrors set RLS).
-  const qClient = isOfficial ? admin : supabase;
-  const { data: questionsData } = await qClient
+  // Client admin : l'accès vient d'être vérifié à la main (hasAccess), et la
+  // table ne rend plus correct_index aux joueurs (migration_cle_des_questions.sql).
+  const { data: questionsData } = await admin
     .from("quiz_questions")
-    .select("id,prompt,choices,correct_index,explanation,position")
+    .select("id,set_id,prompt,choices,correct_index,explanation,position,topic_id")
     .eq("set_id", set.id)
     .order("position", { ascending: true });
 

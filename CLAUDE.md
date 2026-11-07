@@ -18,6 +18,8 @@ Toujours écrire à l'utilisateur en français.
 - Tracés d'encre : toujours `<use href>` via InkDefs. Un SVG d'encre recopié en ligne donne des pages de 600 Ko et l'erreur d'hydratation #418.
 - Thème nuit : `--noir` devient clair. Une surface qui doit rester sombre prend une couleur fixe (ex. `#1a120b`).
 - Une carte lente ne doit pas disparaître : Suspense + squelette, deux essais et filet de 15 s (components/accueil/lobby/plafond.ts).
+- `quiz_questions.correct_index` et `explanation` ne sont plus lisibles par le navigateur (droits par colonne, migration_cle_des_questions.sql) : une correction passe par une fonction SECURITY DEFINER qui respecte `_questions_gardees`.
+  Jamais de `select("*")` ni de `.select()` vide sur quiz_questions, et une nouvelle colonne doit être ajoutée à son GRANT SELECT, sinon le site ne la lit pas.
 
 ## Mise en page
 - La première partie d'une page (accueil, S'entraîner, S'affronter, Moi) : l'en-tête et le premier bloc dans `.rl-cadre`. Ses dimensions se règlent avec `--cadre-*` en haut de app/globals.css, jamais page par page.

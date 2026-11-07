@@ -549,7 +549,8 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   const keyed = [...(mockResults ?? []), ...(practice ?? [])].flatMap((r) => parseGiven(r.answers) ?? []);
   if (opts.privileged) for (const g of keyed) qids.add(g.question_id);
 
-  let questions = await readIds<QuestionRow>([...qids], (c) => reader.from("quiz_questions").select("id,set_id,correct_index").in("id", c));
+  // la clé (correct_index) n'est lisible que par le client admin (migration_cle_des_questions.sql)
+  let questions = opts.privileged ? await readIds<QuestionRow>([...qids], (c) => reader.from("quiz_questions").select("id,set_id,correct_index").in("id", c)) : null;
   const judged = !!opts.privileged && questions !== null;
   if (questions === null) questions = (await readByIds<{ id: string; set_id: string }>([...qids], (c) => reader.from("quiz_questions").select("id,set_id").in("id", c))).map((q) => ({ ...q, correct_index: null }));
   const qmap = new Map(questions.map((q) => [q.id, q]));

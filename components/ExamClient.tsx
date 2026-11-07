@@ -41,6 +41,19 @@ type ExamAnswer = {
   selected: number | null;
 };
 
+/** La correction d'une question, rendue par corriger_questions à la remise de la copie. */
+type Correction = { correct_index: number; explanation: string | null; is_correct: boolean };
+
+/** Démo seulement : la correction tirée des questions d'exemple (le navigateur ne lit jamais correct_index). */
+function correctionsLocales(answers: ExamAnswer[]): Map<string, Correction> {
+  const m = new Map<string, Correction>();
+  for (const a of answers) {
+    const ci = a.question.correct_index;
+    if (typeof ci === "number") m.set(a.question.id, { correct_index: ci, explanation: a.question.explanation ?? null, is_correct: a.selected === ci });
+  }
+  return m;
+}
+
 /** Données d'exemple pour app/preview-da (aucun appel réseau, chrono figé). */
 export type ExamDemo = {
   phase: ExamPhase;
@@ -110,6 +123,10 @@ export function ExamClient({
   const [dureeS, setDureeS] = useState<number | null>(null);
   // traits posés par la copie rendue (posés avec elle, pour que l'anneau du jour et la copie restent d'accord)
   const [ajoutes, setAjoutes] = useState(() => (demo?.phase === "done" ? (demo.selected ?? []).filter((x) => x !== null && x !== undefined).length : 0));
+  // la correction de la copie, demandée au serveur à la remise ; null : pas encore là
+  const [corrections, setCorrections] = useState<Map<string, Correction> | null>(() =>
+    demo?.phase === "done" ? correctionsLocales((demo.questions ?? []).map((q, i) => ({ question: q, selected: demo.selected?.[i] ?? null }))) : null,
+  );
 
   const config = EXAM_CONFIGS[configIdx]!;
 
@@ -139,9 +156,10 @@ export function ExamClient({
     if (selectedSetIds.length === 0) return;
     setPhase("loading");
     setError(null);
+    // sans correct_index ni explanation : la table ne les rend plus au navigateur (migration_cle_des_questions.sql)
     const { data, error: qErr } = await supabase
       .from("quiz_questions")
-      .select("id,set_id,prompt,choices,correct_index,explanation,position")
+      .select("id,set_id,prompt,choices,position")
       .in("set_id", selectedSetIds);
 
     const qs = shuffleArr(
@@ -167,23 +185,26 @@ export function ExamClient({
     setError(null);
     savedRef.current = false;
     setAjoutes(0);
+    setCorrections(null);
     startedAtRef.current = Date.now();
     setPhase("active");
   }
 
-  // La copie rendue : un trait par question répondue, et le résultat dans
-  // quiz_attempts, au format des QCM joués en entier (lu par lib/answer-stats) :
-  // une ligne par QCM source, score = justes, total = répondues (une question
-  // laissée sans réponse ne compte pas), plus les réponses données.
+  // La copie rendue : le serveur la corrige (corriger_questions), puis un trait
+  // par question répondue, et le résultat dans quiz_attempts, au format des QCM
+  // joués en entier (lu par lib/answer-stats) : une ligne par QCM source, score
+  // = justes, total = répondues (une question laissée sans réponse ne compte
+  // pas), plus les réponses données. Sans correction, rien n'est enregistré.
   useEffect(() => {
     if (phase !== "done" || demo || savedRef.current) return;
     savedRef.current = true;
     const duration = startedAtRef.current ? Math.round((Date.now() - startedAtRef.current) / 1000) : null;
     setDureeS(duration);
     const answeredAll = answers.filter((a) => a.selected !== null);
-    if (answeredAll.length === 0) return;
-    setAjoutes(answeredAll.length);
-    poserTrait(answeredAll.length);
+    if (answeredAll.length > 0) {
+      setAjoutes(answeredAll.length);
+      poserTrait(answeredAll.length);
+    }
 
     const bySet = new Map<string, ExamAnswer[]>();
     for (const a of answers) {
@@ -192,24 +213,44 @@ export function ExamClient({
       bySet.set(a.question.set_id, list);
     }
     void (async () => {
+      const corr = new Map<string, Correction>();
+      try {
+        const { data, error: cErr } = await supabase.rpc("corriger_questions", {
+          p_answers: answers.map((a) => ({ question_id: a.question.id, selected_index: a.selected })),
+        });
+        if (cErr) throw cErr;
+        for (const r of (data ?? []) as ({ question_id: string } & Correction)[]) {
+          corr.set(r.question_id, { correct_index: r.correct_index, explanation: r.explanation ?? null, is_correct: r.is_correct === true });
+        }
+      } catch (e) {
+        console.error("exam corriger_questions failed:", e);
+        setCorrections(corr);
+        if (answeredAll.length > 0) setSaveError(EXAMEN.sansCorrection);
+        return;
+      }
+      setCorrections(corr);
+      if (answeredAll.length === 0) return;
       try {
         const { data: auth } = await supabase.auth.getUser();
         if (!auth.user) return;
         const userId = auth.user.id;
+        // une question sans correction (celle d'un examen blanc en cours) ne compte ni au score ni au total
+        const jugees = answeredAll.filter((a) => corr.has(a.question.id)).length;
         const rows = [...bySet.entries()]
           .map(([setId, list]) => {
-            const answered = list.filter((a) => a.selected !== null);
+            const answered = list.filter((a) => a.selected !== null && corr.has(a.question.id));
             return {
               user_id: userId,
               set_id: setId,
-              score: answered.filter((a) => a.selected === a.question.correct_index).length,
+              score: answered.filter((a) => corr.get(a.question.id)?.is_correct === true).length,
               total: answered.length,
               // la durée de l'examen, au prorata des questions répondues
-              duration_seconds: duration !== null ? Math.round((duration * answered.length) / answeredAll.length) : null,
-              answers: list.map((a) => ({ question_id: a.question.id, selected_index: a.selected })),
+              duration_seconds: duration !== null && jugees > 0 ? Math.round((duration * answered.length) / jugees) : null,
+              answers: list.filter((a) => corr.has(a.question.id)).map((a) => ({ question_id: a.question.id, selected_index: a.selected })),
             };
           })
           .filter((r) => r.total > 0);
+        if (rows.length === 0) return;
         const { error: insErr } = await supabase.from("quiz_attempts").insert(rows);
         if (insErr) throw insErr;
       } catch (e) {
@@ -374,21 +415,38 @@ export function ExamClient({
 
   // ── RÉSULTAT : la copie corrigée ──
 
+  if (phase === "done" && corrections === null) {
+    return (
+      <div className="mx-auto grid w-full max-w-[820px] gap-5">
+        <div className="rl-skel h-[84px]" />
+        <div className="rl-skel h-[360px]" />
+        <p className="t-small m-0 text-center">{MODE_EXAMEN.correction}</p>
+      </div>
+    );
+  }
+
   if (phase === "done") {
     const titleOf = new Map(sets.map(s => [s.id, s.title]));
-    const review: ReviewQuestion[] = answers.map(a => ({
-      question_id: a.question.id,
-      prompt: a.question.prompt,
-      choices: a.question.choices,
-      correct_index: a.question.correct_index ?? -1,
-      explanation: a.question.explanation ?? null,
-      topic: titleOf.get(a.question.set_id) ?? null,
-      selected_index: a.selected,
-      is_correct: a.selected !== null && a.selected === a.question.correct_index,
-    }));
-    const answered = answers.filter(a => a.selected !== null).length;
+    // Les questions d'un examen blanc en cours reviennent sans correction : elles
+    // sortent de la copie. Si la correction a échoué en entier, la copie reste
+    // affichée sans bonnes réponses (-1, comme partout ailleurs).
+    const jugees = corrections && corrections.size > 0 ? answers.filter(a => corrections.has(a.question.id)) : answers;
+    const review: ReviewQuestion[] = jugees.map(a => {
+      const c = corrections?.get(a.question.id);
+      return {
+        question_id: a.question.id,
+        prompt: a.question.prompt,
+        choices: a.question.choices,
+        correct_index: c?.correct_index ?? -1,
+        explanation: c?.explanation ?? null,
+        topic: titleOf.get(a.question.set_id) ?? null,
+        selected_index: a.selected,
+        is_correct: c?.is_correct === true,
+      };
+    });
+    const answered = jugees.filter(a => a.selected !== null).length;
     const correct = review.filter(r => r.is_correct).length;
-    const total = questions.length;
+    const total = jugees.length;
     const many = new Set(review.map(r => r.topic ?? "")).size > 1;
     const sources = [...new Set(answers.map(a => titleOf.get(a.question.set_id)).filter((x): x is string => !!x))];
     const minutes = dureeS ? Math.max(1, Math.round(dureeS / 60)) : null;

@@ -53,6 +53,7 @@ export const MODE_EXAMEN = {
   pasDeCorrection: "Pas de correction avant la fin.",
   demarrer: "Démarrer l'examen",
   preparation: "Préparation des questions…",
+  correction: "Correction de la copie…",
   /** les QCM choisis sont vides (ou la lecture a échoué) */
   vide: "Ces QCM n'ont pas encore de questions. Choisis-en d'autres.",
   parSource: "Par source",

@@ -94,6 +94,15 @@ function shuffleArr<T>(arr: T[]): T[] {
   return a;
 }
 
+/** La correction d'une réponse : rendue par le serveur (correctIndex null : aucune, réseau coupé ou question d'un examen blanc en cours). */
+type Correction = { correctIndex: number | null; explanation: string | null; isCorrect: boolean };
+
+/** Démo seulement : la correction tirée des questions d'exemple (le navigateur ne lit jamais correct_index). */
+function correctionLocale(q: QuizQuestion | undefined, choix: number | null | undefined): Correction | null {
+  if (!q || typeof q.correct_index !== "number") return null;
+  return { correctIndex: q.correct_index, explanation: q.explanation ?? null, isCorrect: choix === q.correct_index };
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function SessionClient({
@@ -144,6 +153,9 @@ export function SessionClient({
   // QCM state
   const [selectedChoice, setSelectedChoice] = useState<number | null>(demo?.selectedChoice ?? null);
   const [showCorr, setShowCorr] = useState(demo?.showCorr ?? false);
+  const [correction, setCorrection] = useState<Correction | null>(() => (demo?.showCorr ? correctionLocale(demo.questions?.[0], demo.selectedChoice) : null));
+  const [validating, setValidating] = useState(false);
+  const [validateError, setValidateError] = useState<string | null>(null);
   const [totalAnswered, setTotalAnswered] = useState(demo?.totalAnswered ?? 0);
   const [totalCorrect, setTotalCorrect] = useState(demo?.totalCorrect ?? 0);
   const [xpEarned, setXpEarned] = useState(demo?.xpEarned ?? 0);
@@ -159,6 +171,9 @@ export function SessionClient({
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<number | null>(null);
+  // la phase vue par une correction qui arrive après coup (la session a pu se terminer pendant l'attente)
+  const phaseRef = useRef<Phase>(phase);
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
   // durée réelle de la session, figée à la fin (sur-titre de la copie)
   const [dureeS, setDureeS] = useState<number | null>(demo?.duree ?? null);
   // un trait tracé ici aujourd'hui : la ligne de série le dit au retour à « Préparer »
@@ -238,9 +253,10 @@ export function SessionClient({
 
     const load = async () => {
       if (mode === "qcm") {
+        // sans correct_index ni explanation : la table ne les rend plus au navigateur (migration_cle_des_questions.sql)
         const { data } = await supabase
           .from("quiz_questions")
-          .select("id,set_id,prompt,choices,correct_index,explanation,position")
+          .select("id,set_id,prompt,choices,position")
           .eq("set_id", selSetId)
           .order("position");
         const qs = (data ?? []).map((q) => ({
@@ -299,6 +315,8 @@ export function SessionClient({
     setIsPaused(false);
     setSelectedChoice(null);
     setShowCorr(false);
+    setCorrection(null);
+    setValidateError(null);
     setTotalAnswered(0);
     setTotalCorrect(0);
     setXpEarned(0);
@@ -312,6 +330,7 @@ export function SessionClient({
 
   // La fin : la durée réelle est figée dans le même rendu que la copie.
   function finir() {
+    phaseRef.current = "done";
     setDureeS(sessionStartRef.current ? Math.round((Date.now() - sessionStartRef.current) / 1000) : null);
     setPhase("done");
   }
@@ -322,24 +341,64 @@ export function SessionClient({
   }
 
   async function validateChoice() {
-    if (selectedChoice === null) return;
+    if (selectedChoice === null || validating) return;
     const currentQ = qQueue[idx % Math.max(qQueue.length, 1)];
     if (!currentQ) return;
+    const choix = selectedChoice;
 
-    const isCorrect = selectedChoice === currentQ.correct_index;
+    // La correction vient du serveur : award_quiz_question_xp corrige, rend la
+    // bonne réponse et son explication (tout QCM), et l'XP (QCM Système
+    // seulement). Le navigateur ne connaît jamais la réponse avant.
+    let corr: Correction = { correctIndex: null, explanation: null, isCorrect: false };
+    let xpBase = 0;
+    if (demo) {
+      corr = correctionLocale(currentQ, choix) ?? corr;
+    } else {
+      setValidating(true);
+      setValidateError(null);
+      try {
+        const { data, error } = await supabase.rpc("award_quiz_question_xp", {
+          p_set_id: selSetId,
+          p_question_id: currentQ.id,
+          p_selected_index: choix,
+        });
+        if (error) throw error;
+        const result = (Array.isArray(data) ? data[0] : data) as AwardXpResult | null;
+        corr = {
+          correctIndex: typeof result?.correct_index === "number" ? result.correct_index : null,
+          explanation: result?.explanation ?? null,
+          isCorrect: Boolean(result?.is_correct),
+        };
+        xpBase = Number(result?.xp_awarded ?? 0) || 0;
+      } catch {
+        // réseau coupé : rien n'est compté, la réponse reste à valider
+        setValidateError(REPONSE.correctionEchec);
+        return;
+      } finally {
+        setValidating(false);
+      }
+    }
+
+    // la session s'est terminée pendant l'attente : la copie est déjà rendue
+    if (phaseRef.current !== "active") return;
+    setCorrection(corr);
+    setShowCorr(true);
+    // pas de correction (question d'un examen blanc en cours) : la réponse ne compte nulle part
+    if (corr.correctIndex === null) return;
+
+    const isCorrect = corr.isCorrect;
     if (isCorrect) setTotalCorrect((c) => c + 1);
     setTotalAnswered((a) => a + 1);
-    setShowCorr(true);
     setLog((prev) => [
       ...prev,
       {
         question_id: currentQ.id,
         prompt: currentQ.prompt,
         choices: currentQ.choices,
-        correct_index: currentQ.correct_index ?? -1,
-        explanation: currentQ.explanation ?? null,
+        correct_index: corr.correctIndex ?? -1,
+        explanation: corr.explanation,
         topic: setTitle || null,
-        selected_index: selectedChoice,
+        selected_index: choix,
         is_correct: isCorrect,
       },
     ]);
@@ -347,29 +406,19 @@ export function SessionClient({
     saveAnswerResult(selSetId, setTitle, "qcm", isCorrect ? 1 : 0, 1);
     // le carnet de ratures (correction refaite côté serveur ; sans la migration : rien)
     // (.then lance la requête : sans lui, le builder de Supabase ne part jamais)
-    if (!demo) void supabase.rpc("noter_reponse", { p_question_id: currentQ.id, p_selected_index: selectedChoice, p_source: "session" }).then(() => undefined);
+    if (!demo) void supabase.rpc("noter_reponse", { p_question_id: currentQ.id, p_selected_index: choix, p_source: "session" }).then(() => undefined);
     // une réponse corrigée = un trait (le logo vivant avance)
     if (!demo) poserTrait(1);
     setRepondusIci((n) => n + 1);
 
-    if (isOfficial) {
+    if (xpBase > 0) {
+      // la fonction rend l'XP de base ; le trigger de la série d'encre y ajoute le bonus en base
       try {
-        // La RPC vérifie elle-même la bonne réponse côté serveur (p_selected_index) —
-        // ne jamais se fier au seul isCorrect calculé ici pour décider de l'XP.
-        const { data } = await supabase.rpc("award_quiz_question_xp", {
-          p_set_id: selSetId,
-          p_question_id: currentQ.id,
-          p_selected_index: selectedChoice,
-        });
-        const result = data as AwardXpResult | null;
-        if (result && result.xp_awarded > 0) {
-          // la fonction rend l'XP de base ; le trigger de la série d'encre y ajoute le bonus en base
-          const mult = await multDuJour(supabase);
-          const gain = xpAvecSerie(result.xp_awarded, mult);
-          setXpEarned((x) => x + gain);
-          setLastXpGain(gain);
-          setLastXpMult(mult);
-        }
+        const mult = await multDuJour(supabase);
+        const gain = xpAvecSerie(xpBase, mult);
+        setXpEarned((x) => x + gain);
+        setLastXpGain(gain);
+        setLastXpMult(mult);
       } catch {}
     }
   }
@@ -384,6 +433,8 @@ export function SessionClient({
     }
     setSelectedChoice(null);
     setShowCorr(false);
+    setCorrection(null);
+    setValidateError(null);
     setLastXpGain(null);
   }
 
@@ -625,7 +676,9 @@ export function SessionClient({
   if (mode === "qcm") {
     const currentQ = qQueue[idx % Math.max(qQueue.length, 1)];
     if (!currentQ) return null;
-    const right = selectedChoice === currentQ.correct_index;
+    const right = correction?.isCorrect ?? false;
+    // pas de bonne réponse rendue (réseau coupé, examen blanc en cours) : le choix reste marqué, rien n'est barré
+    const bonne = correction?.correctIndex ?? null;
 
     return (
       <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
@@ -638,22 +691,30 @@ export function SessionClient({
           <PauseCard onResume={() => setIsPaused(false)} />
         ) : (
           <QuestionCard
-            index={totalAnswered - (showCorr ? 1 : 0)}
+            index={totalAnswered - (showCorr && bonne !== null ? 1 : 0)}
             prompt={currentQ.prompt}
             badge={isOfficial ? <span className="chip chip-quiet chip-sm shrink-0">Système · XP</span> : undefined}
             footer={
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
-                {showCorr ? (
+                {showCorr && bonne === null ? (
+                  <p className="t-micro m-0" aria-live="polite">
+                    {REPONSE.sansCorrection}
+                  </p>
+                ) : showCorr ? (
                   <p className={"m-0 inline-flex items-center gap-2 text-[15px] font-semibold " + (right ? "" : "text-pen")} aria-live="polite">
                     {right ? <Check size={17} aria-hidden /> : <X size={17} aria-hidden />}
                     {right ? REPONSE.juste : REPONSE.rature}
                     {lastXpGain !== null && lastXpGain > 0 && <span className="chip chip-quiet chip-sm ml-1 text-white">{texteGain(lastXpGain, lastXpMult)}</span>}
                   </p>
+                ) : validateError ? (
+                  <span role="alert" className="t-micro text-pen">
+                    {validateError}
+                  </span>
                 ) : (
                   <span className="t-micro">Choisis une réponse, puis valide.</span>
                 )}
                 {!showCorr ? (
-                  <button type="button" className="btn btn-primary rl-press" disabled={selectedChoice === null || isPaused} onClick={() => void validateChoice()}>
+                  <button type="button" className="btn btn-primary rl-press" disabled={selectedChoice === null || isPaused || validating} onClick={() => void validateChoice()}>
                     Valider
                   </button>
                 ) : (
@@ -669,22 +730,24 @@ export function SessionClient({
                 key={i}
                 index={i}
                 text={choice}
-                disabled={showCorr || isPaused}
+                disabled={showCorr || isPaused || validating}
                 state={
-                  showCorr
-                    ? i === currentQ.correct_index
+                  showCorr && bonne !== null
+                    ? i === bonne
                       ? "correct"
                       : i === selectedChoice
                         ? "wrong"
                         : "dim"
                     : i === selectedChoice
                       ? "picked"
-                      : "idle"
+                      : showCorr
+                        ? "dim"
+                        : "idle"
                 }
                 onClick={() => setSelectedChoice(i)}
               />
             ))}
-            {showCorr && currentQ.explanation && <Explanation text={currentQ.explanation} className="mt-2 rl-in" />}
+            {showCorr && correction?.explanation && <Explanation text={correction.explanation} className="mt-2 rl-in" />}
             {showCorr && (
               <div className="rl-in -mb-1 mt-1 flex justify-end">
                 <MarqueQuestion questionId={currentQ.id} source="qcm" variante="lien" />

@@ -59,6 +59,10 @@ export const REPONSE = {
   juste: "Juste.",
   rature: "Rature.",
   laBonne: "La bonne réponse",
+  /** question d'un examen blanc en cours : aucune correction rendue, la réponse ne compte pas */
+  sansCorrection: "Pas de correction pour l'instant : cette réponse ne compte pas.",
+  /** la correction n'a pas pu être lue (réseau) : rien n'est compté, la réponse reste à valider */
+  correctionEchec: "Correction indisponible : vérifie ta connexion et valide à nouveau.",
 } as const;
 
 /** « Reprendre mes ratures » : la copie rejouée, ratures seulement. */
@@ -138,6 +142,8 @@ export const COPIE_BLANCHE = {
 /** Mode examen (/exam) : la copie s'enregistre dans tes stats. */
 export const EXAMEN = {
   nonEnregistree: "Copie non enregistrée : elle ne comptera pas dans tes stats.",
+  /** la correction n'a pas pu être lue : la copie s'affiche sans bonnes réponses et ne s'enregistre pas */
+  sansCorrection: "Correction indisponible : la copie ne comptera pas dans tes stats.",
   sansReponse: (n: number) => (n > 0 ? `${pluriel(n, "question", "questions")} sans réponse` : null),
 } as const;
 

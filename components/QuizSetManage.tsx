@@ -167,18 +167,16 @@ export function QuizSetManage({
   // ---------------------------------------------------------------------------
 
   async function fetchQuestions(): Promise<QuizQuestion[]> {
-    const { data, error } = await supabase
-      .from("quiz_questions")
-      .select("id,prompt,choices,correct_index,explanation,position")
-      .eq("set_id", setId)
-      .order("position", { ascending: true });
+    // avec leur réponse : par le serveur, réservé à qui peut éditer ce QCM
+    // (la table ne rend plus correct_index au navigateur, migration_cle_des_questions.sql)
+    const { data, error } = await supabase.rpc("questions_a_editer", { p_set_id: setId });
 
     if (error) return questions;
 
-    return (data ?? []).map((q) => ({
+    return ((data ?? []) as QuizQuestion[]).map((q) => ({
       ...q,
       choices: Array.isArray(q.choices) ? q.choices : [],
-    })) as QuizQuestion[];
+    }));
   }
 
   async function refreshQuestions() {
