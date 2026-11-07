@@ -81,6 +81,8 @@ const FILMS: Record<"land" | "port", Film> = {
   land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [1050, 540, 1480, 680] },
   port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 482.4, 626.1], content: [540, 1044, 760, 992] },
 };
+/** Thème nuit, paysage : le film inversé à l'avance (même formule que le filtre CSS), ninja à ses vraies couleurs. */
+const FILM_LAND_NUIT = "/intro/encre-land-nuit.mp4";
 const MASK_MARGIN = 24;
 const START_TIMEOUT_MS = 1700;
 const STALL_MS = 1200;
@@ -99,7 +101,9 @@ function makeIntroVideo() {
   v.setAttribute("playsinline", "");
   v.setAttribute("muted", "");
   v.preload = "auto";
-  v.src = FILMS[window.innerWidth >= window.innerHeight ? "land" : "port"].src;
+  const land = window.innerWidth >= window.innerHeight;
+  // la nuit, sur ordinateur, un film déjà inversé où le ninja garde ses vraies couleurs (pas de filtre CSS)
+  v.src = land && document.documentElement.dataset.theme === "nuit" ? FILM_LAND_NUIT : FILMS[land ? "land" : "port"].src;
   return v;
 }
 
@@ -282,7 +286,7 @@ const CSS = `
 .rli-film video{position:absolute;max-width:none;opacity:0;transition:opacity .25s ease}
 .rli-film video.is-on{opacity:1}
 .rli-film video.rli-feather{-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(180deg,transparent,#000 7%,#000 93%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(180deg,transparent,#000 7%,#000 93%,transparent);mask-composite:intersect}
-html[data-theme="nuit"] .rli-film{filter:invert(1) contrast(.896) brightness(1.056)}
+html[data-theme="nuit"] .rli-film:not(.rli-film-nuit){filter:invert(1) contrast(.896) brightness(1.056)}
 .rli-ring-film{position:absolute;left:0;top:0;opacity:0;background:var(--ink);-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat;will-change:transform}
 .rli-v.rli-out .rli-film{opacity:0;transition:opacity .22s ease}
 .rli-v.rli-out .rli-bg{opacity:0;transition:opacity .3s ease .04s}
@@ -441,6 +445,7 @@ export function Splash() {
     window.__rlIntro = undefined;
     videoRef.current = video;
     const film = FILMS[video.src.includes("port") ? "port" : "land"];
+    box.classList.toggle("rli-film-nuit", video.src.includes("-nuit"));
     box.appendChild(video);
     ringEl.style.setProperty("--m", `url(${film.mask})`);
 

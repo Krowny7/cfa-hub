@@ -54,7 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               "try{if(/[?&]splash=svg/.test(q)||matchMedia('(prefers-reduced-motion: reduce)').matches)return;" +
               "var v=document.createElement('video');v.muted=true;v.defaultMuted=true;v.playsInline=true;" +
               "v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';" +
-              "v.src='/intro/encre-'+(innerWidth>=innerHeight?'land':'port')+'.mp4';v.load();window.__rlIntro=v;}catch(e){}})();",
+              "v.src='/intro/encre-'+(innerWidth>=innerHeight?(d.dataset.theme==='nuit'?'land-nuit':'land'):'port')+'.mp4';v.load();window.__rlIntro=v;}catch(e){}})();",
           }}
         />
         <InkDefs />
