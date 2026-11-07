@@ -108,6 +108,8 @@ export type AnswerPassage = {
   href: string | null;
   n: number;
   ok: number;
+  /** les questions répondues faux pendant le passage (option `ratees` seulement) */
+  ratees?: string[];
 };
 
 export type AnswerTheme = {
@@ -411,9 +413,11 @@ function duelClosed(d: DuelRow, userId: string, now: number) {
 // Contributions élémentaires : un passage × un set (ou un regroupement).
 type Target = { kind: "set"; setId: string; title?: string | null } | { kind: "bucket"; subject: string; themeKey: string; label: string; tag: string | null; order: number };
 type Contrib = { source: AnswerSource; passage: string; target: Target; n: number; ok: number };
-type PassageInfo = { source: AnswerSource; label: string; at: string; href: string | null };
+type PassageInfo = { source: AnswerSource; label: string; at: string; href: string | null; ratees?: string[] };
 
 export type AnswerStatsOptions = {
+  /** true : chaque passage garde ses questions répondues faux (Moi › Activités : copier, se retester) */
+  ratees?: boolean;
   /** false : profil public, sans thèmes ni passages (et sans lire les noms des adversaires) */
   detail?: boolean;
   /**
@@ -568,6 +572,8 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
    */
   const perSet = (source: AnswerSource, passage: string, rows: { qid: string; answered: boolean; ok: boolean }[], storedScore?: number | null) => {
     const acc = new Map<string, [number, number]>();
+    const info = opts.ratees ? passages.get(passage) : undefined;
+    if (info) info.ratees = [...new Set([...(info.ratees ?? []), ...rows.filter((r) => r.answered && !r.ok && UUID.test(r.qid)).map((r) => r.qid)])];
     for (const r of rows) {
       if (!r.answered) continue;
       const setId = qmap.get(r.qid)?.set_id ?? "";
@@ -889,7 +895,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
             const at = info?.at ?? "";
             // passage de fiche : la fiche de la matière
             const href = info?.href ?? (pid.startsWith("f:") && fiche ? `/fiches/${fiche}` : null);
-            return { id: pid, source: info?.source ?? "qcm", label: info?.label ?? "Passage", at, date: at ? fmtShortDate(at) : "", href, n: v.n, ok: v.ok };
+            return { id: pid, source: info?.source ?? "qcm", label: info?.label ?? "Passage", at, date: at ? fmtShortDate(at) : "", href, n: v.n, ok: v.ok, ...(info?.ratees?.length ? { ratees: info.ratees } : {}) };
           })
           .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
         return { key, label: th.label, tag: th.tag, kind: th.kind, ...(th.retired ? { retired: true } : {}), by: th.by, passages: list.slice(0, PASSAGES_PER_THEME), more: Math.max(0, list.length - PASSAGES_PER_THEME) };

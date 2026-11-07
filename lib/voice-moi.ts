@@ -365,7 +365,23 @@ export const MINIS_FR: Record<string, string> = {
 /** Moi › Activités : tes séances passées et le lien vers chaque copie. */
 export const ACTIVITES = {
   titre: "Tes activités",
-  sous: "Tes séances, de la plus récente à la plus ancienne, avec ton score. Rouvre une copie pour la relire.",
+  sous: "Tes séances, de la plus récente à la plus ancienne. Choisis un jour ou un type : tu peux copier leurs ratures ou te retester dessus.",
   vide: "Rien pour l'instant : tes séances s'afficheront ici.",
   voir: "Voir ma copie",
+  jour: "Jour",
+  type: "Type",
+  tous: "Tous",
+  tousJours: "Tous les jours",
+  aujourdhui: "Aujourd'hui",
+  hier: "Hier",
+  /** le résumé de la sélection : « 7 séances · 41/70 justes · 59 % » */
+  bilan: (seances: number, ok: number, n: number) => `${seances} séance${seances > 1 ? "s" : ""} · ${ok}/${n} justes${n > 0 ? ` · ${Math.round((100 * ok) / n)} %` : ""}`,
+  sansRature: "Aucune rature dans cette sélection : rien à reprendre.",
+  aucune: "Aucune séance pour ce choix.",
+  copier: "Copier les ratures",
+  copiees: (n: number) => (n > 1 ? `${n} questions copiées, avec ta réponse, la bonne et l'explication : colle-les où tu veux.` : "Une question copiée, avec ta réponse, la bonne et l'explication."),
+  copieKo: "Copie impossible, réessaie dans un instant.",
+  copieVide: "Ces ratures ne sont pas encore au carnet : réessaie dans un instant.",
+  /** l'en-tête du texte copié */
+  copieTitre: (selection: string, n: number) => `Mes ratures · ${selection} (${n} question${n > 1 ? "s" : ""})`,
 };

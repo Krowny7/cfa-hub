@@ -59,8 +59,8 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
   const now = Date.now();
 
   if (tab === "activites") {
-    const stats = await getAnswerStats(admin ?? supabase, user.id, { privileged: !!admin, now }).catch(() => null);
-    return <ActivitesView activites={activitesDe(stats)} />;
+    const stats = await getAnswerStats(admin ?? supabase, user.id, { privileged: !!admin, now, ratees: true }).catch(() => null);
+    return <ActivitesView activites={activitesDe(stats)} now={now} />;
   }
 
   if (tab === "stats") {
