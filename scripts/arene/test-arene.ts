@@ -17,6 +17,7 @@ import {
   VS_DUREE_MS,
   dispositionVs,
   examenReussi,
+  deplacerCadre,
   formatVideo,
   gagnantSalle,
   joueursComplets,
@@ -93,7 +94,7 @@ console.log("# La fin de partie");
   check("15 secondes au plus, filet de 20 s, bannière 7 s", VIDEO_MAX_MS === 15_000 && VIDEO_FILET_MS === 20_000 && BANNIERE_DUREE_MS === 7000);
   check("une vidéo courte repart, une vidéo assez longue s'arrête", relancerVideo(4000) && relancerVideo(VIDEO_MIN_MS - 1) && !relancerVideo(VIDEO_MIN_MS) && VIDEO_MIN_MS < VIDEO_MAX_MS);
   check("le filet passe après le plafond", VIDEO_FILET_MS > VIDEO_MAX_MS);
-  check("le cadre suit le format", formatVideo(16 / 9) === "paysage" && formatVideo(9 / 16) === "vertical" && formatVideo(1) === "paysage");
+  check("le cadre suit le format", formatVideo(16 / 9) === "paysage" && formatVideo(9 / 16) === "vertical" && formatVideo(1) === "carre" && formatVideo(4 / 3) === "paysage");
 }
 
 console.log("# Les réglages du joueur");
@@ -101,7 +102,10 @@ console.log("# Les réglages du joueur");
   const uid = "11111111-2222-3333-4444-555555555555";
   const autre = "99999999-2222-3333-4444-555555555555";
   const dossier = (id: string) => `https://x.supabase.co/storage/v1/object/public/arene-medias/${id}/`;
-  const video = { url: `${dossier(uid)}victoire-1730000000000.mp4`, ratio: 0.5625, duree: 12.4, nom: "edit.mp4", poids: 1000 };
+  const video = { url: `${dossier(uid)}victoire-1730000000000.mp4`, ratio: 0.5625, duree: 12.4, nom: "edit.mp4", poids: 1000, format: "carre", cadre: { x: 30, y: 62.5, z: 1.4 } };
+  check("recadrage étranger : centré", areneDepuis({ video: { ...video, format: "rond", cadre: { x: "a" } } }).video?.format === null && areneDepuis({ video: { ...video, cadre: { x: 1 } } }).video?.cadre === null);
+  check("recadrage hors bornes : ramené dedans", egal(areneDepuis({ video: { ...video, cadre: { x: 150, y: -3, z: 9 } } }).video?.cadre, { x: 100, y: 0, z: 3 }));
+  check("glisser à droite garde la gauche", deplacerCadre({ x: 50, y: 50, z: 1 }, 0.1, 0, 16 / 9, "carre").x < 50);
   const image = `${dossier(uid)}vs-1730000000000.webp`;
   check("rien en base : les réglages de départ", egal(areneDepuis(null), ARENE_VIDE) && egal(areneDepuis("n'importe quoi"), ARENE_VIDE) && egal(areneDepuis([]), ARENE_VIDE));
   const lu = areneDepuis({ fond: "glace", image, trait: "bronze", video });

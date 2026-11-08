@@ -5,8 +5,9 @@ import { BanniereVs } from "@/components/arene/BanniereVs";
 import { enregistrerArene } from "@/lib/arene/actions";
 import { joueurArene, lireReglages } from "@/lib/arene/donnees";
 import { envoyerImageVs, envoyerVideoVictoire } from "@/lib/arene/envoi";
-import { ARENE_VIDE, FONDS, TRAITS, VICTOIRE_MAX_OCTETS, VICTOIRE_MAX_SECONDES, fondDe, type Arene } from "@/lib/arene/perso";
-import { formatVideo } from "@/lib/arene/regles";
+import { ARENE_VIDE, CADRE_CENTRE, FONDS, FORMATS_VIDEO, TRAITS, VICTOIRE_MAX_SECONDES, ZOOM_MAX, fondDe, type Arene, type Cadre, type FormatVideo } from "@/lib/arene/perso";
+import { deplacerCadre, formatDe } from "@/lib/arene/regles";
+import { VideoCadree } from "@/components/arene/VideoCadree";
 import { Mo, Refus } from "@/lib/profil/envoi-media";
 import { createClient } from "@/lib/supabase/browser";
 import { ARENE } from "@/lib/voice-arene";
@@ -80,7 +81,22 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
   const apercu = joueurArene(joueur, arene);
   const fondActif = arene.fond ?? null;
   const video = arene.video;
-  const format = video ? formatVideo(video.ratio) : "vertical";
+  // le recadrage en cours : montré tout de suite, enregistré quand le joueur s'arrête
+  const [brouillon, setBrouillon] = useState<{ format: FormatVideo; cadre: Cadre } | null>(null);
+  const format: FormatVideo = brouillon?.format ?? (video ? formatDe(video) : "vertical");
+  const cadre = brouillon?.cadre ?? video?.cadre ?? CADRE_CENTRE;
+  const glisse = useRef<{ x: number; y: number; depart: Cadre; l: number; h: number } | null>(null);
+  const recadrer = (suite: Partial<{ format: FormatVideo; cadre: Cadre }>) => setBrouillon({ format, cadre, ...suite });
+
+  useEffect(() => {
+    if (!brouillon || !video) return;
+    const t = setTimeout(() => {
+      changer({ ...arene, video: { ...video, ...brouillon } });
+      setBrouillon(null);
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brouillon]);
 
   return (
     <section id="rl-perso-arene" aria-labelledby="rl-arene-titre" className="flex scroll-mt-24 flex-col gap-5">
@@ -157,8 +173,28 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
         <div className={s.colonne}>
           <h3 className="t-h3 m-0">{R.video}</h3>
           <div className={s.videoBloc}>
-            <div className={[s.video, s.videoApercu].join(" ")} data-format={format}>
-              {video ? <video className={s.videoImg} src={video.url} controls playsInline preload="metadata" aria-label={R.video} /> : <div className={[s.videoImg, s.videoVide].join(" ")} />}
+            <div
+              className={[s.video, s.videoApercu, video && !fige ? s.videoGlisse : ""].join(" ")}
+              data-format={format}
+              onPointerDown={(e) => {
+                if (!video || fige) return;
+                const r = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.setPointerCapture(e.pointerId);
+                glisse.current = { x: e.clientX, y: e.clientY, depart: cadre, l: r.width, h: r.height };
+              }}
+              onPointerMove={(e) => {
+                const g = glisse.current;
+                if (!g || !video) return;
+                recadrer({ cadre: deplacerCadre(g.depart, (e.clientX - g.x) / g.l, (e.clientY - g.y) / g.h, video.ratio, format) });
+              }}
+              onPointerUp={() => (glisse.current = null)}
+              onPointerCancel={() => (glisse.current = null)}
+            >
+              {video ? (
+                <VideoCadree cadre={cadre} src={video.url} muted autoPlay loop playsInline preload="metadata" aria-label={R.video} draggable={false} />
+              ) : (
+                <div className={[s.videoImg, s.videoVide].join(" ")} />
+              )}
               <div className={s.videoCadre} />
             </div>
             <div className="flex min-w-0 flex-col gap-3">
@@ -186,10 +222,28 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
                 }}
               />
               {video ? (
-                <p className={s.fichier}>
-                  {video.nom}
-                  <small>{R.fichier(video.duree, video.poids !== null ? Mo(video.poids) : null, format)}</small>
-                </p>
+                <>
+                  <p className={s.fichier}>
+                    {video.nom}
+                    <small>{R.fichier(video.duree, video.poids !== null ? Mo(video.poids) : null)}</small>
+                  </p>
+                  <p className="t-micro m-0">{R.format}</p>
+                  <div className={s.formats} role="radiogroup" aria-label={R.format}>
+                    {FORMATS_VIDEO.map((f) => (
+                      <button key={f} type="button" role="radio" aria-checked={format === f} className={s.traitChoix} disabled={fige} onClick={() => recadrer({ format: f })}>
+                        {R.formats[f]}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="t-small m-0">{R.glisser}</p>
+                  <label className={s.zoom}>
+                    {R.zoom}
+                    <input type="range" min={1} max={ZOOM_MAX} step={0.05} value={cadre.z} disabled={fige} onChange={(e) => recadrer({ cadre: { ...cadre, z: Number(e.target.value) } })} />
+                    <button type="button" className="btn btn-ghost btn-sm" disabled={fige} onClick={() => recadrer({ cadre: CADRE_CENTRE })}>
+                      {R.recentrer}
+                    </button>
+                  </label>
+                </>
               ) : (
                 <p className="t-small m-0">{R.aucune}</p>
               )}

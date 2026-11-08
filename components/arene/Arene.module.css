@@ -397,12 +397,60 @@
   height: 80.2%;
   background: #1a120b;
   object-fit: cover;
+  overflow: hidden;
+}
+.videoPleine {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .video[data-format="vertical"] .videoImg {
   left: 9.9%;
   top: 6.1%;
   width: 80.2%;
   height: 87.8%;
+}
+.video[data-format="carre"] {
+  aspect-ratio: 1;
+}
+.videoScene[data-format="carre"] {
+  width: min(92vw, calc(100svh - 150px));
+}
+.video[data-format="carre"] .videoImg {
+  left: 9.9%;
+  top: 9.9%;
+  width: 80.2%;
+  height: 80.2%;
+}
+.video[data-format="carre"] .videoCadre {
+  -webkit-mask-image: url("/arene/cadre-1-1.webp");
+  mask-image: url("/arene/cadre-1-1.webp");
+}
+/* Personnaliser : on fait glisser la vidéo pour la recadrer */
+.videoGlisse {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.videoGlisse:active {
+  cursor: grabbing;
+}
+.formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.zoom input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--ink);
 }
 .videoCadre {
   position: absolute;

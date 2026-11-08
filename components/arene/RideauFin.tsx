@@ -7,7 +7,8 @@ import { BoutonEnvoi, PorteeEncre } from "@/components/classement/Encre";
 import { dejaJoue, lancerVideo, marquerJoue, modeDiscret, mouvementReduit } from "@/lib/arene/client";
 import { joueurArene, lireArene, lireElos } from "@/lib/arene/donnees";
 import { ARENE_VIDE, type Arene } from "@/lib/arene/perso";
-import { BANNIERE_DUREE_MS, VIDEO_FILET_MS, VIDEO_MAX_MS, formatVideo, relancerVideo, rideauFerme, sceneFin } from "@/lib/arene/regles";
+import { BANNIERE_DUREE_MS, VIDEO_FILET_MS, VIDEO_MAX_MS, formatDe, relancerVideo, rideauFerme, sceneFin } from "@/lib/arene/regles";
+import { VideoCadree } from "@/components/arene/VideoCadree";
 import { createClient } from "@/lib/supabase/browser";
 import { ARENE } from "@/lib/voice-arene";
 import s from "./Arene.module.css";
@@ -179,10 +180,10 @@ export function RideauFin({
           )}
           {victoire && g && (
             <div className={s.fin} data-cachee={etape === "video" ? "0" : "1"}>
-              <div className={[s.video, s.videoScene].join(" ")} data-format={formatVideo(victoire.ratio)}>
-                <video
+              <div className={[s.video, s.videoScene].join(" ")} data-format={formatDe(victoire)}>
+                <VideoCadree
                   ref={video}
-                  className={s.videoImg}
+                  cadre={victoire.cadre}
                   src={victoire.url}
                   aria-label={ARENE.videoAria(g.pseudo)}
                   preload="auto"

@@ -2,6 +2,8 @@
 // écran VS jouer, qui a gagné, quoi montrer à la fin. Testées par
 // scripts/arene/test-arene.ts ; les écrans sont dans components/arene/.
 
+import type { Cadre, FormatVideo, VideoVictoire } from "@/lib/arene/perso";
+
 /** L'écran VS dure 6 secondes, sa sortie comprise : il tient dans le décompte de départ des Salles. */
 export const VS_DUREE_MS = 6000;
 export const VS_SORTIE_MS = 400;
@@ -89,5 +91,24 @@ export function sceneFin(x: { gagnantId: string | null; aVideo: boolean; reduit:
 /** Le résultat reste-t-il caché derrière le bouton ? Pas en mode discret, pas si le joueur l'a déjà vu. */
 export const rideauFerme = (x: { discret: boolean; dejaVu: boolean }): boolean => !x.discret && !x.dejaVu;
 
-/** Le cadre suit la vidéo : paysage 16:9 ou vertical 9:16. */
-export const formatVideo = (ratio: number): "paysage" | "vertical" => (ratio >= 1 ? "paysage" : "vertical");
+/** Le cadre de départ suit la vidéo : paysage 16:9, carré (vidéo presque carrée) ou vertical 9:16. */
+export const formatVideo = (ratio: number): FormatVideo => (ratio >= 0.85 && ratio <= 1.18 ? "carre" : ratio > 1 ? "paysage" : "vertical");
+
+/** Le cadre montré : celui choisi par le joueur, sinon celui qui suit la vidéo. */
+export const formatDe = (v: Pick<VideoVictoire, "ratio" | "format">): FormatVideo => v.format ?? formatVideo(v.ratio);
+
+/** Largeur sur hauteur de la fenêtre où passe la vidéo, dans chaque cadre peint. */
+const FENETRE: Record<FormatVideo, number> = { paysage: (0.878 * 1170) / (0.802 * 720), carre: 1, vertical: (0.802 * 540) / (0.878 * 877) };
+
+/**
+ * Le recadrage après un glissé de (dx, dy), en fraction de la fenêtre : l'image suit
+ * le doigt. Ce qui dépasse vient du remplissage (object-fit: cover) et du zoom.
+ */
+export function deplacerCadre(c: Cadre, dx: number, dy: number, ratioVideo: number, format: FormatVideo): Cadre {
+  const f = FENETRE[format];
+  const ox = Math.max(0, ratioVideo / f - 1);
+  const oy = Math.max(0, f / ratioVideo - 1);
+  const pas = (o: number) => Math.max(0.15, c.z - 1 + o * c.z);
+  const borne = (n: number) => Math.min(100, Math.max(0, n));
+  return { x: borne(c.x - (dx * 100) / pas(ox)), y: borne(c.y - (dy * 100) / pas(oy)), z: c.z };
+}

@@ -42,7 +42,28 @@ export type VideoVictoire = {
   nom: string | null;
   /** en octets */
   poids: number | null;
+  /** le cadre choisi par le joueur ; absent : celui qui suit la vidéo */
+  format?: FormatVideo | null;
+  /** le recadrage dans ce cadre ; absent : centré, sans zoom */
+  cadre?: Cadre | null;
 };
+
+export const FORMATS_VIDEO = ["paysage", "carre", "vertical"] as const;
+export type FormatVideo = (typeof FORMATS_VIDEO)[number];
+/** x, y : le point gardé (0 à 100, comme object-position) ; z : le zoom, de 1 à 3. */
+export type Cadre = { x: number; y: number; z: number };
+export const CADRE_CENTRE: Cadre = { x: 50, y: 50, z: 1 };
+export const ZOOM_MAX = 3;
+
+const borne = (n: unknown, a: number, b: number): number | null => (typeof n === "number" && Number.isFinite(n) ? Math.min(b, Math.max(a, n)) : null);
+
+/** Un recadrage lu en base ; une valeur étrangère : null (centré). */
+export function cadreDepuis(raw: unknown): Cadre | null {
+  if (!raw || typeof raw !== "object") return null;
+  const c = raw as Record<string, unknown>;
+  const x = borne(c.x, 0, 100), y = borne(c.y, 0, 100), z = borne(c.z, 1, ZOOM_MAX);
+  return x === null || y === null || z === null ? null : { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, z: Math.round(z * 100) / 100 };
+}
 
 export type Arene = {
   /** une peinture, « image » (son image) ; null : celle que lui donne son identifiant */
@@ -83,7 +104,18 @@ export function areneDepuis(raw: unknown): Arene {
     fond,
     image,
     trait: TRAITS.find((t) => t.key === r.trait)?.key ?? ARENE_VIDE.trait,
-    video: url && ratio ? { url, ratio, duree: positif(v?.duree), nom: typeof nom === "string" ? nom.slice(0, 120) : null, poids: positif(v?.poids) } : null,
+    video:
+      url && ratio
+        ? {
+            url,
+            ratio,
+            duree: positif(v?.duree),
+            nom: typeof nom === "string" ? nom.slice(0, 120) : null,
+            poids: positif(v?.poids),
+            format: FORMATS_VIDEO.find((f) => f === v?.format) ?? null,
+            cadre: cadreDepuis(v?.cadre),
+          }
+        : null,
   };
 }
 
