@@ -39,7 +39,7 @@ export const ARENE = {
     remplacer: "Remplacer",
     retirer: "Retirer",
     envoiEnCours: "Envoi…",
-    compressionEnCours: "Compression…",
+    compressionEnCours: (pct: number) => `Compression… ${pct} %`,
     aucune: "Sans vidéo, ta bannière et ton score s'affichent à ta place.",
     fichier: (duree: number | null, poids: string | null) => [duree !== null ? `${Math.round(duree)} s` : null, poids].filter(Boolean).join(" · "),
     limites: (secondes: number) => [`${secondes} s au plus`, "Compressée à l'envoi", "MP4, MOV ou WebM", "Recadrable en 16:9, carré ou 9:16"],

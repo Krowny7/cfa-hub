@@ -7,7 +7,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { VIDEO_TYPES } from "@/lib/profil/disposition";
 import { Mo, Refus, estFichierVideo, lireVideo, reduireImage } from "@/lib/profil/envoi-media";
-import { compresserVideo } from "@/lib/arene/compression";
+import { compresserVideo, dejaLegere } from "@/lib/arene/compression";
 import { BUCKET_ARENE, VICTOIRE_MAX_OCTETS, VICTOIRE_MAX_SECONDES, type VideoVictoire } from "@/lib/arene/perso";
 import { ARENE } from "@/lib/voice-arene";
 
@@ -29,7 +29,7 @@ async function deposer(sb: SupabaseClient, nom: string, fichier: Blob, contentTy
 }
 
 /** Contrôle, compresse et envoie une vidéo : 40 secondes au plus, MP4, MOV ou WebM. */
-export async function envoyerVideoVictoire(sb: SupabaseClient, file: File, surCompression?: () => void): Promise<VideoVictoire> {
+export async function envoyerVideoVictoire(sb: SupabaseClient, file: File, surCompression?: (part: number) => void): Promise<VideoVictoire> {
   if (!estFichierVideo(file)) throw new Refus(R.refusType);
   const type = file.type || (/[.]mov$/i.test(file.name) ? "video/quicktime" : /[.]webm$/i.test(file.name) ? "video/webm" : "video/mp4");
   if (!VIDEO_TYPES.includes(type)) throw new Refus(R.refusType);
@@ -37,10 +37,12 @@ export async function envoyerVideoVictoire(sb: SupabaseClient, file: File, surCo
   if (Number.isFinite(m.duree) && m.duree > VICTOIRE_MAX_SECONDES + 0.5) throw new Refus(R.refusLongue(VICTOIRE_MAX_SECONDES));
   let envoi: Blob = file;
   let typeEnvoi = type;
-  // toutes passent par la compression ; si elle échoue ou ne gagne rien, on garde l'originale
-  surCompression?.();
+  const duree = Number.isFinite(m.duree) ? m.duree : VICTOIRE_MAX_SECONDES;
+  // toutes passent par la compression, sauf une MP4 ou WebM déjà légère ; si elle échoue ou ne gagne rien, on garde l'originale
+  if (!dejaLegere(type, file.size, duree)) surCompression?.(0);
   try {
-    const c = await compresserVideo(file, Number.isFinite(m.duree) ? m.duree : VICTOIRE_MAX_SECONDES, VICTOIRE_MAX_OCTETS);
+    if (dejaLegere(type, file.size, duree)) throw new Error("déjà légère");
+    const c = await compresserVideo(file, duree, VICTOIRE_MAX_OCTETS, surCompression);
     if (c.blob.size < file.size) {
       envoi = c.blob;
       typeEnvoi = c.type;
