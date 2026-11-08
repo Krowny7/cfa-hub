@@ -91,7 +91,7 @@ console.log("# La fin de partie");
   check("le résultat est caché à la fin d'une partie", rideauFerme({ discret: false, dejaVu: false }));
   check("mode discret : le résultat directement", !rideauFerme({ discret: true, dejaVu: false }));
   check("déjà vu : le résultat directement", !rideauFerme({ discret: false, dejaVu: true }));
-  check("15 secondes au plus, filet de 20 s, bannière 7 s", VIDEO_MAX_MS === 15_000 && VIDEO_FILET_MS === 20_000 && BANNIERE_DUREE_MS === 7000);
+  check("40 secondes au plus, filet de 50 s, bannière 7 s", VIDEO_MAX_MS === 40_000 && VIDEO_FILET_MS === 50_000 && BANNIERE_DUREE_MS === 7000);
   check("une vidéo courte repart, une vidéo assez longue s'arrête", relancerVideo(4000) && relancerVideo(VIDEO_MIN_MS - 1) && !relancerVideo(VIDEO_MIN_MS) && VIDEO_MIN_MS < VIDEO_MAX_MS);
   check("le filet passe après le plafond", VIDEO_FILET_MS > VIDEO_MAX_MS);
   check("le cadre suit le format", formatVideo(16 / 9) === "paysage" && formatVideo(9 / 16) === "vertical" && formatVideo(1) === "carre" && formatVideo(4 / 3) === "paysage");

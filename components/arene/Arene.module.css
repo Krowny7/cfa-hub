@@ -427,6 +427,13 @@
   -webkit-mask-image: url("/arene/cadre-1-1.webp");
   mask-image: url("/arene/cadre-1-1.webp");
 }
+/* Personnaliser › Aperçu de la fin : seule différence avec la vraie scène, on peut la fermer */
+.apercuFermer {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 16px);
+  right: 16px;
+  z-index: 3;
+}
 /* Personnaliser : on fait glisser la vidéo pour la recadrer */
 .videoGlisse {
   cursor: grab;

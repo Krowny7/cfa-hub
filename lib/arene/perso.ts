@@ -8,8 +8,8 @@
 // Module neutre (client et serveur) : pas d'accès à la base ici.
 
 export const BUCKET_ARENE = "arene-medias";
-/** Une vidéo de victoire dure 15 secondes au plus (le poids et les types sont ceux des vidéos du profil). */
-export const VICTOIRE_MAX_SECONDES = 15;
+/** Une vidéo de victoire dure 40 secondes au plus (choix de Théo, 2026-11-08 ; 15 avant) (le poids et les types sont ceux des vidéos du profil). */
+export const VICTOIRE_MAX_SECONDES = 40;
 /** Le maximum d'un fichier sur le forfait gratuit de Supabase. Même valeur dans migration_arene.sql. */
 export const VICTOIRE_MAX_OCTETS = 50 * 1024 * 1024;
 

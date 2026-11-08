@@ -7,12 +7,12 @@ import type { Cadre, FormatVideo, VideoVictoire } from "@/lib/arene/perso";
 /** L'écran VS dure 6 secondes, sa sortie comprise : il tient dans le décompte de départ des Salles. */
 export const VS_DUREE_MS = 6000;
 export const VS_SORTIE_MS = 400;
-/** La vidéo du vainqueur : 15 secondes au plus. */
-export const VIDEO_MAX_MS = 15_000;
+/** La vidéo du vainqueur : 40 secondes au plus (comme VICTOIRE_MAX_SECONDES). */
+export const VIDEO_MAX_MS = 40_000;
 /** Une vidéo courte repart du début tant qu'on ne l'a pas vue au moins ce temps-là. */
 export const VIDEO_MIN_MS = 10_000;
 /** Personne ne reste bloqué : passé ce délai, le résultat s'affiche quoi qu'il arrive. */
-export const VIDEO_FILET_MS = 20_000;
+export const VIDEO_FILET_MS = 50_000;
 /** Vainqueur sans vidéo : sa bannière et son score. */
 export const BANNIERE_DUREE_MS = 7000;
 /** À la fin de la vidéo : la relancer ? Seulement si elle a duré moins que le minimum. */

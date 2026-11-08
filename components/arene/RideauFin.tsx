@@ -17,9 +17,9 @@ import s from "./Arene.module.css";
 // joueur n'a pas touché « Voir le résultat », sur un calque posé sur la page en
 // cours. Au clic, la vidéo du vainqueur au milieu de l'écran, dans son cadre en
 // coup de pinceau (paysage ou vertical), le pseudo et le score dessous, puis le
-// résultat. Les règles de Théo : 15 secondes au plus, ni bouton Passer ni
+// résultat. Les règles de Théo : 40 secondes au plus, ni bouton Passer ni
 // fermeture avant la fin, mais personne ne reste bloqué (vidéo en panne : le
-// résultat ; filet de 20 s). Égalité ou examen raté (`gagnant` null) : le
+// résultat ; filet de 50 s). Égalité ou examen raté (`gagnant` null) : le
 // résultat tout de suite. Vainqueur sans vidéo : sa bannière et son score, 3 s.
 // Une fois par partie (`cle`) ; en mode discret, le résultat s'affiche directement.
 // La vidéo se charge derrière le bouton ; `play()` part dans le clic, pour que le
@@ -65,6 +65,7 @@ export function RideauFin({
   pret = true,
   serveur = "attente",
   titre = ARENE.finTitre,
+  apercu,
   children,
 }: {
   /** la partie (« duel:<id> », « salle:<id> ») : le rideau ne se joue qu'une fois pour elle */
@@ -81,6 +82,8 @@ export function RideauFin({
   serveur?: "attente" | "resultat";
   /** le grand titre : « Partie terminée », ou la fin d'un round */
   titre?: string;
+  /** Personnaliser › Aperçu : la scène avec ces réglages (pas ceux lus en base), toujours jouée, un bouton pour fermer ; la fin appelle `fermer`. Objet stable (useMemo) attendu. */
+  apercu?: { arene: Arene; fermer: () => void };
   children: React.ReactNode;
 }) {
   const [etape, setEtape] = useState<Etape>(() => (!actif || (serveur === "resultat" && typeof window === "undefined") ? "resultat" : "attente"));
@@ -98,23 +101,25 @@ export function RideauFin({
   const vu = `fin:${cle}`;
 
   const terminer = useCallback(() => {
+    if (apercu) return apercu.fermer();
     marquerJoue(vu);
     setEtape("resultat");
-  }, [vu]);
+  }, [vu, apercu]);
 
   useEffect(() => {
     if (etape !== "attente") return;
-    if (!rideauFerme({ discret: modeDiscret(), dejaVu: dejaJoue(vu) })) {
+    if (!apercu && !rideauFerme({ discret: modeDiscret(), dejaVu: dejaJoue(vu) })) {
       setEtape("resultat");
       return;
     }
     setReduit(mouvementReduit());
     setEtape("cache");
-  }, [etape, vu]);
+  }, [etape, vu, apercu]);
 
   // le vainqueur et sa vidéo se préparent derrière le bouton
   useEffect(() => {
     if (etape !== "cache" || !gagnantId) return;
+    if (apercu) return setProfil({ id: gagnantId, arene: apercu.arene, elo: eloConnu });
     let abandon = false;
     void lireProfil(gagnantId, eloConnu).then((p) => {
       if (!abandon) setProfil(p);
@@ -122,7 +127,7 @@ export function RideauFin({
     return () => {
       abandon = true;
     };
-  }, [etape, gagnantId, eloConnu]);
+  }, [etape, gagnantId, eloConnu, apercu]);
 
   useEffect(() => {
     if (etape === "cache") calque.current?.focus();
@@ -139,7 +144,7 @@ export function RideauFin({
   );
 
   if (etape === "resultat") return <>{children}</>;
-  if (etape === "attente") return <div className={s.place} aria-hidden />;
+  if (etape === "attente") return apercu ? null : <div className={s.place} aria-hidden />;
 
   const g = fige ?? gagnant;
   const lu = g && profil?.id === g.id ? profil : null;
@@ -160,9 +165,14 @@ export function RideauFin({
   }
 
   return (
-    <div className={s.place} aria-hidden>
+    <div className={apercu ? undefined : s.place} aria-hidden>
       {createPortal(
         <div ref={calque} className={s.calque} role="dialog" aria-modal="true" aria-label={titre} tabIndex={-1}>
+          {apercu && (
+            <button type="button" className={["btn btn-secondary btn-sm", s.apercuFermer].join(" ")} onClick={apercu.fermer}>
+              {ARENE.reglages.fermerApercu}
+            </button>
+          )}
           {etape === "cache" && (
             <div className={s.scene}>
               <p className={s.rideauKicker}>{kicker}</p>
@@ -182,6 +192,7 @@ export function RideauFin({
             <div className={s.fin} data-cachee={etape === "video" ? "0" : "1"}>
               <div className={[s.video, s.videoScene].join(" ")} data-format={formatDe(victoire)}>
                 <VideoCadree
+                  key={victoire.url}
                   ref={video}
                   cadre={victoire.cadre}
                   src={victoire.url}

@@ -28,7 +28,7 @@ async function deposer(sb: SupabaseClient, nom: string, fichier: Blob, contentTy
   return sb.storage.from(BUCKET_ARENE).getPublicUrl(chemin).data.publicUrl;
 }
 
-/** Contrôle, compresse et envoie une vidéo : 15 secondes au plus, MP4, MOV ou WebM. */
+/** Contrôle, compresse et envoie une vidéo : 40 secondes au plus, MP4, MOV ou WebM. */
 export async function envoyerVideoVictoire(sb: SupabaseClient, file: File, surCompression?: () => void): Promise<VideoVictoire> {
   if (!estFichierVideo(file)) throw new Refus(R.refusType);
   const type = file.type || (/[.]mov$/i.test(file.name) ? "video/quicktime" : /[.]webm$/i.test(file.name) ? "video/webm" : "video/mp4");

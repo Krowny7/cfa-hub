@@ -1,6 +1,6 @@
 // Toute vidéo de victoire est réencodée dans le navigateur avant l'envoi, pour ménager le stockage
 // et le chargement chez les autres joueurs : on la rejoue dans un canevas, le son passe à part, et
-// on enregistre le tout à un débit modéré. Ça prend le temps de la vidéo, 15 secondes au
+// on enregistre le tout à un débit modéré. Ça prend le temps de la vidéo, 40 secondes au
 // plus, sans rien jouer sur les haut-parleurs. Module client : importé par lib/arene/envoi.ts.
 
 const FORMATS = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];

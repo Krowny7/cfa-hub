@@ -8,6 +8,7 @@ import { envoyerImageVs, envoyerVideoVictoire } from "@/lib/arene/envoi";
 import { ARENE_VIDE, CADRE_CENTRE, FONDS, FORMATS_VIDEO, TRAITS, VICTOIRE_MAX_SECONDES, ZOOM_MAX, fondDe, type Arene, type Cadre, type FormatVideo } from "@/lib/arene/perso";
 import { deplacerCadre, formatDe } from "@/lib/arene/regles";
 import { VideoCadree } from "@/components/arene/VideoCadree";
+import { RideauFin } from "@/components/arene/RideauFin";
 import { Mo, Refus } from "@/lib/profil/envoi-media";
 import { createClient } from "@/lib/supabase/browser";
 import { ARENE } from "@/lib/voice-arene";
@@ -87,6 +88,9 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
   const cadre = brouillon?.cadre ?? video?.cadre ?? CADRE_CENTRE;
   const glisse = useRef<{ x: number; y: number; depart: Cadre; l: number; h: number } | null>(null);
   const recadrer = (suite: Partial<{ format: FormatVideo; cadre: Cadre }>) => setBrouillon({ format, cadre, ...suite });
+  // « Aperçu de la fin » : la vraie scène de fin de partie, avec les réglages affichés (recadrage en cours compris)
+  const [areneApercu, setAreneApercu] = useState<Arene | null>(null);
+  const apercuFin = useMemo(() => (areneApercu ? { arene: areneApercu, fermer: () => setAreneApercu(null) } : undefined), [areneApercu]);
 
   useEffect(() => {
     if (!brouillon || !video) return;
@@ -207,7 +211,20 @@ export function ReglagesArene({ joueur }: { joueur: { id: string; pseudo: string
                     {R.retirer}
                   </button>
                 )}
+                <button type="button" className="btn btn-ghost btn-sm max-sm:min-h-[44px]" disabled={dispo !== true || envoi !== null} onClick={() => setAreneApercu(video ? { ...arene, video: { ...video, format, cadre } } : arene)}>
+                  {R.apercu}
+                </button>
               </div>
+              {apercuFin && (
+                <RideauFin
+                  cle="apercu"
+                  kicker={R.apercuKicker}
+                  gagnant={{ id: joueur.id, pseudo: joueur.pseudo, photo: joueur.photo, elo: joueur.elo, score: R.apercuScore, ligne: R.apercuLigne }}
+                  apercu={apercuFin}
+                >
+                  {null}
+                </RideauFin>
+              )}
               <input
                 ref={champVideo}
                 type="file"
