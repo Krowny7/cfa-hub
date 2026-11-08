@@ -1322,7 +1322,7 @@ BEGIN
       AND NOT (p.q = ANY (v_defis))
       AND NOT EXISTS (SELECT 1 FROM ratures r WHERE r.user_id = p_user AND r.question_id = p.q AND r.removed_at IS NULL AND r.visible_from <= now())
   ),
-  fragile AS (
+  fragile AS MATERIALIZED (   -- calculé une fois (migration_revisions_dues_rapide.sql)
     SELECT qq.notion, (count(*) FILTER (WHERE NOT c.ok) + 1.0) / (count(*) + 2.0) AS taux
     FROM pg_temp._rep_cache c
     JOIN quiz_questions qq ON qq.id = c.question_id
