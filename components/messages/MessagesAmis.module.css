@@ -1,0 +1,255 @@
+/* Messages entre amis : en bas à droite, au-dessus de la barre du bas sur mobile. */
+.dock {
+  position: fixed;
+  z-index: 55;
+  right: max(14px, env(safe-area-inset-right, 0px));
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .dock {
+    bottom: 20px;
+  }
+}
+/* une barre fixe en bas (séance du Codex, Personnaliser, aperçu d'un profil) : on passe au-dessus */
+:global(body:has([data-bande-seance], [data-barre-basse])) .dock {
+  bottom: calc(168px + env(safe-area-inset-bottom, 0px));
+}
+/* Léonard parle : on passe dessous, ses boutons restent cliquables */
+:global(body:has([data-leonard-scene])) .dock {
+  z-index: 44;
+}
+.dock > * {
+  pointer-events: auto;
+}
+
+.bouton {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  transition: transform 160ms ease;
+}
+.bouton:hover {
+  transform: translateY(-1px);
+}
+
+.pastille {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  /* couleurs fixes : la pastille reste lisible en nuit et en mode discret */
+  background: #b4412f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.bouton .pastille {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+}
+
+.bulle {
+  display: grid;
+  gap: 2px;
+  max-width: min(300px, calc(100vw - 28px));
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 14px 14px 4px 14px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  animation: arrivee 220ms ease-out;
+}
+.bulleNom {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.bulleTexte {
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@keyframes arrivee {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bulle {
+    animation: none;
+  }
+}
+
+.panneau {
+  display: flex;
+  flex-direction: column;
+  width: min(340px, calc(100vw - 28px));
+  height: min(440px, calc(100svh - 240px));
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+.tete {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.titre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.icone {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink-2);
+}
+.icone:hover {
+  background: var(--well);
+  color: var(--ink);
+}
+
+.amis {
+  flex: 1;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  overflow-y: auto;
+}
+.amis button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  text-align: left;
+}
+.amis button:hover {
+  background: var(--well);
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--well);
+  font-size: 13px;
+  font-weight: 700;
+}
+.nom {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.fil {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 12px;
+  list-style: none;
+  overflow-y: auto;
+}
+.fil li {
+  max-width: 80%;
+  padding: 7px 11px;
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.moi {
+  align-self: flex-end;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--ink);
+  color: var(--paper);
+}
+.lui {
+  align-self: flex-start;
+  border-radius: 14px 14px 14px 4px;
+  background: var(--well);
+}
+.fil .vide {
+  max-width: none;
+  align-self: center;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.erreur {
+  margin: 0;
+  padding: 0 12px 6px;
+  color: var(--perte);
+  font-size: 12px;
+}
+
+.champ {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--line);
+}
+.champ input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--field);
+  color: var(--ink);
+  font-size: 14px;
+}
+.champ button {
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+}
+.champ button:disabled {
+  opacity: 0.4;
+}

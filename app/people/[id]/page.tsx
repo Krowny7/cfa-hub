@@ -495,6 +495,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       {apercuAmi && (
         <div
           role="status"
+          data-barre-basse=""
           className="fixed inset-x-3 z-40 mx-auto flex max-w-[640px] flex-wrap items-center gap-x-3 gap-y-2 rounded-[18px] border border-line-2 bg-[var(--surface)] py-2 pl-4 pr-2 shadow-[var(--shadow-3)] bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-6"
         >
           <Eye size={16} aria-hidden className="shrink-0" />

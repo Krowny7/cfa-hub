@@ -7,6 +7,7 @@ import { Splash } from "@/components/Splash";
 import { InkDefs } from "@/components/ui/InkDefs";
 import { Enso } from "@/components/ui/InkRings";
 import { LeonardHote } from "@/components/leonard/LeonardHote";
+import { MessagesAmis } from "@/components/messages/MessagesAmis";
 import { DevoileProvider } from "@/components/nav/DevoileContext";
 import { etatNavCodex } from "@/lib/codex/nav-serveur";
 
@@ -76,6 +77,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {/* Léonard, la mascotte : apparaît sur signal des écrans (components/leonard) */}
           <LeonardHote />
+
+          {/* Messages entre amis, en bas à droite (components/messages) */}
+          <MessagesAmis />
 
           <Splash />
         </Providers>

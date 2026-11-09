@@ -349,6 +349,7 @@ export function Personnaliser({
       <div
         role="region"
         aria-label={PERSO.titre}
+        data-barre-basse=""
         className={
           "fixed inset-x-3 z-40 mx-auto flex max-w-[720px] items-center gap-2 rounded-[18px] border border-line-2 bg-[var(--surface)] py-2 pl-4 pr-2 shadow-[var(--shadow-3)] bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-6" +
           (zone ? " invisible" : "")

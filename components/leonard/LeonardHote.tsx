@@ -796,6 +796,7 @@ export function LeonardHote() {
       )}
       <div
         className={classes}
+        data-leonard-scene=""
         aria-live="polite"
         role={scene.tuto ? "dialog" : undefined}
         aria-modal={scene.tuto ? true : undefined}
