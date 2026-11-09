@@ -9,6 +9,7 @@ import { PartieSalle } from "@/components/salles/PartieSalle";
 import { Reglages, type RetourLancement } from "@/components/salles/Reglages";
 import { SalonView, type ActionsSalon } from "@/components/salles/SalonView";
 import { PresentsContext, useSuiviPresence } from "@/components/salles/presence";
+import { AnnoncesPresence } from "@/components/salles/AnnoncesPresence";
 import { Stage } from "@/components/salles/Stage";
 import { useEtatSalle } from "@/components/salles/useEtatSalle";
 import { lancerPartie } from "@/app/salles/actions";
@@ -203,6 +204,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
         ) : null
       }
     />
+    <AnnoncesPresence membres={etat.membres} moiId={etat.moi.userId} />
     </PresentsContext.Provider>
   );
 }

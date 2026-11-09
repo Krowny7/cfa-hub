@@ -2,6 +2,10 @@
 // réglages de l'admin). Le tutoiement, des phrases courtes, des verbes d'action.
 
 export const SALLES = {
+  /** les annonces d'arrivée et de départ (AnnoncesPresence) */
+  aRejoint: (nom: string) => `${nom} a rejoint la salle`,
+  aQuitte: (nom: string) => `${nom} a quitté la salle`,
+  unJoueur: "Un joueur",
   /** la carte d'entrée de S'affronter */
   titre: "Les Salles",
   sous: "Des parties à plusieurs, en direct.",

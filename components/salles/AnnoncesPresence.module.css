@@ -1,0 +1,43 @@
+/* En bas à droite, à gauche du bouton des messages (components/messages : 48 px à 14 px du bord). */
+.pile {
+  position: fixed;
+  z-index: 55;
+  right: calc(max(14px, env(safe-area-inset-right, 0px)) + 58px);
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: calc(100vw - 90px);
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .pile {
+    bottom: 20px;
+  }
+}
+.annonce {
+  margin: 0;
+  padding: 8px 12px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  animation: entree 200ms ease-out;
+}
+@keyframes entree {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .annonce {
+    animation: none;
+  }
+}
