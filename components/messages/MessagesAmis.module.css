@@ -63,10 +63,15 @@
   right: -4px;
 }
 
+/* à gauche du bouton, posée sur la même ligne */
 .bulle {
+  position: absolute;
+  right: 58px;
+  bottom: 0;
+  width: max-content;
   display: grid;
   gap: 2px;
-  max-width: min(300px, calc(100vw - 28px));
+  max-width: min(300px, calc(100vw - 90px));
   padding: 10px 14px;
   border: 1px solid var(--line-2);
   border-radius: 14px 14px 4px 14px;
@@ -95,7 +100,7 @@
 @keyframes arrivee {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateX(8px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
