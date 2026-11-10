@@ -258,3 +258,18 @@
 .champ button:disabled {
   opacity: 0.4;
 }
+
+/* l'avatar porte le point vert « en ligne » (components/presence) */
+.avatarBoite {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+}
+/* « Vu », sous mon dernier message quand l'ami l'a ouvert */
+.vu {
+  margin: -6px 0 0;
+  padding: 0 14px 6px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--ink-3);
+}

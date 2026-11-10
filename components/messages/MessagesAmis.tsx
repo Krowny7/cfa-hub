@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/browser";
 import { MESSAGES as M } from "@/lib/voice-messages";
+import { PresenceDot } from "@/components/presence/Presence";
 import s from "./MessagesAmis.module.css";
 
 // Les messages entre amis, en bas à droite de toutes les pages (posé dans app/layout.tsx).
@@ -16,13 +17,13 @@ import s from "./MessagesAmis.module.css";
 // Rien ne s'affiche sans session ni sans ami ; si la table manque, tout reste caché.
 
 type Ami = { id: string; nom: string; avatar: string | null };
-type Msg = { id: string; de: string; a: string; texte: string; cree: string };
+type Msg = { id: string; de: string; a: string; texte: string; cree: string; lu_le?: string | null };
 
 const MAX = 500;
 const BULLE_MS = 7000;
 /** On laisse la page se charger avant d'ouvrir les messages. */
 const ATTENTE_MS = 1200;
-const COLONNES = "id,de,a,texte,cree";
+const COLONNES = "id,de,a,texte,cree,lu_le";
 
 export function MessagesAmis() {
   const sb = useRef<SupabaseClient | null>(null);
@@ -111,6 +112,10 @@ export function MessagesAmis() {
     if (c && moi) void c.from("messages_amis").update({ lu_le: new Date().toISOString() }).eq("a", moi).eq("de", de).is("lu_le", null).then(() => {});
   }
 
+  function vu(m: Msg) {
+    setFil((f) => (f ? f.map((x) => (x.id === m.id ? { ...x, lu_le: m.lu_le ?? null } : x)) : f));
+  }
+
   async function recu(m: Msg) {
     if (avecRef.current === m.de) {
       if (filRef.current === null) {
@@ -149,6 +154,8 @@ export function MessagesAmis() {
       canal = c
         .channel(`messages-amis:${uid}`)
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages_amis", filter: `a=eq.${uid}` }, ({ new: m }) => void recu(m as Msg))
+        // « Vu » : l'ami a ouvert un de mes messages
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages_amis", filter: `de=eq.${uid}` }, ({ new: m }) => vu(m as Msg))
         .subscribe((statut) => {
           // une reconnexion repasse par SUBSCRIBED : on rattrape ce qui est arrivé pendant la coupure
           if (statut === "SUBSCRIBED") void recompter(amisRef.current);
@@ -268,6 +275,7 @@ export function MessagesAmis() {
                   ))
                 )}
               </ol>
+              {fil && fil.length > 0 && fil[fil.length - 1].de === uid && fil[fil.length - 1].lu_le && <p className={s.vu}>{M.vu}</p>}
               {erreur && <p className={s.erreur}>{M.envoiRate}</p>}
               <form onSubmit={envoyer} className={s.champ}>
                 <input
@@ -289,7 +297,10 @@ export function MessagesAmis() {
               {amis.map((a) => (
                 <li key={a.id}>
                   <button type="button" onClick={() => void ouvrir(a.id)}>
-                    {a.avatar ? <img src={a.avatar} alt="" className={s.avatar} /> : <span className={s.avatar}>{a.nom.slice(0, 1).toUpperCase()}</span>}
+                    <span className={s.avatarBoite}>
+                      {a.avatar ? <img src={a.avatar} alt="" className={s.avatar} /> : <span className={s.avatar}>{a.nom.slice(0, 1).toUpperCase()}</span>}
+                      <PresenceDot userId={a.id} avatar={30} />
+                    </span>
                     <span className={s.nom}>{a.nom}</span>
                     {nonLus[a.id] ? <span className={s.pastille}>{nonLus[a.id]}</span> : null}
                   </button>

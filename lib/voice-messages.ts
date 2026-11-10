@@ -13,6 +13,7 @@ export const MESSAGES = {
   chargement: "Chargement…",
   chargementRate: "Conversation pas chargée. Ferme et rouvre.",
   toi: "Toi",
+  vu: "Vu",
   nouveau: (nom: string) => `${nom} t'écrit`,
   ouvrir: "Ouvrir la conversation",
   joueur: "Un joueur",
