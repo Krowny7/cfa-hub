@@ -17,13 +17,13 @@ import s from "./MessagesAmis.module.css";
 // Rien ne s'affiche sans session ni sans ami ; si la table manque, tout reste caché.
 
 type Ami = { id: string; nom: string; avatar: string | null };
-type Msg = { id: string; de: string; a: string; texte: string; cree: string; lu_le?: string | null };
+type Msg = { id: string; de: string; a: string; texte: string; cree: string; lu_le?: string | null; reactions?: Record<string, string> | null };
 
 const MAX = 500;
 const BULLE_MS = 7000;
 /** On laisse la page se charger avant d'ouvrir les messages. */
 const ATTENTE_MS = 1200;
-const COLONNES = "id,de,a,texte,cree,lu_le";
+const COLONNES = "id,de,a,texte,cree,lu_le,reactions";
 
 export function MessagesAmis() {
   const sb = useRef<SupabaseClient | null>(null);
@@ -47,6 +47,8 @@ export function MessagesAmis() {
   const [bulle, setBulle] = useState<Msg | null>(null);
   const liste = useRef<HTMLOListElement | null>(null);
   const champ = useRef<HTMLInputElement | null>(null);
+  /** le message dont la rangée d'émojis est ouverte */
+  const [choixPour, setChoixPour] = useState<string | null>(null);
 
   uidRef.current = uid;
   amisRef.current = amis;
@@ -114,7 +116,22 @@ export function MessagesAmis() {
   }
 
   function vu(m: Msg) {
-    setFil((f) => (f ? f.map((x) => (x.id === m.id ? { ...x, lu_le: m.lu_le ?? null } : x)) : f));
+    setFil((f) => (f ? f.map((x) => (x.id === m.id ? { ...x, lu_le: m.lu_le ?? null, reactions: m.reactions ?? {} } : x)) : f));
+  }
+
+  /** Pose (ou retire, si c'est le même) un émoji sur un message. */
+  async function reagir(id: string, emoji: string) {
+    const c = sb.current;
+    const moi = uidRef.current;
+    if (!c || !moi) return;
+    const maj = (r: Record<string, string>) => setFil((f) => (f ? f.map((x) => (x.id === id ? { ...x, reactions: r } : x)) : f));
+    const avant = filRef.current?.find((x) => x.id === id)?.reactions ?? {};
+    const suite = { ...avant };
+    if (suite[moi] === emoji) delete suite[moi];
+    else suite[moi] = emoji;
+    maj(suite);
+    const { data, error } = await c.rpc("reagir_message", { p_id: id, p_emoji: emoji });
+    maj(error ? avant : ((data ?? {}) as Record<string, string>));
   }
 
   async function recu(m: Msg) {
@@ -157,6 +174,8 @@ export function MessagesAmis() {
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages_amis", filter: `a=eq.${uid}` }, ({ new: m }) => void recu(m as Msg))
         // « Vu » : l'ami a ouvert un de mes messages
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages_amis", filter: `de=eq.${uid}` }, ({ new: m }) => vu(m as Msg))
+        // une réaction posée par moi sur un message reçu, depuis un autre onglet
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages_amis", filter: `a=eq.${uid}` }, ({ new: m }) => vu(m as Msg))
         .subscribe((statut) => {
           // une reconnexion repasse par SUBSCRIBED : on rattrape ce qui est arrivé pendant la coupure
           if (statut === "SUBSCRIBED") void recompter(amisRef.current);
@@ -269,22 +288,30 @@ export function MessagesAmis() {
                 ) : fil.length === 0 ? (
                   <li className={s.vide}>{M.aucun}</li>
                 ) : (
-                  fil.map((m) => (
-                    <li key={m.id} className={m.de === uid ? s.moi : s.lui}>
-                      {m.texte}
-                    </li>
-                  ))
+                  fil.flatMap((m) => {
+                    const r = Object.values(m.reactions ?? {});
+                    const ligne = (
+                      <li key={m.id} className={(m.de === uid ? s.moi : s.lui) + (r.length ? " " + s.reagi : "")} title={M.reagir} onClick={() => setChoixPour((c) => (c === m.id ? null : m.id))}>
+                        {m.texte}
+                        {r.length > 0 && <span className={s.reactions}>{r.join("")}</span>}
+                      </li>
+                    );
+                    if (choixPour !== m.id) return [ligne];
+                    return [
+                      ligne,
+                      <li key={m.id + "-choix"} className={s.choix + " " + (m.de === uid ? s.choixMoi : "")}>
+                        {M.emojis.map((e) => (
+                          <button key={e.signe} type="button" aria-label={e.nom} title={e.nom} aria-pressed={m.reactions?.[uid] === e.signe} onClick={() => (void reagir(m.id, e.signe), setChoixPour(null))}>
+                            {e.signe}
+                          </button>
+                        ))}
+                      </li>,
+                    ];
+                  })
                 )}
               </ol>
               {fil && fil.length > 0 && fil[fil.length - 1].de === uid && fil[fil.length - 1].lu_le && <p className={s.vu}>{M.vu}</p>}
               {erreur && <p className={s.erreur}>{M.envoiRate}</p>}
-              <div className={s.emojis}>
-                {M.emojis.map((e) => (
-                  <button key={e.signe} type="button" aria-label={e.nom} title={e.nom} onClick={() => (setTexte((t) => (t + e.signe).slice(0, MAX)), champ.current?.focus())}>
-                    {e.signe}
-                  </button>
-                ))}
-              </div>
               <form onSubmit={envoyer} className={s.champ}>
                 <input
                   ref={champ}

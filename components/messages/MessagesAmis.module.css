@@ -274,23 +274,52 @@
   color: var(--ink-3);
 }
 
-/* les 5 émojis, ajoutés au message en cours */
-.emojis {
+/* réactions : un clic sur un message ouvre les 5 émojis dessous ; les réactions posées
+   s'affichent en pastille sur le coin bas du message */
+.fil li.moi,
+.fil li.lui {
+  position: relative;
+  cursor: pointer;
+}
+.fil li.reagi {
+  margin-bottom: 10px;
+}
+.reactions {
+  position: absolute;
+  bottom: -11px;
+  right: 8px;
+  padding: 1px 5px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 16px;
+}
+.lui .reactions {
+  right: auto;
+  left: 8px;
+}
+.fil li.choix {
   display: flex;
   gap: 2px;
-  padding: 6px 8px 0;
-  border-top: 1px solid var(--line);
+  max-width: none;
+  padding: 3px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  align-self: flex-start;
 }
-.emojis button {
-  width: 34px;
+.fil li.choixMoi {
+  align-self: flex-end;
+}
+.choix button {
+  width: 32px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 18px;
   line-height: 1;
 }
-.emojis button:hover {
+.choix button:hover,
+.choix button[aria-pressed="true"] {
   background: var(--well);
-}
-.emojis + .champ {
-  border-top: 0;
 }

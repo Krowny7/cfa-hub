@@ -14,6 +14,7 @@ export const MESSAGES = {
   chargementRate: "Conversation pas chargée. Ferme et rouvre.",
   toi: "Toi",
   vu: "Vu",
+  reagir: "Clique pour réagir",
   emojis: [
     { signe: "👍", nom: "Like" },
     { signe: "❤️", nom: "Cœur" },
