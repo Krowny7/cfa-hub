@@ -420,7 +420,7 @@ export function PracticeSession({
   }
 
   // « En français » : la question d'Ethics traduite (avant les retours anticipés : c'est un hook)
-  const fr = useEnFrancais(tirees.includes("ethics"), questions[idx]?.prompt, questions[idx]?.choices);
+  const fr = useEnFrancais(tirees.includes("ethics"), questions, questions[idx]);
 
   // ── COMPOSER LA SESSION ──
   if (phase === "builder") {

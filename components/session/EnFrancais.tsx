@@ -1,53 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ouvrirTraducteur, traductionPossible, traduireFr } from "@/lib/traduction-fr";
+import { createClient } from "@/lib/supabase/browser";
 import { TRADUCTION as T } from "@/lib/voice-traduction";
 
 // Le bouton « En français » de l'entraînement ciblé, quand la séance contient de l'Ethics.
-// La question affichée (énoncé et choix) passe en français, termes d'examen gardés en
-// anglais (lib/traduction-fr). L'explication de la correction est déjà en français.
+// Les traductions sont en base (quiz_questions.prompt_fr / choices_fr, migration_questions_fr.sql),
+// faites à l'avance, termes d'examen gardés en anglais. Le bouton n'apparaît que si au moins une
+// question de la séance est traduite ; une question pas traduite reste en anglais.
+// L'explication de la correction est déjà en français.
 
-export function useEnFrancais(ethics: boolean, prompt: string | undefined, choices: string[] | undefined) {
-  const [possible, setPossible] = useState(false);
+type Q = { id: string; prompt: string; choices: string[] };
+type Fr = { prompt: string; choices: string[] };
+
+export function useEnFrancais(ethics: boolean, questions: Q[], courante: Q | undefined) {
+  const [traductions, setTraductions] = useState<Map<string, Fr>>(new Map());
   const [actif, setActif] = useState(false);
-  const [etat, setEtat] = useState<"" | "charge" | "rate">("");
-  const [fr, setFr] = useState<{ prompt: string; choices: string[] } | null>(null);
+  const cle = ethics ? questions.map((q) => q.id).join(",") : "";
 
   useEffect(() => {
-    if (ethics) void traductionPossible().then(setPossible);
-  }, [ethics]);
-
-  useEffect(() => {
-    setFr(null);
-    if (!actif || !prompt || !choices) return;
+    setTraductions(new Map());
+    if (!cle) return;
     let fini = false;
-    setEtat("charge");
-    Promise.all([traduireFr(prompt), ...choices.map(traduireFr)])
-      .then(([p, ...c]) => {
-        if (fini) return;
-        setFr({ prompt: p, choices: c });
-        setEtat("");
-      })
-      .catch(() => !fini && setEtat("rate"));
+    void (async () => {
+      try {
+        const { data } = await createClient().from("quiz_questions").select("id,prompt_fr,choices_fr").in("id", cle.split(",")).neq("prompt_fr", "");
+        if (fini || !data) return;
+        const m = new Map<string, Fr>();
+        for (const r of data as { id: string; prompt_fr: string | null; choices_fr: string[] | null }[]) if (r.prompt_fr && r.choices_fr?.length) m.set(r.id, { prompt: r.prompt_fr, choices: r.choices_fr });
+        setTraductions(m);
+      } catch {}
+    })();
     return () => {
       fini = true;
     };
-  }, [actif, prompt, choices]);
+  }, [cle]);
 
-  function basculer() {
-    // le premier clic ouvre le traducteur (Chrome peut télécharger son modèle à ce moment)
-    if (!actif) ouvrirTraducteur().catch(() => setEtat("rate"));
-    setActif((a) => !a);
-    setEtat("");
-  }
+  const fr = courante ? traductions.get(courante.id) : undefined;
+  // une traduction n'est prise que si elle a le même nombre de choix (l'ordre des réponses ne bouge pas)
+  const pris = actif && fr && courante && fr.choices.length === courante.choices.length ? fr : null;
+  const bouton = traductions.size ? (
+    <button type="button" className="btn btn-secondary btn-sm" aria-pressed={actif} onClick={() => setActif((a) => !a)} title={T.aide}>
+      {!actif ? T.francais : pris ? T.anglais : T.pasTraduite}
+    </button>
+  ) : null;
 
-  const bouton =
-    ethics && possible ? (
-      <button type="button" className="btn btn-secondary btn-sm" aria-pressed={actif} onClick={basculer} title={T.aide}>
-        {actif ? (etat === "charge" ? T.enCours : etat === "rate" ? T.rate : T.anglais) : T.francais}
-      </button>
-    ) : null;
-
-  return { bouton, prompt: actif && fr ? fr.prompt : prompt, choices: actif && fr ? fr.choices : choices };
+  return { bouton, prompt: pris?.prompt, choices: pris?.choices };
 }
