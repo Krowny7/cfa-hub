@@ -42,6 +42,7 @@ import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { BilanRetest, RetestRatures } from "@/components/notions/RetestRatures";
 import { bilanRetest, lireSimilaires, type CibleRetest } from "@/lib/notions-similaires";
 import { RETEST } from "@/lib/voice-notions";
+import { useEnFrancais } from "@/components/session/EnFrancais";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { surTitreSession } from "@/lib/voice";
 import { EPREUVE } from "@/lib/voice-z3";
@@ -417,6 +418,9 @@ export function PracticeSession({
       setLoadingHistoryId(null);
     }
   }
+
+  // « En français » : la question d'Ethics traduite (avant les retours anticipés : c'est un hook)
+  const fr = useEnFrancais(tirees.includes("ethics"), questions[idx]?.prompt, questions[idx]?.choices);
 
   // ── COMPOSER LA SESSION ──
   if (phase === "builder") {
@@ -816,6 +820,7 @@ export function PracticeSession({
         paused={paused}
         actions={
           <>
+            {fr.bouton}
             <PauseToggle paused={paused} onToggle={() => setPaused((v) => !v)} />
             <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={askEnd}>
               {busy ? "Envoi…" : "Terminer"}
@@ -853,7 +858,7 @@ export function PracticeSession({
           <QuestionCard
             index={idx}
             total={questions.length}
-            prompt={current.prompt}
+            prompt={fr.prompt ?? current.prompt}
             footer={
               <QuestionNav
                 onPrev={() => setIdx((i) => i - 1)}
@@ -872,7 +877,7 @@ export function PracticeSession({
               />
             }
           >
-            {current.choices.map((c, ci) => (
+            {(fr.choices ?? current.choices).map((c, ci) => (
               <ChoiceButton
                 key={ci}
                 index={ci}
