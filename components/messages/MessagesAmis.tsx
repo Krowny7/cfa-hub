@@ -44,7 +44,10 @@ export function MessagesAmis() {
   const [texte, setTexte] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState(false);
-  const [bulle, setBulle] = useState<Msg | null>(null);
+  /** la bulle en bas à droite : un message reçu, ou une réaction de l'ami sur un de mes messages */
+  const [bulle, setBulle] = useState<{ ami: string; texte: string; emoji?: string } | null>(null);
+  /** la dernière réaction connue de l'ami sur chacun de mes messages (pour n'annoncer que les nouvelles) */
+  const reactionsVues = useRef(new Map<string, string>());
   const liste = useRef<HTMLOListElement | null>(null);
   const champ = useRef<HTMLInputElement | null>(null);
   /** le message dont la rangée d'émojis est ouverte */
@@ -117,6 +120,12 @@ export function MessagesAmis() {
 
   function vu(m: Msg) {
     setFil((f) => (f ? f.map((x) => (x.id === m.id ? { ...x, lu_le: m.lu_le ?? null, reactions: m.reactions ?? {} } : x)) : f));
+    // l'ami vient de réagir à un de mes messages : on l'annonce, sauf si sa conversation est ouverte
+    if (m.de === uidRef.current) {
+      const e = m.reactions?.[m.a] ?? "";
+      if (e && reactionsVues.current.get(m.id) !== e && avecRef.current !== m.a) setBulle({ ami: m.a, texte: m.texte, emoji: e });
+      reactionsVues.current.set(m.id, e);
+    }
   }
 
   /** Pose (ou retire, si c'est le même) un émoji sur un message. */
@@ -150,7 +159,7 @@ export function MessagesAmis() {
       amisRef.current = l;
     }
     setNonLus((n) => ({ ...n, [m.de]: (n[m.de] ?? 0) + 1 }));
-    setBulle(m);
+    setBulle({ ami: m.de, texte: m.texte });
   }
 
   // les amis, les non-lus, puis l'écoute en direct (même sans ami : le premier peut arriver)
@@ -211,7 +220,7 @@ export function MessagesAmis() {
     filRef.current = null;
     setFilRate(false);
     setErreur(false);
-    setBulle((b) => (b?.de === id ? null : b));
+    setBulle((b) => (b?.ami === id ? null : b));
     const c = sb.current;
     const moi = uidRef.current;
     if (!c || !moi) return;
@@ -219,6 +228,7 @@ export function MessagesAmis() {
     if (avecRef.current !== id) return;
     if (error) return setFilRate(true);
     const lus = ((data ?? []) as Msg[]).reverse();
+    for (const m of lus) if (m.de === moi) reactionsVues.current.set(m.id, m.reactions?.[m.a] ?? "");
     const vus = new Set(lus.map((m) => m.id));
     setFil([...lus, ...enAttente.current.filter((m) => !vus.has(m.id))]);
     enAttente.current = [];
@@ -260,9 +270,9 @@ export function MessagesAmis() {
   return (
     <div className={s.dock}>
       {bulle && !ouvert && (
-        <button type="button" className={s.bulle} onClick={() => void ouvrir(bulle.de)} aria-label={`${M.nouveau(nomDe(bulle.de))} · ${M.ouvrir}`}>
-          <span className={s.bulleNom}>{M.nouveau(nomDe(bulle.de))}</span>
-          <span className={s.bulleTexte}>{bulle.texte}</span>
+        <button type="button" className={s.bulle} onClick={() => void ouvrir(bulle.ami)} aria-label={`${bulle.emoji ? M.reaction(nomDe(bulle.ami), bulle.emoji) : M.nouveau(nomDe(bulle.ami))} · ${M.ouvrir}`}>
+          <span className={s.bulleNom}>{bulle.emoji ? M.reaction(nomDe(bulle.ami), bulle.emoji) : M.nouveau(nomDe(bulle.ami))}</span>
+          <span className={s.bulleTexte}>{bulle.emoji ? M.cite(bulle.texte) : bulle.texte}</span>
         </button>
       )}
 

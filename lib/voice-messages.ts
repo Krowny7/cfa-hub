@@ -23,6 +23,8 @@ export const MESSAGES = {
     { signe: "😂", nom: "Mort de rire" },
   ],
   nouveau: (nom: string) => `${nom} t'écrit`,
+  reaction: (nom: string, emoji: string) => `${nom} a réagi ${emoji}`,
+  cite: (texte: string) => `« ${texte} »`,
   ouvrir: "Ouvrir la conversation",
   joueur: "Un joueur",
 } as const;
