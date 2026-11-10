@@ -46,6 +46,7 @@ export function MessagesAmis() {
   const [erreur, setErreur] = useState(false);
   const [bulle, setBulle] = useState<Msg | null>(null);
   const liste = useRef<HTMLOListElement | null>(null);
+  const champ = useRef<HTMLInputElement | null>(null);
 
   uidRef.current = uid;
   amisRef.current = amis;
@@ -277,8 +278,16 @@ export function MessagesAmis() {
               </ol>
               {fil && fil.length > 0 && fil[fil.length - 1].de === uid && fil[fil.length - 1].lu_le && <p className={s.vu}>{M.vu}</p>}
               {erreur && <p className={s.erreur}>{M.envoiRate}</p>}
+              <div className={s.emojis}>
+                {M.emojis.map((e) => (
+                  <button key={e.signe} type="button" aria-label={e.nom} title={e.nom} onClick={() => (setTexte((t) => (t + e.signe).slice(0, MAX)), champ.current?.focus())}>
+                    {e.signe}
+                  </button>
+                ))}
+              </div>
               <form onSubmit={envoyer} className={s.champ}>
                 <input
+                  ref={champ}
                   value={texte}
                   onChange={(e) => setTexte(e.target.value)}
                   maxLength={MAX}

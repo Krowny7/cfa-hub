@@ -14,6 +14,13 @@ export const MESSAGES = {
   chargementRate: "Conversation pas chargée. Ferme et rouvre.",
   toi: "Toi",
   vu: "Vu",
+  emojis: [
+    { signe: "👍", nom: "Like" },
+    { signe: "❤️", nom: "Cœur" },
+    { signe: "🔥", nom: "Flamme" },
+    { signe: "😮", nom: "Surpris" },
+    { signe: "😂", nom: "Mort de rire" },
+  ],
   nouveau: (nom: string) => `${nom} t'écrit`,
   ouvrir: "Ouvrir la conversation",
   joueur: "Un joueur",

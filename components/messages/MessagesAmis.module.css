@@ -273,3 +273,24 @@
   font-size: 11px;
   color: var(--ink-3);
 }
+
+/* les 5 émojis, ajoutés au message en cours */
+.emojis {
+  display: flex;
+  gap: 2px;
+  padding: 6px 8px 0;
+  border-top: 1px solid var(--line);
+}
+.emojis button {
+  width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+}
+.emojis button:hover {
+  background: var(--well);
+}
+.emojis + .champ {
+  border-top: 0;
+}
