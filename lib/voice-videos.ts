@@ -11,6 +11,7 @@ export const VIDEOS_TXT = {
   enLecture: "En lecture",
   pasCommencee: "Pas commencée",
   vue: (pct: number) => (pct >= 100 ? "Vue en entier" : `Vue à ${pct} %`),
+  reste: (duree: string) => `encore ${duree}`,
   parties: (n: number) => `${n} parties`,
   partie: (i: number, n: number) => `Partie ${i} sur ${n}`,
   programme: "Au programme",

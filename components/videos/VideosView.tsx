@@ -226,7 +226,7 @@ export function VideosView({
                       <span className={s.jauge} aria-hidden>
                         <span style={{ width: `${pct ?? 0}%` }} />
                       </span>
-                      <span className={s.railEtat}>{pct ? T.vue(pct) : T.pasCommencee}</span>
+                      <span className={s.railEtat}>{pct ? (pct < 100 ? `${T.vue(pct)} · ${T.reste(dureeTexte(dureeVideo(v) * (1 - pct / 100)))}` : T.vue(pct)) : T.pasCommencee}</span>
                     </>
                   )}
                 </span>
