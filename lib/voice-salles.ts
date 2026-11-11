@@ -137,6 +137,8 @@ export const CONFIRMATION = {
 
 export const REGLAGES = {
   titre: "Réglages de la partie",
+  francais: "Questions en français",
+  francaisAide: "Seulement les questions déjà traduites (pour l'instant, une partie de l'Ethics), les mêmes pour tous. Termes d'examen gardés en anglais.",
   rounds: "Rounds",
   parRound: "Questions par round",
   nombreSeul: "Questions",

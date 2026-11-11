@@ -467,9 +467,10 @@ export function validerParams(brut: unknown): { ok: true; params: SalleParams } 
   const textes = (x: unknown) => (Array.isArray(x) ? x.filter((e): e is string => typeof e === "string") : []);
   const notions = textes(r.notions);
   const concepts = textes(r.concepts);
-  const options: Pick<SalleParams, "notions" | "concepts" | "rounds"> = {
+  const options: Pick<SalleParams, "notions" | "concepts" | "rounds" | "francais"> = {
     ...(notions.length + concepts.length > 0 ? { notions, concepts } : {}),
     ...(rounds > 1 ? { rounds } : {}),
+    ...(r.francais === true ? { francais: true } : {}),
   };
 
   if (erreurs.length || !type || nombre === null) return { ok: false, erreurs };
@@ -615,6 +616,7 @@ export function paramsVersJson(p: SalleParams): Record<string, unknown> {
     part_calculs: p.partCalculs,
     chrono: p.chrono ?? "question",
   };
+  if (p.francais) json.francais = true;
   if (p.source === "examen" && p.mock) {
     json.examens = p.mock.examens;
     json.version = p.mock.version;

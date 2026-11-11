@@ -211,7 +211,7 @@ export const placeOrdinale = (n: number): string => (n === 1 ? "1er" : `${n}e`);
 
 /** Les réglages d'une partie terminée, débarrassés du décompte des tirages : de quoi relancer la même. */
 export function paramsPourRejouer(p: SalleSession["params"]) {
-  return { type: p.type, nombre: p.nombre, source: p.source, topics: p.topics, difficulte: p.difficulte, temps: p.temps, partCalculs: p.partCalculs, mock: p.mock, chrono: p.chrono, notions: p.notions, concepts: p.concepts, rounds: p.rounds };
+  return { type: p.type, nombre: p.nombre, source: p.source, topics: p.topics, difficulte: p.difficulte, temps: p.temps, partCalculs: p.partCalculs, mock: p.mock, chrono: p.chrono, notions: p.notions, concepts: p.concepts, rounds: p.rounds, francais: p.francais };
 }
 
 // ---------------------------------------------------------------------------

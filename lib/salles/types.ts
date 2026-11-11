@@ -79,6 +79,8 @@ export type SalleParams = {
   concepts?: string[];
   /** la partie découpée en rounds, que l'admin lance un par un ; absent : une seule partie */
   rounds?: number;
+  /** questions en français : seulement celles qui ont une traduction (quiz_questions.prompt_fr), la même pour tous */
+  francais?: boolean;
 };
 
 /** Les réglages tels que le serveur les a gardés : avec ce qui a vraiment été tiré. */

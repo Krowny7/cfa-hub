@@ -548,7 +548,8 @@ function parseCalcInputSafe(saisie: string): number[] {
  * depuis un navigateur avec des calculs construits côté client.
  */
 export async function lancerSessionBrute(supabase: SupabaseClient, salleId: string, params: SalleParams, calculs: CalculPourSalle[] = []): Promise<SessionLancee> {
-  const r = obj(await appeler(supabase, "lancer_session", { p_salle_id: salleId, p_params: paramsVersJson(params), p_calculs: calculs }));
+  // en français : lancer_session_fr pose le réglage pour le tirage, puis appelle lancer_session
+  const r = obj(await appeler(supabase, params.francais ? "lancer_session_fr" : "lancer_session", { p_salle_id: salleId, p_params: paramsVersJson(params), p_calculs: calculs }));
   return {
     sessionId: String(r.session_id),
     numero: num(r.numero, 1),

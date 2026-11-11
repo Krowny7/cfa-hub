@@ -442,6 +442,11 @@ export function Reglages({
         )}
       </div>
       <p className={s.aide}>{REGLAGES.roundsResume(tailleRounds(reel.nombre, nbRounds), reel.nombre, dispo)}</p>
+      <label className="flex items-center gap-2 text-[14px]">
+        <input type="checkbox" checked={!!params.francais} onChange={(e) => set({ francais: e.target.checked || undefined })} />
+        <span>{REGLAGES.francais}</span>
+      </label>
+      {params.francais && <p className={s.aide}>{REGLAGES.francaisAide}</p>}
     </div>
   );
 
