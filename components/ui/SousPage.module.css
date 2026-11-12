@@ -225,56 +225,5 @@
   font-size: 12.5px;
   color: var(--ink-3);
 }
-/* carnet (fiches) : papier pointé */
-.principal[data-ambiance="carnet"] {
-  background:
-    radial-gradient(circle, color-mix(in srgb, var(--ink) 11%, transparent) 1px, transparent 1.6px) 0 0 / 18px 18px,
-    var(--surface);
-}
-/* pupitre (cours) : parchemin doré, un filet d'or */
-.principal[data-ambiance="pupitre"] {
-  border-color: color-mix(in srgb, #d6a13f 40%, var(--line));
-  background:
-    radial-gradient(90% 70% at 20% 0%, color-mix(in srgb, #d6a13f 16%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, #f1e9d4 55%, var(--surface)), var(--surface));
-}
-/* tapis (flashcards) : le tapis vert du casino, son liseré doré ; couleurs fixes, de jour comme de nuit.
-   Le texte posé sur le tapis passe en clair (les faces des cartes gardent leur papier : Presentoir ton « sombre »). */
-.principal[data-ambiance="tapis"] {
-  --ink: #f3ece0;
-  --ink-2: rgba(243, 236, 224, 0.8);
-  --ink-3: rgba(243, 236, 224, 0.58);
-  color: var(--ink);
-  border-color: #0f2a1e;
-  background:
-    radial-gradient(130% 90% at 50% 0%, #2c6a4e 0%, #1d4a37 55%, #143426 100%);
-  box-shadow:
-    inset 0 0 60px rgba(0, 0, 0, 0.35),
-    var(--shadow-1);
-}
-.principal[data-ambiance="tapis"]::before {
-  content: "";
-  position: absolute;
-  inset: 9px;
-  border: 1px solid rgba(214, 161, 63, 0.38);
-  border-radius: 17px;
-  pointer-events: none;
-}
-.principal[data-ambiance="tapis"] .principalTitre {
-  color: #f3ece0;
-}
-.principal[data-ambiance="tapis"] .principalAide {
-  color: rgba(243, 236, 224, 0.62);
-}
-/* mur (one-pagers) : le mur où l'on épingle */
-.principal[data-ambiance="mur"] {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--ink) 3%, transparent), transparent 40%),
-    var(--surface-2);
-}
-/* marbre (la page blanche) : le palais blanc */
-.principal[data-ambiance="marbre"] {
-  background:
-    linear-gradient(125deg, transparent 30%, color-mix(in srgb, var(--ink) 4%, transparent) 45%, transparent 60%),
-    linear-gradient(160deg, var(--surface), color-mix(in srgb, var(--ink) 3%, var(--surface)));
-}
+/* les ambiances gardent le fond classique (choix de Théo : « pas de fond vert ou quoi ») ;
+   ce sont les objets posés dessus qui disent le lieu (Presentoir `forme`). */

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Bookmark, Spade } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ficheCartesFile, memoCartesImage, subjectByKey } from "@/components/reviser/catalog";
 import { Memo } from "@/components/flashcards/Memo";
@@ -17,8 +17,8 @@ import { clesAvances, suiviProgramme } from "@/lib/flashcards/avancement";
 import { compterCartesMarquees } from "@/lib/flashcards/marquees";
 import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
 import { MARQUE_CARTE } from "@/lib/voice-z3c";
-import { ActionContour, ActionEncre } from "@/components/ui/SousPage";
-import { PanneauCroupier } from "@/components/flashcards/partie/PanneauCroupier";
+import { ActionContour } from "@/components/ui/SousPage";
+import { CoteCroupier } from "@/components/reviser/CoteCroupier";
 import { PARTIE_ENTREE } from "@/lib/voice-partie";
 import { subjectFromParam } from "@/components/ContentDetailHeader";
 
@@ -146,11 +146,12 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       subjects={subjectsAvail}
       avances={avances}
       croupier={
-        <PanneauCroupier pose="moqueur" bulle={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.invite}>
-          <ActionEncre href={hrefPartie}>
-            <Spade size={16} aria-hidden /> {PARTIE_ENTREE.lancer}
-          </ActionEncre>
-        </PanneauCroupier>
+        <CoteCroupier
+          href={hrefPartie}
+          bulle={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.invite}
+          action={PARTIE_ENTREE.lancer}
+          aide={PARTIE_ENTREE.aide}
+        />
       }
       actions={
         <>

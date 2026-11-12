@@ -61,7 +61,7 @@ export function ListeReviser({
   return (
     <SousPage entete={<EnTeteSousPage retour={RETOUR.reviser} titre={l.titre} ligne={l.desc} actions={actions} illustration={{ nom: l.illustration, position: l.position }} />}>
       {kind === "cartes" && croupier ? (
-        <CadrePrincipal ambiance="tapis" titre={RV.cartesTitre} aide={RV.cartesAide} tete={suivi ? <LegendeAvance /> : undefined}>
+        <CadrePrincipal titre={RV.cartesTitre} aide={RV.cartesAide} tete={suivi ? <LegendeAvance /> : undefined}>
           <div className={s.tapis}>
             <Carrousel pieces={pieces} action={RV.cartesOuvrir} />
             {croupier}
@@ -69,7 +69,7 @@ export function ListeReviser({
         </CadrePrincipal>
       ) : (
         <CadrePrincipal ambiance={AMBIANCE[kind]} titre={RV.programme} aide={RV.programmeAide} tete={suivi ? <LegendeAvance /> : undefined}>
-          <Presentoir forme={FORME[kind]} ton={kind === "cartes" ? "sombre" : undefined} label={RV.programme} pieces={pieces} />
+          <Presentoir forme={FORME[kind]} label={RV.programme} pieces={pieces} />
         </CadrePrincipal>
       )}
       {apres}

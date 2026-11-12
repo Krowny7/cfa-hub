@@ -1,5 +1,5 @@
-/* Le carrousel (components/ui/Carrousel.tsx) : un anneau de cartes à jouer en perspective, posé
-   sur le tapis vert ; couleurs fixes (le tapis reste vert de nuit, les cartes restent en papier). */
+/* Le carrousel (components/ui/Carrousel.tsx) : un anneau de cartes à jouer en perspective, sur le
+   fond classique de la page ; les cartes gardent leur papier de jour comme de nuit. */
 
 .carrousel {
   --carte: 118px;
@@ -28,7 +28,7 @@
   cursor: grabbing;
 }
 .scene:focus-visible {
-  outline: 2px solid rgba(214, 161, 63, 0.8);
+  outline: 2px solid var(--pal-2, var(--ink));
   outline-offset: 4px;
   border-radius: 16px;
 }
@@ -152,13 +152,13 @@
   width: 38px;
   height: 38px;
   border-radius: 999px;
-  border: 1px solid rgba(243, 236, 224, 0.3);
-  background: rgba(0, 0, 0, 0.18);
-  color: #f3ece0;
-  transition: background 0.15s ease;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  transition: border-color 0.15s ease;
 }
 .fleche:hover {
-  background: rgba(0, 0, 0, 0.32);
+  border-color: var(--ink-3);
 }
 .choisie {
   display: grid;
@@ -166,13 +166,13 @@
   gap: 4px;
   min-width: 0;
   text-align: center;
-  color: #f3ece0;
+  color: var(--ink);
 }
 .surtitre {
   font-family: var(--font-geist-mono, ui-monospace), monospace;
   font-size: 11.5px;
   font-weight: 600;
-  color: rgba(243, 236, 224, 0.6);
+  color: var(--ink-3);
 }
 .titre {
   font-family: var(--font-brand), system-ui, sans-serif;
@@ -182,7 +182,7 @@
 }
 .ligne {
   font-size: 13px;
-  color: rgba(243, 236, 224, 0.8);
+  color: var(--ink-2);
 }
 .ouvrir {
   margin-top: 8px;
