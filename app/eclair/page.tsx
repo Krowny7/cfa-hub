@@ -1,16 +1,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getTodayDaily, timeLeftLabel } from "@/lib/daily";
+import { getTodayDaily } from "@/lib/daily";
 import { getEclairStats } from "@/lib/eclair";
-import { ECLAIR } from "@/lib/voice-z2c";
-import { BackLink } from "@/components/defi/parts";
+import { lireSerieEncre } from "@/lib/serie-encre";
 import { EclairRunner } from "@/components/eclair/EclairRunner";
 
 export const metadata = { title: "Séries éclair · Ranked Lobby" };
 
 // Séries éclair : 5 questions de cours, sans calcul, tirées pour soi dans la
 // liste des 5 du jour, à volonté (migration_series_eclair.sql : RPC
-// eclair_*). La série commence (ou reprend) dès l'affichage ; tant que la
+// eclair_*). L'accueil suit le modèle des sous-pages (l'en-tête commun, le
+// départ, ta série d'encre dans la colonne grise) : il est rendu par
+// EclairRunner, qui le quitte dès que la série est lancée. Tant que la
 // migration n'est pas appliquée : état « bientôt ».
 export default async function EclairPage() {
   const supabase = await createClient();
@@ -18,22 +19,20 @@ export default async function EclairPage() {
   const user = auth.user;
   if (!user) redirect("/login");
 
-  const [stats, cinq] = await Promise.all([getEclairStats(supabase, user.id), getTodayDaily(supabase, user.id, "cinq").catch(() => null)]);
+  const [stats, cinq, statut] = await Promise.all([
+    getEclairStats(supabase, user.id),
+    getTodayDaily(supabase, user.id, "cinq").catch(() => null),
+    lireSerieEncre(supabase),
+  ]);
 
   return (
-    <div className="rl-wide grid gap-5 [&:has([data-depart])_.eclair-entete]:hidden">
-      <div className="eclair-entete flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <BackLink href="/entrainement">{ECLAIR.retour}</BackLink>
-        <p className="t-micro m-0">{ECLAIR.promesse}</p>
-      </div>
-      <EclairRunner
-        todayDone={stats?.today ?? 0}
-        cinqAFaire={cinq?.status === "todo" || cinq?.status === "playing"}
-        depart={{
-          recentPct: stats?.recentPct ?? null,
-          cinq: cinq && (cinq.status === "todo" || cinq.status === "playing" || cinq.status === "done") ? { statut: cinq.status, reste: cinq.status === "done" ? null : timeLeftLabel(cinq.closesAt, new Date().toISOString()) } : null,
-        }}
-      />
-    </div>
+    <EclairRunner
+      todayDone={stats?.today ?? 0}
+      cinqAFaire={cinq?.status === "todo" || cinq?.status === "playing"}
+      depart={{
+        recentPct: stats?.recentPct ?? null,
+        serie: statut ? { jours: statut.serieAffichee, fait: statut.fait, reste: Math.max(0, statut.seuil - statut.aujourdhui) } : null,
+      }}
+    />
   );
 }

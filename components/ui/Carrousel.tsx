@@ -24,7 +24,20 @@ const PLACES_MAX = 12;
  */
 export type FormeCarrousel = "cartes" | "carnet" | "livret" | "blanche" | "livre" | "tuile" | "sceau" | "dossier" | "portrait" | "porte";
 
-export function Carrousel({ pieces, action, depart = 0, forme = "cartes" }: { pieces: Piece[]; action: string; depart?: number; forme?: FormeCarrousel }) {
+export function Carrousel({
+  pieces,
+  action,
+  depart = 0,
+  forme = "cartes",
+  onActif,
+}: {
+  pieces: Piece[];
+  action: string;
+  depart?: number;
+  forme?: FormeCarrousel;
+  /** appelé avec l'indice de la pièce de devant, à chaque changement (ex. : le bouton « Défier X » du duel) */
+  onActif?: (indice: number) => void;
+}) {
   const n = pieces.length;
   const places = Math.min(Math.max(1, n), PLACES_MAX);
   const pas = 360 / places;
@@ -76,6 +89,12 @@ export function Carrousel({ pieces, action, depart = 0, forme = "cartes" }: { pi
   }, [n]);
 
   useEffect(() => () => void (minuteur.current && clearTimeout(minuteur.current)), []);
+
+  const rappel = useRef(onActif);
+  rappel.current = onActif;
+  useEffect(() => {
+    if (n) rappel.current?.(actif);
+  }, [actif, n]);
 
   if (!n) return null;
   const rayon = `calc(var(--carte) / 2 / ${Math.tan(Math.PI / Math.max(3, places)).toFixed(4)} + 26px)`;

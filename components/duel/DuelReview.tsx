@@ -1,15 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Minus, X } from "lucide-react";
+import { ArrowRight, Check, Minus, X } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { segThumbStyle } from "@/components/classement/Seg";
 import { DuelAiCopy } from "@/components/duel/DuelAiCopy";
 import { InkWatermark } from "@/components/duel/parts";
 import { CopieCoches, type MarqueDuel } from "@/components/duel/CopieCoches";
-import { Icone } from "@/components/adn/icons";
-import { CLASSEMENT, PARTIE, motIssue } from "@/lib/voice-z2";
+import { PARTIE, motIssue } from "@/lib/voice-z2";
 import { clock, decisiveQuestion, duelTopicLabel, reviewHasOpponent, type DuelReviewItem, type DuelState } from "@/lib/duels";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
 import { RetestRatures } from "@/components/notions/RetestRatures";
@@ -85,17 +83,12 @@ export function DuelReview({ state, review, initialFilter }: Props) {
     });
   }
 
-  const backHref = `/duel/${state.id}`;
-
+  // le retour au duel, contre qui et « Revoir la partie » : dans l'en-tête commun de la page
   if (review.length === 0) {
     return (
-      <div className="mx-auto grid w-full max-w-[760px] gap-6">
-        <Link href={backHref} className="t-small inline-flex w-fit items-center gap-1.5 font-semibold hover:text-white">
-          <ArrowLeft size={15} aria-hidden /> Retour au duel
-        </Link>
+      <div className="grid w-full gap-6">
         <section className="card-hero grid gap-3 p-6 md:p-8">
-          <p className="kicker m-0">{PARTIE.revoir}</p>
-          <h1 className="t-h1 m-0">{PARTIE.revueVide}</h1>
+          <h2 className="t-h1 m-0">{PARTIE.revueVide}</h2>
           <p className="t-body m-0 max-w-[540px] text-muted">{PARTIE.revueVideTexte}</p>
         </section>
       </div>
@@ -103,18 +96,10 @@ export function DuelReview({ state, review, initialFilter }: Props) {
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[880px] gap-7 md:gap-9">
-      {/* En-tête */}
+    <div className="grid w-full gap-7 md:gap-9">
+      {/* Le verdict, le score, les temps et le jour */}
       <div className="grid gap-4">
-        <Link href={backHref} className="t-small inline-flex w-fit items-center gap-1.5 font-semibold hover:text-white">
-          <ArrowLeft size={15} aria-hidden /> {finished ? "Résultat du duel" : "Retour au duel"}
-        </Link>
         <div className="grid gap-2">
-          <p className="kicker m-0 flex items-center gap-1.5">
-            <Icone nom="duel" size={14} /> {PARTIE.revoir}
-            {day ? ` · ${day}` : ""}
-          </p>
-          <h1 className="t-h1 m-0">{them ? `Contre ${theirName}` : "Duel au hasard"}</h1>
           <p className="t-small m-0 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className={"rounded-[7px] px-2 py-0.5 text-[12.5px] font-bold " + (won ? "bg-white text-black" : "bg-surface-2 text-white")}>{verdict}</span>
             <span>
@@ -136,6 +121,12 @@ export function DuelReview({ state, review, initialFilter }: Props) {
                     </>
                   )}
                 </span>
+              </>
+            )}
+            {day && (
+              <>
+                <span aria-hidden>·</span>
+                <span>{day}</span>
               </>
             )}
           </p>
@@ -250,12 +241,9 @@ export function DuelReview({ state, review, initialFilter }: Props) {
         )}
       </section>
 
-      {/* Pied : copier à nouveau, sans remonter */}
+      {/* Pied : copier à nouveau, sans remonter (le retour est en haut de la page) */}
       <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-start sm:justify-between">
         <DuelAiCopy review={review} ctx={{ myScore, theirScore, total }} layout="buttons" />
-        <Link href="/duel" className="inline-flex w-fit items-center gap-1.5 pt-2.5 text-[13.5px] font-semibold text-muted hover:text-white">
-          {CLASSEMENT.tousDuels} <ArrowRight size={14} aria-hidden />
-        </Link>
       </div>
     </div>
   );

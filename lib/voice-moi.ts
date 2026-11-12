@@ -1,55 +1,26 @@
 // La voix de Moi : « La synthèse » (SYN, l'onglet stats), les pages de liste du
-// carnet de ratures et des marquées (« Le registre ») et le surtitre des
-// réglages (CAB). Les phrases d'ensemble restent dans lib/voice-z1.ts (MOI).
+// carnet de ratures et des marquées (« Le registre ») et les sous-pages de Moi
+// sur le modèle validé (SOUS_MOI). Les phrases d'ensemble restent dans
+// lib/voice-z1.ts (MOI).
 
 import { fmtInt } from "@/components/classement/format";
 import { NBSP, nombre, pct } from "@/lib/voice";
 
 const s = (n: number) => (n > 1 ? "s" : "");
 
-export const CAB = {
-  surtitre: (domaine: string, programme: string) => `Moi · ${domaine} · ${programme}`,
-};
-
 export const REG = {
-  fil: "Moi",
   ratures: {
-    kicker: "Ton carnet de ratures",
-    titre: (n: number) => `${fmtInt(n)} rature${s(n)}`,
-    repere: (retirees: number, semaine: number) =>
-      retirees > 0 ? `en cours · ${retirees} retirée${s(retirees)}${semaine > 0 ? `, dont ${semaine} cette semaine` : ""}` : "en cours · rien de retiré pour l'instant",
-    phrase: "Une rature sort du carnet quand tu la réussis deux fois de suite. Commence par celles qui reviennent.",
-    phraseVide: "Rien à reprendre pour l'instant : les ratures rayées restent dans les anciennes.",
     /** les ratures qui sèchent (migration_v3_profil.sql §3a) */
     phraseSeche: "Une rature se raye quand tu la réussis au moins un jour après l'erreur : l'encre doit sécher. Commence par celles qui reviennent.",
     sechent: (n: number) => `${fmtInt(n)} encore à l'encre fraîche`,
     scellees: (n: number) => `${fmtInt(n)} scellée${s(n)} : ${n > 1 ? "elles tiennent" : "elle tient"}.`,
-    action: "Les reprendre une à une",
-    liste: "D'où elles viennent",
-    listeTitre: "Toutes tes ratures",
-    asideKicker: "Mis au propre",
-    asideTitre: (n: number) => (n > 0 ? `${n} retirée${s(n)}` : "Rien de retiré"),
-    asideLigne: (retirees: number, semaine: number) =>
-      retirees > 0 ? `${semaine > 0 ? `${semaine} cette semaine : ` : ""}on raye, on n'efface pas.` : "Une rature sort du carnet quand tu la réussis deux fois de suite.",
-    asideLien: "Voir les retirées",
   },
   marquees: {
-    kicker: "Tes questions marquées",
-    titre: (n: number) => `${fmtInt(n)} marquée${s(n)}`,
-    repere: (recente: string, pasRepondues: number) => `la plus récente ${recente}${pasRepondues > 0 ? ` · ${pasRepondues} pas encore répondue${s(pasRepondues)}` : ""}`,
-    phrase: "Ce que tu as gardé pour plus tard : l'énoncé, la bonne réponse et l'explication.",
-    action: "Les revoir",
-    liste: "Par rubrique",
-    listeTitre: "Toutes tes questions marquées",
-    asideKicker: "Comment ça marche",
-    asideTitre: "Marquer",
-    asideLigne: "Le bouton « Marquer » apparaît après chaque réponse, partout, et sur chaque flashcard pendant sa révision.",
-    asideLien: "Voir la liste",
     /** le sélecteur en haut de la page : les questions ou les flashcards */
     selecteur: "Questions ou flashcards marquées",
     selQuestions: "Questions",
     selFlashcards: "Flashcards",
-    /** sans héros (aucune question marquée), quand les flashcards marquées existent aussi */
+    /** le titre de la page */
     kickerTout: "Tes marquées",
     /** ni question ni flashcard marquée */
     videTitre: "Aucune question ni flashcard marquée",
@@ -72,10 +43,47 @@ export const REG = {
     surAppareil: (n: number) =>
       `${fmtInt(n)} flashcard${s(n)} marquée${s(n)}, gardée${s(n)} sur cet appareil le temps d'une mise à jour du site : ${n > 1 ? "elles s'afficheront" : "elle s'affichera"} ici ensuite.`,
   },
-  rubriquesEgales: (rubriques: string[], n: number) => `${rubriques.length} rubrique${s(rubriques.length)}, ${n} question${s(n)} chacune : ${rubriques.join(", ")}.`,
-  reglagesKicker: "Moi · Réglages",
   reglagesTitre: "Réglages",
-  profilPublic: "Mon profil public",
+};
+
+// ── Les sous-pages de Moi (modèle validé par Théo sur les flashcards, 2026-11-12) ──
+// L'en-tête commun (retour à Moi, titre, une ligne au plus), les titres de la bande
+// noire du cadre à zones et ce que dit la colonne grise. Les onglets du carnet, des
+// marquées, des pièces, des activités et des réglages, puis /revoir.
+
+export const SOUS_MOI = {
+  retour: { href: "/moi", label: "Moi" },
+  /** Ratures et Marquées : la zone de gauche (la liste) et la colonne grise (le chiffre) */
+  carnet: "Ton carnet",
+  aReprendre: "À reprendre",
+  ratures: {
+    titre: "Tes ratures",
+    /** la règle du carnet, en une ligne ; `seche` : avec le séchage (migration_v3_profil.sql §3a) */
+    ligne: (seche: boolean) =>
+      seche ? "Une rature se raye quand tu la réussis au moins un jour après l'erreur." : "Une rature sort du carnet quand tu la réussis deux fois de suite.",
+    legende: (n: number) => `rature${s(n)} en cours`,
+  },
+  marquees: {
+    ligne: "Ce que tu as gardé pour plus tard : l'énoncé, la bonne réponse et l'explication.",
+    legendeQuestions: (n: number) => `question${s(n)} marquée${s(n)}`,
+    legendeCartes: (n: number) => `flashcard${s(n)} marquée${s(n)}`,
+  },
+  pieces: {
+    titre: "Mes pièces",
+    ligne: "Tout ce qui se porte sur ton profil. Rien ne s'achète : chaque pièce se gagne.",
+    etagere: "L'étagère",
+    plusRare: "La plus rare",
+    indisponible: "L'étagère ne s'ouvre pas pour le moment. Réessaie dans un instant.",
+  },
+  historique: "Ton historique",
+  reglages: { compte: "Ton compte", examen: "Ton examen" },
+  revoir: {
+    /** la zone de gauche de l'écran de départ (le titre de la page dit déjà « À revoir ») */
+    zone: "À revoir aujourd'hui",
+    dues: "Dues aujourd'hui",
+    /** sous le chiffre des dues : « questions · demain 22 » */
+    legende: (n: number, demain: number) => [`question${s(n)}`, demain > 0 ? `demain${NBSP}${nombre(demain)}` : null].filter(Boolean).join(" · "),
+  },
 };
 
 // ── La page Moi « La synthèse » (maquette D) ──────────────────────────────
@@ -365,7 +373,6 @@ export const MINIS_FR: Record<string, string> = {
 /** Moi › Activités : tes séances passées et le lien vers chaque copie. */
 export const ACTIVITES = {
   titre: "Tes activités",
-  sous: "Tes séances, de la plus récente à la plus ancienne. Choisis un jour ou un type : tu peux copier leurs ratures ou te retester dessus.",
   vide: "Rien pour l'instant : tes séances s'afficheront ici.",
   voir: "Voir ma copie",
   jour: "Jour",

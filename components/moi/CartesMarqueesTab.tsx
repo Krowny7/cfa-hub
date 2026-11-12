@@ -26,7 +26,8 @@ import { REG } from "@/lib/voice-moi";
 const jour = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 const AUTRES = "Autres";
 
-export function CartesMarqueesTab({ cartes, className = "" }: { cartes: CartesMarquees; className?: string }) {
+/** `sansTitre` : dans le cadre à zones de Moi › Marquées (le sélecteur et la colonne grise disent déjà le nombre), le titre s'efface ; le bouton reste. */
+export function CartesMarqueesTab({ cartes, className = "", sansTitre = false }: { cartes: CartesMarquees; className?: string; sansTitre?: boolean }) {
   const etat = useMarquesCartes({ frais: true });
   const matieres = useMemo(() => {
     const n = new Map<string, number>();
@@ -55,11 +56,18 @@ export function CartesMarqueesTab({ cartes, className = "" }: { cartes: CartesMa
 
   const items = filtre ? cartes.items.filter((it) => (it.matiereNom ?? AUTRES) === filtre) : cartes.items;
   return (
-    <section id="flashcards" className={"rl-section scroll-mt-24 " + className} aria-labelledby="flashcards-marquees-titre">
+    <section
+      id="flashcards"
+      className={"rl-section scroll-mt-24 " + className}
+      aria-labelledby={sansTitre ? undefined : "flashcards-marquees-titre"}
+      aria-label={sansTitre ? T.titre : undefined}
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <h2 id="flashcards-marquees-titre" className="t-h2 m-0">
-          {T.titre} <span className="font-mono text-[0.8em] font-semibold tabular-nums text-muted">· {cartes.items.length}</span>
-        </h2>
+        {!sansTitre && (
+          <h2 id="flashcards-marquees-titre" className="t-h2 m-0">
+            {T.titre} <span className="font-mono text-[0.8em] font-semibold tabular-nums text-muted">· {cartes.items.length}</span>
+          </h2>
+        )}
         <Link href="/flashcards/marquees" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]">
           <Layers size={16} aria-hidden /> {T.reviser} <ArrowRight size={16} aria-hidden />
         </Link>

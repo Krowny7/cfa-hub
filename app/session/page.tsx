@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { SessionClient, type SetOption } from "@/components/SessionClient";
+import type { SetOption } from "@/components/SessionClient";
+import { SeanceLibre } from "@/components/session/SeanceLibre";
 import { calcStreakAndToday, type XpDay } from "@/lib/leveling";
 import { joursEncreUnifies, lireSerieEncre } from "@/lib/serie-encre";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
@@ -13,7 +14,11 @@ type SetRow = {
   official_published?: boolean | null;
 };
 
-export default async function SessionPage() {
+// La séance libre : la session de 15 minutes et le mode examen réunis (l'interrupteur de
+// SeanceLibre). ?mode=examen : l'interrupteur allumé (c'est là que /exam renvoie).
+export default async function SessionPage({ searchParams }: { searchParams?: Promise<{ mode?: string | string[] }> }) {
+  const sp = (await searchParams) ?? {};
+  const examenDepart = (Array.isArray(sp.mode) ? sp.mode[0] : sp.mode) === "examen";
   const supabase = await createClient();
 
   const { data: auth } = await supabase.auth.getUser();
@@ -67,5 +72,5 @@ export default async function SessionPage() {
     .filter((s) => s.id && s.title)
     .map((s) => ({ id: s.id, title: s.title, isOfficial: false }));
 
-  return <SessionClient qcmSets={qcmSets} flashSets={flashSets} streak={streak} etatJour={etatJour} serieReste={serieReste} traitsJour={traitsJour} />;
+  return <SeanceLibre qcmSets={qcmSets} flashSets={flashSets} streak={streak} etatJour={etatJour} serieReste={serieReste} traitsJour={traitsJour} examenDepart={examenDepart} />;
 }

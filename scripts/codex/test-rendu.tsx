@@ -98,7 +98,7 @@ console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");
   const milieu = exempleCodex("milieu", { unique: true, seance: "proposee" });
   const sans = { ...milieu, aRecuperer: [] };
   const html = jour(sans);
-  check("le titre : « Codex », sans phase ni « Le carnet de Léonard »", /<h1 class="t-h3 font-brand m-0">Codex<\/h1>/.test(html) && !html.includes("Le carnet de Léonard") && !html.includes(milieu.phaseNom));
+  check("le titre : l'en-tête des sous-pages, « Codex » et le retour à Moi, sans phase ni « Le carnet de Léonard »", /<h1 class="t-h1 rl-in[^"]*">Codex<\/h1>/.test(html) && html.includes('href="/moi"') && !html.includes("Le carnet de Léonard") && !html.includes(milieu.phaseNom));
   check("deux segments, « Aujourd'hui » choisi", compte(html, /role="tab"/g) === 2 && /aria-selected="true"[^>]*>Aujourd&#x27;hui</.test(html));
   // le texte sans balises : un mot maison du titre (« ratures ») est un bouton (components/ui/Mot)
   const texte = html.replace(/<[^>]+>/g, "");

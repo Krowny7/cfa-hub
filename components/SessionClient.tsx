@@ -32,9 +32,13 @@ import { Batons } from "@/components/adn/Batons";
 import { joursEncre, surTitreSession, type EtatJour } from "@/lib/voice";
 import { COPIE_BLANCHE, EPREUVE, REPONSE, serieSession } from "@/lib/voice-z3";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
+import { ActionEncre, ColonneSeance } from "@/components/ui/SousPage";
 
 // Session du jour : 15 minutes, QCM mélangés (corrigés à chaque question) ou
-// flashcards ordonnées par la répétition espacée.
+// flashcards ordonnées par la répétition espacée. Dans la séance libre
+// (app/session, components/session/SeanceLibre), le réglage se pose dans le
+// cadre de la page (`cadre`) ; la séance lancée, plus d'en-tête : la colonne
+// des séances seule.
 
 export type SetOption = { id: string; title: string; isOfficial: boolean };
 
@@ -112,10 +116,13 @@ export function SessionClient({
   etatJour = "attente",
   serieReste = null,
   traitsJour = null,
+  cadre,
   demo,
 }: {
   qcmSets: SetOption[];
   flashSets: SetOption[];
+  /** pose le réglage dans le cadre de la page (la séance libre) ; absent : sa propre carte, avec un en-tête */
+  cadre?: (reglage: React.ReactNode) => React.ReactNode;
   /** jours d'encre (même calcul que l'accueil) */
   streak?: number;
   /** le trait du jour : fait, en attente, ou encre sèche (le soir, rien encore) */
@@ -489,90 +496,92 @@ export function SessionClient({
     const canStart = selSetId !== "" && !loadingContent && contentCount > 0;
     const srsCounts = mode === "flashcards" ? getSRSCounts(cards, srsState) : null;
 
+    // le réglage seul : dans le cadre de la séance libre (`cadre`, app/session), sinon dans sa carte
+    const reglage = (
+      <div className="grid min-w-0 gap-7">
+        <div className="grid gap-2.5">
+          <p className="t-eyebrow m-0">Format</p>
+          <Seg
+            label="Format"
+            value={mode}
+            onChange={setMode}
+            className="w-full sm:w-auto sm:min-w-[340px] sm:justify-self-start"
+            options={[
+              { key: "qcm", label: <><ListChecks size={15} aria-hidden /> QCM</> },
+              { key: "flashcards", label: <><Layers size={15} aria-hidden /> Flashcards</> },
+            ]}
+          />
+        </div>
+
+        <div className="grid gap-2.5">
+          <label htmlFor="session-set" className="t-eyebrow">
+            {mode === "qcm" ? "Banque de questions" : "Paquet de cartes"}
+          </label>
+          {activeSets.length === 0 ? (
+            <p className="t-small m-0">
+              {/* les flashcards sont les paquets officiels : rien à créer, on renvoie vers la liste */}
+              {mode === "qcm" ? "Aucun set disponible dans ce format." : "Aucun paquet disponible pour l'instant."}{" "}
+              <Link href={mode === "qcm" ? "/qcm" : "/flashcards"} className="ink-link">
+                {mode === "qcm" ? "En créer un" : "Voir les flashcards"}
+              </Link>
+            </p>
+          ) : (
+            <>
+              <select id="session-set" className="select" value={selSetId} onChange={(e) => setSelSetId(e.target.value)}>
+                {activeSets.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title}
+                    {s.isOfficial ? " ★" : ""}
+                  </option>
+                ))}
+              </select>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="t-micro">
+                  {loadingContent ? "Chargement…" : contentCount > 0 ? `${contentCount} ${mode === "qcm" ? "questions" : "cartes"}` : "Ce set est vide."}
+                </span>
+                {mode === "qcm" && isOfficial && <span className="chip chip-quiet chip-sm">Système · rapporte de l&apos;XP</span>}
+                {srsCounts && !loadingContent && contentCount > 0 && (
+                  <>
+                    {srsCounts.due > 0 && (
+                      <span className="chip chip-quiet chip-sm">
+                        <Repeat size={12} aria-hidden /> {srsCounts.due} à réviser
+                      </span>
+                    )}
+                    {srsCounts.newCount > 0 && (
+                      <span className="chip chip-quiet chip-sm">
+                        <Sparkles size={12} aria-hidden /> {srsCounts.newCount} nouvelles
+                      </span>
+                    )}
+                    {srsCounts.due === 0 && srsCounts.newCount === 0 && (
+                      <span className="chip chip-quiet chip-sm">
+                        <CheckCircle2 size={12} aria-hidden /> Tout à jour
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
+          <p className="t-small m-0 inline-flex items-center gap-2.5">
+            {(serieIci > 0 || jourIci === "fait") && <Batons jours={serieIci} jour={jourIci} height={18} max={2} />}
+            {serieSession(serieIci, jourIci, resteIci)}
+          </p>
+          <ActionEncre disabled={!canStart} onClick={startSession}>
+            Démarrer · 15 min <ArrowRight size={17} aria-hidden />
+          </ActionEncre>
+        </div>
+      </div>
+    );
+
+    if (cadre) return <>{cadre(reglage)}</>;
     return (
       <div className="rl-page">
-        <PageHead
-          back={{ href: "/entrainement", label: "S'entraîner" }}
-          title="Session du jour"
-          sub="Quinze minutes, contenu mélangé. Les flashcards suivent ta répétition espacée."
-        />
-
-        <section className="card-hero rl-in grid grid-cols-1 gap-7 p-5 md:p-8" style={{ animationDelay: ".06s" }} aria-label="Préparer la session">
-          <div className="grid gap-2.5">
-            <p className="t-eyebrow m-0">Format</p>
-            <Seg
-              label="Format"
-              value={mode}
-              onChange={setMode}
-              className="w-full sm:w-auto sm:min-w-[340px] sm:justify-self-start"
-              options={[
-                { key: "qcm", label: <><ListChecks size={15} aria-hidden /> QCM</> },
-                { key: "flashcards", label: <><Layers size={15} aria-hidden /> Flashcards</> },
-              ]}
-            />
-            <p className="t-micro m-0">{mode === "qcm" ? "Questions à choix multiples, corrigées à chaque réponse." : "Recto, verso : tu dis si tu savais, la carte revient au bon moment."}</p>
-          </div>
-
-          <div className="grid gap-2.5">
-            <label htmlFor="session-set" className="t-eyebrow">
-              {mode === "qcm" ? "Banque de questions" : "Paquet de cartes"}
-            </label>
-            {activeSets.length === 0 ? (
-              <p className="t-small m-0">
-                {/* les flashcards sont les paquets officiels : rien à créer, on renvoie vers la liste */}
-                {mode === "qcm" ? "Aucun set disponible dans ce format." : "Aucun paquet disponible pour l'instant."}{" "}
-                <Link href={mode === "qcm" ? "/qcm" : "/flashcards"} className="ink-link">
-                  {mode === "qcm" ? "En créer un" : "Voir les flashcards"}
-                </Link>
-              </p>
-            ) : (
-              <>
-                <select id="session-set" className="select" value={selSetId} onChange={(e) => setSelSetId(e.target.value)}>
-                  {activeSets.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.title}
-                      {s.isOfficial ? " ★" : ""}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="t-micro">
-                    {loadingContent ? "Chargement…" : contentCount > 0 ? `${contentCount} ${mode === "qcm" ? "questions" : "cartes"}` : "Ce set est vide."}
-                  </span>
-                  {mode === "qcm" && isOfficial && <span className="chip chip-quiet chip-sm">Système · rapporte de l&apos;XP</span>}
-                  {srsCounts && !loadingContent && contentCount > 0 && (
-                    <>
-                      {srsCounts.due > 0 && (
-                        <span className="chip chip-quiet chip-sm">
-                          <Repeat size={12} aria-hidden /> {srsCounts.due} à réviser
-                        </span>
-                      )}
-                      {srsCounts.newCount > 0 && (
-                        <span className="chip chip-quiet chip-sm">
-                          <Sparkles size={12} aria-hidden /> {srsCounts.newCount} nouvelles
-                        </span>
-                      )}
-                      {srsCounts.due === 0 && srsCounts.newCount === 0 && (
-                        <span className="chip chip-quiet chip-sm">
-                          <CheckCircle2 size={12} aria-hidden /> Tout à jour
-                        </span>
-                      )}
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
-            <p className="t-small m-0 inline-flex items-center gap-2.5">
-              {(serieIci > 0 || jourIci === "fait") && <Batons jours={serieIci} jour={jourIci} height={18} max={2} />}
-              {serieSession(serieIci, jourIci, resteIci)}
-            </p>
-            <button type="button" className="btn btn-primary btn-lg rl-press w-full sm:w-auto" disabled={!canStart} onClick={startSession}>
-              Démarrer · 15 min <ArrowRight size={17} aria-hidden />
-            </button>
-          </div>
+        <PageHead back={{ href: "/entrainement", label: "S'entraîner" }} title="Session du jour" sub="Quinze minutes, contenu mélangé. Les flashcards suivent ta répétition espacée." />
+        <section className="card-hero rl-in p-5 md:p-8" aria-label="Préparer la session">
+          {reglage}
         </section>
       </div>
     );
@@ -597,17 +606,20 @@ export function SessionClient({
     // rien de répondu : pas de copie, une page blanche et la relance
     if (mode === "qcm" ? totalAnswered === 0 : flashTotal === 0) {
       return (
+        <ColonneSeance>
         <section className="card-quiet rl-in mx-auto grid w-full max-w-[660px] gap-4 px-6 py-10 text-center" aria-label="Session terminée">
           <p className="t-eyebrow m-0">{EPREUVE.daily}</p>
           <h2 className="t-h1 m-0">{COPIE_BLANCHE.titre}</h2>
           <p className="t-small m-0">{COPIE_BLANCHE.ligne}</p>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">{liens}</div>
         </section>
+        </ColonneSeance>
       );
     }
 
     if (mode === "qcm") {
       return (
+        <ColonneSeance>
         <div className="rl-page">
           <FinDeSession
             epreuve={surTitreSession(EPREUVE.daily, totalAnswered, minutes)}
@@ -624,10 +636,12 @@ export function SessionClient({
             <ReviewSection review={log} />
           </FinDeSession>
         </div>
+        </ColonneSeance>
       );
     }
 
     return (
+      <ColonneSeance>
       <div className="rl-page">
         <FinDePasse
           surTitre={`${EPREUVE.daily} · ${setTitle ? cleanTopic(setTitle) : "Flashcards"}`}
@@ -640,6 +654,7 @@ export function SessionClient({
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">{liens}</div>
         </FinDePasse>
       </div>
+      </ColonneSeance>
     );
   }
 
@@ -681,7 +696,7 @@ export function SessionClient({
     const bonne = correction?.correctIndex ?? null;
 
     return (
-      <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+      <ColonneSeance>
         {bar(
           "Session du jour · QCM",
           totalAnswered > 0 ? `${totalCorrect}/${totalAnswered} justes · ${Math.round((totalCorrect / totalAnswered) * 100)} %` : setTitle,
@@ -755,7 +770,7 @@ export function SessionClient({
             )}
           </QuestionCard>
         )}
-      </div>
+      </ColonneSeance>
     );
   }
 
@@ -769,7 +784,7 @@ export function SessionClient({
   const isNew = !cardSRS;
 
   return (
-    <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+    <ColonneSeance>
       {bar("Session du jour · flashcards", totalReviewed + totalAgain > 0 ? `${totalReviewed} sues · ${totalAgain} à revoir` : setTitle)}
 
       {isPaused ? (
@@ -820,6 +835,6 @@ export function SessionClient({
           )}
         </section>
       )}
-    </div>
+    </ColonneSeance>
   );
 }

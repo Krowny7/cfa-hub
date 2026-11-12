@@ -218,13 +218,18 @@ const subjects: SubjectAvailability[] = SUBJECTS.map((s) => ({
   check("les matières sans suivi gardent leur ligne d'avant, la matière à venir aussi", avec2.includes("4 paquets · 60 cartes") && avec2.includes(">à venir<"));
   check("la maîtrise (barre, %) reste en place", avec2.includes("62 %") && avec2.includes('role="progressbar"'));
 
+  // Depuis le modèle des sous-pages (2026-11-12), la liste est un carrousel des 10 matières :
+  // la pièce de devant ouvre /flashcards/matiere/<clé> ; plus de légende ni de pastille sur la liste.
   const page = (kind: "cartes" | "fiche", a?: typeof avances) => renderToStaticMarkup(<ListeReviser kind={kind} subjects={subjects} avances={a} />);
   const cartesAvec = page("cartes", avances);
-  check("la page : légende au-dessus de l'index, avancement dans les lignes", cartesAvec.includes("Une pastille par paquet") && cartesAvec.includes(">21/60 vues<"));
+  check(
+    "la page : le carrousel des 10 matières, chacune vers sa révision ; ni légende ni pastille, même avec des données",
+    compte(cartesAvec, /role="option"/g) === 10 && cartesAvec.includes('href="/flashcards/matiere/ethics"') && !cartesAvec.includes("Une pastille par paquet") && !cartesAvec.includes("rounded-full") && !cartesAvec.includes("vues"),
+  );
   const cartesSans = page("cartes");
-  check("la page sans donnée : ni légende ni pastille", !cartesSans.includes("Une pastille par paquet") && !cartesSans.includes("rounded-full") && cartesSans.includes("4 paquets · 60 cartes"));
+  check("la page sans donnée : le même rendu qu'avec données, la matière sans paquet en filigrane", cartesSans === cartesAvec && /id="carte-derivatives"[^>]*data-indispo="1"/.test(cartesSans));
   const vide = page("cartes", { joueur: JOUEUR, matieres: {} });
-  check("aucune matière suivie : comme sans donnée", !vide.includes("Une pastille par paquet") && vide.includes("4 paquets · 60 cartes"));
+  check("aucune matière suivie : comme sans donnée", vide === cartesSans);
   const fiches = page("fiche", avances);
   check("les fiches et les cours ne montrent jamais d'avancement de cartes", !fiches.includes("Une pastille par paquet") && !fiches.includes("vues"));
 }
@@ -238,7 +243,8 @@ console.log("\n# Fichiers");
   check("aucun chemin du bac à sable ni antislash dans les fichiers neufs", neufs.every((f) => !/Temp[\\/]|scratchpad|AppData|[A-Za-z]:\\/.test(lire(f))));
   check("l'îlot client est bien « use client » ; la lib et les pastilles sont neutres", lire(neufs[1]).startsWith('"use client"') && !lire(neufs[0]).includes("use client") && !lire(neufs[2]).includes("use client"));
   const page = lire("app/flashcards/page.tsx");
-  check("la page lit les boucles en une requête et passe l'avancement à la liste", (page.match(/lireProgressions\(/g) ?? []).length === 1 && page.includes("avances={avances}") && page.includes("clesAvances(groups)") && page.includes("progressions ? suiviProgramme(groups, progressions, user.id) : undefined"));
+  // Depuis dd90bd8, la page ne lit plus que les matières disponibles : plus de lecture des boucles.
+  check("la page ne lit que les matières disponibles, ni boucles ni avancement passé à la liste", !page.includes("lireProgressions(") && !page.includes("avances=") && page.includes("loadSubjectsSafe("));
 }
 
 console.log(ko === 0 ? "\nTout est vert." : `\n${ko} échec(s).`);

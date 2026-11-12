@@ -19,7 +19,6 @@ import { encore, signe } from "@/lib/voice";
 import type { IssueDuel } from "@/lib/voice";
 import { PARTIE } from "@/lib/voice-z2";
 import {
-  DUEL_REVIEW_DAYS,
   createDuel,
   decisiveQuestion,
   duelErrorMessage,
@@ -252,8 +251,9 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
       {/* un résultat récent, une fois le verdict joué : le sceau gagné s'il y en a un */}
       {!demo && recent && fini && <CeremonieSceaux className="!mx-0" />}
 
-      <section className="grid gap-x-14 gap-y-10 border-t border-line pt-8 md:grid-cols-12" aria-label="Le détail de la partie">
-        <div className="flex min-w-0 flex-col gap-4 md:col-span-7">
+      {/* le détail par matière ; le retour aux duels est en haut de la page (l'en-tête commun) */}
+      <section className="grid border-t border-line pt-8" aria-label="Le détail de la partie">
+        <div className="flex min-w-0 flex-col gap-4">
           <p className="t-eyebrow m-0">Par matière</p>
           {topics.length === 0 ? (
             <p className="m-0 text-sm text-muted">Le détail par matière n&apos;est pas disponible pour cette partie.</p>
@@ -276,15 +276,6 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
               })}
             </ul>
           )}
-        </div>
-        <div className="flex min-w-0 flex-col gap-3 md:col-span-5">
-          <p className="t-eyebrow m-0">Et maintenant</p>
-          <p className="t-small m-0">{PARTIE.fenetre(DUEL_REVIEW_DAYS)}</p>
-          <div className="flex flex-wrap gap-2.5">
-            <Link href="/duel" className="btn btn-secondary">
-              {PARTIE.nouveau} <ArrowRight size={16} aria-hidden />
-            </Link>
-          </div>
         </div>
       </section>
     </div>

@@ -35,7 +35,7 @@ export function RankHero({ me, history }: { me: MyRank; history: RatingEvent[] }
           <Link href="/duel" className="btn btn-secondary rl-press">
             <Icone nom="duel" size={17} /> {CLASSEMENT.lancer}
           </Link>
-          <Link href="/duel#defier" className="inline-flex items-center gap-1.5 text-[14px] font-semibold underline-offset-4 hover:underline">
+          <Link href="/duel" className="inline-flex items-center gap-1.5 text-[14px] font-semibold underline-offset-4 hover:underline">
             {CLASSEMENT.defier} <ArrowRight size={14} aria-hidden />
           </Link>
         </div>

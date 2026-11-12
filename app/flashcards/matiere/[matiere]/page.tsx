@@ -4,18 +4,22 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { CFA_SUBJECTS, groupBySubject, plural } from "@/components/ContentDetailHeader";
 import { FlashcardReview, type FlashcardCard } from "@/components/FlashcardReview";
-import { MatiereVide, PaquetsDeLaMatiere } from "@/components/flashcards/Panneaux";
-import { ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
-import { ficheCartesFile, fichePaquetFile, memoCartesImage, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
-import { Memo } from "@/components/flashcards/Memo";
+import { MatiereVide } from "@/components/flashcards/Panneaux";
+import { MemoMini } from "@/components/flashcards/MemoMini";
+import { EtatPaquetListe } from "@/components/flashcards/EtatPaquetListe";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { ListeCourte } from "@/components/ui/Decors";
+import { ficheCartesFile, memoCartesImage, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
 import { RATIO_CARTES } from "@/lib/flashcards/memos";
-import { numeroPaquet, themePaquet } from "@/lib/flashcards/paquets";
+import { themePaquet } from "@/lib/flashcards/paquets";
 import { BOUCLE } from "@/lib/voice-z3c";
 import { cleMatiere, cleSet, etatAffiche, etatListe } from "@/lib/flashcards/progression";
 import { lireProgressions } from "@/lib/flashcards/progression-serveur";
 import { EtatPaquetVivant } from "@/components/flashcards/EtatPaquetVivant";
 import { MATIERE_CARTES } from "@/lib/voice-z3c";
 import { RETOUR } from "@/lib/voice-reviser";
+import { POSTE_CARTES } from "@/lib/voice-postes";
+import poste from "@/components/reviser/Postes.module.css";
 
 type PageProps = { params: Promise<{ matiere: string }> };
 type Dossier = { name: string | null } | null;
@@ -33,12 +37,15 @@ export async function generateMetadata({ params }: PageProps) {
 // cartes), dans l'ordre paquet puis position, révisés avec la même boucle
 // « À revoir » qu'un paquet (FlashcardReview), gardée sous sa propre clé
 // (« matiere:fixed_income »). Chaque carte garde la répétition espacée de son
-// paquet. En tête, le one-pager de la matière : les deux font la révision
-// d'une nuit. Une matière sans cartes affiche un état vide propre.
+// paquet. Le one-pager de la matière est proposé en fin de boucle : les deux
+// font la révision d'une nuit. Une matière sans cartes affiche un état vide propre.
 // La boucle de la matière et celles des paquets sont aussi sur le compte
-// (flashcard_progress, seulement ces clés-là) : l'en-tête dit où en est la
-// matière, la liste des paquets où en est chacun, réparés sur les cartes
+// (flashcard_progress, seulement ces clés-là) : l'en-tête dit quand la matière
+// est maîtrisée, la liste des paquets où en est chacun, réparés sur les cartes
 // actuelles (rien si la table n'est pas encore créée).
+// Modèle des sous-pages (2026-11-12) : l'en-tête (retour aux flashcards), puis le
+// cadre à zones : « Ta révision » à gauche, « Les paquets » dans la colonne grise
+// (les 4 paquets et leur état, puis le mémo des 60 cartes en petit).
 export default async function FlashcardsMatierePage({ params }: PageProps) {
   const { matiere } = await params;
   const subject = CFA_SUBJECTS.find((s) => s.key === matiere);
@@ -78,18 +85,10 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
   const paquets = (groupe?.rows ?? []).filter((r) => r.kind === "set");
   const rang = new Map(paquets.map((p, i) => [p.id, i]));
 
-  // les fiches tirées des flashcards (bucket privé « fiches », URL signées d'une heure, une seule requête) :
-  // le one-pager de toutes les cartes et la mini-fiche de chaque paquet ; une fiche absente n'a pas de lien
-  const fichiers = onePagerSlug
-    ? [
-        ficheCartesFile(onePagerSlug),
-        memoCartesImage(onePagerSlug),
-        ...paquets.flatMap((p) => {
-          const n = numeroPaquet(p.title);
-          return n ? [fichePaquetFile(onePagerSlug, n)] : [];
-        }),
-      ]
-    : [];
+  // le mémo des cartes de la matière (bucket privé « fiches », URL signées d'une heure, une seule
+  // requête) : son image et son PDF ; absent, pas de mémo (la mini-fiche de chaque paquet est sur
+  // la page du paquet)
+  const fichiers = onePagerSlug ? [ficheCartesFile(onePagerSlug), memoCartesImage(onePagerSlug)] : [];
   const [lignes, progressions, fiches] = await Promise.all([
     paquets.length
       ? admin
@@ -114,10 +113,6 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
   ]);
   const ficheCartes = onePagerSlug ? (fiches.get(ficheCartesFile(onePagerSlug)) ?? null) : null;
   const memoCartes = onePagerSlug ? (fiches.get(memoCartesImage(onePagerSlug)) ?? null) : null;
-  const ficheDe = (title: string) => {
-    const n = numeroPaquet(title);
-    return onePagerSlug && n ? (fiches.get(fichePaquetFile(onePagerSlug, n)) ?? null) : null;
-  };
 
   let cards: FlashcardCard[] = [];
   if (paquets.length) {
@@ -131,10 +126,11 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
   const ouJenSuis = etatAffiche(ligneMatiere, cards.map((c) => c.id));
   const idsDe = (setId: string) => cards.filter((c) => c.setId === setId).map((c) => c.id);
 
-  // Gabarit C des sous-pages : l'en-tête commun (retour aux flashcards, la matière, une ligne
-  // et la pastille de la boucle ; aucun bouton dans le cadre, hormis le retour), puis la colonne
-  // des séances (760 px).
-  const ligneEntete = [MATIERE_CARTES.toute, ...(cards.length ? [plural(cards.length, "carte", "cartes"), MATIERE_CARTES.paquets(paquets.length)] : [])].join(" · ");
+  // L'en-tête : retour aux flashcards, la matière, une ligne (les paquets sont dans la colonne grise,
+  // l'avancée du tour sous la révision : la pastille ne dit que « Maîtrisé ») ; aucun bouton.
+  const ligneEntete = [MATIERE_CARTES.toute, ...(cards.length ? [plural(cards.length, "carte", "cartes")] : [])].join(" · ");
+  const user = auth.user;
+  const memoTitre = BOUCLE.memoCartesTitre(cards.length || 60);
   return (
     <SousPage
       entete={
@@ -145,49 +141,60 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
           ligne={
             <span className="inline-flex min-h-[26px] flex-wrap items-center gap-x-3 gap-y-1">
               <span>{ligneEntete}</span>
-              {cards.length && progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} /> : null}
+              {cards.length && progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} seulementFini /> : null}
             </span>
           }
         />
       }
     >
-      <ColonneSeance>
-        {cards.length ? (
-          <>
-            <FlashcardReview
-              cards={cards}
-              cle={`matiere:${subject.key}`}
-              traitsJour={traitsJour}
-              matiere={subject.key}
-              matiereNom={subject.name}
-              onePager={onePager}
-              autresHref={`/flashcards?subject=${subject.key}#paquets`}
-              ordre="programme"
-              compte={progressions ? { cle, ligne: ligneMatiere, lueA: Date.now() } : null}
-              joueur={auth.user.id}
-            />
-            <PaquetsDeLaMatiere
-              paquets={paquets.map((p) => ({
-                id: p.id,
-                theme: themePaquet(p.title),
-                cartes: idsDe(p.id).length,
-                etat: progressions ? etatListe(cleSet(p.id), progressions.get(cleSet(p.id)), idsDe(p.id), auth.user.id) : null,
-                fiche: ficheDe(p.title),
-              }))}
-            />
-            {memoCartes && (
-              <section className="rl-section mt-6 md:mt-10" aria-labelledby="memo-cartes">
-                <h2 id="memo-cartes" className="t-h3 m-0">
-                  {BOUCLE.memoCartesTitre(cards.length || 60)}
-                </h2>
-                <Memo src={memoCartes} pdf={ficheCartes} titre={BOUCLE.memoCartesTitre(cards.length || 60)} ratio={RATIO_CARTES} />
-              </section>
-            )}
-          </>
-        ) : (
-          <MatiereVide matiere={subject.name} onePager={onePager} />
-        )}
-      </ColonneSeance>
+      <CadreZones
+        gauche={{
+          titre: POSTE_CARTES.revision,
+          contenu: (
+            <div className={poste.haut + " grid min-w-0"}>
+              {cards.length ? (
+                <FlashcardReview
+                  cards={cards}
+                  cle={`matiere:${subject.key}`}
+                  traitsJour={traitsJour}
+                  matiere={subject.key}
+                  matiereNom={subject.name}
+                  onePager={onePager}
+                  autresHref={`/flashcards?subject=${subject.key}`}
+                  ordre="programme"
+                  compte={progressions ? { cle, ligne: ligneMatiere, lueA: Date.now() } : null}
+                  joueur={user.id}
+                />
+              ) : (
+                <MatiereVide matiere={subject.name} onePager={onePager} />
+              )}
+            </div>
+          ),
+        }}
+        droite={
+          paquets.length
+            ? {
+                titre: POSTE_CARTES.paquets,
+                contenu: (
+                  <>
+                    <ListeCourte
+                      lignes={paquets.map((p) => ({
+                        cle: p.id,
+                        titre: themePaquet(p.title),
+                        // où en est le paquet (rien tant que sa boucle n'est pas commencée)
+                        detail: progressions ? (
+                          <EtatPaquetListe etat={etatListe(cleSet(p.id), progressions.get(cleSet(p.id)), idsDe(p.id), user.id)} />
+                        ) : undefined,
+                        href: `/flashcards/${p.id}`,
+                      }))}
+                    />
+                    {memoCartes && <MemoMini src={memoCartes} href={ficheCartes ?? memoCartes} titre={memoTitre} aide={POSTE_CARTES.memoOuvrir(cards.length || 60)} ratio={RATIO_CARTES} />}
+                  </>
+                ),
+              }
+            : undefined
+        }
+      />
     </SousPage>
   );
 }

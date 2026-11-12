@@ -4,40 +4,45 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { FilMoi } from "@/components/moi/Briques";
 import { Banniere, CadreSceau } from "@/components/profil/Pieces";
 import { BlocFolio, CarteFolio } from "@/components/profil/Folio";
 import { TitrePorte } from "@/components/profil/TitrePorte";
 import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
 import { Feuille } from "@/components/ui/Feuille";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { porterPiece } from "@/app/moi/profil/actions";
 import { STYLE_DEFAUT, type StyleProfil } from "@/lib/profil/catalogue";
-import { piecesAnimees, resumeEtagere, retirable, type Etagere, type PieceEtagere } from "@/lib/profil/etagere-vue";
+import { piecesAnimees, retirable, type Etagere, type PieceEtagere } from "@/lib/profil/etagere-vue";
 import type { Rarete, TypePiece } from "@/lib/profil/pieces";
+import { SOUS_MOI } from "@/lib/voice-moi";
+import m from "./Moi.module.css";
 
 // Moi › Mes pièces (V3 §3.8) : l'étagère de tout ce qui se porte sur le
 // profil, en cinq rayons (cadres, bannières, titres, folios, ornements de
 // bannière : leur dessin viendra, d'ici là un cadre simple). Les pièces
 // possédées d'abord, qui bougent si elles bougent ; puis les silhouettes
 // (grisées, immobiles), avec leur consigne en clair. Pas de lien sur
-// l'étagère : une pièce se touche, sa fiche dit le reste. Un résumé
-// (« 23 pièces sur 75 · 4 folios ») et un filtre « Ce que j'ai / Tout » ;
-// chaque compte dit ce qui est dessiné.
+// l'étagère : une pièce se touche, sa fiche dit le reste. Un filtre « Ce que
+// j'ai / Tout » ; le compte de chaque rayon dit ce qui est dessiné.
+// Sur le modèle des sous-pages validé par Théo (2026-11-12) : l'en-tête commun
+// (retour à Moi), puis le cadre à zones : à gauche « L'étagère » (le filtre et
+// les rayons), à droite, dans la colonne grise, « La plus rare » : la pièce la
+// plus rare qu'il possède, en grand (rien de gagné encore : la plus rare de
+// l'étagère, en silhouette) ; la toucher ouvre sa fiche.
 // Toucher une pièce ouvre sa feuille : l'aperçu en grand (l'en-tête du
 // profil, comme les autres le verront ; la planche pour un folio), puis
 // « Porter » ou « Retirer » (porterPiece) ; une silhouette s'y montre en
 // lecture, grisée, avec comment l'obtenir et, si une quête du Codex la
 // donne, « Voir la quête ».
 // Au plus deux éléments animés à l'écran sur téléphone : les deux premières
-// pièces possédées qui bougent ; tout se fige quand la feuille est ouverte
-// (son aperçu bouge à leur place). Le mouvement réduit fige tout (CSS).
+// pièces possédées qui bougent (la plus rare, en grand, reste figée sur
+// téléphone) ; tout se fige quand la feuille est ouverte (son aperçu bouge à
+// leur place). Le mouvement réduit fige tout (CSS).
 // Les données arrivent toutes prêtes du serveur (components/moi/pieces-data.ts) :
 // ce composant ne charge pas le catalogue des pièces (lib/profil/etagere-vue.ts seulement).
 
 const T = {
-  surtitre: "Ta collection",
   titre: "Mes pièces",
-  phrase: "Tout ce qui se porte sur ton profil. Rien ne s'achète, rien ne se tire au sort : chaque pièce se gagne, et une pièce portée reste à toi.",
   filtre: { tout: "Tout", miennes: "Ce que j'ai" },
   vide: "Rien dans ce rayon pour l'instant.",
   portee: "Portée",
@@ -60,6 +65,25 @@ const LISERE: Record<Rarete, string> = {
   precieuse: "#7a3e9d",
   legendaire: "#c8962b",
 };
+
+/** L'ordre des raretés, de la plus commune à la plus rare. */
+const RANG: Record<Rarete, number> = { commune: 0, rare: 1, precieuse: 2, legendaire: 3 };
+
+/**
+ * La plus rare des pièces possédées : à rareté égale, une pièce gagnée avant une pièce libre, puis
+ * celle qui est portée, puis la première de l'étagère. Rien de gagné (seulement des pièces libres) :
+ * la plus rare de l'étagère, en silhouette. Étagère vide : null.
+ */
+function laPlusRare(possedees: PieceEtagere[], toutes: PieceEtagere[]): PieceEtagere | null {
+  const mieux = (a: PieceEtagere, b: PieceEtagere) =>
+    RANG[a.rarete] !== RANG[b.rarete] ? RANG[a.rarete] > RANG[b.rarete] : a.libre !== b.libre ? !a.libre : a.portee && !b.portee;
+  let best: PieceEtagere | null = null;
+  for (const p of possedees) if (p.possedee && (!best || mieux(p, best))) best = p;
+  if (best && !best.libre) return best;
+  let cible: PieceEtagere | null = null;
+  for (const p of toutes) if (!p.possedee && (!cible || RANG[p.rarete] > RANG[cible.rarete])) cible = p;
+  return cible ?? best;
+}
 
 /** Téléphone et tablette (moins de 1024 px) ; avant l'hydratation : oui (le moins animé). */
 function useTelephone(): boolean {
@@ -131,60 +155,118 @@ export function MesPieces({ etagere, carte, disponible }: { etagere: Etagere; ca
       router.refresh();
     });
 
+  // la plus rare : sur les pièces possédées (toujours montrées, quel que soit le filtre, avec ce qui est porté à jour)
+  const rare = useMemo(() => laPlusRare(rayons.flatMap((r) => r.pieces), etagere.rayons.flatMap((r) => r.pieces)), [rayons, etagere]);
+
   return (
-    <div className="rl-wide flex flex-col gap-6 md:gap-8" data-leonard="mes-pieces">
-      <div className="flex flex-col gap-3">
-        <FilMoi />
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          {/* la cible de Léonard quand il présente l'étagère (les nouveautés, V3 §11.4) */}
-          <div className="min-w-0" data-leonard="pieces">
-            <p className="t-eyebrow m-0">{T.surtitre}</p>
-            <h1 className="t-h1 m-0 mt-1">{T.titre}</h1>
-            <p className="t-num m-0 mt-2 text-[15px] font-semibold">{resumeEtagere(etagere)}</p>
-            <p className="t-small m-0 mt-1 max-w-[620px]">{T.phrase}</p>
-          </div>
-          <div role="tablist" aria-label="Filtrer les pièces" className="seg w-full sm:w-auto" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-            <span aria-hidden className="seg-thumb" style={{ left: `calc(4px + ${tout ? 1 : 0} * (100% - 8px) / 2)`, width: "calc((100% - 8px) / 2)" }} />
-            {[false, true].map((v) => (
-              <button key={String(v)} type="button" role="tab" aria-selected={tout === v} onClick={() => setTout(v)} className="seg-item min-h-[44px] sm:px-6">
-                {v ? T.filtre.tout : T.filtre.miennes}
-              </button>
-            ))}
-          </div>
-        </div>
+    <SousPage
+      entete={<EnTeteSousPage retour={SOUS_MOI.retour} titre={T.titre} ligne={SOUS_MOI.pieces.ligne} illustration={{ nom: "moi-cabinet-curiosites" }} />}
+    >
+      <div data-leonard="mes-pieces">
+        <CadreZones
+          gauche={{
+            titre: SOUS_MOI.pieces.etagere,
+            contenu: (
+              // la cible de Léonard quand il présente l'étagère (les nouveautés, V3 §11.4)
+              <div className="flex min-w-0 flex-col gap-6" data-leonard="pieces">
+                <div role="tablist" aria-label="Filtrer les pièces" className="seg w-full sm:w-auto sm:self-start" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+                  <span aria-hidden className="seg-thumb" style={{ left: `calc(4px + ${tout ? 1 : 0} * (100% - 8px) / 2)`, width: "calc((100% - 8px) / 2)" }} />
+                  {[false, true].map((v) => (
+                    <button key={String(v)} type="button" role="tab" aria-selected={tout === v} onClick={() => setTout(v)} className="seg-item min-h-[44px] sm:px-6">
+                      {v ? T.filtre.tout : T.filtre.miennes}
+                    </button>
+                  ))}
+                </div>
+
+                {rayons.map((r) => (
+                  <section key={r.type} aria-labelledby={`rayon-${r.type}`} className="flex flex-col gap-3">
+                    <h3 id={`rayon-${r.type}`} className="t-h3 m-0 flex items-baseline gap-2">
+                      {r.titre}
+                      <span className="t-micro t-num font-semibold">
+                        {r.possedees}/{r.total}
+                      </span>
+                    </h3>
+                    {r.pieces.length ? (
+                      <ul className={`m-0 grid list-none gap-3 p-0 ${r.type === "folio" ? "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6" : r.type === "ornement" ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"}`}>
+                        {r.pieces.map((p) => (
+                          <li key={p.cle} className="min-w-0">
+                            <CartePiece p={p} carte={carte} style={style} anime={animees.has(p.cle)} onOuvrir={() => ouvrir(p)} />
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="t-small m-0">{T.vide}</p>
+                    )}
+                  </section>
+                ))}
+              </div>
+            ),
+          }}
+          droite={
+            rare
+              ? {
+                  titre: SOUS_MOI.pieces.plusRare,
+                  // sur téléphone, elle reste figée : les deux pièces animées de l'étagère suffisent
+                  contenu: <PieceEnGrand p={rare} carte={carte} style={style} anime={rare.anime && rare.possedee && !telephone && !ouverte} onOuvrir={() => ouvrir(rare)} />,
+                }
+              : undefined
+          }
+        />
+
+        <Feuille
+          ouvert={!!ouverte}
+          onFermer={() => setOuverte(null)}
+          titre={ouverte?.nom ?? T.titre}
+          pied={ouverte ? <PiedFeuille p={ouverte} disponible={disponible} pending={pending} msg={msg} onPorter={porter} /> : null}
+        >
+          {ouverte && <ContenuFeuille p={ouverte} carte={{ ...carte, style: avecPiece(style, ouverte), titre: ouverte.type === "titre" ? ouverte.nom : titre }} imageDeBanniere={!!style.bannerUrl} />}
+        </Feuille>
       </div>
+    </SousPage>
+  );
+}
 
-      {rayons.map((r) => (
-        <section key={r.type} aria-labelledby={`rayon-${r.type}`} className="flex flex-col gap-3">
-          <h2 id={`rayon-${r.type}`} className="t-h3 m-0 flex items-baseline gap-2">
-            {r.titre}
-            <span className="t-micro t-num font-semibold">
-              {r.possedees}/{r.total}
-            </span>
-          </h2>
-          {r.pieces.length ? (
-            <ul className={`m-0 grid list-none gap-3 p-0 ${r.type === "folio" ? "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6" : r.type === "ornement" ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"}`}>
-              {r.pieces.map((p) => (
-                <li key={p.cle} className="min-w-0">
-                  <CartePiece p={p} carte={carte} style={style} anime={animees.has(p.cle)} onOuvrir={() => ouvrir(p)} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="t-small m-0">{T.vide}</p>
-          )}
-        </section>
-      ))}
-
-      <Feuille
-        ouvert={!!ouverte}
-        onFermer={() => setOuverte(null)}
-        titre={ouverte?.nom ?? T.titre}
-        pied={ouverte ? <PiedFeuille p={ouverte} disponible={disponible} pending={pending} msg={msg} onPorter={porter} /> : null}
-      >
-        {ouverte && <ContenuFeuille p={ouverte} carte={{ ...carte, style: avecPiece(style, ouverte), titre: ouverte.type === "titre" ? ouverte.nom : titre }} imageDeBanniere={!!style.bannerUrl} />}
-      </Feuille>
-    </div>
+/** La plus rare, en grand, dans la colonne grise : sa vignette, son nom, sa rareté. La toucher ouvre sa fiche. */
+function PieceEnGrand({ p, carte, style, anime, onOuvrir }: { p: PieceEtagere; carte: EnteteData; style: StyleProfil; anime: boolean; onOuvrir: () => void }) {
+  const fige = !anime;
+  const vignette =
+    p.type === "cadre" ? (
+      <CadreSceau frame={p.nue} name={carte.name} avatarUrl={carte.avatarUrl} size={112} fige={fige} />
+    ) : p.type === "banniere" ? (
+      <Banniere banner={p.nue} accent={style.accent} fige={fige} className={m.rareBanniere} />
+    ) : p.type === "titre" ? (
+      <span className={m.rareTitre}>
+        <TitrePorte titre={p.nom} className={m.rareTitreTexte} />
+      </span>
+    ) : p.type === "ornement" ? (
+      <span className={m.rareOrnement}>
+        <span />
+      </span>
+    ) : p.folio ? (
+      <span className={m.rareFolio}>
+        <CarteFolio f={p.folio} />
+      </span>
+    ) : null;
+  return (
+    <button
+      type="button"
+      onClick={onOuvrir}
+      className={m.rare}
+      style={{ borderTopColor: LISERE[p.rarete] }}
+      aria-label={`${p.nom}, ${T.rarete[p.rarete].toLowerCase()}${p.portee ? `, ${T.portee.toLowerCase()}` : p.possedee ? "" : `, ${T.pasEncore.toLowerCase()} : ${p.obtention}`}`}
+    >
+      <span className={m.rareVignette + (p.possedee ? "" : " " + m.silhouette)} aria-hidden>
+        {vignette}
+      </span>
+      <span className={m.rareTexte} aria-hidden>
+        <span className="t-micro font-semibold uppercase tracking-[0.06em]" style={{ color: p.rarete === "commune" ? undefined : LISERE[p.rarete] }}>
+          {T.rarete[p.rarete]}
+        </span>
+        <span className={m.rareNom}>{p.nom}</span>
+        {p.programme && <span className="t-micro">{p.programme}</span>}
+        {p.portee ? <span className="t-micro font-semibold text-[var(--ink)]">{T.portee}</span> : !p.possedee ? <span className="t-micro">{p.obtention}</span> : null}
+      </span>
+    </button>
   );
 }
 

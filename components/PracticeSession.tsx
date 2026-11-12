@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Check, ChevronDown, Hourglass, Trophy } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { multDuJour, texteGain, xpAvecSerie } from "@/lib/serie-encre";
 import { friendlyError } from "@/lib/errors";
@@ -15,13 +15,11 @@ import { NOTIONS_CHOIX } from "@/lib/voice-notions";
 import { lireLienPractice, matieresServies, repartir, tirerSeance } from "@/lib/practice-lien";
 import { nomPalier, palierCiblee, type TropheeGagne } from "@/lib/trophees";
 import { AnnonceTrophee } from "@/components/trophees/AnnonceTrophee";
-import { SectionHead } from "@/components/session/ui";
-import { Icone } from "@/components/adn/icons";
-import { CarteLieu } from "@/components/ui/CarteLieu";
-import { Illustration } from "@/components/ui/Illustration";
-import { Sceau } from "@/components/ui/Tuiles";
-import { Bande, EnTete, Mini, Page, Rangee, Tuile, Vignette } from "@/components/outils/Gabarit";
+import { Mini } from "@/components/outils/Gabarit";
+import { ActionEncre, CadreAnnexe, CadreZones, ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { ListeCourte } from "@/components/ui/Decors";
 import { STUDIOLO } from "@/lib/voice-outils";
+import { RETOUR_ENTRAINEMENT, SOUS_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
 import {
   ChoiceButton,
   CopyForAi,
@@ -430,225 +428,186 @@ export function PracticeSession({
     const palier = palierCiblee(previewCount, previewCount, previewMatieres) ?? 1;
     const history = showAllHistory ? pastSessions : pastSessions.slice(0, 6);
     const canChart = pastSessions.length >= 2;
-    const last5 = pastSessions.slice(0, 5);
-    const avg5 = last5.length ? Math.round(last5.reduce((n, s) => n + pctOf(s.score, s.total), 0) / last5.length) : 0;
-    const trophees = pastSessions.filter((s) => pctOf(s.score, s.total) >= PASS_THRESHOLD).length;
-    const entiers = pastSessions.filter((s) => s.topics.length >= TOPICS.length && s.question_count >= 90);
-    const meilleurEntier = entiers.length ? Math.max(...entiers.map((s) => pctOf(s.score, s.total))) : null;
     // les matières faibles d'abord (ordre fixe : une case cochée ne fait pas sauter la liste)
     const rangees = [...TOPICS].sort((a, b) => Number(weak.includes(b.key)) - Number(weak.includes(a.key)));
-    // l'examen entier = le format demi-examen sur les dix matières (90 questions, 2 h 15)
-    const nbEntier = 90;
-    const tenterEntier = () => {
-      const tout = new Set(TOPICS.map((t) => t.key));
-      setSelected(tout);
-      setFormat(90);
-      setTaille(null);
-      void generate(tout, 90, null);
-    };
 
     // ?go=1 : la séance se prépare ; le constructeur attend (il revient si elle échoue)
     if (enRoute) {
       return (
-        <div className="grid gap-6 py-2 md:py-8">
+        <ColonneSeance className="py-2 md:py-8">
           <p className="card-quiet t-small m-0 px-5 py-4" role="status">
             Préparation de ta séance…
           </p>
-        </div>
+        </ColonneSeance>
       );
     }
 
-    return (
-      <Page
-        entete={<EnTete icone={<Icone nom="entrainer" size={16} />} titre="Entraînement ciblé" ligne={STUDIOLO.ligne} />}
-        lead={
-          <div className="flex flex-col gap-4 md:gap-[18px]">
-            <Rangee
-              tuiles={
+    // l'essentiel : le composeur (le nombre de questions, le format, le lancement ; les matières ou les notions)
+    const composeur = (
+      <div className="grid min-w-0 gap-x-8 gap-y-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <p className="t-h1 m-0 flex items-baseline gap-3" aria-live="polite">
+              <span>{previewCount}</span>
+              <span className="text-[0.5em] font-semibold">{previewCount > 1 ? "questions" : "question"}</span>
+            </p>
+            <p className="t-micro m-0 inline-flex items-center gap-1.5">
+              {pret ? (
                 <>
-                  {pastSessions.length > 0 && (
-                    <Tuile
-                      icone={<Trophy size={20} aria-hidden />}
-                      titre={STUDIOLO.sessionsTitre}
-                      ligne={STUDIOLO.sessionsLigne(pastSessions.length, trophees, avg5, last5.length)}
-                      action={{ href: "#historique", label: STUDIOLO.sessionsAction }}
-                    />
-                  )}
-                  <Vignette portrait nom="practice-corrige" titre={STUDIOLO.corrigeTitre} ligne={STUDIOLO.corrigeLigne} />
+                  <Trophy size={13} aria-hidden /> {fmtMinutes(previewMinutes)} · trophée {nomPalier(palier).toLowerCase()} à 70 % ou plus
                 </>
-              }
-              cote={
-                <CarteLieu
-                  label={STUDIOLO.nom}
-                  ratio="16 / 10"
-                  visuel={<Illustration nom="practice-studiolo" position="50% 60%" />}
-                  vignette={<Illustration nom="practice-studiolo" position="50% 60%" decorative />}
-                  marque={
-                    <Sceau>
-                      <Hourglass size={19} aria-hidden />
-                    </Sceau>
-                  }
-                  nom={STUDIOLO.nom}
-                  tailleNom="text-[28px] lg:text-[36px] xl:text-[40px]"
-                  sousTitre={STUDIOLO.sous(fmtMinutes(Math.round(nbEntier * MIN_PER_QUESTION_MINUTES)))}
-                  etat={STUDIOLO.etat(nbEntier, TOPICS.length, meilleurEntier)}
-                  secondaire
-                  action={{ href: "/practice", label: STUDIOLO.action(nbEntier), onClick: tenterEntier, disabled: busy }}
-                />
-              }
-              heros={
-                <section className="card-hero rl-in grid min-w-0 gap-x-8 gap-y-5 p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:p-8" aria-label={STUDIOLO.composer}>
-                  <div className="flex min-w-0 flex-col gap-4">
-                    <div className="flex flex-col gap-2">
-                      <p className="t-eyebrow">{STUDIOLO.composer}</p>
-                      <h2 className="t-h1 m-0 flex items-baseline gap-3" aria-live="polite">
-                        <span>{previewCount}</span>
-                        <span className="text-[0.5em] font-semibold">{previewCount > 1 ? "questions" : "question"}</span>
-                      </h2>
-                      <p className="t-micro m-0 inline-flex items-center gap-1.5">
-                        {pret ? (
-                          <>
-                            <Trophy size={13} aria-hidden /> {fmtMinutes(previewMinutes)} · trophée {nomPalier(palier).toLowerCase()} à 70 % ou plus
-                          </>
-                        ) : (
-                          parNotions ? NOTIONS_CHOIX.rienChoisi : STUDIOLO.choisir
-                        )}
-                      </p>
-                    </div>
-                    {!parNotions && <p className="t-body m-0 max-w-[420px] text-muted">{STUDIOLO.phrase(weak.length)}</p>}
-                    {parNotions ? (
-                      <div className="flex flex-col gap-2">
-                        <Seg
-                          label={NOTIONS_CHOIX.taille}
-                          value={String(tailleNotions) as "10" | "20" | "30" | "45" | "60"}
-                          onChange={(v) => setTailleNotions(Number(v))}
-                          options={[
-                            { key: "10", label: "10" },
-                            { key: "20", label: "20" },
-                            { key: "30", label: "30" },
-                            { key: "45", label: "45" },
-                            { key: "60", label: "60" },
-                          ]}
-                        />
-                        {pret && (
-                          <p className="t-small m-0">
-                            {NOTIONS_CHOIX.resume(choix.notions.length, choix.concepts.length)} · {NOTIONS_CHOIX.dispo(infoChoix.total)}
-                          </p>
-                        )}
-                      </div>
-                    ) : taille !== null ? (
-                      <p className="t-small m-0 flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <span>
-                          Séance de {taille} questions{selected.size > 1 ? (lien.poids ? ", mêlées aux poids officiels de l'examen" : ", à parts égales entre tes matières") : ""}.
-                        </span>
-                        <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setTaille(null)}>
-                          Choisir un format
-                        </button>
-                      </p>
-                    ) : (
-                      <Seg
-                        label="Format"
-                        value={String(format) as "90" | "180"}
-                        onChange={(v) => setFormat(Number(v) as 90 | 180)}
-                        options={[
-                          { key: "90", label: "Demi-examen · 90" },
-                          { key: "180", label: "Complet · 180" },
-                        ]}
-                      />
-                    )}
-                    <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
-                      <button type="button" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" disabled={!pret || busy} onClick={() => void (parNotions ? genererNotions() : generate())}>
-                        {busy ? "Préparation…" : "Générer la session"} {!busy && <ArrowRight size={16} aria-hidden />}
-                      </button>
-                      {parNotions && pret && (
-                        <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => { setChoix(CHOIX_VIDE); setInfoChoix({ topics: [], total: 0 }); }}>
-                          {NOTIONS_CHOIX.effacer}
-                        </button>
-                      )}
-                      {!parNotions && selected.size > 0 && selected.size < TOPICS.length && (
-                        <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setSelected(new Set())}>
-                          Effacer
-                        </button>
-                      )}
-                    </div>
-                    {error && (
-                      <p role="alert" className="m-0 text-sm text-pen">
-                        {error}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-3">
-                    <Seg
-                      label={NOTIONS_CHOIX.parNotion}
-                      value={parNotions ? "notion" : "matiere"}
-                      onChange={(v) => setParNotions(v === "notion")}
-                      options={[
-                        { key: "matiere", label: NOTIONS_CHOIX.parMatiere },
-                        { key: "notion", label: NOTIONS_CHOIX.parNotion },
-                      ]}
-                    />
-                    {parNotions ? (
-                      <ChoixNotions source="practice" valeur={choix} onChange={(v, info) => { setChoix(v); setInfoChoix(info); }} />
-                    ) : (
-                  <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none content-start gap-0.5 p-0" aria-label="Tes matières">
-                    {rangees.map((t) => {
-                      const on = selected.has(t.key);
-                      const m = mastery[t.key];
-                      return (
-                        <li key={t.key}>
-                          <button
-                            type="button"
-                            aria-pressed={on}
-                            onClick={() => toggleTopic(t.key)}
-                            className={"rl-row flex min-h-[40px] w-full items-center gap-3 rounded-[10px] px-2.5 py-1.5 text-left " + (on ? "bg-surface" : "")}
-                          >
-                            <span aria-hidden className={"grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[5px] " + (on ? "bg-white text-black" : "shadow-[inset_0_0_0_1.5px_var(--line-2)]")}>
-                              {on && <Check size={12} strokeWidth={3} />}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-[14px] font-semibold">{subjectName(t.key)}</span>
-                              <span className="t-micro block">{String(t.weight).replace(".", ",")} % de l&apos;examen</span>
-                            </span>
-                            <span className="t-micro shrink-0 tabular-nums">{m !== null && m !== undefined ? `${m} %` : "—"}</span>
-                            {m !== null && m !== undefined ? <Mini pct={m} rouge={m < WEAK_BELOW} /> : <span className="w-14 shrink-0" />}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                    )}
-                  </div>
-                </section>
-              }
-            />
-            <Bande icone={<Icone nom="examen" size={22} />} titre={STUDIOLO.suiteTitre} ligne={STUDIOLO.suiteLigne} action={{ href: "/official-exams", label: STUDIOLO.suiteAction }} medaillon="exams-sceau" />
+              ) : (
+                parNotions ? NOTIONS_CHOIX.rienChoisi : STUDIOLO.choisir
+              )}
+            </p>
           </div>
+          {parNotions ? (
+            <div className="flex flex-col gap-2">
+              <Seg
+                label={NOTIONS_CHOIX.taille}
+                value={String(tailleNotions) as "10" | "20" | "30" | "45" | "60"}
+                onChange={(v) => setTailleNotions(Number(v))}
+                options={[
+                  { key: "10", label: "10" },
+                  { key: "20", label: "20" },
+                  { key: "30", label: "30" },
+                  { key: "45", label: "45" },
+                  { key: "60", label: "60" },
+                ]}
+              />
+              {pret && (
+                <p className="t-small m-0">
+                  {NOTIONS_CHOIX.resume(choix.notions.length, choix.concepts.length)} · {NOTIONS_CHOIX.dispo(infoChoix.total)}
+                </p>
+              )}
+            </div>
+          ) : taille !== null ? (
+            <p className="t-small m-0 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>
+                Séance de {taille} questions{selected.size > 1 ? (lien.poids ? ", mêlées aux poids officiels de l'examen" : ", à parts égales entre tes matières") : ""}.
+              </span>
+              <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setTaille(null)}>
+                Choisir un format
+              </button>
+            </p>
+          ) : (
+            <Seg
+              label="Format"
+              value={String(format) as "90" | "180"}
+              onChange={(v) => setFormat(Number(v) as 90 | 180)}
+              options={[
+                { key: "90", label: "Demi-examen · 90" },
+                { key: "180", label: "Complet · 180" },
+              ]}
+            />
+          )}
+          <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
+            <ActionEncre disabled={!pret || busy} onClick={() => void (parNotions ? genererNotions() : generate())}>
+              {busy ? "Préparation…" : "Générer la session"} {!busy && <ArrowRight size={16} aria-hidden />}
+            </ActionEncre>
+            {parNotions && pret && (
+              <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => { setChoix(CHOIX_VIDE); setInfoChoix({ topics: [], total: 0 }); }}>
+                {NOTIONS_CHOIX.effacer}
+              </button>
+            )}
+            {!parNotions && selected.size > 0 && selected.size < TOPICS.length && (
+              <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setSelected(new Set())}>
+                Effacer
+              </button>
+            )}
+          </div>
+          {error && (
+            <p role="alert" className="m-0 text-sm text-pen">
+              {error}
+            </p>
+          )}
+        </div>
+        <div className="flex min-w-0 flex-col gap-3">
+          <Seg
+            label={NOTIONS_CHOIX.parNotion}
+            value={parNotions ? "notion" : "matiere"}
+            onChange={(v) => setParNotions(v === "notion")}
+            options={[
+              { key: "matiere", label: NOTIONS_CHOIX.parMatiere },
+              { key: "notion", label: NOTIONS_CHOIX.parNotion },
+            ]}
+          />
+          {parNotions ? (
+            <ChoixNotions source="practice" valeur={choix} onChange={(v, info) => { setChoix(v); setInfoChoix(info); }} />
+          ) : (
+            <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none content-start gap-0.5 p-0" aria-label="Tes matières">
+              {rangees.map((t) => {
+                const on = selected.has(t.key);
+                const m = mastery[t.key];
+                return (
+                  <li key={t.key}>
+                    <button
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => toggleTopic(t.key)}
+                      className={"rl-row flex min-h-[40px] w-full items-center gap-3 rounded-[10px] px-2.5 py-1.5 text-left " + (on ? "bg-surface-2" : "")}
+                    >
+                      <span aria-hidden className={"grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[5px] " + (on ? "bg-white text-black" : "shadow-[inset_0_0_0_1.5px_var(--line-2)]")}>
+                        {on && <Check size={12} strokeWidth={3} />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-semibold">{subjectName(t.key)}</span>
+                        <span className="t-micro block">{String(t.weight).replace(".", ",")} % de l&apos;examen</span>
+                      </span>
+                      <span className="t-micro shrink-0 tabular-nums">{m !== null && m !== undefined ? `${m} %` : "—"}</span>
+                      {m !== null && m !== undefined ? <Mini pct={m} rouge={m < WEAK_BELOW} /> : <span className="w-14 shrink-0" />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
+
+    // la colonne grise : les dernières séances, chacune avec son score (cerclée : un trophée)
+    const dernieres = pastSessions.slice(0, 5).map((s) => {
+      const pct = pctOf(s.score, s.total);
+      return { cle: s.id, titre: topicsSummary(s.topics, 2) || EPREUVE.practice, detail: `${pct} %`, marque: pct >= PASS_THRESHOLD };
+    });
+
+    return (
+      <SousPage
+        entete={
+          <EnTeteSousPage
+            retour={RETOUR_ENTRAINEMENT}
+            titre={SOUS_ENTRAINEMENT.practice.titre}
+            ligne={STUDIOLO.ligne}
+            illustration={{ nom: "practice-studiolo", position: "50% 60%" }}
+          />
         }
       >
+        <CadreZones
+          gauche={{ titre: SOUS_ENTRAINEMENT.practice.composer, contenu: composeur }}
+          droite={dernieres.length > 0 ? { titre: SOUS_ENTRAINEMENT.practice.dernieres, contenu: <ListeCourte lignes={dernieres} /> } : undefined}
+        />
+
+        {/* l'annexe indispensable : les copies passées et leur correction (on ne les relit nulle part ailleurs) */}
         {pastSessions.length > 0 && (
-          <section className="rl-section" id="historique" aria-label={STUDIOLO.copies}>
-            <SectionHead
-              title={STUDIOLO.copies}
-              action={
-                canChart ? (
-                  <Seg
-                    label="Affichage"
-                    value={historyTab}
-                    onChange={setHistoryTab}
-                    options={[
-                      { key: "history", label: "Historique" },
-                      { key: "progress", label: "Progression" },
-                    ]}
-                  />
-                ) : undefined
-              }
-              meta={`${pastSessions.length} session${pastSessions.length > 1 ? "s" : ""}`}
-            />
+          <CadreAnnexe titre={SOUS_ENTRAINEMENT.practice.copies} id="historique">
+            {canChart && (
+              <Seg
+                label="Affichage"
+                value={historyTab}
+                onChange={setHistoryTab}
+                className="justify-self-start"
+                options={[
+                  { key: "history", label: "Historique" },
+                  { key: "progress", label: "Progression" },
+                ]}
+              />
+            )}
 
             {historyTab === "progress" && canChart ? (
               <PracticeProgressChart pastSessions={pastSessions} topicLabels={TOPIC_LABELS} />
             ) : (
-              <div className="card overflow-hidden">
+              <div className="overflow-hidden rounded-[14px] border border-line">
                 <ul className="m-0 list-none divide-y divide-line p-0">
                   {history.map((s) => {
                     const pct = pctOf(s.score, s.total);
@@ -712,9 +671,9 @@ export function PracticeSession({
                 )}
               </div>
             )}
-          </section>
+          </CadreAnnexe>
         )}
-      </Page>
+      </SousPage>
     );
   }
 
@@ -723,7 +682,7 @@ export function PracticeSession({
   // ── PRÊTE ──
   if (phase === "ready") {
     return (
-      <div className="grid gap-6 py-2 md:py-8">
+      <ColonneSeance className="py-2 md:py-8">
         <ReadyCard
           eyebrow={retest ? RETEST.pret : "Entraînement ciblé · session prête"}
           title={`${questions.length} questions`}
@@ -738,7 +697,7 @@ export function PracticeSession({
           cancelLabel={retest ? RETEST.annuler : "Changer les matières"}
           onStart={start}
         />
-      </div>
+      </ColonneSeance>
     );
   }
 
@@ -754,7 +713,8 @@ export function PracticeSession({
     const meta = xpAwarded > 0 ? texteGain(xpAwarded, xpMult) : "";
 
     return (
-      <div className="rl-page">
+      <ColonneSeance>
+        <div className="rl-page">
         <FinDeSession
           epreuve={surTitreSession(retest ? RETEST.epreuve : EPREUVE.practice, total, minutes)}
           titre={topicsSummary(tirees, 2) || EPREUVE.practice}
@@ -794,7 +754,8 @@ export function PracticeSession({
           {many && <TopicBreakdown review={review} />}
           <ReviewSection review={review} />
         </FinDeSession>
-      </div>
+        </div>
+      </ColonneSeance>
     );
   }
 
@@ -810,7 +771,7 @@ export function PracticeSession({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+    <ColonneSeance>
       <RunnerBar
         label="Entraînement ciblé"
         index={idx}
@@ -899,6 +860,6 @@ export function PracticeSession({
       {!paused && (
         <QuestionMap total={questions.length} current={idx} isAnswered={(i) => answers[i] !== null && answers[i] !== undefined} onJump={setIdx} />
       )}
-    </div>
+    </ColonneSeance>
   );
 }

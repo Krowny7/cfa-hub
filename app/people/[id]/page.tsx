@@ -44,6 +44,8 @@ import { lireStyles, nomTitre } from "@/lib/profil/styles";
 import { baseDuVisiteur, lireCarnet, lireCercle, lireVisiteur, maitriseMesuree } from "@/lib/profil/visiteur";
 import { aDesBesoins, besoinsDe, classementDepuis, lireTuilesNeuves } from "@/lib/profil/tuiles-neuves";
 import { RapportDeForce } from "@/components/profil/RapportDeForce";
+import { LienRetour } from "@/components/ui/SousPage";
+import { RETOUR_JOUEURS } from "@/lib/voice-affronter-sous";
 import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
@@ -345,18 +347,24 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     nomBrut?.nom ? (nomComplet ? "nom visible" : "nom masqué") : null,
   ].filter(Boolean) as string[];
 
-  // sur le bandeau de mon profil : Personnaliser, et l'œil pour voir ce qu'en voit un ami
+  // en haut à gauche du bandeau : le retour commun des sous-pages vers l'annuaire (le profil garde
+  // son propre décor) ; sur mon profil, Personnaliser, et l'œil pour voir ce qu'en voit un ami
   const pastille = "inline-flex w-fit items-center gap-1.5 rounded-full bg-[color-mix(in_oklab,var(--paper)_82%,transparent)] py-1.5 text-[13px] font-semibold text-muted backdrop-blur hover:text-white";
-  const haut = isMe ? (
-    <div className="flex items-center gap-2">
-      <Link href={hrefPersonnaliser(id)} className="btn btn-primary btn-sm rl-press" data-leonard="personnaliser">
-        <Palette size={14} aria-hidden /> {JOUEURS.personnaliser}
-      </Link>
-      <Link href={hrefOnglet(id, onglet, apercuAmi ? null : "ami")} className={pastille + " px-2.5"} aria-label={JOUEURS.voirCommeAmi} title={JOUEURS.voirCommeAmi}>
-        <Eye size={14} aria-hidden />
-      </Link>
+  const haut = (
+    <div className="flex flex-wrap items-center gap-2">
+      <LienRetour retour={RETOUR_JOUEURS} />
+      {isMe && (
+        <>
+          <Link href={hrefPersonnaliser(id)} className="btn btn-primary btn-sm rl-press" data-leonard="personnaliser">
+            <Palette size={14} aria-hidden /> {JOUEURS.personnaliser}
+          </Link>
+          <Link href={hrefOnglet(id, onglet, apercuAmi ? null : "ami")} className={pastille + " px-2.5"} aria-label={JOUEURS.voirCommeAmi} title={JOUEURS.voirCommeAmi}>
+            <Eye size={14} aria-hidden />
+          </Link>
+        </>
+      )}
     </div>
-  ) : undefined;
+  );
 
   const onglets = ongletsDe(autreJoueur).map((cle) => ({
     cle,

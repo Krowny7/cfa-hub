@@ -1,170 +1,61 @@
-/* Page Vidéos résumé (components/videos/VideosView). Couleurs par les jetons du site : le thème nuit suit seul.
-   Seul l'écran du lecteur garde un fond sombre fixe (une vidéo se regarde sur du noir, de jour comme de nuit). */
+/* Page Vidéos résumé (components/videos/VideosView), dans le cadre à zones des sous-pages. Couleurs par les jetons
+   du site : le thème nuit suit seul. Seul l'écran du lecteur garde un fond sombre fixe (une vidéo se regarde sur
+   du noir, de jour comme de nuit). */
 
 .page {
-  /* la piste des jauges et de la frise : visible sur le papier comme sur la carte, de jour comme de nuit */
+  /* la piste de la frise : visible sur le papier comme sur la colonne grise, de jour comme de nuit */
   --piste: color-mix(in srgb, var(--ink) 10%, transparent);
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-@media (min-width: 768px) {
-  .page {
-    gap: 36px;
-  }
 }
 
-/* ——— les trois vidéos ——— */
-.rail {
-  display: grid;
-  gap: 12px;
-}
-@media (max-width: 767px) {
-  /* téléphone : une rangée qu'on fait glisser, pour que le lecteur reste haut dans la page */
-  .rail {
-    grid-auto-flow: column;
-    grid-auto-columns: 86%;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 16px;
-    margin-inline: -16px;
-    padding: 2px 16px 10px;
-    scrollbar-width: none;
-  }
-  .rail > li {
-    scroll-snap-align: start;
-  }
-}
-@media (min-width: 768px) {
-  .rail {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.railCarte {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  height: 100%;
-  padding: 10px 14px 10px 10px;
-  border-radius: 16px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-1);
-  color: var(--ink);
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
-}
-a.railCarte:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-2);
-}
-.railCarte[data-actif] {
-  border-color: var(--ink);
-  box-shadow:
-    0 0 0 1px var(--ink),
-    var(--shadow-2);
-}
-.railCarte[data-avenir] {
-  background: transparent;
-  border-style: dashed;
-  border-color: var(--line-2);
-  box-shadow: none;
-}
-
-.vignette {
-  position: relative;
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 128px;
-  aspect-ratio: 16 / 9;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #1a120b;
-  color: rgba(246, 241, 232, 0.55);
-}
-.vignette img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.railCarte[data-avenir] .vignette {
-  background: var(--well);
-  color: var(--ink-3);
-}
-.badge {
-  position: absolute;
-  left: 6px;
-  bottom: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 7px 2px 6px;
-  border-radius: 999px;
-  background: #1a120b;
-  color: #f6f1e8;
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-
-.railTexte {
+/* ——— la zone de gauche : les onglets des vidéos, le lecteur ——— */
+.lecteur {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  flex: 1;
-}
-.railTitre {
-  margin-top: 2px;
-  font-size: 15px;
-  line-height: 1.25;
-}
-.railMeta {
-  margin-top: 4px;
-  font-size: 12.5px;
-  color: var(--ink-2);
-}
-.jauge {
-  display: block;
-  height: 4px;
-  margin-top: 8px;
-  border-radius: 999px;
-  background: var(--piste);
-  overflow: hidden;
-}
-.jauge > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--ink);
-}
-.railEtat {
-  margin-top: 4px;
-  font-size: 11.5px;
-  color: var(--ink-3);
 }
 
-/* ——— le lecteur et le programme ——— */
-.scene {
-  display: grid;
-  align-items: start;
-  gap: 24px;
+/* trois petits onglets, juste au-dessus du lecteur */
+.onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
 }
-@media (min-width: 1024px) {
-  .scene {
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: 28px;
-  }
+.onglet {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
-@media (min-width: 1280px) {
-  .scene {
-    grid-template-columns: minmax(0, 1fr) 360px;
-    gap: 32px;
-  }
+a.onglet:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+a.onglet:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+/* l'onglet de la vidéo en cours : plein (noir sur papier, blanc la nuit) */
+.onglet[data-actif] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+}
+.onglet[data-avenir] {
+  border-style: dashed;
+  background: transparent;
+  color: var(--ink-3);
 }
 
 .ecran {
@@ -192,10 +83,18 @@ a.railCarte:hover {
 .infos {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px 20px;
-  margin-top: 16px;
+  gap: 10px 20px;
+  margin-top: 14px;
+}
+/* la part vue et ce qu'il reste : dite une seule fois */
+.etat {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
 }
 .commandes {
   display: flex;
@@ -227,12 +126,6 @@ a.railCarte:hover {
   color: var(--ink-2);
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-.friseMatiere > span {
-  margin-left: 5px;
-  font-weight: 400;
-  color: var(--ink-3);
-  font-variant-numeric: tabular-nums;
 }
 .friseParties {
   display: flex;
@@ -285,11 +178,6 @@ a.railCarte:hover {
   outline-offset: 1px;
   border-radius: 4px;
 }
-@media (max-width: 639px) {
-  .friseMatiere > span {
-    display: none;
-  }
-}
 
 .reprise {
   margin-top: 10px;
@@ -297,32 +185,26 @@ a.railCarte:hover {
   color: var(--ink-2);
 }
 
-/* ——— le programme ——— */
+/* ——— la colonne grise : le programme ———
+   Sur ordinateur, la liste prend la hauteur de la zone de gauche et défile seule (sans bouger la page) : elle
+   est posée en absolu dans la colonne, qui devient son repère. */
 .programme {
-  min-width: 0;
-  padding: 16px 8px 8px;
-  border-radius: 18px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-1);
-}
-.programmeTitre {
-  padding: 0 10px;
-}
-.programmeListe {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-top: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-@media (min-width: 1024px) {
-  .programme {
-    position: sticky;
-    top: 84px;
+@media (min-width: 980px) {
+  .page div:has(> .programme) {
+    position: relative;
   }
-  .programmeListe {
-    max-height: calc(100vh - 168px);
+  .page div:has(> .programme) > .programme {
+    position: absolute;
+    inset: 22px 10px 22px 18px;
+    padding-right: 8px;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
@@ -361,12 +243,13 @@ a.railCarte:hover {
   color: var(--ink-2);
   background: transparent;
 }
+/* sur la colonne grise : le papier du cadre au survol et pour la partie en cours */
 .ligne:hover {
-  background: var(--surface-2);
+  background: var(--surface);
   color: var(--ink);
 }
 .ligne[data-actif] {
-  background: var(--surface-2);
+  background: var(--surface);
   color: var(--ink);
   font-weight: 600;
 }
@@ -428,7 +311,7 @@ a.railCarte:hover {
   width: 40px;
 }
 .chapitre:hover {
-  background: var(--surface-2);
+  background: var(--surface);
   color: var(--ink);
 }
 .chapitre[data-actif] {

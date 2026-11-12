@@ -339,7 +339,8 @@ export function CourseAudioPlayer({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="card-hero p-5 md:p-6">
+      {/* @container : dans la colonne grise d'un cours (étroite), les commandes se resserrent */}
+      <div className="card-hero @container p-5 md:p-6">
         <audio ref={audioRef} src={src} preload="metadata" />
 
         <p className="t-eyebrow">
@@ -394,7 +395,8 @@ export function CourseAudioPlayer({
             {fmtRate(rate)}
           </button>
           <div className="flex flex-1 items-center justify-center gap-1.5 sm:gap-2">
-            <button type="button" onClick={() => goChapter(-1)} className="icon-btn border-transparent bg-transparent shadow-none" aria-label="Module précédent" title="Module précédent">
+            {/* les modules précédent / suivant s'effacent sur une carte très étroite : la liste des modules est juste dessous */}
+            <button type="button" onClick={() => goChapter(-1)} className="icon-btn hidden border-transparent bg-transparent shadow-none @[19.5rem]:inline-grid" aria-label="Module précédent" title="Module précédent">
               <SkipBack size={17} />
             </button>
             <button type="button" onClick={() => skip(-15)} className="icon-btn" aria-label="Reculer de 15 secondes" title="Reculer de 15 s">
@@ -411,11 +413,12 @@ export function CourseAudioPlayer({
             <button type="button" onClick={() => skip(15)} className="icon-btn" aria-label="Avancer de 15 secondes" title="Avancer de 15 s">
               <FastForward size={17} />
             </button>
-            <button type="button" onClick={() => goChapter(1)} className="icon-btn border-transparent bg-transparent shadow-none" aria-label="Module suivant" title="Module suivant">
+            <button type="button" onClick={() => goChapter(1)} className="icon-btn hidden border-transparent bg-transparent shadow-none @[19.5rem]:inline-grid" aria-label="Module suivant" title="Module suivant">
               <SkipForward size={17} />
             </button>
           </div>
-          <span className="w-[58px] shrink-0" aria-hidden />
+          {/* le pendant de la vitesse, pour centrer la lecture : seulement s'il y a la place */}
+          <span className="hidden w-[58px] shrink-0 @[23.5rem]:block" aria-hidden />
         </div>
         {modulePret !== null && !playing ? (
           <p className="t-micro mt-3 text-center" role="status">

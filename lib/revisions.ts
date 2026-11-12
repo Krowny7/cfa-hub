@@ -194,8 +194,6 @@ export async function repondreRevoir(supabase: SupabaseClient, serieId: string, 
 /** Les textes de /revoir. */
 export const REVOIR = {
   nom: "À revoir",
-  titre: "À revoir.",
-  kicker: "La mémoire · chaque jour",
   promesse: "Tes ratures sèches d'abord, puis ce qu'il est temps de te rappeler. 25 au plus par jour.",
   enTete: (i: number, n: number) => `À revoir · ${i}/${n}`,
   question: (i: number, n: number, matiere: string) => `Question ${i} sur ${n} · ${matiere}`,
@@ -236,5 +234,4 @@ export const REVOIR = {
   miseAuPropre: "Mettre au propre",
   erreurTitre: "La séance ne s'ouvre pas.",
   reessayer: "Réessayer",
-  retour: "Accueil",
 } as const;

@@ -195,7 +195,7 @@
   border-radius: 24px;
   background: var(--surface);
   box-shadow: var(--shadow-1);
-  overflow: hidden;
+  overflow: clip;
 }
 @media (min-width: 820px) {
   .principal {

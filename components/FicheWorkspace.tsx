@@ -1,27 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowRight,
-  BarChart3,
-  BookOpen,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  CloudOff,
-  Download,
-  ExternalLink,
-  ListChecks,
-  Lock,
-  Maximize2,
-  Minimize2,
-  Play,
-  RotateCcw,
-  Shuffle,
-  Trash2,
-} from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronDown, ChevronUp, CloudOff, ExternalLink, Lock, Play, RotateCcw, Shuffle, Trash2 } from "lucide-react";
 import { CopyButton, FicheQuizRunner, type CarnetFiche, type RunItem } from "@/components/FicheQuizRunner";
-import { FicheProgressChart } from "@/components/FicheProgressChart";
 import { Icone } from "@/components/adn/icons";
 import { Batons } from "@/components/adn/Batons";
 import { CompteurBarre, Rature } from "@/components/adn/Rature";
@@ -33,13 +14,14 @@ import { clearRun, loadRun, restoreRun, saveRun, type RestoredRun } from "@/lib/
 import { anneau as voixAnneau, ligneAnneauSession, RATURE, VIDE } from "@/lib/voice";
 import { CARNET, FICHE, QUIZ, aReprendre, dateCourte, jourParis, lundiParis, memeJour, rateeFois, reprendreRatures } from "@/lib/voice-z4";
 import { RETOUR } from "@/lib/voice-reviser";
-import { EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { POSTE_FICHE } from "@/lib/voice-postes";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import poste from "@/components/reviser/Postes.module.css";
 import {
   buildErrorPoolExport,
   computePageProgress,
   computeQuestionStates,
   computeRatureEvents,
-  computeRuns,
   pickRandom,
   type AnswerMode,
   type AnswerRow,
@@ -54,7 +36,9 @@ export type DrillSet = {
   questions: DrillQuestion[];
 };
 
-type Tab = "quiz" | "errors" | "mixed" | "progress";
+// L'onglet « Progression » a été retiré (2026-11-12) : il redisait l'avancement des pages, déjà
+// sur chaque page de la grille ; un ancien lien ?onglet=progression ouvre le quiz.
+type Tab = "quiz" | "errors" | "mixed";
 type ActiveRun = {
   key: number;
   items: RunItem[];
@@ -66,11 +50,10 @@ type ActiveRun = {
 };
 
 const MIXED_SIZE = 15;
-const LAYOUT_KEY = "cfa_fiche_layout";
 
 // Onglets liables avec ?onglet=… (ex. « Revoir » depuis Moi → ?onglet=erreurs).
-const TAB_PARAM: Record<Tab, string> = { quiz: "quiz", errors: "erreurs", mixed: "melange", progress: "progression" };
-const PARAM_TAB: Record<string, Tab> = { quiz: "quiz", erreurs: "errors", melange: "mixed", bilan: "mixed", progression: "progress" };
+const TAB_PARAM: Record<Tab, string> = { quiz: "quiz", errors: "erreurs", mixed: "melange" };
+const PARAM_TAB: Record<string, Tab> = { quiz: "quiz", erreurs: "errors", melange: "mixed", bilan: "mixed", progression: "quiz" };
 
 /** Thème d'une page, tiré du titre du set : « Equity — Drill Fiche Page 3 (Market Efficiency) ». */
 function pageTheme(setTitle: string | undefined): string | null {
@@ -99,19 +82,18 @@ function setUrlParams(params: Record<string, string | null>) {
   }
 }
 
-// Mise en page des fiches (gabarit B des sous-pages : l'en-tête commun, puis
-// la zone de travail en 1 240 px) : le cours (PDF) à gauche, l'entraînement à droite
-// sur grand écran ; deux onglets "Cours / Entraînement" sur mobile. Toute
-// réponse est journalisée (quiz_answer_log) : c'est ce qui alimente la
-// progression par page, le carnet d'erreurs (et ses ratures) et le graphique.
-// Liens directs : ?page=N ouvre la page N, ?onglet=erreurs|melange|progression.
+// Mise en page des fiches (modèle des sous-pages validé par Théo, 2026-11-12) : l'en-tête commun
+// (retour aux fiches), puis le cadre à zones : « Le cours » (le PDF) à gauche, « Le quiz » dans la
+// colonne grise à droite ; au téléphone, la bascule « Cours / Entraînement » ne montre qu'une des
+// deux zones. Toute réponse est journalisée (quiz_answer_log) : c'est ce qui alimente la
+// progression par page et le carnet d'erreurs (et ses ratures).
+// Liens directs : ?page=N ouvre la page N, ?onglet=erreurs|melange.
 export function FicheWorkspace({
   title,
   description,
   backHref = RETOUR.fiches.href,
   backLabel = RETOUR.fiches.label,
   pdfUrl,
-  pdfDownloadName,
   pdfLabel,
   onePagerUrl = null,
   totalPages,
@@ -125,7 +107,8 @@ export function FicheWorkspace({
   backHref?: string;
   backLabel?: string;
   pdfUrl: string | null;
-  pdfDownloadName: string;
+  /** ancien nom du PDF à télécharger : le bouton « Télécharger » a été retiré (2026-11-12, comme pour les cours) */
+  pdfDownloadName?: string;
   pdfLabel: string;
   /** URL signée du one-pager de la matière (une page A4), null : pas de lien */
   onePagerUrl?: string | null;
@@ -157,10 +140,9 @@ export function FicheWorkspace({
   const [logLoading, setLogLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [confirmReset, setConfirmReset] = useState<"all" | number | null>(null);
+  /** « Réinitialiser toute la fiche » attend sa confirmation */
+  const [confirmReset, setConfirmReset] = useState(false);
   const [savedRun, setSavedRun] = useState<RestoredRun | null>(null);
-  // Quiz en pleine largeur, PDF en dessous (au lieu de côte à côte).
-  const [wide, setWide] = useState(false);
   // PDF replié ou non. Suit le mode discret (replié dès qu'il s'active) ;
   // le bouton de la barre du PDF permet aussi de le replier à la main.
   const [pdfOpen, setPdfOpen] = useState(true);
@@ -191,9 +173,6 @@ export function FicheWorkspace({
   }, [api, setIds]);
 
   useEffect(() => {
-    try {
-      setWide(localStorage.getItem(LAYOUT_KEY) === "wide");
-    } catch {}
     // Liens directs : un onglet (ex. « Revoir » depuis Moi → ?onglet=erreurs)
     // et une page (?page=N, ex. « Reprendre » depuis l'accueil). Le serveur
     // a déjà ouvert la page quand il la connaît (initialPage).
@@ -208,15 +187,6 @@ export function FicheWorkspace({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function toggleWide() {
-    setWide((w) => {
-      try {
-        localStorage.setItem(LAYOUT_KEY, w ? "split" : "wide");
-      } catch {}
-      return !w;
-    });
-  }
-
   // L'adresse suit l'onglet (sans recharger) : un rechargement y revient.
   function changeTab(t: Tab) {
     setTab(t);
@@ -226,7 +196,6 @@ export function FicheWorkspace({
   const states = useMemo(() => computeQuestionStates(rows), [rows]);
   const progress = useMemo(() => computePageProgress(drillSets, states), [drillSets, states]);
   const progressByPage = useMemo(() => new Map(progress.map((p) => [p.page, p])), [progress]);
-  const runs = useMemo(() => computeRuns(rows), [rows]);
 
   const allItems: RunItem[] = useMemo(
     () => drillSets.flatMap((d) => d.questions.map((q) => ({ q, page: d.page }))),
@@ -277,21 +246,6 @@ export function FicheWorkspace({
     const saved = loadRun(storageKey);
     setSavedRun(saved ? restoreRun(saved, allItems) : null);
   }, [storageKey, allItems]);
-
-  const totals = useMemo(
-    () =>
-      progress.reduce(
-        (acc, p) => ({
-          total: acc.total + p.total,
-          mastered: acc.mastered + p.mastered,
-          weak: acc.weak + p.weak,
-          attempts: acc.attempts + p.attempts,
-          wrong: acc.wrong + p.wrongAttempts,
-        }),
-        { total: 0, mastered: 0, weak: 0, attempts: 0, wrong: 0 }
-      ),
-    [progress]
-  );
 
   // Page PDF de synthèse correspondant à la page de quiz choisie : le PDF
   // alterne synthèse / QCM (synthèse 1 = page 1, synthèse 2 = page 3, …).
@@ -382,6 +336,18 @@ export function FicheWorkspace({
     );
   }
 
+  /** efface l'historique de toute la fiche (sous le bilan, avec confirmation) */
+  async function doReset() {
+    try {
+      await api.resetLog(setIds);
+      setRows((prev) => prev.filter((r) => !setIds.includes(r.set_id)));
+      setConfirmReset(false);
+      setNotice("Historique de la fiche réinitialisé.");
+    } catch {
+      setNotice("La réinitialisation a échoué. Réessaie dans un instant.");
+    }
+  }
+
   async function copyPoolForAi() {
     try {
       const review = await api.fetchReview(poolItems.map((it) => it.q.id));
@@ -406,30 +372,16 @@ export function FicheWorkspace({
     }
   }
 
-  async function doReset(scope: "all" | number) {
-    try {
-      const ids = scope === "all" ? setIds : [byPage.get(scope)?.setId].filter((x): x is string => !!x);
-      await api.resetLog(ids);
-      setRows((prev) => prev.filter((r) => !ids.includes(r.set_id)));
-      setConfirmReset(null);
-      setNotice(scope === "all" ? "Historique de la fiche réinitialisé." : `Historique de la page ${scope} réinitialisé.`);
-    } catch {
-      setNotice("La réinitialisation a échoué. Réessaie dans un instant.");
-    }
-  }
-
+  // la colonne grise est étroite : des onglets sans icône, au nom court
   const tabs: SegItem<Tab>[] = [
-    { key: "quiz", label: "Quiz", icon: <ListChecks size={15} /> },
-    { key: "errors", label: "Mes erreurs", short: "Erreurs", icon: <Icone nom="erreurs" size={16} />, badge: poolItems.length },
-    { key: "mixed", label: "Bilan", icon: <Shuffle size={15} /> },
-    { key: "progress", label: "Progression", short: "Progrès", icon: <BarChart3 size={15} /> },
+    { key: "quiz", label: "Quiz" },
+    { key: "errors", label: "Erreurs", badge: poolItems.length },
+    { key: "mixed", label: "Bilan" },
   ];
 
   const activePage = selectedPage ? byPage.get(selectedPage) : undefined;
   const activeProgress = selectedPage ? progressByPage.get(selectedPage) : undefined;
   const activeTheme = pageTheme(activePage?.title);
-  const successPct = totals.attempts > 0 ? Math.round(((totals.attempts - totals.wrong) / totals.attempts) * 100) : 0;
-
 
   return (
     <SousPage
@@ -442,11 +394,11 @@ export function FicheWorkspace({
         />
       }
     >
-      <div className="flex flex-col gap-6 md:gap-8">
-        {/* Bascule Cours / Entraînement — mobile uniquement */}
+      <div className="grid gap-4">
+        {/* Bascule Cours / Entraînement — téléphone seulement : le cadre ne montre alors qu'une zone (Postes.module.css) */}
         <SegTabs
           label="Affichage"
-          className="w-full lg:hidden"
+          className="w-full min-[980px]:hidden"
           equal
           value={mobileView}
           onChange={setMobileView}
@@ -456,13 +408,13 @@ export function FicheWorkspace({
           ]}
         />
 
-        <div className={wide ? "grid gap-6" : "grid items-start gap-6 lg:grid-cols-2 xl:gap-8"}>
-          {/* ── Cours (PDF) ── */}
+        <CadreZones
+          gauche={{
+            titre: POSTE_FICHE.cours,
+            contenu: (
           <section
             aria-label="Cours"
-            className={`${mobileView === "course" ? "block" : "hidden"} min-w-0 lg:block ${
-              wide ? "lg:order-2" : "lg:sticky lg:top-[84px]"
-            }`}
+            className={`${poste.haut} min-w-0 ${mobileView === "course" ? "" : `hidden min-[980px]:block ${poste.coursMasque}`}`}
           >
             {!pdfSrc ? (
               <div className="card-quiet px-6 py-12 text-center">
@@ -500,59 +452,39 @@ export function FicheWorkspace({
                     <ExternalLink size={15} aria-hidden />
                     <span className="hidden xl:inline">Ouvrir</span>
                   </a>
-                  <a
-                    href={pdfUrl ?? "#"}
-                    download={pdfDownloadName}
-                    className="btn btn-ghost btn-sm shrink-0 px-2.5"
-                    aria-label="Télécharger le PDF"
-                    title="Télécharger"
-                  >
-                    <Download size={15} aria-hidden />
-                    <span className="hidden xl:inline">Télécharger</span>
-                  </a>
                 </div>
                 {pdfOpen && (
                   <iframe
                     key={pdfPage ?? 0}
                     src={pdfSrc}
                     title={`${title} — fiche`}
-                    className={`block w-full bg-surface-2 ${wide ? "h-[80vh]" : "h-[72vh] lg:h-[calc(100vh-9.75rem)]"}`}
+                    className="block h-[72vh] w-full bg-surface-2 min-[980px]:h-[calc(100vh-9.75rem)]"
                   />
                 )}
               </div>
             )}
           </section>
-
-          {/* ── Entraînement ── */}
+            ),
+          }}
+          droite={{
+            titre: POSTE_FICHE.quiz,
+            contenu: (
           <section
             aria-label="Entraînement"
-            className={`${mobileView === "train" ? "flex" : "hidden"} min-w-0 flex-col gap-5 lg:flex ${
-              wide ? "lg:order-1 lg:mx-auto lg:w-full lg:max-w-3xl" : ""
-            }`}
+            className={`${poste.quiz} min-w-0 flex-col gap-5 ${mobileView === "train" ? "flex" : `hidden min-[980px]:flex ${poste.quizMasque}`}`}
           >
-            <div className="flex items-center gap-3">
-              <SegTabs
-                label="Entraînement"
-                className="min-w-0 flex-1 sm:flex-none"
-                value={tab}
-                onChange={(t) => {
-                  changeTab(t);
-                  setRun(null);
-                  setNotice(null);
-                  setConfirmReset(null);
-                }}
-                items={tabs}
-              />
-              <button
-                type="button"
-                onClick={toggleWide}
-                className="icon-btn ml-auto hidden lg:inline-grid"
-                aria-label={wide ? "Remettre le cours à côté du quiz" : "Quiz en pleine largeur, cours en dessous"}
-                title={wide ? "Remettre le cours à côté du quiz" : "Quiz en pleine largeur, cours en dessous"}
-              >
-                {wide ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-              </button>
-            </div>
+            <SegTabs
+              label="Entraînement"
+              className="w-full"
+              equal
+              value={tab}
+              onChange={(t) => {
+                changeTab(t);
+                setRun(null);
+                setNotice(null);
+              }}
+              items={tabs}
+            />
 
             {storage === "device" && (
               <div className="card-quiet flex gap-3 px-4 py-3.5" role="note">
@@ -625,17 +557,8 @@ export function FicheWorkspace({
               <div className="flex flex-col gap-6">
                 {activePage && activeProgress && (
                   <div className="card-hero p-6 md:p-7">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="t-eyebrow">
-                        Page {activePage.page}
-                        {pdfPage ? ` · synthèse p. ${pdfPage}` : ""}
-                      </p>
-                      {activeProgress.attempts > 0 && (
-                        <span className="font-mono text-[12.5px] text-muted tabular-nums">
-                          <span className="font-semibold text-white">{activeProgress.mastered}</span>/{activeProgress.total}
-                        </span>
-                      )}
-                    </div>
+                    {/* l'avancement de la page : la barre et sa légende (plus de compteur en double) */}
+                    <p className="t-eyebrow">Page {activePage.page}</p>
                     <h2 className="t-h2 mt-2">{activeTheme ?? `Page ${activePage.page}`}</h2>
                     <StackBar
                       className="mt-5"
@@ -674,7 +597,7 @@ export function FicheWorkspace({
                         <ArrowRight size={16} aria-hidden />
                       </button>
                       {pdfSrc && (
-                        <button type="button" className="btn btn-secondary btn-lg lg:hidden" onClick={() => setMobileView("course")}>
+                        <button type="button" className="btn btn-secondary btn-lg min-[980px]:hidden" onClick={() => setMobileView("course")}>
                           Voir la synthèse
                         </button>
                       )}
@@ -851,7 +774,7 @@ export function FicheWorkspace({
                   )}
                 </div>
               )
-            ) : tab === "mixed" ? (
+            ) : (
               <div className="card-hero p-6 md:p-7">
                 <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-surface-2" aria-hidden>
                   <Shuffle size={19} />
@@ -869,100 +792,18 @@ export function FicheWorkspace({
                     {allItems.length} questions disponibles sur {drillSets.length} pages
                   </span>
                 </div>
-              </div>
-            ) : logLoading ? (
-              <div className="rl-skel h-[420px]" />
-            ) : (
-              <div className="card p-5 md:p-7">
-                <dl className="grid grid-cols-3 gap-3">
-                  <Stat label="Maîtrisées" value={String(totals.mastered)} sub={`/${totals.total}`} />
-                  <Stat label="À reprendre" value={String(totals.weak)} pen={totals.weak > 0} />
-                  <Stat label="Précision" value={`${successPct} %`} />
-                </dl>
-
-                <hr className="rule my-6" />
-                <h3 className="t-h3">Évolution des scores</h3>
-                <div className="mt-4">
-                  <FicheProgressChart runs={runs} />
-                </div>
-
-                <hr className="rule my-6" />
-                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                  <h3 className="t-h3">Par page</h3>
-                  <span className="t-micro">des plus faibles aux plus solides</span>
-                </div>
-                <div className="mt-4 grid gap-4">
-                  {[...progress]
-                    .sort((a, b) => {
-                      const ra = a.attempts > 0 ? a.wrongAttempts / a.attempts : -1;
-                      const rb = b.attempts > 0 ? b.wrongAttempts / b.attempts : -1;
-                      return rb - ra;
-                    })
-                    .map((p) => {
-                      const errRate = p.attempts > 0 ? Math.round((p.wrongAttempts / p.attempts) * 100) : null;
-                      const theme = pageTheme(byPage.get(p.page)?.title);
-                      return (
-                        <div key={p.page} className="grid gap-2">
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              className="min-w-0 flex-1 truncate text-left text-[14px] font-semibold tracking-[-0.006em] underline-offset-4 hover:underline"
-                              onClick={() => selectPage(p.page)}
-                              title="Afficher cette page"
-                            >
-                              <span className="mr-2 font-mono text-[12px] font-semibold text-muted">P{p.page}</span>
-                              {theme ?? `Page ${p.page}`}
-                            </button>
-                            <span className={`shrink-0 text-[12.5px] tabular-nums ${errRate !== null && errRate >= 30 ? "text-pen" : "text-muted"}`}>
-                              {errRate === null ? "pas encore faite" : `${errRate} % d'erreurs`}
-                            </span>
-                            {p.attempts > 0 &&
-                              (confirmReset === p.page ? (
-                                <button
-                                  type="button"
-                                  className="shrink-0 text-[12.5px] font-semibold text-pen hover:underline"
-                                  onClick={() => doReset(p.page)}
-                                >
-                                  Confirmer ?
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="grid h-7 w-7 shrink-0 place-items-center rounded-[8px] text-muted transition-colors hover:bg-surface-2 hover:text-white"
-                                  onClick={() => setConfirmReset(p.page)}
-                                  aria-label={`Réinitialiser la page ${p.page}`}
-                                  title="Réinitialiser cette page"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              ))}
-                          </div>
-                          <StackBar mastered={p.mastered} weak={p.weak} total={p.total} />
-                        </div>
-                      );
-                    })}
-                </div>
-
-                <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-line pt-5">
-                  <CopyButton copied={copied} onClick={copyPoolForAi} disabled={poolItems.length === 0} className="btn-sm">
-                    Copier mes erreurs pour l&apos;IA
-                  </CopyButton>
-                  {confirmReset === "all" ? (
+                <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+                  {confirmReset ? (
                     <>
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => doReset("all")}>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => void doReset()}>
                         Confirmer : tout effacer
                       </button>
-                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(null)}>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(false)}>
                         Annuler
                       </button>
                     </>
                   ) : (
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm text-muted"
-                      disabled={rows.length === 0}
-                      onClick={() => setConfirmReset("all")}
-                    >
+                    <button type="button" className="btn btn-ghost btn-sm text-muted" disabled={rows.length === 0} onClick={() => setConfirmReset(true)}>
                       <Trash2 size={13} aria-hidden /> Réinitialiser toute la fiche
                     </button>
                   )}
@@ -970,7 +811,9 @@ export function FicheWorkspace({
               </div>
             )}
           </section>
-        </div>
+            ),
+          }}
+        />
       </div>
     </SousPage>
   );
@@ -1053,18 +896,6 @@ function StackBar({
         className="h-full bg-pen transition-[width] duration-700 [html[data-discreet='1']_&]:opacity-40"
         style={{ width: `${(weak / t) * 100}%` }}
       />
-    </div>
-  );
-}
-
-function Stat({ label, value, sub, pen = false }: { label: string; value: string; sub?: string; pen?: boolean }) {
-  return (
-    <div className="min-w-0">
-      <dt className="t-eyebrow">{label}</dt>
-      <dd className={`mt-2 text-[24px] font-bold leading-none tracking-[-0.03em] tabular-nums md:text-[28px] ${pen ? "text-pen" : ""}`}>
-        {value}
-        {sub && <span className="text-[14px] font-semibold tracking-normal text-muted">{sub}</span>}
-      </dd>
     </div>
   );
 }

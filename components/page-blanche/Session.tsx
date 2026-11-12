@@ -6,18 +6,67 @@ import { Check, X } from "lucide-react";
 import { enregistrerTour, recommencerMatiere } from "@/app/page-blanche/actions";
 import { copiesARendre, lignesDesCopies } from "@/lib/formules/tour";
 import type { Copie, Formule } from "@/lib/formules/types";
-import { ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { PB } from "@/lib/voice-page-blanche";
+import { POSTE_PB } from "@/lib/voice-postes";
 import { RETOUR } from "@/lib/voice-reviser";
+import poste from "@/components/reviser/Postes.module.css";
 import s from "./PageBlanche.module.css";
 
 // Un tour de la page blanche. Les copies : le joueur avance une par une et écrit sur son
 // papier. Le corrigé : tout est révélé d'un coup, il note chaque ligne en vert ou en rouge.
 // Le bilan : ce qu'il a raté forme les copies du tour suivant.
-// Gabarit C des sous-pages : l'en-tête commun (retour à la page blanche, titre selon la
-// phase), puis la colonne des séances (760 px).
+// Modèle des sous-pages (2026-11-12) : l'en-tête commun (retour à la page blanche, la matière, le
+// tour), puis le cadre à zones : à gauche la feuille (« Copie N sur M », « Le corrigé », « Le
+// bilan »), dans la colonne grise « Tes copies », toutes les copies de la matière, rendues ou non.
 
 type Phase = "copies" | "corrige" | "bilan";
+
+/**
+ * « Tes copies » : toutes les copies de la matière, chacune rendue (tout est maîtrisé) ou à rendre,
+ * celle de la feuille marquée ; pendant les copies, un clic sur une copie à rendre y mène. Liste
+ * locale : la courte liste commune (ListeCourte) s'arrête à 5 lignes, une matière a jusqu'à 12 copies.
+ */
+function ListeCopies({
+  copies,
+  acquises,
+  ici,
+  aller,
+}: {
+  copies: Copie[];
+  acquises: ReadonlySet<string>;
+  /** l'id de la copie sur la feuille (null : aucune) */
+  ici: string | null;
+  /** aller à cette copie (null : les lignes ne sont pas cliquables) */
+  aller: ((id: string) => void) | null;
+}) {
+  return (
+    <ol className={s.copies}>
+      {copies.map((c) => {
+        const rendue = c.formules.every((f) => acquises.has(f.id));
+        const corps = (
+          <>
+            <span className={s.copieTitre}>{c.titre}</span>
+            <span className={s.copieEtat}>{rendue ? POSTE_PB.rendue : POSTE_PB.aRendre}</span>
+          </>
+        );
+        return (
+          <li key={c.id} data-ici={c.id === ici ? "1" : undefined} data-rendue={rendue ? "1" : undefined}>
+            {aller && !rendue && c.id !== ici ? (
+              <button type="button" className={s.copieLigne} onClick={() => aller(c.id)} aria-label={POSTE_PB.allerA(c.titre)}>
+                {corps}
+              </button>
+            ) : (
+              <div className={s.copieLigne} aria-current={c.id === ici ? "step" : undefined}>
+                {corps}
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 function Reponse({ f }: { f: Formule }) {
   const html = useMemo(() => (f.latex ? katex.renderToString(f.latex, { throwOnError: false, displayMode: false }) : null), [f.latex]);
@@ -55,12 +104,26 @@ export function SessionPageBlanche({
   const notees = Object.keys(notes).length;
   const reussies = Object.values(notes).filter(Boolean).length;
 
-  // la page d'une phase : l'en-tête commun, puis la colonne de la séance
-  const page = (titre: React.ReactNode, ligne: React.ReactNode, contenu: React.ReactNode) => (
-    <SousPage entete={<EnTeteSousPage retour={RETOUR.pageBlanche} illustration={{ nom: "reviser-page-blanche", position: "50% 62%" }} titre={titre} ligne={ligne} />}>
-      <ColonneSeance>{contenu}</ColonneSeance>
-    </SousPage>
-  );
+  // la page d'une phase : l'en-tête commun (la matière, le tour), puis le cadre à zones : la feuille
+  // à gauche (son titre selon la phase), « Tes copies » dans la colonne grise
+  const page = (ligne: React.ReactNode, titre: React.ReactNode, contenu: React.ReactNode) => {
+    const surLaFeuille = phase === "copies" ? (aRendre[ici]?.id ?? null) : null;
+    const aller =
+      phase === "copies"
+        ? (id: string) => {
+            const i = aRendre.findIndex((x) => x.id === id);
+            if (i >= 0) setIci(i);
+          }
+        : null;
+    return (
+      <SousPage entete={<EnTeteSousPage retour={RETOUR.pageBlanche} illustration={{ nom: "reviser-page-blanche", position: "50% 62%" }} titre={nom} ligne={ligne} />}>
+        <CadreZones
+          gauche={{ titre, contenu: <div className={poste.haut + " grid min-w-0 gap-[18px]"}>{contenu}</div> }}
+          droite={{ titre: POSTE_PB.copies, contenu: <ListeCopies copies={copies} acquises={acquises} ici={surLaFeuille} aller={aller} /> }}
+        />
+      </SousPage>
+    );
+  };
 
   function valider() {
     setEchec(false);
@@ -105,8 +168,9 @@ export function SessionPageBlanche({
   if (aRendre.length === 0 || phase === "bilan") {
     const reste = copiesARendre(copies, acquises);
     return page(
-      nom,
       null,
+      // le bilan d'un tour ; tout maîtrisé dès l'arrivée : la feuille le dit, sans redite dessous
+      phase === "bilan" ? POSTE_PB.bilan : PB.copies(0),
       <>
         {phase === "bilan" && <p className={s.bilan}>{PB.bilan(reussies, notees)}</p>}
         {reste.length > 0 ? (
@@ -115,7 +179,7 @@ export function SessionPageBlanche({
           </button>
         ) : (
           <>
-            <p className={s.bilan}>{PB.fini}</p>
+            {phase === "bilan" && <p className={s.bilan}>{PB.fini}</p>}
             <button type="button" className="btn btn-secondary rl-press w-fit" disabled={occupe} onClick={recommencer}>
               {PB.recommencer}
             </button>
@@ -132,8 +196,8 @@ export function SessionPageBlanche({
 
   if (phase === "corrige") {
     return page(
+      PB.tour(tour),
       PB.corrige,
-      PB.corrigeSous,
       <>
         {aRendre.map((c) => (
           <section key={c.id} className={s.feuille} aria-label={c.titre}>
@@ -179,12 +243,12 @@ export function SessionPageBlanche({
 
   const c = aRendre[ici];
   const derniere = ici === aRendre.length - 1;
+  // la ligne de l'en-tête : le tour seul (le nombre de copies est dans le titre de la feuille)
   return page(
-    nom,
-    `${PB.tour(tour)} · ${PB.copies(aRendre.length)}`,
+    PB.tour(tour),
+    PB.copie(ici + 1, aRendre.length),
     <>
       <section className={s.feuille} aria-label={c.titre}>
-        <p className={s.numero}>{PB.copie(ici + 1, aRendre.length)}</p>
         <h2 className={s.titreCopie}>{c.titre}</h2>
         <ol className={s.lignes}>
           {c.formules.map((f) => (
@@ -195,7 +259,6 @@ export function SessionPageBlanche({
           ))}
         </ol>
       </section>
-      <p className="t-small m-0">{PB.consigne}</p>
       <div className={s.barre}>
         {ici > 0 ? (
           <button type="button" className="btn btn-secondary rl-press" onClick={() => setIci((i) => i - 1)}>

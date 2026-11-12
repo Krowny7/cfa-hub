@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { jourParis } from "@/lib/objectif";
 import { REVOIR, lireMesRevisions, tailleRevoir } from "@/lib/revisions";
-import { BackLink } from "@/components/defi/parts";
-import { RevoirRunner } from "@/components/revoir/RevoirRunner";
+import { EnTeteRevoir, RevoirRunner } from "@/components/revoir/RevoirRunner";
+import { CadreZones, SousPage } from "@/components/ui/SousPage";
+import { SOUS_MOI } from "@/lib/voice-moi";
 
 export const metadata = { title: "À revoir · Ranked Lobby" };
 
@@ -31,7 +31,8 @@ async function destinationApres(supabase: Awaited<ReturnType<typeof createClient
 // questions (?n=10..25), sur le moteur des séries éclair
 // (migration_v3_profil.sql §3b : mes_revisions_dues, revoir_lancer,
 // revoir_repondre). Tant que la section n'est pas collée : « bientôt », et le
-// lien vers « Mettre au propre ».
+// lien vers « Mettre au propre ». Le retour mène à Moi ; l'écran de départ, la
+// séance et le bilan sont posés par RevoirRunner (en-tête et cadre à zones).
 export default async function RevoirPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -42,25 +43,24 @@ export default async function RevoirPage({ searchParams }: { searchParams?: Prom
   const taille = tailleRevoir(sp.n);
   const [file, destination] = await Promise.all([lireMesRevisions(supabase), destinationApres(supabase, user.id)]);
 
+  if (file.complet) return <RevoirRunner taille={taille} file={file} destination={destination} />;
+
   return (
-    <div className="rl-wide grid gap-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <BackLink href="/dashboard">{REVOIR.retour}</BackLink>
-      </div>
-      {file.complet ? (
-        <RevoirRunner taille={taille} file={file} destination={destination} />
-      ) : (
-        <section className="card rl-in mx-auto grid w-full max-w-[680px] gap-3 p-6 md:p-8">
-          <p className="kicker m-0 flex items-center gap-1.5">
-            <RotateCcw size={13} aria-hidden /> {REVOIR.nom}
-          </p>
-          <h1 className="t-h2 m-0">{REVOIR.soonTitre}</h1>
-          <p className="t-body m-0 text-muted">{REVOIR.soonTexte}</p>
-          <Link href={MISE_AU_PROPRE} className="btn btn-primary min-h-[44px] w-full sm:w-fit">
-            {REVOIR.miseAuPropre}
-          </Link>
-        </section>
-      )}
-    </div>
+    <SousPage entete={<EnTeteRevoir />}>
+      <CadreZones
+        gauche={{
+          titre: SOUS_MOI.revoir.zone,
+          contenu: (
+            <div className="grid justify-items-start gap-3">
+              <p className="m-0 text-[17px] font-semibold">{REVOIR.soonTitre}</p>
+              <p className="t-body m-0 text-muted">{REVOIR.soonTexte}</p>
+              <Link href={MISE_AU_PROPRE} className="btn btn-primary min-h-[44px] w-full sm:w-fit">
+                {REVOIR.miseAuPropre}
+              </Link>
+            </div>
+          ),
+        }}
+      />
+    </SousPage>
   );
 }

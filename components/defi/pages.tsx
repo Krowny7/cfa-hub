@@ -1,9 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getEclairStats } from "@/lib/eclair";
+import { lireSerieEncre } from "@/lib/serie-encre";
 import {
   FORMATS,
-  getTodayDaily,
   dailyPhase,
   dayLabel,
   getDaily,
@@ -25,7 +24,7 @@ import { DefiRunner } from "@/components/defi/DefiRunner";
 // 30 du jour), /defi/cinq et /defi/cinq/<jour> (les 5 du jour). Même moteur,
 // même parcours ; seuls changent les RPC, l'adresse et la voix (le format).
 
-/** Le défi d'aujourd'hui : à faire, en cours ou rendu, avec le classement et les jours passés. */
+/** Le défi d'aujourd'hui : à faire, en cours ou rendu, avec le classement (ou la série) et les jours passés. */
 export async function pageDuJour(format: FormatDefi) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -53,17 +52,11 @@ export async function pageDuJour(format: FormatDefi) {
           phase === "done" ? getDailyReview(supabase, info.day, format) : Promise.resolve([] as DailyReviewItem[]),
         ]);
 
-  // les épreuves voisines (tuiles du Pupitre, lien du départ) : lues sans bloquer la page
-  const [cinq, eclair] =
-    phase === "playing"
-      ? [null, null]
-      : await Promise.all([format === "trente" ? getTodayDaily(supabase, user.id, "cinq").catch(() => null) : Promise.resolve(null), getEclairStats(supabase, user.id).catch(() => null)]);
+  // les 5 du jour : la série d'encre, dans la colonne grise (une lecture, null sans la migration)
+  const statut = phase !== "playing" && format === "cinq" ? await lireSerieEncre(supabase) : null;
+  const serie = statut ? { jours: statut.serieAffichee, fait: statut.fait, reste: Math.max(0, statut.seuil - statut.aujourdhui) } : null;
 
-  return (
-    <div className="rl-wide">
-      <DefiToday key={info.day} info={info} board={board} history={history} review={review} nowIso={new Date().toISOString()} cinq={cinq} eclairToday={eclair?.today ?? null} />
-    </div>
-  );
+  return <DefiToday key={info.day} info={info} board={board} history={history} review={review} nowIso={new Date().toISOString()} serie={serie} />;
 }
 
 type PageJour = {

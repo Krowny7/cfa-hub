@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { pad2 } from "@/components/reviser/rail";
-import { Presentoir } from "@/components/ui/Presentoir";
-import { CadrePrincipal, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { Carrousel } from "@/components/ui/Carrousel";
+import { Chiffre } from "@/components/ui/Decors";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { CATALOGUE, lignesDe } from "@/lib/formules";
-import { copiesARendre } from "@/lib/formules/tour";
 import { topicLabel } from "@/lib/practiceTopics";
 import { createClient } from "@/lib/supabase/server";
+import { nombre } from "@/lib/voice";
 import { PB } from "@/lib/voice-page-blanche";
 import { RETOUR } from "@/lib/voice-reviser";
 
@@ -15,9 +16,10 @@ const CODES: Record<string, string> = Object.fromEntries(SUBJECTS.map((x) => [x.
 
 export const metadata = { title: "La page blanche · Ranked Lobby" };
 
-// La page blanche : le choix de la matière, avec ce qu'il reste à rendre dans chacune.
-// Gabarit A des sous-pages : le cadre d'en-tête (retour à Réviser, peinture du palais blanc
-// à droite), puis les matières en feuilles blanches sur le marbre (présentoir commun).
+// La page blanche (modèle des sous-pages, 2026-11-12) : l'en-tête (retour à Réviser, peinture du
+// palais blanc à droite), puis le cadre à zones : les matières en feuilles blanches sur le carrousel à
+// gauche (la feuille de devant ouvre sa séance), et dans la colonne grise les formules maîtrisées sur
+// le total.
 export default async function PageBlanchePage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -30,25 +32,30 @@ export default async function PageBlanchePage() {
     m,
     total: lignesDe(m),
     faites: m.copies.reduce((t, c) => t + c.formules.filter((f) => maitrisees.has(f.id)).length, 0),
-    aRendre: copiesARendre(m.copies, maitrisees).length,
   }));
+  const total = matieres.reduce((t, x) => t + x.total, 0);
+  const faites = matieres.reduce((t, x) => t + x.faites, 0);
   return (
     <SousPage entete={<EnTeteSousPage retour={RETOUR.reviser} titre={PB.titre} ligne={PB.sous} illustration={{ nom: "reviser-page-blanche", position: "50% 62%" }} />}>
-      <CadrePrincipal ambiance="marbre" titre={PB.matieresTitre}>
-        <Presentoir
-          forme="blanche"
-          label={PB.matieresTitre}
-          pieces={matieres.map(({ m, total, faites, aRendre }, i) => ({
-            cle: m.matiere,
-            href: `/page-blanche/${m.matiere}`,
-            numero: pad2(i + 1),
-            code: CODES[m.matiere] ?? m.matiere.slice(0, 3).toUpperCase(),
-            titre: topicLabel(m.matiere),
-            ligne: `${PB.copies(aRendre)} · ${PB.maitrisees(faites, total)}`,
-            pct: total ? Math.round((faites / total) * 100) : null,
-          }))}
-        />
-      </CadrePrincipal>
+      <CadreZones
+        gauche={{
+          titre: PB.choisir,
+          contenu: (
+            <Carrousel
+              forme="blanche"
+              action={PB.ouvrir}
+              pieces={matieres.map(({ m }, i) => ({
+                cle: m.matiere,
+                href: `/page-blanche/${m.matiere}`,
+                numero: pad2(i + 1),
+                code: CODES[m.matiere] ?? m.matiere.slice(0, 3).toUpperCase(),
+                titre: topicLabel(m.matiere),
+              }))}
+            />
+          ),
+        }}
+        droite={{ titre: PB.tesFormules, contenu: <Chiffre valeur={nombre(faites)} legende={PB.formulesSur(total)} /> }}
+      />
     </SousPage>
   );
 }

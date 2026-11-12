@@ -8,9 +8,12 @@ import { DuelMatch } from "@/components/duel/DuelMatch";
 import { DuelResult } from "@/components/duel/DuelResult";
 import { DuelReview } from "@/components/duel/DuelReview";
 import { DuelStatusCard } from "@/components/duel/DuelStatusCard";
+import { ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { countPlayers } from "@/components/classement/data";
+import { RETOUR_DUEL, SOUS_AFFRONTER } from "@/lib/voice-affronter-sous";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const D = SOUS_AFFRONTER.duel;
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -26,6 +29,9 @@ export async function generateMetadata({ searchParams }: PageProps) {
 // son état. duel_state règle le duel au passage s'il est arrivé à échéance.
 // ?revue=1 (ou ?revue=tout) : la revue complète d'un duel terminé — aussi
 // d'un duel refusé ou expiré que tu as joué, avec migration_duel_review.sql.
+// Sur le modèle des séances (2026-11-12) : l'en-tête commun (retour au lobby des duels ; à la revue,
+// retour au résultat), puis la colonne des séances (760 px). Pendant la partie, plus d'en-tête :
+// DuelMatch ne le montre qu'avant de commencer.
 export default async function DuelPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const sp = await searchParams;
@@ -39,13 +45,7 @@ export default async function DuelPage({ params, searchParams }: PageProps) {
   if (!user) redirect("/login");
   if (!UUID_RE.test(id)) notFound();
 
-  if (!(await duelsReady(supabase))) {
-    return (
-      <div className="rl-wide">
-        <DuelSoon />
-      </div>
-    );
-  }
+  if (!(await duelsReady(supabase))) return <DuelSoon />;
 
   const state = await getDuelState(supabase, id);
   if (!state) notFound();
@@ -63,21 +63,33 @@ export default async function DuelPage({ params, searchParams }: PageProps) {
     showResult ? countPlayers(supabase) : Promise.resolve(null),
   ]);
 
+  // l'en-tête commun : contre qui, et le format
+  const titre = state.them ? D.contre(state.them.username ?? D.unJoueur) : D.auHasard;
+  const format = D.format(state.questionCount, Math.round(state.timeLimitSeconds / 60));
+  const illustration = { nom: "duel-lice", position: "50% 70%" } as const;
+
   if (wantsReview && (finished || review.length > 0)) {
     return (
-      <div className="rl-wide">
-        <DuelReview state={state} review={review} initialFilter={initialFilter} />
-      </div>
+      <SousPage
+        entete={<EnTeteSousPage retour={{ href: `/duel/${id}`, label: finished ? D.resultat : D.leDuel }} titre={titre} ligne={D.revue} illustration={illustration} />}
+      >
+        <ColonneSeance>
+          <DuelReview state={state} review={review} initialFilter={initialFilter} />
+        </ColonneSeance>
+      </SousPage>
     );
   }
 
   const mastery = topics ? programMastery(topics) : null;
+  const entete = <EnTeteSousPage retour={RETOUR_DUEL} titre={titre} ligne={format} illustration={illustration} />;
 
   if (finished) {
     return (
-      <div className="rl-wide">
-        <DuelResult state={state} review={review} mastery={mastery} leaderboardRank={lbRank} players={players} />
-      </div>
+      <SousPage entete={entete}>
+        <ColonneSeance>
+          <DuelResult state={state} review={review} mastery={mastery} leaderboardRank={lbRank} players={players} />
+        </ColonneSeance>
+      </SousPage>
     );
   }
 
@@ -89,7 +101,16 @@ export default async function DuelPage({ params, searchParams }: PageProps) {
   } else if (state.me.finishedAt) {
     view = <DuelStatusCard state={state} variant="waiting" myMastery={mastery} />;
   } else {
-    view = <DuelMatch state={state} myMastery={mastery} />;
+    // la partie : l'en-tête n'est montré qu'avant de commencer (DuelMatch le pose lui-même)
+    return (
+      <SousPage entete={null}>
+        <DuelMatch state={state} myMastery={mastery} entete={entete} />
+      </SousPage>
+    );
   }
-  return <div className="rl-wide">{view}</div>;
+  return (
+    <SousPage entete={entete}>
+      <ColonneSeance>{view}</ColonneSeance>
+    </SousPage>
+  );
 }

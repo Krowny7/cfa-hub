@@ -7,14 +7,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAnswerStats } from "@/lib/answer-stats";
 import { notionParId } from "@/lib/notions";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
-import { BackLink } from "@/components/defi/parts";
 import { AtelierEcran } from "@/components/atelier/AtelierEcran";
+import { RegistreCourt } from "@/components/atelier/RegistreCourt";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { construirePointsFaibles, lireBanqueQcm, lireBasePointsFaibles } from "@/components/moi/points-faibles-data";
-import { RegistreAtelier } from "@/components/reviser/RegistreAtelier";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import type { NotionProposee } from "@/lib/atelier-seance";
 import { POINTS_FAIBLES } from "@/lib/voice-points-faibles";
 import { ATELIER } from "@/lib/voice-atelier";
+import { RETOUR_ENTRAINEMENT, SOUS_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
 import { lireAtelierCourant, rappelsDes } from "./donnees";
 
 export const metadata = { title: "L'Atelier · Ranked Lobby" };
@@ -24,7 +25,9 @@ export const metadata = { title: "L'Atelier · Ranked Lobby" };
 // migration_atelier.sql). ?notion=fixed_income:11 : cette notion-là (depuis sa
 // ligne de « Tes points faibles »). Un Atelier en cours se reprend. Tant que
 // la migration manque, ou que les questions ne portent pas encore leur notion
-// (on reste aux thèmes) : « bientôt ».
+// (on reste aux thèmes) : « bientôt ». L'écran suit le modèle des sous-pages
+// (2026-11-12) : l'en-tête commun, la notion du jour, le registre resserré dans la
+// colonne grise (lu en flux) ; la séance lancée, plus d'en-tête.
 export default async function AtelierPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -52,29 +55,29 @@ export default async function AtelierPage({ searchParams }: { searchParams?: Pro
 
   const registre = (
     <Suspense fallback={null}>
-      <RegistreAtelier supabase={supabase} admin={admin} userId={userId} />
+      <RegistreCourt supabase={supabase} admin={admin} userId={userId} />
     </Suspense>
-  );
-
-  const entete = (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-      <BackLink href="/entrainement">{ATELIER.retour}</BackLink>
-    </div>
   );
 
   if (!courant.disponible || pf.unite !== "notion") {
     return (
-      <div className="rl-wide grid gap-5">
-        {entete}
-        <section className="card rl-in mx-auto grid w-full max-w-[760px] gap-3 p-6 md:p-8">
-          <h1 className="t-h2 m-0">{ATELIER.bientotTitre}</h1>
-          <p className="t-body m-0 text-muted">{ATELIER.bientotTexte}</p>
-          <Link href="/moi?onglet=stats#points-faibles" className="ink-link w-fit">
-            {ATELIER.bientotAction}
-          </Link>
-        </section>
-        {registre}
-      </div>
+      <SousPage entete={<EnTeteSousPage retour={RETOUR_ENTRAINEMENT} titre={ATELIER.nom} ligne={ATELIER.carteSousTitre} illustration={{ nom: "qcm-machines" }} />}>
+        <CadreZones
+          gauche={{
+            titre: SOUS_ENTRAINEMENT.atelier.notion,
+            contenu: (
+              <div className="grid gap-3">
+                <p className="m-0 text-[20px] font-bold leading-tight">{ATELIER.bientotTitre}</p>
+                <p className="t-body m-0 text-muted">{ATELIER.bientotTexte}</p>
+                <Link href="/moi?onglet=stats#points-faibles" className="ink-link w-fit">
+                  {ATELIER.bientotAction}
+                </Link>
+              </div>
+            ),
+          }}
+          droite={{ titre: SOUS_ENTRAINEMENT.atelier.registre, contenu: registre }}
+        />
+      </SousPage>
     );
   }
 
@@ -93,11 +96,5 @@ export default async function AtelierPage({ searchParams }: { searchParams?: Pro
   const ids = [...new Set([...(courant.seance?.notions ?? []), ...proposees.map((p) => p.notion)])];
   const rappels = await rappelsDes(supabase, ids, concepts);
 
-  return (
-    <div className="rl-wide grid gap-5">
-      {entete}
-      <AtelierEcran proposees={proposees} initiales={initiales} courant={courant.seance} rappels={rappels} traits={traits} />
-      {registre}
-    </div>
-  );
+  return <AtelierEcran proposees={proposees} initiales={initiales} courant={courant.seance} rappels={rappels} traits={traits} registre={registre} />;
 }

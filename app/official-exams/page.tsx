@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { tryAdmin } from "@/components/classement/data";
-import { OfficialExamsView, type OfficialExamGroup, type OfficialTopic, type ProchainMock } from "@/components/session/OfficialExamsView";
+import { OfficialExamsView, type OfficialExamGroup, type OfficialTopic, type ScoreSet } from "@/components/session/OfficialExamsView";
 
 // Remplace l'ancienne page /exercises : au lieu de sets d'exercices de
 // calcul génériques, on rejoue ici les vrais mock exams officiels de
@@ -21,7 +21,9 @@ type SetRow = { id: string; title: string };
 type Topic = OfficialTopic;
 type ExamGroup = OfficialExamGroup;
 
-export default async function OfficialExamsPage() {
+export default async function OfficialExamsPage({ searchParams }: { searchParams?: Promise<{ session?: string | string[] }> }) {
+  const sp = (await searchParams) ?? {};
+  const choisie = (Array.isArray(sp.session) ? sp.session[0] : sp.session) ?? null;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
@@ -41,6 +43,8 @@ export default async function OfficialExamsPage() {
 
   let sets: SetRow[] = [];
   const counts = new Map<string, number>();
+  // tes scores : ta meilleure copie sur chaque set (quiz_attempts, la lecture de lib/answer-stats)
+  const scores: Record<string, ScoreSet> = {};
 
   if (folder) {
     const { data: setsData } = await supabase
@@ -58,6 +62,20 @@ export default async function OfficialExamsPage() {
         .in("set_id", sets.map((s) => s.id));
       for (const q of (qData ?? []) as { set_id: string }[]) {
         counts.set(q.set_id, (counts.get(q.set_id) ?? 0) + 1);
+      }
+
+      const { data: copies } = await supabase
+        .from("quiz_attempts")
+        .select("set_id,score,total")
+        .eq("user_id", auth.user.id)
+        .in("set_id", sets.map((s) => s.id))
+        .limit(2000);
+      for (const c of (copies ?? []) as { set_id: string; score: number | null; total: number | null }[]) {
+        const total = Number(c.total) || 0;
+        if (total <= 0) continue;
+        const score = Number(c.score) || 0;
+        const avant = scores[c.set_id];
+        if (!avant || score / total > avant.score / avant.total) scores[c.set_id] = { score, total };
       }
     }
   }
@@ -98,19 +116,5 @@ export default async function OfficialExamsPage() {
 
   const examList = [...exams.values()].sort((a, b) => a.exam.localeCompare(b.exam));
 
-  // le prochain examen blanc (la bande d'encre) : le plus proche des examens pas encore clos ; sans lui, la bande renvoie à la liste
-  let prochainMock: ProchainMock | null = null;
-  try {
-    const { data: m } = await supabase
-      .from("mock_exams")
-      .select("id,scheduled_at,question_count,duration_minutes,window_days")
-      .neq("status", "closed")
-      .order("scheduled_at", { ascending: true })
-      .limit(1);
-    prochainMock = ((m ?? [])[0] as ProchainMock | undefined) ?? null;
-  } catch {
-    prochainMock = null;
-  }
-
-  return <OfficialExamsView exams={examList} prochainMock={prochainMock} now={Date.now()} />;
+  return <OfficialExamsView exams={examList} scores={scores} choisie={choisie} />;
 }

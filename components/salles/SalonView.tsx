@@ -11,6 +11,8 @@ import { Membres } from "@/components/salles/Membres";
 import { usePresents } from "@/components/salles/presence";
 import { ReglagesLecture } from "@/components/salles/Reglages";
 import { Stage, TetePanneau } from "@/components/salles/Stage";
+import { EnTeteSousPage } from "@/components/ui/SousPage";
+import { RETOUR_SALLES } from "@/lib/voice-affronter-sous";
 import { estChronoGlobal } from "@/lib/salles/examen";
 import type { EtatSalle, SalleParams } from "@/lib/salles/types";
 import { CONFIRMATION, REGLAGES, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
@@ -77,6 +79,17 @@ export function SalonView({
   const quitterMsg = nbMembres <= 1 ? SALLES.quitterDernier : moi.estAdmin ? SALLES.quitterAdminConfirme : SALLES.quitterConfirme;
 
   return (
+    <>
+    {/* le haut des sous-pages (2026-11-12) : le retour commun vers /salles, le nom de la salle une seule
+        fois, sa phrase en ligne ; pendant une partie, plus d'en-tête de page */}
+    {!partie && (
+      <EnTeteSousPage
+        retour={RETOUR_SALLES}
+        titre={salle.nom}
+        ligne={salle.description ?? undefined}
+        illustration={{ nom: "salles-entree", position: "50% 55%" }}
+      />
+    )}
     <Stage salon={partie ? "partie" : "attente"} encre={!!partie && !enJeuGlobal}>
       {enJeuGlobal ? (
         <p className="m-0 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[13px]" style={{ color: "var(--ink)" }}>
@@ -90,8 +103,13 @@ export function SalonView({
       ) : (
       <header className={s.entete}>
         <div>
-          <p className={s.surtitre}>{SALLES.salonKicker}</p>
-          <h1 className={s.nomSalle}>{salle.nom}</h1>
+          {/* au salon, le nom est dans l'en-tête de la page ; pendant une partie, il reste ici */}
+          {partie && (
+            <>
+              <p className={s.surtitre}>{SALLES.salonKicker}</p>
+              <h1 className={s.nomSalle}>{salle.nom}</h1>
+            </>
+          )}
           <p className={s.metas}>
             <span className={[s.etiquette, s.etiquetteMetal].join(" ")}>
               {salle.publique ? <Globe size={14} aria-hidden /> : <Lock size={14} aria-hidden />}
@@ -109,7 +127,7 @@ export function SalonView({
               </span>
             )}
           </p>
-          {salle.description && <p className={s.sous} style={{ marginTop: 10 }}>{salle.description}</p>}
+          {partie && salle.description && <p className={s.sous} style={{ marginTop: 10 }}>{salle.description}</p>}
         </div>
         <CodePartage code={salle.code} />
       </header>
@@ -220,5 +238,6 @@ export function SalonView({
       </footer>
       )}
     </Stage>
+    </>
   );
 }

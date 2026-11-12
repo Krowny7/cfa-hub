@@ -24,6 +24,7 @@ import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { surTitreSession } from "@/lib/voice";
 import { EPREUVE, EXAMEN } from "@/lib/voice-z3";
 import { MODE_EXAMEN, REMETTRE } from "@/lib/voice-z3b";
+import { ActionEncre, ColonneSeance } from "@/components/ui/SousPage";
 
 // Mode examen : des questions tirées des QCM choisis, mélangées et
 // chronométrées, sans correction avant la fin. La copie rendue devient une
@@ -31,6 +32,9 @@ import { MODE_EXAMEN, REMETTRE } from "@/lib/voice-z3b";
 // par QCM source : score = justes, total = répondues, durée au prorata, et
 // les réponses données (answers). C'est le format que lit lib/answer-stats
 // (score par passage, rangé par set) : ces examens comptent dans les stats.
+// C'est le mode examen de la séance libre (app/session?mode=examen, l'interrupteur
+// de components/session/SeanceLibre) : le réglage se pose dans le cadre de la page
+// (`cadre`) ; l'examen lancé, plus d'en-tête : la colonne des séances seule.
 
 export type ExamSetOption = { id: string; title: string; isOfficial: boolean };
 
@@ -88,9 +92,12 @@ function sourcesCourtes(titres: string[], max = 3) {
 export function ExamClient({
   sets,
   traitsJour = null,
+  cadre,
   demo,
 }: {
   sets: ExamSetOption[];
+  /** pose le réglage dans le cadre de la page (la séance libre) ; absent : sa propre carte, avec un en-tête */
+  cadre?: (reglage: React.ReactNode) => React.ReactNode;
   /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
   traitsJour?: number | null;
   demo?: ExamDemo;
@@ -307,95 +314,102 @@ export function ExamClient({
   if (phase === "setup") {
     const allOn = sets.length > 0 && selectedSetIds.length === sets.length;
     const officialIds = sets.filter(s => s.isOfficial).map(s => s.id);
+    // le réglage seul : dans le cadre de la séance libre (`cadre`, app/session), sinon dans sa carte
+    const reglage = (
+      <div className="grid min-w-0 gap-7">
+        <div className="grid gap-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h3 className="m-0 text-[17px] font-bold tracking-[-0.01em]">{MODE_EXAMEN.sources}</h3>
+            {sets.length > 0 && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-semibold text-muted">
+                <span className="t-micro tabular-nums">
+                  {selectedSetIds.length}/{sets.length}
+                </span>
+                {officialIds.length > 0 && (
+                  <button type="button" className="transition-colors hover:text-white" onClick={() => setSelectedSetIds(officialIds)}>
+                    {MODE_EXAMEN.systeme}
+                  </button>
+                )}
+                <button type="button" className="transition-colors hover:text-white" onClick={() => setSelectedSetIds(allOn ? [] : sets.map(s => s.id))}>
+                  {allOn ? MODE_EXAMEN.aucune : MODE_EXAMEN.toutes}
+                </button>
+              </div>
+            )}
+          </div>
+          {sets.length === 0 ? (
+            <p className="t-small m-0">
+              {MODE_EXAMEN.aucunQcm}{" "}
+              <Link href="/qcm" className="ink-link">
+                {MODE_EXAMEN.creerQcm}
+              </Link>
+            </p>
+          ) : (
+            <ul className="m-0 max-h-[340px] list-none divide-y divide-line overflow-auto rounded-[14px] p-0 shadow-[inset_0_0_0_1px_var(--line-2)]">
+              {sets.map(s => {
+                const on = selectedSetIds.includes(s.id);
+                return (
+                  <li key={s.id}>
+                    <label className="rl-row flex cursor-pointer items-center gap-3 px-4 py-3">
+                      <input type="checkbox" className="sr-only" checked={on} onChange={() => toggleSet(s.id)} />
+                      <span
+                        aria-hidden
+                        className={
+                          "grid h-5 w-5 shrink-0 place-items-center rounded-[6px] transition-colors " +
+                          (on ? "bg-white text-black" : "shadow-[inset_0_0_0_1.5px_var(--line-2)]")
+                        }
+                      >
+                        {on && <Check size={13} strokeWidth={3} />}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-[14.5px] font-medium">{s.title}</span>
+                      {s.isOfficial && (
+                        <span className="chip chip-quiet chip-sm shrink-0">
+                          <Star size={11} aria-hidden /> Système
+                        </span>
+                      )}
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 items-end gap-5 border-t border-line pt-6 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-8">
+          <div>
+            <p className="t-eyebrow m-0 mb-2">{MODE_EXAMEN.format}</p>
+            <Seg
+              label={MODE_EXAMEN.format}
+              value={String(configIdx)}
+              onChange={(v) => setConfigIdx(Number(v))}
+              options={EXAM_CONFIGS.map((c, i) => ({ key: String(i), label: `${c.n} Q` }))}
+            />
+          </div>
+          <div className="min-w-0">
+            <p className="m-0 flex items-baseline gap-2">
+              <span className="t-num text-[40px]">{config.n}</span>
+              <span className="text-[15px] font-semibold">questions</span>
+              <span className="t-small">· {fmtMinutes(config.minutes)}</span>
+            </p>
+            {configIdx === 2 && <p className="t-micro m-0 mt-1.5">{MODE_EXAMEN.formatCfa}</p>}
+          </div>
+          <ActionEncre disabled={selectedSetIds.length === 0} onClick={() => void startExam()}>
+            {MODE_EXAMEN.demarrer} <ArrowRight size={17} aria-hidden />
+          </ActionEncre>
+        </div>
+        {error && (
+          <p role="alert" className="m-0 -mt-3 text-sm text-pen">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+
+    if (cadre) return <>{cadre(reglage)}</>;
     return (
       <div className="rl-page">
         <PageHead back={{ href: "/entrainement", label: "S'entraîner" }} title={MODE_EXAMEN.titre} sub={MODE_EXAMEN.sous} />
-
-        <section className="card-hero rl-in grid grid-cols-1 gap-7 p-5 md:p-8" style={{ animationDelay: ".06s" }} aria-label="Préparer l'examen">
-          <div className="grid gap-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <h2 className="t-h2 m-0">{MODE_EXAMEN.sources}</h2>
-              {sets.length > 0 && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-semibold text-muted">
-                  <span className="t-micro tabular-nums">
-                    {selectedSetIds.length}/{sets.length}
-                  </span>
-                  {officialIds.length > 0 && (
-                    <button type="button" className="transition-colors hover:text-white" onClick={() => setSelectedSetIds(officialIds)}>
-                      {MODE_EXAMEN.systeme}
-                    </button>
-                  )}
-                  <button type="button" className="transition-colors hover:text-white" onClick={() => setSelectedSetIds(allOn ? [] : sets.map(s => s.id))}>
-                    {allOn ? MODE_EXAMEN.aucune : MODE_EXAMEN.toutes}
-                  </button>
-                </div>
-              )}
-            </div>
-            {sets.length === 0 ? (
-              <p className="t-small m-0">
-                {MODE_EXAMEN.aucunQcm}{" "}
-                <Link href="/qcm" className="ink-link">
-                  {MODE_EXAMEN.creerQcm}
-                </Link>
-              </p>
-            ) : (
-              <ul className="m-0 max-h-[340px] list-none divide-y divide-line overflow-auto rounded-[14px] p-0 shadow-[inset_0_0_0_1px_var(--line-2)]">
-                {sets.map(s => {
-                  const on = selectedSetIds.includes(s.id);
-                  return (
-                    <li key={s.id}>
-                      <label className="rl-row flex cursor-pointer items-center gap-3 px-4 py-3">
-                        <input type="checkbox" className="sr-only" checked={on} onChange={() => toggleSet(s.id)} />
-                        <span
-                          aria-hidden
-                          className={
-                            "grid h-5 w-5 shrink-0 place-items-center rounded-[6px] transition-colors " +
-                            (on ? "bg-white text-black" : "shadow-[inset_0_0_0_1.5px_var(--line-2)]")
-                          }
-                        >
-                          {on && <Check size={13} strokeWidth={3} />}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-[14.5px] font-medium">{s.title}</span>
-                        {s.isOfficial && (
-                          <span className="chip chip-quiet chip-sm shrink-0">
-                            <Star size={11} aria-hidden /> Système
-                          </span>
-                        )}
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 items-end gap-5 border-t border-line pt-6 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-8">
-            <div>
-              <p className="t-eyebrow m-0 mb-2">{MODE_EXAMEN.format}</p>
-              <Seg
-                label={MODE_EXAMEN.format}
-                value={String(configIdx)}
-                onChange={(v) => setConfigIdx(Number(v))}
-                options={EXAM_CONFIGS.map((c, i) => ({ key: String(i), label: `${c.n} Q` }))}
-              />
-            </div>
-            <div className="min-w-0">
-              <p className="m-0 flex items-baseline gap-2">
-                <span className="t-num text-[40px]">{config.n}</span>
-                <span className="text-[15px] font-semibold">questions</span>
-                <span className="t-small">· {fmtMinutes(config.minutes)}</span>
-              </p>
-              <p className="t-micro m-0 mt-1.5">{configIdx === 2 ? `${MODE_EXAMEN.formatCfa} ` : ""}{MODE_EXAMEN.pasDeCorrection}</p>
-            </div>
-            <button type="button" className="btn btn-primary btn-lg rl-press w-full md:w-auto" disabled={selectedSetIds.length === 0} onClick={() => void startExam()}>
-              {MODE_EXAMEN.demarrer} <ArrowRight size={17} aria-hidden />
-            </button>
-          </div>
-          {error && (
-            <p role="alert" className="m-0 -mt-3 text-sm text-pen">
-              {error}
-            </p>
-          )}
+        <section className="card-hero rl-in p-5 md:p-8" aria-label="Préparer l'examen">
+          {reglage}
         </section>
       </div>
     );
@@ -405,11 +419,11 @@ export function ExamClient({
 
   if (phase === "loading") {
     return (
-      <div className="mx-auto grid w-full max-w-[820px] gap-5">
+      <ColonneSeance>
         <div className="rl-skel h-[84px]" />
         <div className="rl-skel h-[360px]" />
         <p className="t-small m-0 text-center">{MODE_EXAMEN.preparation}</p>
-      </div>
+      </ColonneSeance>
     );
   }
 
@@ -417,11 +431,11 @@ export function ExamClient({
 
   if (phase === "done" && corrections === null) {
     return (
-      <div className="mx-auto grid w-full max-w-[820px] gap-5">
+      <ColonneSeance>
         <div className="rl-skel h-[84px]" />
         <div className="rl-skel h-[360px]" />
         <p className="t-small m-0 text-center">{MODE_EXAMEN.correction}</p>
-      </div>
+      </ColonneSeance>
     );
   }
 
@@ -453,6 +467,7 @@ export function ExamClient({
     const notes = [saveError, error].filter(Boolean);
 
     return (
+      <ColonneSeance>
       <div className="rl-page">
         <FinDeSession
           epreuve={surTitreSession(EPREUVE.exam, total, minutes)}
@@ -486,6 +501,7 @@ export function ExamClient({
           <ReviewSection review={review} source="qcm" />
         </FinDeSession>
       </div>
+      </ColonneSeance>
     );
   }
 
@@ -499,7 +515,7 @@ export function ExamClient({
   const unanswered = questions.length - answeredCount;
 
   return (
-    <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+    <ColonneSeance>
       <RunnerBar
         label={EPREUVE.exam}
         index={idx}
@@ -550,6 +566,6 @@ export function ExamClient({
       </QuestionCard>
 
       <QuestionMap total={questions.length} current={idx} isAnswered={(i) => answers[i]?.selected !== null && answers[i]?.selected !== undefined} onJump={goTo} />
-    </div>
+    </ColonneSeance>
   );
 }

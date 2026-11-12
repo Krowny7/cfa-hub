@@ -1,13 +1,8 @@
 import Link from "next/link";
-import { Icone } from "@/components/adn/icons";
 import { RankBadge } from "@/components/ui/RankBadge";
-import { PageHero } from "@/components/ui/Titles";
 import { InkRing } from "@/components/ink/InkRing";
-import { Disclosure } from "@/components/classement/Disclosure";
 import { rankFor } from "@/lib/ranks";
-import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
-import { DUEL_MINUTES, DUEL_QUESTIONS, DUEL_WINDOW_HOURS } from "@/lib/duels";
-import { NBSP } from "@/lib/voice";
+import { DUEL_QUESTIONS } from "@/lib/duels";
 import { PctDuel } from "@/components/adn/PctScore";
 import { motIssue, raturesPartie } from "@/lib/voice-z2";
 
@@ -30,24 +25,6 @@ export function PlayerBadge({
 }) {
   const r = rankFor(elo, mastery);
   return <RankBadge tier={r.tierIndex} size={size} gray={gray} onDark={onDark} glow={false} />;
-}
-
-/** En-tête du lobby : petite ligne (domaine), grand titre, format en une ligne. */
-export function DuelHeading({ title = `Qui affrontes-tu${NBSP}?` }: { title?: string }) {
-  return (
-    <PageHero
-      kicker={
-        <span className="inline-flex items-center gap-1.5">
-          <Icone nom="duel" size={15} /> Duel · {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
-        </span>
-      }
-      title={title}
-    >
-      <p className="t-small">
-        {DUEL_QUESTIONS} questions type examen · {DUEL_MINUTES} min · à jouer sous {DUEL_WINDOW_HOURS} h
-      </p>
-    </PageHero>
-  );
 }
 
 /** Case d'enjeu sur carte sombre : « Si tu gagnes » / « +12 à +18 ». */
@@ -113,30 +90,6 @@ export function DuelSide({
 /** Filigrane d'anneau des cartes sombres. */
 export function InkWatermark({ size = 300, className = "-bottom-16 -right-10" }: { size?: number; className?: string }) {
   return <InkRing size={size} className={"rl-deco pointer-events-none absolute text-[#fff] opacity-[0.08] " + className} />;
-}
-
-/** « Comment l'ELO bouge » : les règles en trois phrases, repliées par défaut. */
-export function DuelHowItWorks() {
-  return (
-    <div>
-      <Disclosure title="Comment l'ELO bouge" hint="même épreuve, meilleur score, comme aux échecs">
-        <div className="grid gap-5 text-[14px] leading-[1.55] text-muted sm:grid-cols-3">
-          <p className="m-0">
-            <b className="text-white">Même épreuve pour les deux.</b> {DUEL_QUESTIONS} vraies questions d&apos;examen, tirées au hasard, dans
-            le même ordre. {DUEL_MINUTES} min chacun, quand tu veux sous {DUEL_WINDOW_HOURS} h.
-          </p>
-          <p className="m-0">
-            <b className="text-white">Meilleur score gagne.</b> À égalité, le plus rapide l&apos;emporte ; à la seconde près, c&apos;est une nulle.
-            Pas de copie à temps : forfait.
-          </p>
-          <p className="m-0">
-            <b className="text-white">Comme aux échecs.</b> Battre plus fort que soi rapporte plus ; perdre contre plus faible coûte plus. Les
-            examens blancs classés comptent aussi.
-          </p>
-        </div>
-      </Disclosure>
-    </div>
-  );
 }
 
 /** V / D / = dans une petite case (encre pleine pour une victoire). */

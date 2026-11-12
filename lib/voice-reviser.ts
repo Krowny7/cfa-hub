@@ -115,12 +115,17 @@ export const RV = {
   coursLigneSuite: (pct: number, modules: number, minutes: number) => `${pct} % de maîtrise, ta matière la plus fragile · ${modules} modules, ${minutes} min.`,
   coursLigneNeuve: (modules: number, minutes: number) => `${modules} modules, ${minutes} min.`,
   coursEcouter: "Écouter le cours",
-  programme: "Le programme, matière par matière",
   /** le carrousel des flashcards */
   cartesTitre: "Choisis ta matière",
   cartesAide: "fais tourner les paquets",
   cartesOuvrir: "Voir ses paquets",
-  programmeAide: "ta maîtrise · en filigrane, ce qui arrive",
+  /** le carrousel des fiches (/fiches) et celui des cours (/courses) */
+  fichesChoisir: "Choisis ta fiche",
+  coursChoisir: "Choisis ton cours",
+  coursOuvrirUn: "Ouvrir le cours",
+  /** /courses, la colonne grise : la platine du dernier cours écouté */
+  coursReprise: "Reprends l'écoute",
+  coursPlatine: (titre: string, reprise: boolean) => (reprise ? `Reprendre l'écoute : ${titre}` : `Écouter ${titre}`),
   // flashcards : les cartes déjà vues de chaque matière, une pastille par paquet
   avanceVues: (vues: number, total: number) => `${vues}/${total} vues`,
   avanceAide: (nom: string, vues: number, total: number, maitrises: number, enCours: number, neufs: number) =>
@@ -147,7 +152,11 @@ export const OP = {
   grille: "Les 10 matières",
   ouvrir: (matiere: string) => `Ouvrir le one-pager ${matiere} (PDF, nouvel onglet)`,
   indisponible: "PDF bientôt en ligne",
-  impression: "Chaque PDF s'ouvre dans un nouvel onglet. Imprime-les en A4, taille réelle : chaque page est pensée pour tenir sur une feuille.",
+  /** le titre de l'unique zone de /fiches/one-pagers */
+  zoneTous: "Les 10 one-pagers",
+  /** /fiches, la colonne grise : le mini mur qui mène aux one-pagers */
+  zone: "Les one-pagers",
+  murAide: "Ouvrir les one-pagers : une page A4 par matière",
   accesAide: "une page A4 par matière",
   accesTitre: "Toute une matière sur une page",
   accesLigne: "L'essentiel, les formules et les pièges d'examen des 10 matières, à relire la veille.",

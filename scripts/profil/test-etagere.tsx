@@ -197,7 +197,7 @@ console.log("# L'écran « Mes pièces »");
       <MesPieces etagere={e} carte={carte} disponible />
     </AppRouterContext.Provider>,
   );
-  check("le titre, le résumé et le filtre", html.includes("Mes pièces") && html.includes(resumeEtagere(e)) && html.includes("Ce que j&#x27;ai") && html.includes(">Tout<"));
+  check("le titre, le filtre et « La plus rare » (le résumé chiffré n'est plus redit)", html.includes("Mes pièces") && !html.includes(resumeEtagere(e)) && html.includes("Ce que j&#x27;ai") && html.includes(">Tout<") && html.includes("La plus rare"));
   check("les cinq rayons, avec leur compte", ["Cadres", "Bannières", "Titres", "Folios", "Ornements"].every((t) => html.includes(t)) && html.includes(`${e.rayons[3].possedees}/${e.rayons[3].total}`));
   check("la pièce portée est dite « Portée »", html.includes("Portée"));
   check("les silhouettes sont grisées et disent leur consigne en clair", html.includes("opacity-35 grayscale") && html.includes("Finir l&#x27;acte II : Les 10 matières"));

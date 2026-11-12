@@ -2,10 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ListeReviser } from "@/components/reviser/ListeReviser";
 import { loadSubjectsSafe } from "@/components/reviser/load";
+import { onePagerItems } from "@/components/reviser/shelves";
+import { MurMini } from "@/components/ui/Decors";
+import { OP } from "@/lib/voice-reviser";
 
-// Fiches de révision : le gabarit commun des listes de Réviser (la carte « ta
-// suite » et la peinture du lieu « Les carnets », index du programme avec ta
-// maîtrise), puis l'accès aux one-pagers (une page A4 par matière).
+// Fiches de révision (modèle des sous-pages, 2026-11-12) : l'en-tête (« Les carnets »), puis le
+// cadre à zones : les 10 fiches en carnets sur le carrousel à gauche, et dans la colonne grise le
+// petit mur des one-pagers (une page A4 par matière), qui mène à /fiches/one-pagers.
 export default async function FichesPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -16,6 +19,7 @@ export default async function FichesPage() {
     <ListeReviser
       kind="fiche"
       subjects={subjects}
+      droite={{ titre: OP.zone, contenu: <MurMini images={onePagerItems().map((o) => o.mini)} href="/fiches/one-pagers" aide={OP.murAide} /> }}
     />
   );
 }

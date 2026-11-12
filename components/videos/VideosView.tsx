@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
-import { Check, Clapperboard, Play, SkipBack, SkipForward } from "lucide-react";
-import { dureeVideo, groupesDeMatiere, matiereDe, type VideoResume } from "@/lib/videos";
+import { Check, Clapperboard, SkipBack, SkipForward } from "lucide-react";
+import { dureeVideo, groupesDeMatiere, type VideoResume } from "@/lib/videos";
 import { VIDEOS_TXT as T, dureeTexte, horodatage } from "@/lib/voice-videos";
 import s from "./Videos.module.css";
-import { EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 
 export type SourceVideo = { src: string | null; affiche: string | null };
 
-// Page des vidéos résumé. En haut, les trois vidéos (affiche, durée, part déjà vue). Puis le lecteur, avec sous
-// l'image la partie en cours, ses commandes (partie précédente, vitesse, partie suivante) et la frise de l'heure
-// entière, matière par matière ; à droite, le programme rangé par matière, les chapitres de la partie en cours
+// Page des vidéos résumé (modèle des sous-pages, 2026-11-12) : l'en-tête, puis le cadre à zones. À gauche, sous
+// le nom de la vidéo, trois petits onglets (une vidéo chacun), le lecteur, la part déjà vue et ce qu'il reste,
+// les commandes (partie précédente, vitesse, partie suivante) et la frise de l'heure entière, matière par
+// matière ; dans la colonne grise, le programme rangé par matière, la partie en cours marquée et ses chapitres
 // ouverts. Une vidéo d'une heure est une suite de parties jouées à la suite : à la fin d'une partie, la suivante
 // démarre seule. L'appareil garde, pour chaque vidéo, l'endroit où on s'est arrêté et ce qu'on a déjà vu
 // (localStorage, lu après le montage : le serveur rend la page sans historique).
@@ -50,18 +51,7 @@ function partVue(v: VideoResume, vu: number[]): number {
 
 const partieVue = (vu: number, secondes: number) => vu >= secondes * 0.9;
 
-export function VideosView({
-  videos,
-  video,
-  sources,
-  affiches,
-}: {
-  videos: VideoResume[];
-  video: VideoResume | null;
-  sources: SourceVideo[];
-  /** l'affiche de la première partie de chaque vidéo en ligne, par slug */
-  affiches: Record<string, string | null>;
-}) {
+export function VideosView({ videos, video, sources }: { videos: VideoResume[]; video: VideoResume | null; sources: SourceVideo[] }) {
   const ref = useRef<HTMLVideoElement>(null);
   const liste = useRef<HTMLOListElement>(null);
   const derniere = useRef(0);
@@ -72,7 +62,6 @@ export function VideosView({
   const [vitesse, setVitesse] = useState(1);
   const [vu, setVu] = useState<number[]>([]);
   const [reprise, setReprise] = useState<number | null>(null);
-  const [progres, setProgres] = useState<Record<string, number>>({});
 
   const n = video?.parties.length ?? 0;
   const p = video?.parties[partie] ?? null;
@@ -80,18 +69,12 @@ export function VideosView({
   // décalage de chaque partie dans la vidéo entière, pour des horaires continus
   const decalages = video ? video.parties.map((_, i) => video.parties.slice(0, i).reduce((x, q) => x + q.secondes, 0)) : [];
 
-  // après le montage : la vitesse de l'appareil, la part vue de chaque vidéo, et la reprise de celle-ci
+  // après le montage : la vitesse de l'appareil, et la reprise de cette vidéo
   useEffect(() => {
     try {
       const r = Number(localStorage.getItem(CLE_VITESSE));
       if (VITESSES.includes(r)) setVitesse(r);
     } catch {}
-    const pr: Record<string, number> = {};
-    for (const v of videos) {
-      const x = lireSuivi(v);
-      if (x) pr[v.slug] = partVue(v, x.vu);
-    }
-    setProgres(pr);
     if (!video) return;
     const x = lireSuivi(video);
     setVu(x?.vu ?? video.parties.map(() => 0));
@@ -103,7 +86,7 @@ export function VideosView({
       setSaut({ t: x.t, jouer: false });
       setReprise(off + x.t);
     }
-  }, [video, videos]);
+  }, [video]);
 
   // se placer au bon moment (changement de partie, reprise), puis lire si demandé
   useEffect(() => {
@@ -190,185 +173,157 @@ export function VideosView({
   let chapActif = -1;
   if (p) p.chapitres.forEach((c, k) => t >= c.debut && (chapActif = k));
   const groupes = video ? groupesDeMatiere(video) : [];
+  // la part vue de cette vidéo et ce qu'il en reste : dites une seule fois, sous le lecteur
+  const pct = video ? partVue(video, vu) : 0;
+  const etat = !video || !pct ? T.pasCommencee : pct < 100 ? `${T.vue(pct)} · ${T.reste(dureeTexte(dureeVideo(video) * (1 - pct / 100)))}` : T.vue(pct);
 
   return (
     <SousPage className={s.page} entete={<EnTeteSousPage retour={{ href: "/reviser", label: T.retour }} illustration={{ nom: "reviser-bibliotheque" }} titre={T.titre} ligne={T.sous} />}>
-
-      <section aria-label={T.lesVideos}>
-        <ul className={s.rail}>
-          {videos.map((v) => {
-            const enLigne = v.etat === "en-ligne" && v.parties.length > 0;
-            const courante = v.slug === video?.slug;
-            const pct = progres[v.slug];
-            const affiche = affiches[v.slug] ?? null;
-            const corps = (
-              <>
-                <span className={s.vignette}>
-                  {affiche ? <img src={affiche} alt="" loading="lazy" decoding="async" /> : <Clapperboard size={20} aria-hidden />}
-                  {courante && (
-                    <span className={s.badge}>
-                      <Play size={10} fill="currentColor" aria-hidden /> {T.enLecture}
-                    </span>
-                  )}
-                </span>
-                <span className={s.railTexte}>
-                  <span className="t-eyebrow">{T.serie(v.numero)}</span>
-                  <span className={"font-brand " + s.railTitre}>{v.titre}</span>
-                  <span className={s.railMeta}>{enLigne ? `${dureeTexte(dureeVideo(v))} · ${T.parties(v.parties.length)}` : T.enPreparation}</span>
-                  {enLigne && (
-                    <>
-                      <span className={s.jauge} aria-hidden>
-                        <span style={{ width: `${pct ?? 0}%` }} />
-                      </span>
-                      <span className={s.railEtat}>{pct ? (pct < 100 ? `${T.vue(pct)} · ${T.reste(dureeTexte(dureeVideo(v) * (1 - pct / 100)))}` : T.vue(pct)) : T.pasCommencee}</span>
-                    </>
-                  )}
-                </span>
-              </>
-            );
-            return (
-              <li key={v.slug} className="min-w-0">
-                {enLigne ? (
-                  <Link href={`/videos?v=${v.slug}`} aria-current={courante ? "page" : undefined} data-actif={courante ? "1" : undefined} className={s.railCarte}>
-                    {corps}
-                  </Link>
-                ) : (
-                  <div className={s.railCarte} data-avenir="1">
-                    {corps}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
       {video && p ? (
-        <div className={s.scene}>
-          <section className="min-w-0" aria-label={video.titre}>
-            <div className={s.ecran}>
-              {source?.src ? (
-                <video
-                  ref={ref}
-                  key={source.src}
-                  src={source.src}
-                  poster={source.affiche ?? undefined}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  onLoadedMetadata={(e) => {
-                    e.currentTarget.defaultPlaybackRate = vitesse;
-                    e.currentTarget.playbackRate = vitesse;
-                  }}
-                  onTimeUpdate={surTemps}
-                  onSeeking={() => (dernierT.current = null)}
-                  onPause={(e) => {
-                    if (video && vu.length) ecrireSuivi(video.slug, { i: partie, t: e.currentTarget.currentTime, vu });
-                  }}
-                  onEnded={surFin}
-                />
-              ) : (
-                <div className={s.indispo}>
-                  <p>{T.indisponible}</p>
+        <CadreZones
+          gauche={{
+            titre: video.titre,
+            contenu: (
+              <div className={s.lecteur}>
+                <nav className={s.onglets} aria-label={T.lesVideos}>
+                  {videos.map((v) => {
+                    const courante = v.slug === video?.slug;
+                    return v.etat === "en-ligne" && v.parties.length > 0 ? (
+                      <Link
+                        key={v.slug}
+                        href={`/videos?v=${v.slug}`}
+                        scroll={false}
+                        className={s.onglet}
+                        data-actif={courante ? "1" : undefined}
+                        aria-current={courante ? "page" : undefined}
+                        title={v.titre}
+                      >
+                        {T.serie(v.numero)}
+                      </Link>
+                    ) : (
+                      <span key={v.slug} className={s.onglet} data-avenir="1" title={T.enPreparation}>
+                        {T.serie(v.numero)}
+                      </span>
+                    );
+                  })}
+                </nav>
+
+                <div className={s.ecran}>
+                  {source?.src ? (
+                    <video
+                      ref={ref}
+                      key={source.src}
+                      src={source.src}
+                      poster={source.affiche ?? undefined}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      onLoadedMetadata={(e) => {
+                        e.currentTarget.defaultPlaybackRate = vitesse;
+                        e.currentTarget.playbackRate = vitesse;
+                      }}
+                      onTimeUpdate={surTemps}
+                      onSeeking={() => (dernierT.current = null)}
+                      onPause={(e) => {
+                        if (video && vu.length) ecrireSuivi(video.slug, { i: partie, t: e.currentTarget.currentTime, vu });
+                      }}
+                      onEnded={surFin}
+                    />
+                  ) : (
+                    <div className={s.indispo}>
+                      <p>{T.indisponible}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            <div className={s.infos}>
-              <div className="min-w-0">
-                <p className="t-eyebrow">
-                  {matiereDe(p)} · {T.partie(partie + 1, n)}
-                </p>
-                <h2 className="t-h2 mt-1">{p.titre}</h2>
-              </div>
-              <div className={s.commandes}>
-                <button type="button" className="icon-btn" disabled={partie === 0} onClick={() => allerA(partie - 1, 0)} aria-label={T.precedente} title={T.precedente}>
-                  <SkipBack size={16} aria-hidden />
-                </button>
-                <button type="button" className={"btn btn-ghost btn-sm " + s.vitesse} onClick={changerVitesse} aria-label={T.vitesseAide(vitesse)} title={T.vitesseAide(vitesse)}>
-                  {T.vitesse(vitesse)}
-                </button>
-                <button type="button" className="icon-btn" disabled={partie === n - 1} onClick={() => allerA(partie + 1, 0)} aria-label={T.suivante} title={T.suivante}>
-                  <SkipForward size={16} aria-hidden />
-                </button>
-              </div>
-            </div>
-
-            <div className={s.frise} role="group" aria-label={T.frise}>
-              {groupes.map((g) => (
-                <div key={g.matiere + g.parties[0].i} className={s.friseGroupe} style={{ flexGrow: g.secondes }}>
-                  <span className={s.friseMatiere}>
-                    {g.matiere}
-                    <span>{dureeTexte(g.secondes)}</span>
-                  </span>
-                  <span className={s.friseParties}>
-                    {g.parties.map(({ partie: q, i }) => {
-                      const part = Math.min(1, (vu[i] ?? 0) / q.secondes);
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          className={s.segment}
-                          data-actif={i === partie ? "1" : undefined}
-                          style={{ flexGrow: q.secondes, "--vu": part, "--tete": i === partie ? t / q.secondes : 0 } as CSSProperties}
-                          onClick={() => allerA(i, 0)}
-                          aria-label={T.allerPartie(i + 1, q.titre)}
-                          title={q.titre}
-                        />
-                      );
-                    })}
-                  </span>
+                <div className={s.infos}>
+                  <p className={s.etat}>{etat}</p>
+                  <div className={s.commandes}>
+                    <button type="button" className="icon-btn" disabled={partie === 0} onClick={() => allerA(partie - 1, 0)} aria-label={T.precedente} title={T.precedente}>
+                      <SkipBack size={16} aria-hidden />
+                    </button>
+                    <button type="button" className={"btn btn-ghost btn-sm " + s.vitesse} onClick={changerVitesse} aria-label={T.vitesseAide(vitesse)} title={T.vitesseAide(vitesse)}>
+                      {T.vitesse(vitesse)}
+                    </button>
+                    <button type="button" className="icon-btn" disabled={partie === n - 1} onClick={() => allerA(partie + 1, 0)} aria-label={T.suivante} title={T.suivante}>
+                      <SkipForward size={16} aria-hidden />
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
-            {reprise !== null && <p className={s.reprise}>{T.reprise(horodatage(reprise))}</p>}
-          </section>
 
-          <aside aria-label={T.programme} className={s.programme}>
-            <p className={"t-eyebrow " + s.programmeTitre}>
-              {T.programme} · {dureeTexte(dureeVideo(video))}
-            </p>
-            <ol ref={liste} className={s.programmeListe}>
-              {groupes.map((g) => (
-                <li key={g.matiere + g.parties[0].i}>
-                  <p className={s.groupeTitre}>
-                    <span>{g.matiere}</span>
-                    <span className={s.groupeDuree}>{dureeTexte(g.secondes)}</span>
-                  </p>
-                  <ol>
-                    {g.parties.map(({ partie: q, i }) => {
-                      const courante = i === partie;
-                      const vue = partieVue(vu[i] ?? 0, q.secondes);
-                      return (
-                        <li key={i} data-partie={i}>
-                          <button type="button" className={s.ligne} data-actif={courante ? "1" : undefined} aria-current={courante ? "true" : undefined} onClick={() => allerA(i, 0)}>
-                            <span className={s.num} data-vue={vue && !courante ? "1" : undefined}>
-                              {vue && !courante ? <Check size={13} strokeWidth={3} aria-label={T.partieVue} /> : String(i + 1).padStart(2, "0")}
-                            </span>
-                            <span className={s.ligneTitre}>{q.titre}</span>
-                            <span className={s.heure}>{horodatage(decalages[i])}</span>
-                          </button>
-                          {courante && (
-                            <ol className={s.chapitres}>
-                              {q.chapitres.map((c, k) => (
-                                <li key={k}>
-                                  <button type="button" className={s.chapitre} data-actif={k === chapActif ? "1" : undefined} aria-current={k === chapActif ? "true" : undefined} onClick={() => allerA(i, c.debut)}>
-                                    <span className={s.heure}>{horodatage(decalages[i] + c.debut)}</span>
-                                    <span className="min-w-0 flex-1">{c.titre}</span>
-                                  </button>
-                                </li>
-                              ))}
-                            </ol>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </li>
-              ))}
-            </ol>
-          </aside>
-        </div>
+                <div className={s.frise} role="group" aria-label={T.frise}>
+                  {groupes.map((g) => (
+                    <div key={g.matiere + g.parties[0].i} className={s.friseGroupe} style={{ flexGrow: g.secondes }}>
+                      <span className={s.friseMatiere}>{g.matiere}</span>
+                      <span className={s.friseParties}>
+                        {g.parties.map(({ partie: q, i }) => {
+                          const part = Math.min(1, (vu[i] ?? 0) / q.secondes);
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              className={s.segment}
+                              data-actif={i === partie ? "1" : undefined}
+                              style={{ flexGrow: q.secondes, "--vu": part, "--tete": i === partie ? t / q.secondes : 0 } as CSSProperties}
+                              onClick={() => allerA(i, 0)}
+                              aria-label={T.allerPartie(i + 1, q.titre)}
+                              title={q.titre}
+                            />
+                          );
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {reprise !== null && <p className={s.reprise}>{T.reprise(horodatage(reprise))}</p>}
+              </div>
+            ),
+          }}
+          droite={{
+            titre: T.programme,
+            contenu: (
+              <ol ref={liste} className={s.programme} aria-label={T.programme}>
+                {groupes.map((g) => (
+                  <li key={g.matiere + g.parties[0].i}>
+                    <p className={s.groupeTitre}>
+                      <span>{g.matiere}</span>
+                      <span className={s.groupeDuree}>{dureeTexte(g.secondes)}</span>
+                    </p>
+                    <ol>
+                      {g.parties.map(({ partie: q, i }) => {
+                        const courante = i === partie;
+                        const vue = partieVue(vu[i] ?? 0, q.secondes);
+                        return (
+                          <li key={i} data-partie={i}>
+                            <button type="button" className={s.ligne} data-actif={courante ? "1" : undefined} aria-current={courante ? "true" : undefined} onClick={() => allerA(i, 0)}>
+                              <span className={s.num} data-vue={vue && !courante ? "1" : undefined}>
+                                {vue && !courante ? <Check size={13} strokeWidth={3} aria-label={T.partieVue} /> : String(i + 1).padStart(2, "0")}
+                              </span>
+                              <span className={s.ligneTitre}>{q.titre}</span>
+                              <span className={s.heure}>{horodatage(decalages[i])}</span>
+                            </button>
+                            {courante && (
+                              <ol className={s.chapitres}>
+                                {q.chapitres.map((c, k) => (
+                                  <li key={k}>
+                                    <button type="button" className={s.chapitre} data-actif={k === chapActif ? "1" : undefined} aria-current={k === chapActif ? "true" : undefined} onClick={() => allerA(i, c.debut)}>
+                                      <span className={s.heure}>{horodatage(decalages[i] + c.debut)}</span>
+                                      <span className="min-w-0 flex-1">{c.titre}</span>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ol>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </li>
+                ))}
+              </ol>
+            ),
+          }}
+        />
       ) : (
         <div className={s.vide}>
           <Clapperboard size={20} aria-hidden />

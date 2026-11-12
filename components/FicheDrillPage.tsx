@@ -26,7 +26,7 @@ export type FicheConfig = {
 // par award_quiz_question_xp (voir migration_fix_answer_leak.sql).
 //
 // Liens directs : `?page=N` ouvre la page N (le serveur la sélectionne dès le
-// premier rendu), `?onglet=erreurs|melange|progression` un onglet.
+// premier rendu), `?onglet=erreurs|melange` un onglet.
 export async function FicheDrillPage({
   config,
   searchParams,
@@ -89,10 +89,10 @@ export async function FicheDrillPage({
     }))
     .sort((a, b) => a.page - b.page);
 
-  // Gabarit B des sous-pages (SousPage, 1 240 px) : cours et quiz côte à côte
-  // sur grand écran. La page entière (l'en-tête commun, avec l'état de la
-  // fiche et le one-pager à droite) est rendue par FicheWorkspace, qui connaît
-  // la progression.
+  // Modèle des sous-pages (2026-11-12) : l'en-tête commun (retour aux fiches),
+  // puis le cadre à zones, « Le cours » à gauche et « Le quiz » dans la colonne
+  // grise. La page entière est rendue par FicheWorkspace, qui connaît la
+  // progression.
   return (
     <FicheWorkspace
       title={config.title}

@@ -14,9 +14,10 @@ import { clock, duelTopicLabel } from "@/lib/duels";
 import { answerEclair, finishEclair, startEclair, type EclairFinish, type EclairQuestion } from "@/lib/eclair";
 import { ECLAIR, verdictCopie } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
-import { DepartCarte, LigneEpreuve } from "@/components/epreuves/Briques";
-import { BackLink } from "@/components/defi/parts";
+import { ChiffreSerie, DepartZone, type SerieDuJour } from "@/components/epreuves/DepartZone";
+import { CadreZones, ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { DEPART } from "@/lib/voice-epreuves";
+import { RETOUR_ENTRAINEMENT, SOUS_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
 
 // Une série éclair : 5 questions de cours, une à la fois, corrigée tout de
 // suite (on apprend en route), puis le bilan et « Encore 5 ». La série vit
@@ -33,8 +34,8 @@ export type EclairDemo = { questions: EclairQuestion[]; current?: number; result
 export type EclairDepart = {
   /** mes séries : précision des 20 dernières (%), null sans série ou sans migration */
   recentPct: number | null;
-  /** l'état des 5 du jour, null si le défi n'est pas jouable */
-  cinq: { statut: "todo" | "playing" | "done"; reste: string | null } | null;
+  /** la série d'encre (colonne grise « Ta série ») ; null : illisible, la colonne ne s'affiche pas */
+  serie: SerieDuJour | null;
 };
 
 export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDone: number; cinqAFaire: boolean; depart?: EclairDepart; demo?: EclairDemo }) {
@@ -174,41 +175,36 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
 
   // ---------------------------------------------------------------------------
 
+  // l'accueil, sur le modèle des sous-pages (2026-11-12) : l'en-tête commun, le départ à gauche,
+  // ta série d'encre dans la colonne grise ; la série lancée, plus d'en-tête : la barre de la série seule
   if (phase === "depart") {
     const D = DEPART.eclair;
-    const cinq = depart?.cinq ?? null;
+    const resume = D.resume(done, depart?.recentPct ?? null);
     return (
-      <div data-depart className="mx-auto grid w-full max-w-[680px] gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <BackLink href="/entrainement">{ECLAIR.retour}</BackLink>
-          <p className="t-micro m-0">{D.aSaVolonte}</p>
-        </div>
-        <DepartCarte
-          bandeau="eclair-depart"
-          position="center 55%"
-          icone={<Zap size={14} aria-hidden />}
-          kicker={D.kicker(done + 1)}
-          titre={D.titre}
-          traits={<Ticks marks={Array.from({ length: 5 }, () => "todo" as TickMark)} label="5 traits à poser" height={30} />}
-          promesses={D.promesses}
-          cta={{ label: D.lancer, onClick: () => void start() }}
-          resume={D.resume(done, depart?.recentPct ?? null) || null}
+      <SousPage entete={<EnTeteSousPage retour={RETOUR_ENTRAINEMENT} titre={ECLAIR.nom} ligne={D.titre} illustration={{ nom: "eclair-depart", position: "center 55%" }} />}>
+        <CadreZones
+          gauche={{
+            titre: SOUS_ENTRAINEMENT.eclair.lancer,
+            contenu: (
+              <DepartZone
+                ligne={ECLAIR.serieN(done + 1)}
+                traits={<Ticks marks={Array.from({ length: 5 }, () => "todo" as TickMark)} label="5 traits à poser" height={30} />}
+                regles={D.promesses}
+                action={D.lancer}
+                onStart={() => void start()}
+                pied={resume || undefined}
+              />
+            ),
+          }}
+          droite={depart?.serie ? { titre: SOUS_ENTRAINEMENT.defi.serie, contenu: <ChiffreSerie serie={depart.serie} /> } : undefined}
         />
-        {cinq && (
-          <LigneEpreuve
-            href="/defi/cinq"
-            icone={<Zap size={17} aria-hidden />}
-            titre={DEPART.lienCinq(cinq.statut === "done" ? "rendu" : cinq.statut === "playing" ? "en cours" : "pas encore rendu")}
-            sous={DEPART.lienCinqSous(cinq.reste)}
-          />
-        )}
-      </div>
+      </SousPage>
     );
   }
 
   if (phase === "soon") {
     return (
-      <section className="card rl-in grid max-w-[760px] gap-3 p-6 md:p-8">
+      <section className="card rl-in mx-auto grid w-full max-w-[760px] gap-3 p-6 md:p-8">
         <h2 className="t-h2 m-0">{ECLAIR.soonTitle}</h2>
         <p className="t-body m-0 text-muted">{ECLAIR.soonText}</p>
         <Link href="/entrainement" className="ink-link w-fit">
@@ -220,7 +216,7 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
 
   if (phase === "error") {
     return (
-      <section className="card rl-in grid max-w-[760px] gap-4 p-6 md:p-8">
+      <section className="card rl-in mx-auto grid w-full max-w-[760px] gap-4 p-6 md:p-8">
         <h2 className="t-h2 m-0">{ECLAIR.erreurTitre}</h2>
         {error && (
           <p role="alert" className="t-small m-0 text-muted">
@@ -236,15 +232,15 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
 
   if (phase === "done" && result) {
     return (
-      <>
+      <ColonneSeance>
         <Bilan result={result} done={done} cinqAFaire={cinqAFaire} onEncore={() => void start()} />
         <CeremonieSansFaute score={result.score} total={result.total || result.marks.length} epreuve="Série éclair" cle={`eclair:${serieId ?? done}`} />
-      </>
+      </ColonneSeance>
     );
   }
 
   return (
-    <div className="grid gap-5 md:gap-6">
+    <ColonneSeance>
       {/* En-tête : la série / ses coches / justes */}
       <header className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-4 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
         <div className="flex items-center justify-between gap-3">
@@ -350,7 +346,7 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
           </div>
         </div>
       )}
-    </div>
+    </ColonneSeance>
   );
 }
 

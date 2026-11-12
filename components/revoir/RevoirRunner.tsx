@@ -13,10 +13,13 @@ import { duelTopicLabel } from "@/lib/duels";
 import { finishEclair, type EclairFinish } from "@/lib/eclair";
 import { verdictCopie } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
+import { Chiffre } from "@/components/ui/Decors";
+import { CadreZones, ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { nombre } from "@/lib/voice";
+import { SOUS_MOI } from "@/lib/voice-moi";
 import {
   REVOIR,
   lancerRevoir,
-  ligneRevisions,
   lireMesRevisions,
   pastilleRevision,
   repondreRevoir,
@@ -32,6 +35,16 @@ import {
 // réussie se raye sous les yeux, ou reste à l'encre fraîche si elle a été
 // manquée il y a moins de 24 h. Le bilan dit combien reviendront demain, puis
 // « C'est assez pour aujourd'hui ».
+// Sur le modèle des sous-pages validé par Théo (2026-11-12) : l'écran de départ
+// (et ses états : rien à revoir, erreur) a l'en-tête commun (retour à Moi) et le
+// cadre à zones : à gauche « À revoir aujourd'hui » (ce qui attend, le bouton), à
+// droite « Dues aujourd'hui » (le chiffre). Pendant la séance, pas d'en-tête : la
+// barre de progression, puis la colonne des questions (ColonneSeance).
+
+/** L'en-tête de /revoir (aussi posé par la page tant que la section §3b manque). */
+export function EnTeteRevoir() {
+  return <EnTeteSousPage retour={SOUS_MOI.retour} titre={REVOIR.nom} ligne={REVOIR.promesse} illustration={{ nom: "cinq-depart" }} />;
+}
 
 const LETTERS = ["A", "B", "C", "D", "E"];
 const letter = (i: number) => LETTERS[i] ?? String(i + 1);
@@ -191,173 +204,200 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
   if (phase === "depart") {
     const enCours = questions.length > 0;
     const aFaire = enCours ? questions.filter((x) => x.selectedIndex === null).length : Math.min(taille, file.aujourdhui);
-    const ligne = ligneRevisions(file);
+    const quoi = enCours ? "" : REVOIR.depart(file);
     return (
-      <section data-depart className="card rl-in mx-auto grid w-full max-w-[680px] gap-4 p-6 md:p-8">
-        <div className="grid gap-1.5">
-          <p className="kicker m-0 flex items-center gap-1.5">
-            <RotateCcw size={13} aria-hidden /> {REVOIR.kicker}
-          </p>
-          <h1 className="t-h1 m-0">{REVOIR.titre}</h1>
-          <p className="t-body m-0 text-muted">{REVOIR.promesse}</p>
-        </div>
-        {ligne && <p className="t-num m-0 text-[17px]">{ligne}</p>}
-        {!enCours && REVOIR.depart(file) && <p className="t-micro m-0">{REVOIR.depart(file)}</p>}
-        {(enCours || file.aujourdhui >= MIN_SEANCE) && (
-          <button type="button" className="btn btn-primary min-h-[44px] w-full sm:w-fit" onClick={() => void start()} autoFocus>
-            {enCours ? REVOIR.reprendre(aFaire) : REVOIR.lancer(aFaire)}
-            <ArrowRight size={16} aria-hidden />
-          </button>
-        )}
-      </section>
+      <SousPage entete={<EnTeteRevoir />}>
+        <CadreZones
+          gauche={{
+            titre: SOUS_MOI.revoir.zone,
+            contenu: (
+              <div data-depart className="grid justify-items-start gap-4">
+                {quoi && <p className="t-num m-0 text-[17px]">{quoi}</p>}
+                {(enCours || file.aujourdhui >= MIN_SEANCE) && (
+                  <button type="button" className="btn btn-primary min-h-[44px] w-full sm:w-fit" onClick={() => void start()} autoFocus>
+                    {enCours ? REVOIR.reprendre(aFaire) : REVOIR.lancer(aFaire)}
+                    <ArrowRight size={16} aria-hidden />
+                  </button>
+                )}
+              </div>
+            ),
+          }}
+          droite={{ titre: SOUS_MOI.revoir.dues, contenu: <Chiffre valeur={nombre(file.aujourdhui)} legende={SOUS_MOI.revoir.legende(file.aujourdhui, file.demain)} /> }}
+        />
+      </SousPage>
     );
   }
 
   if (phase === "vide") {
     return (
-      <section className="card rl-in mx-auto grid w-full max-w-[680px] gap-3 p-6 md:p-8">
-        <p className="kicker m-0 flex items-center gap-1.5">
-          <RotateCcw size={13} aria-hidden /> {REVOIR.nom}
-        </p>
-        <h1 className="t-h2 m-0">{REVOIR.videTitre}</h1>
-        <p className="t-body m-0 text-muted">{REVOIR.videTexte(vide.aujourdhui, vide.demain)}</p>
-        <Link href={destination} className="btn btn-secondary min-h-[44px] w-full sm:w-fit">
-          {REVOIR.assez}
-        </Link>
-      </section>
+      <SousPage entete={<EnTeteRevoir />}>
+        <CadreZones
+          gauche={{
+            titre: SOUS_MOI.revoir.zone,
+            contenu: (
+              <div className="grid justify-items-start gap-3">
+                <p className="m-0 text-[17px] font-semibold">{REVOIR.videTitre}</p>
+                <p className="t-body m-0 text-muted">{REVOIR.videTexte(vide.aujourdhui, vide.demain)}</p>
+                <Link href={destination} className="btn btn-secondary min-h-[44px] w-full sm:w-fit">
+                  {REVOIR.assez}
+                </Link>
+              </div>
+            ),
+          }}
+        />
+      </SousPage>
     );
   }
 
   if (phase === "error") {
     return (
-      <section className="card rl-in mx-auto grid w-full max-w-[680px] gap-4 p-6 md:p-8">
-        <h2 className="t-h2 m-0">{REVOIR.erreurTitre}</h2>
-        {error && (
-          <p role="alert" className="t-small m-0 text-muted">
-            {error}
-          </p>
-        )}
-        <button type="button" className="btn btn-primary min-h-[44px] w-fit" onClick={() => void start()}>
-          {REVOIR.reessayer}
-        </button>
-      </section>
+      <SousPage entete={<EnTeteRevoir />}>
+        <CadreZones
+          gauche={{
+            titre: SOUS_MOI.revoir.zone,
+            contenu: (
+              <div className="grid justify-items-start gap-4">
+                <p className="m-0 text-[17px] font-semibold">{REVOIR.erreurTitre}</p>
+                {error && (
+                  <p role="alert" className="t-small m-0 text-muted">
+                    {error}
+                  </p>
+                )}
+                <button type="button" className="btn btn-primary min-h-[44px] w-fit" onClick={() => void start()}>
+                  {REVOIR.reessayer}
+                </button>
+              </div>
+            ),
+          }}
+        />
+      </SousPage>
     );
   }
 
-  if (phase === "done" && result) return <Bilan result={result} destination={destination} />;
+  if (phase === "done" && result)
+    return (
+      <SousPage entete={<EnTeteRevoir />}>
+        <ColonneSeance>
+          <Bilan result={result} destination={destination} />
+        </ColonneSeance>
+      </SousPage>
+    );
 
+  // pendant la séance : pas d'en-tête de page, la barre de progression puis la colonne des questions
   return (
-    <div className="grid gap-5 md:gap-6">
-      {/* En-tête : « À revoir · 7/15 », les justes, puis les coches */}
-      <header className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-4 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 truncate text-[14px] font-bold md:text-[16px]">
-              <RotateCcw size={15} aria-hidden className="shrink-0" /> {n > 0 ? REVOIR.enTete(Math.min(current + 1, n), n) : REVOIR.nom}
-            </div>
-          </div>
-          {n > 0 && (
-            <div className="min-w-0 text-right">
-              <div className="font-mono text-[14px] font-semibold tabular-nums md:text-[16px]">
-                {justes}
-                <span className="font-normal text-muted">/{n}</span>
+    <SousPage entete={null}>
+      <ColonneSeance>
+        {/* La barre : « À revoir · 7/15 », les justes, puis les coches */}
+        <header className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-4 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 truncate text-[14px] font-bold md:text-[16px]">
+                <RotateCcw size={15} aria-hidden className="shrink-0" /> {n > 0 ? REVOIR.enTete(Math.min(current + 1, n), n) : REVOIR.nom}
               </div>
-              <div className="t-micro truncate">{REVOIR.justes}</div>
             </div>
-          )}
-        </div>
-        {/* jusqu'à 25 coches : sur leur propre ligne, comme les 30 du jour */}
-        {n > 0 && <Ticks className="mt-3" marks={marks} label="Ta séance" height={26} />}
-      </header>
-
-      {phase === "loading" || !q ? (
-        <section className="card rl-in mx-auto grid w-full max-w-[820px] gap-4 p-6 md:p-8" aria-busy>
-          <p className="kicker m-0">{REVOIR.preparation}</p>
-          <div className="grid gap-2.5" aria-hidden>
-            <span className="block h-5 w-4/5 rounded-[8px] bg-surface-2" />
-            <span className="block h-5 w-3/5 rounded-[8px] bg-surface-2" />
-            <span className="mt-3 block h-12 rounded-[14px] border border-dashed border-line-2" />
-            <span className="block h-12 rounded-[14px] border border-dashed border-line-2" />
-          </div>
-        </section>
-      ) : (
-        <div className="mx-auto grid w-full max-w-[820px] gap-4">
-          <div className="flex min-h-[26px] flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-            <p className="kicker m-0 min-w-0 truncate">{REVOIR.question(q.position + 1, n, duelTopicLabel(q.topic))}</p>
-            <div className="flex items-center gap-2">
-              <span className="t-micro rounded-full border border-line px-2.5 py-0.5">{pastilleRevision(q.genre, q.palier)}</span>
-              {answered && <MarqueQuestion questionId={q.id} source="eclair" />}
-            </div>
-          </div>
-
-          <section className="card flex min-w-0 flex-col gap-5 p-5 md:gap-6 md:p-7">
-            <div key={q.position} className="rl-in">
-              <QuestionPrompt
-                text={q.prompt}
-                className="text-[17px] font-semibold leading-normal tracking-[-0.01em] break-words [overflow-wrap:anywhere] md:text-[20px]"
-              />
-            </div>
-
-            {answered ? (
-              <Corrigee q={q} />
-            ) : (
-              <div className="flex flex-col gap-2.5" role="radiogroup" aria-label="Réponses">
-                {q.choices.map((c, i) => {
-                  const on = selected === i;
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      onClick={() => setSelected(i)}
-                      className={
-                        "btn w-full justify-start gap-3.5 rounded-[14px] px-4 py-3.5 text-left text-[15px] md:px-[18px] md:py-4 md:text-base " +
-                        (on ? "btn-primary" : "btn-secondary")
-                      }
-                    >
-                      <span className={"grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] font-mono text-[13px] " + (on ? "bg-black/20" : "bg-surface-2 text-white")}>
-                        {letter(i)}
-                      </span>
-                      <span className="min-w-0 flex-1 break-words">{c}</span>
-                    </button>
-                  );
-                })}
+            {n > 0 && (
+              <div className="min-w-0 text-right">
+                <div className="font-mono text-[14px] font-semibold tabular-nums md:text-[16px]">
+                  {justes}
+                  <span className="font-normal text-muted">/{n}</span>
+                </div>
+                <div className="t-micro truncate">{REVOIR.justes}</div>
               </div>
             )}
+          </div>
+          {/* jusqu'à 25 coches : sur leur propre ligne, comme les 30 du jour */}
+          {n > 0 && <Ticks className="mt-3" marks={marks} label="Ta séance" height={26} />}
+        </header>
 
-            {error && (
-              <p role="alert" className="m-0 text-sm text-pen">
-                {error}
-              </p>
-            )}
+        {phase === "loading" || !q ? (
+          <section className="card rl-in grid w-full gap-4 p-6 md:p-8" aria-busy>
+            <p className="kicker m-0">{REVOIR.preparation}</p>
+            <div className="grid gap-2.5" aria-hidden>
+              <span className="block h-5 w-4/5 rounded-[8px] bg-surface-2" />
+              <span className="block h-5 w-3/5 rounded-[8px] bg-surface-2" />
+              <span className="mt-3 block h-12 rounded-[14px] border border-dashed border-line-2" />
+              <span className="block h-12 rounded-[14px] border border-dashed border-line-2" />
+            </div>
+          </section>
+        ) : (
+          <div className="grid w-full gap-4">
+            <div className="flex min-h-[26px] flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+              <p className="kicker m-0 min-w-0 truncate">{REVOIR.question(q.position + 1, n, duelTopicLabel(q.topic))}</p>
+              <div className="flex items-center gap-2">
+                <span className="t-micro rounded-full border border-line px-2.5 py-0.5">{pastilleRevision(q.genre, q.palier)}</span>
+                {answered && <MarqueQuestion questionId={q.id} source="eclair" />}
+              </div>
+            </div>
 
-            <div className="flex justify-end">
+            <section className="card flex min-w-0 flex-col gap-5 p-5 md:gap-6 md:p-7">
+              <div key={q.position} className="rl-in">
+                <QuestionPrompt
+                  text={q.prompt}
+                  className="text-[17px] font-semibold leading-normal tracking-[-0.01em] break-words [overflow-wrap:anywhere] md:text-[20px]"
+                />
+              </div>
+
               {answered ? (
-                <button type="button" className="btn btn-primary w-full sm:w-auto" onClick={next} disabled={phase !== "play"} autoFocus>
-                  {questions.every((x) => x.selectedIndex !== null) ? REVOIR.bilan : REVOIR.suivante}
-                  <ArrowRight size={16} aria-hidden />
-                </button>
+                <Corrigee q={q} />
               ) : (
-                <button type="button" className="btn btn-primary w-full sm:w-auto" disabled={selected === null || sending} onClick={() => void validate()}>
-                  {sending ? REVOIR.envoi : REVOIR.valider}
-                  <ArrowRight size={16} aria-hidden />
+                <div className="flex flex-col gap-2.5" role="radiogroup" aria-label="Réponses">
+                  {q.choices.map((c, i) => {
+                    const on = selected === i;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => setSelected(i)}
+                        className={
+                          "btn w-full justify-start gap-3.5 rounded-[14px] px-4 py-3.5 text-left text-[15px] md:px-[18px] md:py-4 md:text-base " +
+                          (on ? "btn-primary" : "btn-secondary")
+                        }
+                      >
+                        <span className={"grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] font-mono text-[13px] " + (on ? "bg-black/20" : "bg-surface-2 text-white")}>
+                          {letter(i)}
+                        </span>
+                        <span className="min-w-0 flex-1 break-words">{c}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {error && (
+                <p role="alert" className="m-0 text-sm text-pen">
+                  {error}
+                </p>
+              )}
+
+              <div className="flex justify-end">
+                {answered ? (
+                  <button type="button" className="btn btn-primary w-full sm:w-auto" onClick={next} disabled={phase !== "play"} autoFocus>
+                    {questions.every((x) => x.selectedIndex !== null) ? REVOIR.bilan : REVOIR.suivante}
+                    <ArrowRight size={16} aria-hidden />
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary w-full sm:w-auto" disabled={selected === null || sending} onClick={() => void validate()}>
+                    {sending ? REVOIR.envoi : REVOIR.valider}
+                    <ArrowRight size={16} aria-hidden />
+                  </button>
+                )}
+              </div>
+            </section>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[13px] text-muted">
+              <span>{REVOIR.regle}</span>
+              {questions.some((x) => x.selectedIndex !== null) && !questions.every((x) => x.selectedIndex !== null) && serie && (
+                <button type="button" onClick={() => void finish(serie.id, serie.startedAt, questions)} className="min-h-[44px] font-semibold transition-colors hover:text-white">
+                  {REVOIR.arreter}
                 </button>
               )}
             </div>
-          </section>
-
-          <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[13px] text-muted">
-            <span>{REVOIR.regle}</span>
-            {questions.some((x) => x.selectedIndex !== null) && !questions.every((x) => x.selectedIndex !== null) && serie && (
-              <button type="button" onClick={() => void finish(serie.id, serie.startedAt, questions)} className="min-h-[44px] font-semibold transition-colors hover:text-white">
-                {REVOIR.arreter}
-              </button>
-            )}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </ColonneSeance>
+    </SousPage>
   );
 }
 
@@ -413,7 +453,7 @@ function Corrigee({ q }: { q: Question }) {
 function Bilan({ result, destination }: { result: Resultat; destination: string }) {
   const total = result.total || result.marks.length;
   return (
-    <div className="mx-auto grid w-full max-w-[820px] gap-4">
+    <div className="grid w-full gap-4">
       <section className="card-hero rl-in grid gap-5 p-6 md:p-8" aria-label={REVOIR.rendue}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

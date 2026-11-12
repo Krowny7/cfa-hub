@@ -2,19 +2,17 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnePagersGrille } from "@/components/reviser/OnePagers";
 import { onePagerItems } from "@/components/reviser/shelves";
-import { CadrePrincipal, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { OP, RETOUR } from "@/lib/voice-reviser";
 
 export const metadata = { title: "One-pagers · Ranked Lobby" };
 
-// Les one-pagers : une page A4 PDF par matière, en grille. Même mécanisme que
-// les fiches (components/FicheDrillPage.tsx) : les PDF vivent dans le bucket
-// privé « fiches » (one-pager-<slug>.pdf, envoyés par
-// scripts/upload-one-pagers.mjs) et chaque lien est une URL signée d'une heure,
-// générée ici côté serveur avec la session du joueur — une seule requête
-// pour les 10. Un PDF absent du bucket laisse sa carte en filigrane.
-// Gabarit A des sous-pages, sans rangée héros (rien à reprendre) : l'en-tête
-// (retour aux fiches), puis la grille.
+// Les one-pagers : une page A4 PDF par matière. Même mécanisme que les fiches
+// (components/FicheDrillPage.tsx) : les PDF vivent dans le bucket privé « fiches »
+// (one-pager-<slug>.pdf, envoyés par scripts/upload-one-pagers.mjs) et chaque lien est une URL
+// signée d'une heure, générée ici côté serveur avec la session du joueur — une seule requête pour
+// les 10. Un PDF absent du bucket laisse sa feuille en filigrane. Modèle des sous-pages
+// (2026-11-12) : l'en-tête (retour aux fiches), puis un cadre à une seule zone, les feuilles épinglées.
 export default async function OnePagersPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -32,10 +30,7 @@ export default async function OnePagersPage() {
 
   return (
     <SousPage entete={<EnTeteSousPage retour={RETOUR.fiches} illustration={{ nom: "reviser-peche" }} titre={OP.titre} ligne={OP.desc} />}>
-      <CadrePrincipal ambiance="mur">
-        <OnePagersGrille items={items.map((it) => ({ ...it, url: urls.get(it.file) ?? null }))} />
-      </CadrePrincipal>
-      <p className="t-micro m-0">{OP.impression}</p>
+      <CadreZones gauche={{ titre: OP.zoneTous, contenu: <OnePagersGrille items={items.map((it) => ({ ...it, url: urls.get(it.file) ?? null }))} /> }} />
     </SousPage>
   );
 }

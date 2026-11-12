@@ -5,6 +5,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
+import { ActionEncre } from "@/components/ui/SousPage";
 import { INSCRIPTION } from "@/lib/voice-z3b";
 
 // L'inscription à un examen blanc : le point focal tant qu'on n'est pas
@@ -15,6 +16,7 @@ export function MockExamRegistration({
   isRegistered: initial,
   registrantCount,
   ranked = false,
+  nu = false,
 }: {
   examId: string;
   isRegistered: boolean;
@@ -22,6 +24,8 @@ export function MockExamRegistration({
   registrantCount: number | null;
   /** examen blanc classé (l'ELO bouge à la clôture) */
   ranked?: boolean;
+  /** posée dans le cadre à zones (qui porte le titre) : ni carte ni titre */
+  nu?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
@@ -75,6 +79,24 @@ export function MockExamRegistration({
 
   const count = INSCRIPTION.inscrits(registrantCount);
 
+  // `nu` (dans le cadre à zones des sous-pages, qui porte le titre) : sans carte ni titre, l'action
+  // à l'encre de l'espace.
+  if (!registered && nu) {
+    return (
+      <div className="grid min-w-0 justify-items-start gap-4" aria-label={INSCRIPTION.surTitre}>
+        {(count || ranked) && <p className="t-small m-0">{[count, ranked ? INSCRIPTION.classe : null].filter(Boolean).join(" · ")}</p>}
+        {msg && (
+          <p className="m-0 text-sm" aria-live="polite">
+            {msg}
+          </p>
+        )}
+        <ActionEncre onClick={() => void toggle()} disabled={busy}>
+          {busy ? "…" : INSCRIPTION.sinscrire} {!busy && <ArrowRight size={17} aria-hidden />}
+        </ActionEncre>
+      </div>
+    );
+  }
+
   // Pas encore inscrit : c'est le point focal de la page (une carte héros, une
   // action en encre). Inscrit : une carte calme, la désinscription en retrait.
   if (!registered) {
@@ -100,7 +122,7 @@ export function MockExamRegistration({
   }
 
   return (
-    <section className="card rl-in flex flex-wrap items-center justify-between gap-4 p-5 md:px-6" aria-label="Inscription">
+    <section className={(nu ? "" : "card rl-in p-5 md:px-6 ") + "flex flex-wrap items-center justify-between gap-4"} aria-label="Inscription">
       <div className="flex min-w-0 items-center gap-3.5">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-black">
           <Check size={18} strokeWidth={2.6} aria-hidden />

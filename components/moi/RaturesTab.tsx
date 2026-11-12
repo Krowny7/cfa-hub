@@ -101,7 +101,7 @@ export function RaturesTab({
   demoNotions?: Record<string, RatureItem[]>;
   /** aperçus locaux : tout le carnet, filtré sur place (temps, source, « Sans calcul » : les ids des questions à calcul) */
   demoCarnet?: { items: RatureItem[]; calcul: string[] };
-  /** page de liste refaite (Registre) : le compteur, la règle et « Mettre au propre » passent au héros de la page ; il ne reste que les filtres et la liste (et, « Sans calcul » actif, « Mettre au propre » filtré sous l'interrupteur) */
+  /** page de liste refaite (Registre, dans le cadre à zones) : le compteur passe à la colonne grise et la règle à l'en-tête ; il reste les filtres, « Mettre au propre » et la liste, sans carte autour */
   sansResume?: boolean;
 }) {
   const [vue, setVue] = useState<Vue>(VUE0);
@@ -323,7 +323,7 @@ export function RaturesTab({
   // (pas dans une notion où elle n'a rien à tirer : ses anciennes, ou « sans notion »)
   const propreMasquee = actifCalcul && (notionOuverte === null || (!anciennes && notionOuverte !== ""));
 
-  // les boutons du héros de la page (Registre) pilotent la liste : « rl:carnet » avec « propre » (la mise au propre) ou « anciennes » (les retirées)
+  // un lien d'ailleurs sur la page (LienCarnet) pilote la liste : « rl:carnet » avec « propre » (la mise au propre) ou « anciennes » (les retirées)
   const surEvenement = useRef<(action: string) => void>(() => {});
   surEvenement.current = (action) => {
     if (action === "propre") {
@@ -340,7 +340,7 @@ export function RaturesTab({
     return () => window.removeEventListener("rl:carnet", f);
   }, []);
   // arrivée par « Mettre au propre » d'une autre page (la carte du carnet de Réviser : /moi?onglet=erreurs#propre) :
-  // la mise au propre s'ouvre, comme avec le bouton du héros de la page ; l'adresse revient à #liste
+  // la mise au propre s'ouvre, comme avec son bouton ; l'adresse revient à #liste
   useEffect(() => {
     if (window.location.hash !== "#propre") return;
     try {
@@ -367,9 +367,9 @@ export function RaturesTab({
   }
 
   return (
-    <section className={"card min-w-0 overflow-hidden " + (sansResume ? "flex flex-col" : "grid lg:grid-cols-12")} aria-label="Mes ratures">
+    <section className={"min-w-0 " + (sansResume ? "flex flex-col" : "card grid overflow-hidden lg:grid-cols-12")} aria-label="Mes ratures">
       {/* le compte, la règle, les sources */}
-      <div className={"flex min-w-0 flex-col gap-4 " + (sansResume ? "px-5 pb-1 pt-4 md:px-6" : "p-6 md:p-7 lg:col-span-4 lg:border-r lg:border-line")}>
+      <div className={"flex min-w-0 flex-col gap-4 " + (sansResume ? "pb-4" : "p-6 md:p-7 lg:col-span-4 lg:border-r lg:border-line")}>
         {!sansResume && <CardLabel icon={<Icone nom="erreurs" size={15} className="text-pen" />}>{CARNET.titre}</CardLabel>}
         {!sansResume && <div>
           <span className="sr-only">
@@ -431,8 +431,8 @@ export function RaturesTab({
             <span aria-hidden className={"switch" + (actifCalcul ? " is-on" : "")} />
           </button>
         )}
-        {/* sur la page refaite (Registre), le bouton du héros ne connaît pas le tri : « Sans calcul » actif, le bouton filtré revient ici, sous l'interrupteur */}
-        {(!sansResume || actifCalcul) && aRepasser > 0 && (
+        {/* « Mettre au propre » (ou « Rejouer » dans les anciennes), sur le tri affiché */}
+        {aRepasser > 0 && (
           <div className="grid gap-1.5">
             <button type="button" className={"btn w-fit " + (anciennes ? "btn-secondary" : "btn-primary")} onClick={() => setPropre(true)} disabled={propre} aria-pressed={propre}>
               {anciennes ? <RotateCcw size={16} aria-hidden /> : <PenLine size={16} aria-hidden />} {anciennes ? CARNET.rejouer : CARNET.propre} · {nombre(aRepasser)}
@@ -481,7 +481,7 @@ export function RaturesTab({
       </div>
 
       {/* la liste, ou la mise au propre */}
-      <div className={"flex min-w-0 flex-col gap-2 border-t border-line p-4 md:p-6 " + (sansResume ? "" : "lg:col-span-8 lg:border-t-0")} aria-busy={charge}>
+      <div className={"flex min-w-0 flex-col gap-2 border-t border-line " + (sansResume ? "pt-3" : "p-4 md:p-6 lg:col-span-8 lg:border-t-0")} aria-busy={charge}>
         {propre && (
           <MiseAuPropre
             source={listeNotions ? null : liste.vue.source}

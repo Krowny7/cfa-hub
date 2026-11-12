@@ -22,6 +22,7 @@ import { palierBlanc } from "@/lib/trophees";
 import { AnnonceTrophee } from "@/components/trophees/AnnonceTrophee";
 import { FinDeSession } from "@/components/session/FinDeSession";
 import { RideauExamen } from "@/components/arene/Rideaux";
+import { ColonneSeance } from "@/components/ui/SousPage";
 import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { surTitreSession } from "@/lib/voice";
@@ -57,9 +58,31 @@ type Props = {
   demo?: { phase: "ready" | "active" | "rendue"; answers?: (number | null)[]; idx?: number; secondsLeft?: number; duree?: number };
   /** le débrief de la copie (V3 §7.6) : la cause de chaque erreur, sous la correction */
   debrief?: CopieDebrief | null;
+  /**
+   * Le modèle des séances (2026-11-12) : l'en-tête commun de la page (EnTeteSousPage), montré avant de
+   * commencer et sur la copie rendue, jamais pendant l'examen ; `avant` (la cérémonie de rang) au-dessus
+   * de la copie rendue ; `apres` (inscription, classement, rejouer…) sous la colonne, hors examen.
+   */
+  entete?: React.ReactNode;
+  avant?: React.ReactNode;
+  apres?: React.ReactNode;
 };
 
-export function MockExamRunner({ examId, title, durationMinutes, questions, review: initialReview, alreadyDone, elo = null, traitsJour = null, demo, debrief = null }: Props) {
+export function MockExamRunner({
+  examId,
+  title,
+  durationMinutes,
+  questions,
+  review: initialReview,
+  alreadyDone,
+  elo = null,
+  traitsJour = null,
+  demo,
+  debrief = null,
+  entete = null,
+  avant = null,
+  apres = null,
+}: Props) {
   const supabase = useMemo(() => createClient(), []);
   const jour = useTraitsDuJour(traitsJour);
   // copie remise pendant cette visite : la copie se corrige sous tes yeux et
@@ -151,15 +174,22 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
   // ── AVANT DE COMMENCER ──
   if (phase === "ready") {
     return (
-      <ReadyCard
-        eyebrow={AVANT_EXAMEN.surTitreMock}
-        title={AVANT_EXAMEN.titre}
-        meta={`${questions.length} questions · ${fmtMinutes(durationMinutes)}`}
-        rules={[...AVANT_EXAMEN.reglesMock]}
-        onStart={start}
-        startLabel={AVANT_EXAMEN.commencer}
-        wide
-      />
+      <>
+        {entete}
+        <ColonneSeance>
+          <ReadyCard
+            eyebrow={AVANT_EXAMEN.surTitreMock}
+            title={AVANT_EXAMEN.titre}
+            // le format est déjà dans la ligne de l'en-tête commun
+            meta={entete ? undefined : `${questions.length} questions · ${fmtMinutes(durationMinutes)}`}
+            rules={[...AVANT_EXAMEN.reglesMock]}
+            onStart={start}
+            startLabel={AVANT_EXAMEN.commencer}
+            wide
+          />
+          {apres}
+        </ColonneSeance>
+      </>
     );
   }
 
@@ -176,15 +206,26 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
 
     if (total === 0) {
       return (
-        <section className="card-quiet rl-in grid gap-2 px-6 py-8 text-center" aria-label="Résultat">
-          <p className="t-eyebrow m-0">{EPREUVE.mock}</p>
-          <p className="t-h3 m-0">{INDISPONIBLE}</p>
-          {eloLigne && <p className="t-small m-0">{eloLigne}</p>}
-        </section>
+        <>
+          {entete}
+          <ColonneSeance>
+            {avant}
+            <section className="card-quiet rl-in grid gap-2 px-6 py-8 text-center" aria-label="Résultat">
+              <p className="t-eyebrow m-0">{EPREUVE.mock}</p>
+              <p className="t-h3 m-0">{INDISPONIBLE}</p>
+              {eloLigne && <p className="t-small m-0">{eloLigne}</p>}
+            </section>
+            {apres}
+          </ColonneSeance>
+        </>
       );
     }
 
     return (
+      <>
+      {entete}
+      <ColonneSeance>
+      {avant}
       <RideauExamen cle={`blanc:${examId}:${rendue?.depuis ?? ""}`} actif={rendue !== null && !demo} score={score} total={total}>
         <FinDeSession
           epreuve={surTitreSession(EPREUVE.mock, total, minutes)}
@@ -233,10 +274,13 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
           )}
         </FinDeSession>
       </RideauExamen>
+      {apres}
+      </ColonneSeance>
+      </>
     );
   }
 
-  // ── PENDANT L'EXAMEN ──
+  // ── PENDANT L'EXAMEN ── (ni en-tête de page ni annexe : la barre de l'examen seule)
   const last = idx === questions.length - 1;
   const unanswered = questions.length - answered;
   function askEnd() {
@@ -245,7 +289,7 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+    <ColonneSeance>
       <RunnerBar
         label={EPREUVE.mock}
         index={idx}
@@ -322,6 +366,6 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
       )}
 
       <QuestionMap total={questions.length} current={idx} isAnswered={(i) => answers[i] !== null && answers[i] !== undefined} onJump={setIdx} />
-    </div>
+    </ColonneSeance>
   );
 }

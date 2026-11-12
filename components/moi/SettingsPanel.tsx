@@ -13,10 +13,14 @@ import { ReglageJournal } from "@/components/profil/ReglageJournal";
 import { ModeSobre } from "@/components/moi/ModeSobre";
 import { ReposSerie } from "@/components/moi/ReposSerie";
 import type { ReposInitial } from "@/components/moi/repos-data";
+import { CadreZones } from "@/components/ui/SousPage";
+import { SOUS_MOI } from "@/lib/voice-moi";
 
 // Tous les réglages : profil, examen (date et objectif de questions), apparence (thème, mode
 // discret, Léonard, mode sobre), repos de la série, sons des moments (et le premier trait à rejouer), confidentialité
 // (présence en ligne, qui voit mon Journal), groupes, déconnexion. Utilisé par l'onglet Réglages de /moi (/settings y renvoie).
+// Dans le cadre à zones des sous-pages (modèle validé par Théo, 2026-11-12) : à gauche « Ton compte »
+// (tout le reste), à droite, dans la colonne grise, « Ton examen » (la date et l'objectif de questions).
 // Les composants enfants chargent et enregistrent eux-mêmes ; `sobre` et `repos` arrivent lus par la page
 // (repos null : la migration du Codex §8 manque, le réglage ne s'affiche pas).
 export function SettingsPanel({
@@ -33,58 +37,71 @@ export function SettingsPanel({
   repos?: ReposInitial | null;
 }) {
   return (
-    <div className="flex flex-col gap-4 md:gap-[18px]">
-      <div className="grid gap-4 md:gap-[18px] lg:grid-cols-2">
-        <ProfileSettings />
-        <div className="flex flex-col gap-4 md:gap-[18px]">
-          <div id="date">
-            <ObjectifExamenSettings initial={objectif} />
-          </div>
-          <div className="card flex flex-col p-[22px] pb-3">
-            <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
-              <Palette size={15} aria-hidden /> Apparence
-            </h3>
-            <AppearanceSwitches />
-            <ModeSobre initial={sobre} />
-          </div>
-          <ReposSerie initial={repos} />
-          <div id="sons" className="card flex flex-col p-[22px] pb-3">
-            <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
-              <Volume2 size={15} aria-hidden /> {SONS.titre}
-            </h3>
-            <SoundSwitches />
-            <Link href="/onboarding?rejouer=1" className="group flex items-center gap-4 border-t border-line py-3">
-              <span className="min-w-0 flex-1">
-                <span className="block text-[14px] font-semibold">{REJOUER.titre}</span>
-                <span className="t-micro mt-0.5 block">{REJOUER.texte}</span>
-              </span>
-              <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold">
-                {REJOUER.action} <ArrowRight size={14} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
-              </span>
-            </Link>
-          </div>
-          <div id="confidentialite" className="card flex flex-col p-[22px] pb-3">
-            <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
-              <EyeOff size={15} aria-hidden /> Confidentialité
-            </h3>
-            <div className="mt-1">
-              <PresenceSettings />
-              <ReglageJournal />
+    <CadreZones
+      gauche={{
+        titre: SOUS_MOI.reglages.compte,
+        contenu: (
+          <div className="flex min-w-0 flex-col gap-4 md:gap-[18px]">
+            <div className="grid items-start gap-4 md:gap-[18px] xl:grid-cols-2">
+              <div className="flex min-w-0 flex-col gap-4 md:gap-[18px]">
+                <ProfileSettings />
+                <GroupSettings activeGroupId={activeGroupId} groups={groups} />
+              </div>
+              <div className="flex min-w-0 flex-col gap-4 md:gap-[18px]">
+                <div className="card flex flex-col p-[22px] pb-3">
+                  <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
+                    <Palette size={15} aria-hidden /> Apparence
+                  </h3>
+                  <AppearanceSwitches />
+                  <ModeSobre initial={sobre} />
+                </div>
+                <ReposSerie initial={repos} />
+                <div id="sons" className="card flex flex-col p-[22px] pb-3">
+                  <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
+                    <Volume2 size={15} aria-hidden /> {SONS.titre}
+                  </h3>
+                  <SoundSwitches />
+                  <Link href="/onboarding?rejouer=1" className="group flex items-center gap-4 border-t border-line py-3">
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[14px] font-semibold">{REJOUER.titre}</span>
+                      <span className="t-micro mt-0.5 block">{REJOUER.texte}</span>
+                    </span>
+                    <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold">
+                      {REJOUER.action} <ArrowRight size={14} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
+                </div>
+                <div id="confidentialite" className="card flex flex-col p-[22px] pb-3">
+                  <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
+                    <EyeOff size={15} aria-hidden /> Confidentialité
+                  </h3>
+                  <div className="mt-1">
+                    <PresenceSettings />
+                    <ReglageJournal />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 border-t border-line px-1 pt-5">
+              <LogOut size={17} aria-hidden className="shrink-0 text-muted" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold">Se déconnecter</p>
+                <p className="t-micro mt-0.5">Tes révisions et ton rang restent sauvegardés sur ton compte.</p>
+              </div>
+              <SignOutButton />
             </div>
           </div>
-        </div>
-      </div>
-
-      <GroupSettings activeGroupId={activeGroupId} groups={groups} />
-
-      <div className="flex flex-wrap items-center gap-4 border-t border-line px-1 pt-5">
-        <LogOut size={17} aria-hidden className="shrink-0 text-muted" />
-        <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-semibold">Se déconnecter</p>
-          <p className="t-micro mt-0.5">Tes révisions et ton rang restent sauvegardés sur ton compte.</p>
-        </div>
-        <SignOutButton />
-      </div>
-    </div>
+        ),
+      }}
+      droite={{
+        titre: SOUS_MOI.reglages.examen,
+        contenu: (
+          <div id="date" className="scroll-mt-24">
+            <ObjectifExamenSettings initial={objectif} />
+          </div>
+        ),
+      }}
+    />
   );
 }

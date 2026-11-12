@@ -12,11 +12,17 @@ import { AtelierBilan, AtelierPause } from "@/components/atelier/AtelierBilan";
 import type { Reponse } from "@/lib/atelier";
 import { cloreAtelier, repondreQcm, type ApiAtelier, type ClotureAtelier, type NotionProposee, type RappelNotion, type SeanceAtelier } from "@/lib/atelier-seance";
 import { ATELIER as V } from "@/lib/voice-atelier";
+import { ActionEncre, CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { RETOUR_ENTRAINEMENT, SOUS_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
 
 // /atelier : l'ouverture (choisir ses notions), la séance, l'arrêt (bilan
 // partiel, reprise sous 24 heures) et le bilan. Un Atelier déjà en cours
 // s'ouvre sur « Reprendre » ou « Le clore ». La séance vit côté serveur
 // (migration_atelier.sql) ; les aperçus locaux passent une API sur place.
+// L'ouverture (et l'Atelier en cours, ou trop peu de matière) suit le modèle des
+// sous-pages (2026-11-12) : l'en-tête commun, puis le cadre à zones, la notion du
+// jour à gauche, le registre resserré dans la colonne grise (`registre`, lu par la
+// page). La séance, l'arrêt et le bilan : plus d'en-tête, l'écran seul.
 
 export type VueAtelier =
   | { vue: "ouverture" }
@@ -38,6 +44,7 @@ export function AtelierEcran({
   courant,
   rappels,
   traits,
+  registre,
   demo,
 }: {
   proposees: NotionProposee[];
@@ -45,6 +52,8 @@ export function AtelierEcran({
   courant: SeanceAtelier | null;
   rappels: Record<string, RappelNotion>;
   traits: number | null;
+  /** la colonne grise (« Ton registre »), rendue par la page ; absente : une zone seule */
+  registre?: React.ReactNode;
   demo?: DemoAtelier;
 }) {
   const router = useRouter();
@@ -102,6 +111,7 @@ export function AtelierEcran({
 
   if (vue.vue === "seance") {
     return (
+      <div className="rl-wide">
       <AtelierSeance
         key={vue.seance.id + (vue.reprise ? "-r" : "")}
         seance={vue.seance}
@@ -112,12 +122,14 @@ export function AtelierEcran({
         onPause={(fin) => setVue({ vue: "pause", fin })}
         onFin={(fin) => void clore(fin.seance, fin.reponses, fin.secondes, fin.ajoutes)}
       />
+      </div>
     );
   }
 
   if (vue.vue === "pause") {
     const { fin } = vue;
     return (
+      <div className="rl-wide">
       <AtelierPause
         seance={fin.seance}
         reponses={fin.reponses}
@@ -127,11 +139,13 @@ export function AtelierEcran({
         onReprendre={() => setVue({ vue: "seance", seance: { ...fin.seance, ordre: fin.reponses, secondes: fin.secondes }, reprise: true })}
         onClore={() => void clore(fin.seance, fin.reponses, fin.secondes, fin.ajoutes)}
       />
+      </div>
     );
   }
 
   if (vue.vue === "bilan") {
     return (
+      <div className="rl-wide">
       <AtelierBilan
         seance={vue.seance}
         reponses={vue.reponses}
@@ -144,41 +158,48 @@ export function AtelierEcran({
           router.refresh();
         }}
       />
+      </div>
     );
   }
+
+  // l'ouverture, l'Atelier en cours ou trop peu de matière : l'en-tête commun et le cadre à zones
+  const cadre = (contenu: React.ReactNode) => (
+    <SousPage entete={<EnTeteSousPage retour={RETOUR_ENTRAINEMENT} titre={V.nom} ligne={V.carteSousTitre} illustration={{ nom: "qcm-machines" }} />}>
+      <CadreZones gauche={{ titre: SOUS_ENTRAINEMENT.atelier.notion, contenu }} droite={registre ? { titre: SOUS_ENTRAINEMENT.atelier.registre, contenu: registre } : undefined} />
+    </SousPage>
+  );
 
   if (vue.vue === "encours") {
     const s = vue.seance;
     const noms = s.notions.map((n) => rappels[n]?.libelle ?? n).join(", ");
-    return (
-      <section className="card-hero rl-in mx-auto grid w-full max-w-[760px] gap-5 p-6 md:p-8" aria-label={V.enCoursTitre}>
+    return cadre(
+      <div className="grid min-w-0 gap-5">
         <div className="grid gap-1.5">
-          <p className="t-eyebrow m-0">{V.kicker}</p>
-          <h1 className="t-h1 m-0">{V.enCoursTitre}</h1>
+          <p className="m-0 text-[22px] font-bold leading-tight tracking-[-0.02em]">{V.enCoursTitre}</p>
           <p className="t-small m-0">{V.enCoursTexte(noms, s.ordre.length)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
-          <button type="button" className="btn btn-primary btn-lg rl-press min-h-[44px]" onClick={() => setVue({ vue: "seance", seance: s, reprise: true })} autoFocus>
+          <ActionEncre onClick={() => setVue({ vue: "seance", seance: s, reprise: true })}>
             {V.reprendre} <ArrowRight size={17} aria-hidden />
-          </button>
+          </ActionEncre>
           {s.ordre.length > 0 && (
-            <button type="button" className="btn btn-secondary btn-lg min-h-[44px]" disabled={envoi} onClick={() => void clore(s, s.ordre, s.secondes, 0)}>
+            <button type="button" className="btn btn-secondary min-h-[40px]" disabled={envoi} onClick={() => void clore(s, s.ordre, s.secondes, 0)}>
               {V.clore}
             </button>
           )}
         </div>
-      </section>
+      </div>,
     );
   }
 
   if (!proposees.length && !initiales.length) {
-    return (
-      <section className="card rl-in mx-auto grid w-full max-w-[760px] gap-3 p-6 md:p-8">
-        <h1 className="t-h2 m-0">{V.peuTitre}</h1>
+    return cadre(
+      <div className="grid gap-2">
+        <p className="m-0 text-[20px] font-bold leading-tight">{V.peuTitre}</p>
         <p className="t-body m-0 text-muted">{V.peuTexte}</p>
-      </section>
+      </div>,
     );
   }
 
-  return <AtelierOuverture proposees={proposees} initiales={initiales} envoi={envoi} message={message} onCommencer={(n) => void commencer(n)} />;
+  return cadre(<AtelierOuverture proposees={proposees} initiales={initiales} envoi={envoi} message={message} onCommencer={(n) => void commencer(n)} />);
 }

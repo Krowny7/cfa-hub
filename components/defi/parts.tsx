@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Hourglass, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Zap } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { PageHero } from "@/components/ui/Titles";
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
@@ -20,8 +20,7 @@ import {
   type DailyHistoryEntry,
   type FormatDefi,
 } from "@/lib/daily";
-import { ECLAIR_HREF } from "@/lib/eclair";
-import { DEFI, DEFI_CINQ, ECLAIR, joueurs, rangOrdinal, raturesOuPropre, voixDefi } from "@/lib/voice-z2c";
+import { DEFI, joueurs, rangOrdinal, raturesOuPropre, voixDefi } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
 
 // Pièces partagées des pages du défi du jour. Sans état : utilisables depuis
@@ -42,47 +41,6 @@ export function DefiHeading({ day, today, isToday, format = "trente" }: { day: s
       }
       title={isToday ? V.title : V.titleDay(dayLabel(day, "day", today))}
     />
-  );
-}
-
-/**
- * La passerelle vers l'autre défi du jour, en une ligne : depuis les 30,
- * « pressé ? les 5 du jour, 2 min » ; depuis les 5, « l'épreuve complète ».
- */
-export function AutreDefi({ format }: { format: FormatDefi }) {
-  const cinq = format === "trente";
-  // depuis les 5 du jour : d'abord les séries à volonté, puis l'épreuve
-  if (!cinq) {
-    return (
-      <div className="grid gap-2.5">
-        <Link href={ECLAIR_HREF} className="rl-row group flex items-center gap-3 rounded-[14px] border border-line px-4 py-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-surface-2">
-            <Zap size={17} aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[14px] font-semibold">{ECLAIR.lienCourt}</span>
-            <span className="t-micro block">{ECLAIR.promesse}</span>
-          </span>
-          <ArrowRight size={15} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
-        </Link>
-        <AutreDefiLien format={format} />
-      </div>
-    );
-  }
-  return <AutreDefiLien format={format} />;
-}
-
-function AutreDefiLien({ format }: { format: FormatDefi }) {
-  const cinq = format === "trente";
-  return (
-    <Link href={cinq ? "/defi/cinq" : "/defi"} className="rl-row group flex items-center gap-3 rounded-[14px] border border-line px-4 py-3">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-surface-2">{cinq ? <Zap size={17} aria-hidden /> : <Hourglass size={17} aria-hidden />}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[14px] font-semibold">{cinq ? "Pressé ? " + DEFI_CINQ.tuile.titre : "L'épreuve complète : " + DEFI.tuile.titre}</span>
-        <span className="t-micro block">{cinq ? "5 questions de cours, sans calcul · 2 min" : "30 questions, calculs compris · 45 min, chrono"}</span>
-      </span>
-      <ArrowRight size={15} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
-    </Link>
   );
 }
 
@@ -413,6 +371,7 @@ export function DefiHistory({
   nowIso,
   visible = 6,
   format = "trente",
+  entete = true,
 }: {
   entries: DailyHistoryEntry[];
   today: string;
@@ -420,6 +379,8 @@ export function DefiHistory({
   format?: FormatDefi;
   /** jours affichés avant « Voir plus » */
   visible?: number;
+  /** false : sans titre (dans un cadre annexe qui porte déjà « Les jours passés ») */
+  entete?: boolean;
 }) {
   const past = entries.filter((e) => e.day < today);
   const shown = past.slice(0, visible);
@@ -429,7 +390,7 @@ export function DefiHistory({
   return (
     <section className="rl-section" aria-label={DEFI.joursPasses}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="t-h2 m-0">{DEFI.joursPasses}</h2>
+        {entete && <h2 className="t-h2 m-0">{DEFI.joursPasses}</h2>}
         <span className="t-micro">{toReview > 0 ? DEFI.aRevoir(toReview, DAILY_REVIEW_DAYS) : DEFI.seRevoit(DAILY_REVIEW_DAYS)}</span>
       </div>
       {past.length === 0 ? (

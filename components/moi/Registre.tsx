@@ -1,121 +1,25 @@
 import Link from "next/link";
-import { ArrowRight, Bookmark, PenLine } from "lucide-react";
-import { BoutonPlein, FilMoi, HerosMoi, ListeClassee } from "@/components/moi/Briques";
-import { LienCarnet } from "@/components/moi/Clients";
 import { ErrorsTab } from "@/components/moi/ErrorsSection";
 import { MarqueesTab } from "@/components/moi/MarqueesTab";
 import { CartesMarqueesTab } from "@/components/moi/CartesMarqueesTab";
 import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
 import { RaturesTab } from "@/components/moi/RaturesTab";
-import { Illustration } from "@/components/ui/Illustration";
-import { SOURCES_RATURE } from "@/lib/voice-z1";
-import { REG } from "@/lib/voice-moi";
+import { Chiffre } from "@/components/ui/Decors";
+import { CadreZones, EnTeteSousPage, SousPage, type Zone } from "@/components/ui/SousPage";
+import { REG, SOUS_MOI } from "@/lib/voice-moi";
 import { nombre } from "@/lib/voice";
 import type { MoiData } from "@/components/moi/types";
-import s from "@/components/moi/Moi.module.css";
 
-// Le gabarit commun des pages de liste de Moi (variante A « Le registre ») :
-// le carnet de ratures (?onglet=erreurs) et les questions marquées
-// (?onglet=marquees). Un fil « ← Moi », un héros (titre énorme, une phrase,
-// un bouton plein, la liste des trois sources ou rubriques, ou une phrase s'il
-// n'y a rien à classer), une carte illustrée à côté, puis la liste complète,
-// réduite à ses filtres et à ses lignes ; les marquées sont suivies des
-// flashcards marquées (CartesMarqueesTab). Composant de présentation.
-
-const SOURCES: Record<string, string> = Object.fromEntries(SOURCES_RATURE);
-
-type Resume = {
-  kicker: string;
-  titre: string;
-  repere: string;
-  phrase: string;
-  action: React.ReactNode;
-  listeTitre: string;
-  lignes: { nom: string; n: number }[];
-  aside: { kicker: string; titre: string; ligne: string; lien: React.ReactNode; image: "moi-carnet" | "moi-marquees" };
-  titreListe: string;
-};
-
-/** La courte liste du héros ; rien à classer (moins de deux lignes, ou toutes égales) : une phrase. */
-function ListeHeros({ titre, lignes }: { titre: string; lignes: Resume["lignes"] }) {
-  if (lignes.length === 0) return undefined;
-  const max = Math.max(1, ...lignes.map((l) => l.n));
-  if (lignes.length < 2 || lignes.every((l) => l.n === lignes[0].n)) {
-    return <p className="t-small m-0 self-center">{REG.rubriquesEgales(lignes.map((l) => l.nom), lignes[0].n)}</p>;
-  }
-  return <ListeClassee titre={titre} lignes={lignes.map((l) => ({ cle: l.nom, nom: l.nom, pct: (l.n / max) * 100, valeur: String(l.n) }))} />;
-}
-
-function resumeRatures(d: MoiData): Resume | null {
-  if (!d.ratures.available) return null;
-  const r = d.ratures;
-  const T = REG.ratures;
-  return {
-    kicker: T.kicker,
-    titre: T.titre(r.total),
-    // les ratures qui sèchent (section §3a) : la règle change, et celles qui sèchent encore ne sont pas proposées
-    repere: [T.repere(r.retirees, r.retireesSemaine), r.sechent ? T.sechent(r.sechent) : null].filter(Boolean).join(" · "),
-    phrase: r.total > 0 ? (r.scellees !== undefined ? T.phraseSeche : T.phrase) : T.phraseVide,
-    action:
-      r.total > 0 ? (
-        <LienCarnet action="propre" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]">
-          <PenLine size={16} aria-hidden /> {T.action} <ArrowRight size={16} aria-hidden />
-        </LienCarnet>
-      ) : undefined,
-    listeTitre: T.liste,
-    lignes: Object.entries(r.sources)
-      .filter(([, n]) => n > 0)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([k, n]) => ({ nom: SOURCES[k] ?? k, n })),
-    aside: {
-      kicker: T.asideKicker,
-      titre: T.asideTitre(r.retirees),
-      ligne: [T.asideLigne(r.retirees, r.retireesSemaine), r.scellees ? T.scellees(r.scellees) : null].filter(Boolean).join(" "),
-      lien:
-        r.retirees > 0 ? (
-          <LienCarnet action="anciennes" className="ink-link mt-auto inline-flex w-fit items-center gap-1 pt-1 text-[14px] font-semibold">
-            {T.asideLien} <ArrowRight size={14} aria-hidden />
-          </LienCarnet>
-        ) : null,
-      image: "moi-carnet",
-    },
-    titreListe: T.listeTitre,
-  };
-}
-
-function resumeMarquees(d: MoiData): Resume | null {
-  const m = d.marquees.items;
-  if (!d.marquees.available || m.length === 0) return null;
-  const T = REG.marquees;
-  const parRubrique = new Map<string, number>();
-  for (const x of m) parRubrique.set(x.rubrique, (parRubrique.get(x.rubrique) ?? 0) + 1);
-  const recente = new Date(m[0].flaggedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
-  return {
-    kicker: T.kicker,
-    titre: T.titre(m.length),
-    repere: T.repere(`le ${recente}`, m.filter((x) => !x.answered).length),
-    phrase: T.phrase,
-    action: <BoutonPlein href="#liste" label={T.action} icon={<Bookmark size={16} aria-hidden />} />,
-    listeTitre: T.liste,
-    lignes: [...parRubrique].sort((a, b) => b[1] - a[1]).map(([nom, n]) => ({ nom, n })).slice(0, 3),
-    aside: {
-      kicker: T.asideKicker,
-      titre: T.asideTitre,
-      ligne: T.asideLigne,
-      lien: (
-        <a href="#liste" className="ink-link mt-auto inline-flex w-fit items-center gap-1 pt-1 text-[14px] font-semibold">
-          {T.asideLien} <ArrowRight size={14} aria-hidden />
-        </a>
-      ),
-      image: "moi-marquees",
-    },
-    titreListe: T.listeTitre,
-  };
-}
+// Les pages de liste de Moi, sur le modèle des sous-pages validé par Théo (2026-11-12) :
+// le carnet de ratures (?onglet=erreurs) et les marquées (?onglet=marquees). L'en-tête
+// commun (retour à Moi, titre, une ligne, la peinture du lieu), puis le cadre à zones :
+// à gauche « Ton carnet », la liste complète avec ses filtres (et, pour les marquées, le
+// choix questions ou flashcards) ; à droite « À reprendre », le chiffre de la liste
+// montrée. « Mettre au propre » vit dans la liste du carnet (RaturesTab). Pas d'annexe.
+// Composant de présentation.
 
 /**
- * Moi › Marquées : « Questions · 113 | Flashcards · 4 », en haut de la page (les flashcards
+ * Moi › Marquées : « Questions · 113 | Flashcards · 4 », en haut de la liste (les flashcards
  * se perdaient sous une longue liste de questions). Des liens (?vue=…) : la page est rendue
  * côté serveur, l'adresse dit ce qu'on regarde. Un compte inconnu (lecture en repli) : sans chiffre.
  */
@@ -143,7 +47,6 @@ function SelecteurMarquees({ actif, questions, cartes }: { actif: "questions" | 
 }
 
 export function Registre({ d, liste, vue, now }: { d: MoiData; liste: "ratures" | "marquees"; vue?: "questions" | "flashcards"; now?: number }) {
-  const res = liste === "ratures" ? resumeRatures(d) : resumeMarquees(d);
   // les flashcards marquées (lues par la page sur cet onglet) : une vue à part, choisie par le
   // sélecteur ; sans choix, les questions, ou les flashcards s'il n'y a qu'elles
   const cartes = liste === "marquees" ? d.cartesMarquees : undefined;
@@ -152,22 +55,12 @@ export function Registre({ d, liste, vue, now }: { d: MoiData; liste: "ratures" 
   const voirCartes = !!cartes && (vue === "flashcards" || (vue === undefined && nQuestions === 0 && (nCartes ?? 0) > 0));
   const selecteur = cartes ? <SelecteurMarquees actif={voirCartes ? "flashcards" : "questions"} questions={nQuestions} cartes={nCartes} /> : null;
 
-  if (voirCartes && cartes) {
-    return (
-      <div className="rl-wide flex flex-col gap-4">
-        <FilMoi label={REG.fil} />
-        <h1 className="t-h1 m-0">{REG.marquees.kickerTout}</h1>
-        {selecteur}
-        <CartesMarqueesTab cartes={cartes} className="mt-2 md:mt-4" />
-        {/* les flashcards gardées sur l'appareil qui rejoignent le compte : la page se relit une fois */}
-        <SynchroMarquesCartes />
-      </div>
-    );
-  }
-
-  // la liste complète : le carnet de ratures sans son résumé (le héros le remplace), l'ancien carnet des fiches tant que la migration manque, ou les marquées
+  // la liste complète : le carnet de ratures (ses filtres, « Mettre au propre », ses lignes), l'ancien
+  // carnet des fiches tant que la migration manque, les questions marquées, ou les flashcards marquées
   const corps =
-    liste === "ratures" ? (
+    voirCartes && cartes ? (
+      <CartesMarqueesTab cartes={cartes} sansTitre />
+    ) : liste === "ratures" ? (
       d.ratures.available ? (
         <RaturesTab initial={d.ratures} notions={d.ratures.parNotion} now={now} sansResume />
       ) : (
@@ -177,56 +70,39 @@ export function Registre({ d, liste, vue, now }: { d: MoiData; liste: "ratures" 
       <MarqueesTab marquees={d.marquees} cartes={cartes ? { available: cartes.available, n: cartes.items.length, erreur: cartes.erreur } : undefined} />
     );
 
-  // sans carnet activé, ou sans question marquée : la liste seule (elle explique l'état), puis les flashcards marquées
-  if (!res) {
-    return (
-      <div className="rl-wide flex flex-col gap-4">
-        <FilMoi label={REG.fil} />
-        <h1 className="t-h1 m-0">{liste === "ratures" ? REG.ratures.kicker : cartes ? REG.marquees.kickerTout : REG.marquees.kicker}</h1>
-        {selecteur}
-        {corps}
-        {cartes && <SynchroMarquesCartes />}
-      </div>
+  // la colonne grise : le chiffre de la liste montrée ; rien à reprendre (ou compte inconnu) : une seule zone
+  const n = liste === "ratures" ? (d.ratures.available ? d.ratures.total : null) : voirCartes ? nCartes : nQuestions;
+  const legende = liste === "ratures" ? SOUS_MOI.ratures.legende(n ?? 0) : voirCartes ? SOUS_MOI.marquees.legendeCartes(n ?? 0) : SOUS_MOI.marquees.legendeQuestions(n ?? 0);
+  const droite: Zone | undefined = n ? { titre: SOUS_MOI.aReprendre, contenu: <Chiffre valeur={nombre(n)} legende={legende} /> } : undefined;
+
+  const entete =
+    liste === "ratures" ? (
+      <EnTeteSousPage
+        retour={SOUS_MOI.retour}
+        titre={SOUS_MOI.ratures.titre}
+        ligne={d.ratures.available ? SOUS_MOI.ratures.ligne(d.ratures.scellees !== undefined) : undefined}
+        illustration={{ nom: "moi-carnet" }}
+      />
+    ) : (
+      <EnTeteSousPage retour={SOUS_MOI.retour} titre={REG.marquees.kickerTout} ligne={SOUS_MOI.marquees.ligne} illustration={{ nom: "moi-marquees", position: "50% 30%" }} />
     );
-  }
 
   return (
-    <div className="rl-wide flex flex-col gap-8 md:gap-12">
-      <div className="flex flex-col gap-4">
-        <FilMoi label={REG.fil} />
-        {selecteur}
-        <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
-          <HerosMoi
-            className="lg:col-span-8"
-            titreNiveau={1}
-            kicker={res.kicker}
-            titre={res.titre}
-            repere={res.repere}
-            phrase={res.phrase}
-            action={res.action}
-            liste={ListeHeros({ titre: res.listeTitre, lignes: res.lignes })}
-          />
-          <section className={"card-quiet min-w-0 overflow-hidden lg:col-span-4 " + s.aside} aria-label={res.aside.titre}>
-            <div className={s.asideImg}>
-              <Illustration nom={res.aside.image} decorative />
+    <SousPage entete={entete}>
+      <CadreZones
+        gauche={{
+          titre: SOUS_MOI.carnet,
+          contenu: (
+            <div id="liste" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
+              {selecteur}
+              {corps}
+              {/* les flashcards gardées sur l'appareil qui rejoignent le compte : la page se relit une fois */}
+              {cartes && <SynchroMarquesCartes />}
             </div>
-            <div className={"flex min-w-0 flex-col gap-3 " + s.asideTxt}>
-              <p className="t-eyebrow m-0">{res.aside.kicker}</p>
-              <h2 className="m-0 text-[22px] font-extrabold tracking-[-0.02em]">{res.aside.titre}</h2>
-              <p className="t-small m-0">{res.aside.ligne}</p>
-              {res.aside.lien}
-            </div>
-          </section>
-        </div>
-      </div>
-      <section id="liste" className="rl-section" aria-labelledby="liste-titre">
-        <h2 id="liste-titre" className="t-h2 m-0">
-          {res.titreListe}
-        </h2>
-        {corps}
-      </section>
-      {/* les flashcards gardées sur l'appareil qui rejoignent le compte : la page se relit une fois */}
-      {cartes && <SynchroMarquesCartes />}
-    </div>
+          ),
+        }}
+        droite={droite}
+      />
+    </SousPage>
   );
 }

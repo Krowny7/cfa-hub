@@ -11,17 +11,22 @@ import { duelsReady } from "@/lib/duels";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { CeremonieExamen } from "@/components/classement/CeremonieExamen";
 import {
-  MockExamHeader,
   MockExamLeaderboard,
-  MockExamNotice,
   MockExamTopicTable,
   dayMonth,
+  ligneExamen,
   type LeaderRow,
   type TopicCell,
 } from "@/components/session/MockExamViews";
-import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
+import { cleanTopic, pctOf, type ReviewQuestion } from "@/components/session/review";
+import { ListeCourte, type Ligne } from "@/components/ui/Decors";
+import { CadreZones, EnTeteSousPage, SousPage, type Zone } from "@/components/ui/SousPage";
 import { DETAIL, ELO_EXAMEN } from "@/lib/voice-z3b";
+import { RETOUR_EXAMENS, SOUS_AFFRONTER } from "@/lib/voice-affronter-sous";
+import { rangOrdinal } from "@/lib/voice-z2c";
 import { PARAM_DEBRIEF, lireDebrief, secondesDe, type EtatDebrief } from "@/lib/debrief";
+
+const E = SOUS_AFFRONTER.examens;
 
 type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -72,7 +77,7 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
 
-  const [examRes, regRes, resultRes, adminRes] = await Promise.all([
+  const [examRes, regRes, resultRes] = await Promise.all([
     supabase
       .from("mock_exams")
       .select("id,title,description,scheduled_at,duration_minutes,question_count,status,window_days")
@@ -89,7 +94,6 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
       .select("user_id,score,total,duration_seconds,completed_at,profiles(username,avatar_url)")
       .eq("exam_id", id)
       .order("score", { ascending: false }),
-    supabase.rpc("is_app_admin"),
   ]);
 
   if (!examRes.data) notFound();
@@ -118,7 +122,6 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
   const rawResults = (resultRes.data ?? []) as unknown as ResultRow[];
   const myResult = rawResults.find((r) => r.user_id === auth.user!.id) ?? null;
   const allResults = rawResults;
-  const isAdmin = adminRes.data === true;
 
   const now = new Date();
   const scheduledAt = new Date(exam.scheduled_at);
@@ -247,38 +250,26 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
     ) as Record<string, TopicCell>,
   }));
 
-  return (
-    <div className="rl-page">
-      <MockExamHeader exam={exam} eloEnabled={eloEnabled} now={now.getTime()} />
+  // Sur le modèle des sous-pages (2026-11-12) : l'en-tête commun (retour aux examens blancs, le titre,
+  // l'état et le format en une ligne, la peinture de la Grande Salle).
+  const entete = (
+    <EnTeteSousPage
+      retour={RETOUR_EXAMENS}
+      titre={exam.title}
+      ligne={ligneExamen(exam, eloEnabled, now.getTime())}
+      illustration={{ nom: "mock-grande-salle", position: "center 40%" }}
+    />
+  );
 
-      {/* Examen pas encore publié */}
-      {exam.status === "draft" && !isAdmin && (
-        <MockExamNotice title={DETAIL.pasOuvertTitre}>{DETAIL.pasOuvertTexte}</MockExamNotice>
-      )}
+  // L'inscription — reste disponible tant que la fenêtre n'est pas terminée ;
+  // une fois inscrit, elle passe sous la copie (le point focal)
+  const inscriptionOuverte = exam.status === "open" && !windowClosed && !alreadyDone;
 
-      {/* Inscrit, mais la fenêtre de passage n'a pas encore commencé */}
-      {isRegistered && !alreadyDone && !withinWindow && !windowClosed && (
-        <MockExamNotice title={DETAIL.bientotTitre} countdown={daysUntil > 0 ? `J-${daysUntil}` : null}>
-          {DETAIL.bientotTexte(windowStart.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" }), dayMonth(windowEnd))}
-        </MockExamNotice>
-      )}
-
-      {/* Inscrit sans avoir passé l'examen, et la fenêtre est terminée */}
-      {isRegistered && !alreadyDone && windowClosed && (
-        <MockExamNotice title={DETAIL.finiTitre}>{DETAIL.finiTexte(dayMonth(windowEnd))}</MockExamNotice>
-      )}
-
-      {/* Le rang a bougé avec cet examen : la cérémonie (plein écran pour un
-          palier, en ligne pour une division), une seule fois, au-dessus de la
-          copie (posée à la revisite : un seul moment fort) */}
-      {ceremonie && (
-        <Suspense fallback={null}>
-          <CeremonieExamen examId={exam.id} userId={auth.user.id} className="mx-auto w-full max-w-[660px]" />
-        </Suspense>
-      )}
-
-      {/* Passage de l'examen, puis résultat et correction */}
-      {showRunner && (
+  // La séance : l'en-tête et la colonne des séances (760 px) avant de commencer et sur la copie
+  // rendue ; pendant l'examen, la barre de l'examen seule (MockExamRunner pose l'en-tête et l'annexe).
+  if (showRunner) {
+    return (
+      <SousPage entete={null}>
         <MockExamRunner
           examId={exam.id}
           title={exam.title}
@@ -296,39 +287,90 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
             secondesParQuestion: myResult ? secondesDe(myResult.duration_seconds, myResult.total) : null,
             ouvrir: ouvrirDebrief,
           }}
+          entete={entete}
+          avant={
+            // Le rang a bougé avec cet examen : la cérémonie (plein écran pour un palier, en ligne pour
+            // une division), une seule fois, au-dessus de la copie (posée à la revisite : un seul moment fort)
+            ceremonie ? (
+              <Suspense fallback={null}>
+                <CeremonieExamen examId={exam.id} userId={auth.user.id} className="mx-auto w-full max-w-[660px]" />
+              </Suspense>
+            ) : null
+          }
+          apres={
+            <>
+              {inscriptionOuverte && <MockExamRegistration examId={exam.id} isRegistered={isRegistered} registrantCount={registrantCount} ranked={eloEnabled} />}
+
+              {/* le classement de l'examen : sous la copie, en entier (ailleurs, la colonne grise en court) */}
+              {showLeaderboard && <MockExamLeaderboard rows={leaderRows} meId={auth.user.id} eloDeltas={eloDeltas} />}
+
+              {alreadyDone && <RetestRatures questionIds={review.filter((r) => !r.is_correct && r.selected_index !== null).map((r) => r.question_id)} />}
+
+              {/* Rejouer l'examen en entraînement (score seul conservé, pas les réponses) */}
+              {alreadyDone && (
+                <MockExamRetake
+                  examId={exam.id}
+                  title={exam.title}
+                  durationMinutes={exam.duration_minutes}
+                  wrongCount={review.filter((r) => !r.is_correct).length}
+                  totalCount={review.length}
+                  pastAttempts={pastAttempts}
+                  traitsJour={traitsJour}
+                />
+              )}
+
+              {/* Comparaison par matière entre participants */}
+              {showTopicComparison && <MockExamTopicTable users={topicUsers} matrix={matrix} meId={auth.user.id} />}
+            </>
+          }
         />
-      )}
+      </SousPage>
+    );
+  }
 
-      {/* Inscription — reste disponible tant que la fenêtre n'est pas terminée ;
-          une fois inscrit, elle passe sous la copie (le point focal) */}
-      {exam.status === "open" && !windowClosed && !alreadyDone && (
-        <MockExamRegistration
-          examId={exam.id}
-          isRegistered={isRegistered}
-          registrantCount={registrantCount}
-          ranked={eloEnabled}
-        />
-      )}
+  // Hors séance : le cadre à zones. À gauche, où en est l'examen pour toi (pas encore ouvert, ta place
+  // à réserver, bientôt ton tour, fenêtre terminée) ; dans la colonne grise, son classement en court.
+  const texte = (t: React.ReactNode) => <p className="t-body m-0 max-w-[560px] text-muted">{t}</p>;
+  const inscription = <MockExamRegistration examId={exam.id} isRegistered={isRegistered} registrantCount={registrantCount} ranked={eloEnabled} nu />;
+  let gauche: Zone;
+  if (exam.status === "draft") {
+    // Examen pas encore publié
+    gauche = { titre: DETAIL.pasOuvertTitre, contenu: texte(DETAIL.pasOuvertTexte) };
+  } else if (isRegistered && !alreadyDone && !withinWindow && !windowClosed) {
+    // Inscrit, mais la fenêtre de passage n'a pas encore commencé
+    gauche = {
+      titre: DETAIL.bientotTitre,
+      contenu: (
+        <div className="grid min-w-0 gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            {texte(DETAIL.bientotTexte(windowStart.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" }), dayMonth(windowEnd)))}
+            {daysUntil > 0 && <span className="t-num text-[40px]">{`J-${daysUntil}`}</span>}
+          </div>
+          {inscriptionOuverte && inscription}
+        </div>
+      ),
+    };
+  } else if (inscriptionOuverte) {
+    // Pas encore inscrit, la fenêtre court encore : ta place à réserver
+    gauche = { titre: E.inscription, contenu: inscription };
+  } else {
+    // Fenêtre terminée (inscrit sans copie, ou examen clos)
+    gauche = { titre: DETAIL.finiTitre, contenu: texte(windowClosed ? DETAIL.finiTexte(dayMonth(windowEnd)) : E.clos) };
+  }
 
-      {showLeaderboard && <MockExamLeaderboard rows={leaderRows} meId={auth.user.id} eloDeltas={eloDeltas} />}
+  // le classement de l'examen, court : les premiers, et ta ligne si tu es plus bas
+  const maPlace = leaderRows.findIndex((r) => r.userId === auth.user!.id);
+  const tete = maPlace >= 5 ? [...leaderRows.slice(0, 4).map((r, i) => ({ r, i })), { r: leaderRows[maPlace], i: maPlace }] : leaderRows.slice(0, 5).map((r, i) => ({ r, i }));
+  const lignes: Ligne[] = tete.map(({ r, i }) => ({
+    cle: r.userId,
+    titre: `${rangOrdinal(i + 1)} · ${r.userId === auth.user!.id ? E.toi : r.name}`,
+    detail: E.pct(pctOf(r.score, r.total)),
+    marque: r.userId === auth.user!.id,
+  }));
 
-      {alreadyDone && <RetestRatures questionIds={review.filter((r) => !r.is_correct && r.selected_index !== null).map((r) => r.question_id)} />}
-
-      {/* Rejouer l'examen en entraînement (score seul conservé, pas les réponses) */}
-      {alreadyDone && (
-        <MockExamRetake
-          examId={exam.id}
-          title={exam.title}
-          durationMinutes={exam.duration_minutes}
-          wrongCount={review.filter((r) => !r.is_correct).length}
-          totalCount={review.length}
-          pastAttempts={pastAttempts}
-          traitsJour={traitsJour}
-        />
-      )}
-
-      {/* Comparaison par matière entre participants */}
-      {showTopicComparison && <MockExamTopicTable users={topicUsers} matrix={matrix} meId={auth.user.id} />}
-    </div>
+  return (
+    <SousPage entete={entete}>
+      <CadreZones gauche={gauche} droite={showLeaderboard ? { titre: E.classementExamen, contenu: <ListeCourte lignes={lignes} /> } : undefined} />
+    </SousPage>
   );
 }

@@ -2,30 +2,30 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { Icone } from "@/components/adn/icons";
-import { SubjectGlyph } from "@/components/ui/SubjectGlyph";
-import { Bande, CarteCarnet, EnTete, Heros, Mini, Page, Rangee, Section } from "@/components/outils/Gabarit";
-import { topicSummary, type AllProgress } from "@/lib/calc/engine";
+import { Mini } from "@/components/outils/Gabarit";
+import { Chiffre, ListeCourte } from "@/components/ui/Decors";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import type { AllProgress } from "@/lib/calc/engine";
 import { CALC_LEVELS, type CalcTopic } from "@/lib/calc/types";
 import { nombre } from "@/lib/voice";
-import { MATIERE } from "@/lib/voice-outils";
-import { etatType, lignesNiveaux, nomCourt, phraseSuggestion, type EtatType } from "./outils";
-import { roundHref, suggest } from "./suggest";
+import { SOUS_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
+import { etatType, nomCourt, type EtatType } from "./outils";
 import { useCalcProgress, useLocalImport } from "./useCalc";
 import { CALC, NIVEAU, nbQuestions } from "./voice";
 import s from "./or.module.css";
 
 export type CalcTopicType = { key: string; name: string; tier: "essentiel" | "annexe"; top?: boolean; source: string | null; questions: number };
 
+const M = SOUS_ENTRAINEMENT.calculsMatiere;
+
 /**
- * /calculs/[matiere] : le gabarit de L'Abaque décliné à une matière. Le héros
- * présente le prochain calcul et ses trois niveaux, le carnet « en bref »
- * est replié, puis les registres Essentiels et Annexes (dans l'ordre du
- * programme : nom, référence, niveaux tenus F · M · D, précision récente),
- * et la bande d'encre vers les questions d'examen de la matière.
+ * /calculs/[matiere], sur le modèle des sous-pages validé par Théo (2026-11-12) : l'en-tête commun
+ * (retour aux Calculs), puis le cadre à zones : les registres à gauche (le Top 5 en or, les
+ * Essentiels, les Annexes, dans l'ordre du programme : nom, référence, niveaux tenus F · M · D,
+ * précision récente), ce qui est à reprendre dans la colonne grise (les calculs entamés pas encore
+ * tenus, les moins réussis d'abord ; à défaut, les niveaux tenus). Pas d'annexe.
  *
- * Props : `subject` ({topic, slug, name, short}), `types`, `progress` (base,
- * null = repli local), `db`, `owner`.
+ * Props : `subject` ({topic, slug, name, short}), `types`, `progress` (base, null = repli local), `db`, `owner`.
  */
 export function CalcTopicView({
   subject,
@@ -43,8 +43,6 @@ export function CalcTopicView({
   useLocalImport(db, owner);
   const { progress } = useCalcProgress(server, owner);
   const mine = progress[subject.topic];
-  const court = subject.short ?? subject.name;
-  const sug = suggest([{ ...subject, types }], progress);
   const essentiels = types.filter((t) => t.tier === "essentiel");
   const annexes = types.filter((t) => t.tier === "annexe");
   const totalQ = types.reduce((n, t) => n + t.questions, 0);
@@ -57,81 +55,42 @@ export function CalcTopicView({
   const niv = CALC_LEVELS.length;
   const tenus = etats.reduce((n, x) => n + x.tenus, 0);
   const total = types.length * niv;
-  const sum = topicSummary(
-    mine,
-    types.map((t) => t.key),
+
+  // à reprendre : entamés, pas encore tenus aux trois niveaux, les moins réussis d'abord
+  const fragiles = etats.filter((x) => x.pct !== null && x.tenus < niv).sort((a, b) => (a.pct as number) - (b.pct as number));
+  const droite = fragiles.length ? (
+    <ListeCourte
+      lignes={fragiles.map((x) => ({ cle: x.t.key, titre: nomCourt(x.t.name), detail: `${x.pct} %`, href: `/calculs/${subject.slug}/${x.t.key}` }))}
+    />
+  ) : (
+    <Chiffre valeur={M.sur(tenus, total)} legende={M.tenus(tenus)} />
   );
-  const typeProg = sug ? mine?.[sug.typeKey] : undefined;
-  const premier = etatsTop.length ? "#reg-top" : essentiels.length ? "#reg-essentiels" : "#reg-annexes";
 
   return (
-    <Page
+    <SousPage
       entete={
-        <EnTete
+        <EnTeteSousPage
           retour={{ href: "/calculs", label: CALC.hubTitre }}
-          titre={
-            <span className="flex items-center gap-3.5">
-              <SubjectGlyph subject={subject.topic} size={40} />
-              <span className="min-w-0">{subject.name}</span>
-            </span>
-          }
+          titre={subject.name}
           ligne={`${nombre(essentiels.length)} ${essentiels.length > 1 ? "essentiels" : "essentiel"} · ${nombre(annexes.length)} ${annexes.length > 1 ? "annexes" : "annexe"} · ${nbQuestions(totalQ)}`}
-        />
-      }
-      lead={
-        <Rangee
-          heros={
-            sug ? (
-              <Heros
-                eyebrow={sug.reprise ? CALC.reprendre : CALC.prochain}
-                titre={nomCourt(sug.typeName)}
-                repere={types.find((t) => t.key === sug.typeKey)?.source ?? subject.name}
-                phrase={phraseSuggestion(sug, typeProg)}
-                detail={`${NIVEAU[sug.level].label} : ${NIVEAU[sug.level].desc.toLowerCase()}`}
-                action={{ href: roundHref(subject.slug, sug.typeKey, sug.level), label: `Niveau ${NIVEAU[sug.level].label.toLowerCase()} · 5 questions` }}
-                lien={{ href: premier, label: MATIERE.lienChoisir }}
-                listeTitre={MATIERE.niveauxTitre}
-                liste={lignesNiveaux(subject.slug, sug.typeKey, typeProg)}
-              />
-            ) : (
-              <section className="card-hero rl-in flex min-h-[200px] flex-col justify-center gap-3 p-6 md:p-8">
-                <p className="t-eyebrow">{CALC.prochain}</p>
-                <h2 className="t-h1 m-0">{CALC.toutTenu}</h2>
-              </section>
-            )
-          }
-          cote={
-            <CarteCarnet
-              eyebrow={MATIERE.resume(court)}
-              pct={total ? Math.round((tenus / total) * 100) : 0}
-              pctLabel="tenus"
-              chiffre={String(tenus)}
-              unite={tenus > 1 ? "niveaux tenus" : "niveau tenu"}
-              ligne={`sur ${total}${sum.precision !== null ? ` · ${Math.round(sum.precision)} % de justes récemment` : ""}`}
-              details={[
-                ...(etatsTop.length ? [{ label: CALC.top, value: `${etatsTop.reduce((n, x) => n + x.tenus, 0)}/${etatsTop.length * niv} niveaux` }] : []),
-                { label: CALC.essentiels, value: `${etatsEss.reduce((n, x) => n + x.tenus, 0)}/${etatsEss.length * niv} niveaux` },
-                { label: CALC.annexes, value: `${etatsAnn.reduce((n, x) => n + x.tenus, 0)}/${etatsAnn.length * niv} niveaux` },
-                { label: MATIERE.jamais, value: String(etats.filter((x) => x.pct === null).length) },
-              ]}
-            />
-          }
+          illustration={{ nom: "calculs-poulies" }}
         />
       }
     >
-      {etatsTop.length > 0 && <Registre id="reg-top" titre={CALC.top} sous={CALC.topSous} liste={etatsTop} slug={subject.slug} or />}
-      {etatsEss.length > 0 && <Registre id="reg-essentiels" titre={CALC.essentiels} sous={CALC.essentielsSous} liste={etatsEss} slug={subject.slug} />}
-      {etatsAnn.length > 0 && <Registre id="reg-annexes" titre={CALC.annexes} sous={CALC.annexesSous} liste={etatsAnn} slug={subject.slug} />}
-      <div className="mt-8">
-        <Bande
-          icone={<Icone nom="entrainer" size={22} />}
-          titre={MATIERE.suiteTitre(court)}
-          ligne={MATIERE.suiteLigne}
-          action={{ href: `/practice?topic=${subject.topic}`, label: MATIERE.suiteAction }}
-          medaillon="calculs-volant"
-        />
-      </div>
-    </Page>
+      <CadreZones
+        gauche={{
+          titre: M.registres,
+          contenu: (
+            <div className="grid min-w-0 gap-7">
+              {etatsTop.length > 0 && <Registre id="reg-top" titre={CALC.top} sous={CALC.topSous} liste={etatsTop} slug={subject.slug} or />}
+              {etatsEss.length > 0 && <Registre id="reg-essentiels" titre={CALC.essentiels} sous={CALC.essentielsSous} liste={etatsEss} slug={subject.slug} />}
+              {etatsAnn.length > 0 && <Registre id="reg-annexes" titre={CALC.annexes} sous={CALC.annexesSous} liste={etatsAnn} slug={subject.slug} />}
+            </div>
+          ),
+        }}
+        droite={{ titre: M.reprendre, contenu: droite }}
+      />
+    </SousPage>
   );
 }
 
@@ -140,8 +99,14 @@ type Etat = EtatType & { t: CalcTopicType };
 /** Un registre : nom, référence, trois pastilles F · M · D, précision récente. */
 function Registre({ id, titre, sous, liste, slug, or = false }: { id: string; titre: string; sous: string; liste: Etat[]; slug: string; or?: boolean }) {
   return (
-    <Section id={id} titre={titre} meta={sous}>
-      <div className={"card overflow-hidden px-1.5 py-1.5" + (or ? " " + s.or : "")}>
+    <section className="grid min-w-0 gap-2.5" aria-labelledby={id + "-t"}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+        <h3 id={id + "-t"} className="m-0 text-[17px] font-bold tracking-[-0.01em]">
+          {titre}
+        </h3>
+        <span className="t-micro">{sous}</span>
+      </div>
+      <div className={"overflow-hidden rounded-[14px] border border-line px-1.5 py-1.5" + (or ? " " + s.or : "")}>
         <ul className="m-0 list-none divide-y divide-line p-0">
           {liste.map((x) => (
             <li key={x.t.key}>
@@ -183,6 +148,6 @@ function Registre({ id, titre, sous, liste, slug, or = false }: { id: string; ti
           ))}
         </ul>
       </div>
-    </Section>
+    </section>
   );
 }

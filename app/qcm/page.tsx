@@ -148,9 +148,9 @@ export default async function QcmPage({ searchParams }: PageProps) {
 
   const initialKey = subjectFromParam(sp.subject)?.key ?? (sp.subject && groups.some((g) => g.key === sp.subject) ? sp.subject : null) ?? next?.g.key ?? null;
 
-  // Vue Système (par défaut) : « La Bibliothèque » ; la communauté garde la liste par dossiers.
+  // Vue Système (par défaut) : le carrousel des matières (le modèle des sous-pages) ; la communauté garde la liste par dossiers.
   if (view === "system") {
-    return <QcmAccueil groups={groups} next={next} recentes={started} last={last} communityCount={all.length} initialKey={initialKey} now={Date.now()} />;
+    return <QcmAccueil groups={groups} recentes={started} initialKey={initialKey} />;
   }
 
   return (

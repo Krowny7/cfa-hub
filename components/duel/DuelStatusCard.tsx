@@ -143,7 +143,7 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[760px]">
+    <div className="grid w-full">
       <section className="card-hero rl-in overflow-hidden">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-line px-5 py-4 md:gap-5 md:px-8 md:py-5">
           <DuelSide
@@ -171,7 +171,7 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
               {variant === "waiting" && <Hourglass size={14} aria-hidden />}
               {kicker}
             </p>
-            <h1 className="t-h1 m-0 mt-1.5">{title}</h1>
+            <h2 className="t-h1 m-0 mt-1.5">{title}</h2>
             {variant === "waiting" && them && <PresenceText userId={them.id} repli={<span className="mt-1.5 inline-block text-[14px] font-semibold text-muted">Hors ligne</span>} className="mt-1.5 text-[14px] font-semibold text-muted" />}
           </div>
           <p className="t-body m-0 max-w-[560px] text-muted">{body}</p>
@@ -203,14 +203,12 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
             )}
             {variant === "waiting" && (
               <>
+                {/* le retour aux duels est en haut de la page (l'en-tête commun) */}
                 {state.status === "pending" && state.iAmChallenger && (
                   <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void decline()}>
                     {them ? "Annuler le défi" : "Annuler la recherche"}
                   </button>
                 )}
-                <Link href="/duel" className="btn btn-primary">
-                  Retour aux duels <ArrowRight size={16} aria-hidden />
-                </Link>
               </>
             )}
             {variant === "closed" && (
@@ -225,9 +223,6 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
                     <ListChecks size={16} aria-hidden /> {PARTIE.revoirReponses}
                   </Link>
                 )}
-                <Link href="/duel" className="btn btn-primary">
-                  {PARTIE.nouveau} <ArrowRight size={16} aria-hidden />
-                </Link>
               </>
             )}
           </div>

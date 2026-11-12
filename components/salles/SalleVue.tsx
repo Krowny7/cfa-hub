@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ActionsRound, type RetourRound } from "@/components/salles/ActionsRound";
@@ -11,6 +10,7 @@ import { SalonView, type ActionsSalon } from "@/components/salles/SalonView";
 import { PresentsContext, useSuiviPresence } from "@/components/salles/presence";
 import { AnnoncesPresence } from "@/components/salles/AnnoncesPresence";
 import { Stage } from "@/components/salles/Stage";
+import { EnTeteSousPage } from "@/components/ui/SousPage";
 import { useEtatSalle } from "@/components/salles/useEtatSalle";
 import { lancerPartie } from "@/app/salles/actions";
 import { arreterSession, getMocksDisponibles, getQuestionsDisponibles, lancerRound, messageErreurSalle, modifierSalle, quitterSalle, supprimerSalle, terminerSerie } from "@/lib/salles/api";
@@ -18,6 +18,7 @@ import { finRecente, paramsPourRejouer } from "@/lib/salles/partie";
 import type { EtatSalle, SalleParams, SalleSource } from "@/lib/salles/types";
 import { createClient } from "@/lib/supabase/browser";
 import { PARTIE, REGLAGES, SALLES } from "@/lib/voice-salles";
+import { RETOUR_SALLES } from "@/lib/voice-affronter-sous";
 import s from "./Salles.module.css";
 
 // La salle, branchée : suit l'état en direct (useEtatSalle, une lecture toutes
@@ -90,7 +91,8 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
           window.alert(messageErreurSalle(e));
           return;
         }
-        router.push("/classement");
+        // la page parente des salles : /salles
+        router.push(RETOUR_SALLES.href);
         router.refresh();
       },
       supprimer: async () => {
@@ -100,7 +102,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
           window.alert(messageErreurSalle(e));
           return;
         }
-        router.push("/classement");
+        router.push(RETOUR_SALLES.href);
         router.refresh();
       },
       basculerVisibilite: async () => {
@@ -152,16 +154,12 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
 
   if (suivi.introuvable) {
     return (
-      <Stage>
-        <p className={s.surtitre}>{SALLES.salonKicker}</p>
-        <h1 className={s.nomSalle}>{SALLES.introuvable}</h1>
-        <p className={s.sous}>{SALLES.introuvableTexte}</p>
-        <div className={s.piedActions}>
-          <Link href="/classement" className={s.btn}>
-            {SALLES.retourSalles}
-          </Link>
-        </div>
-      </Stage>
+      <>
+        <EnTeteSousPage retour={RETOUR_SALLES} titre={SALLES.introuvable} illustration={{ nom: "salles-entree", position: "50% 55%" }} />
+        <Stage>
+          <p className={s.sous}>{SALLES.introuvableTexte}</p>
+        </Stage>
+      </>
     );
   }
 

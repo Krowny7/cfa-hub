@@ -1,19 +1,13 @@
-import Link from "next/link";
-import { ArrowRight, Check, ChevronRight } from "lucide-react";
 import { PageHead, SectionHead, EloDelta } from "@/components/session/ui";
 import { fmtMinutes, pctOf } from "@/components/session/review";
 import { Avatar } from "@/components/classement/Avatar";
 import { Icone } from "@/components/adn/icons";
+import { Carrousel } from "@/components/ui/Carrousel";
+import { ListeCourte, type Ligne } from "@/components/ui/Decors";
+import type { Piece } from "@/components/ui/Presentoir";
+import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { CLASSEMENT_EXAMEN, DETAIL, LISTE } from "@/lib/voice-z3b";
-import { SALLE } from "@/lib/voice-epreuves";
-import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
-import { PageHero } from "@/components/ui/Titles";
-import { HeroEpreuve, ListePodium, RangeeLieu } from "@/components/epreuves/Briques";
-import { BandeEncre, RangeeLiens } from "@/components/ui/BandeEncre";
-import { CarteLieu } from "@/components/ui/CarteLieu";
-import { Illustration } from "@/components/ui/Illustration";
-import { Sceau, TuileCalme } from "@/components/ui/Tuiles";
-import type { Parcours } from "@/lib/mock-parcours";
+import { RETOUR_AFFRONTER, SOUS_AFFRONTER } from "@/lib/voice-affronter-sous";
 
 // Vues sans état des examens blancs (liste, en-tête, avis, classement,
 // comparaison par matière), en voix « Le Trait » : icône maison de l'examen,
@@ -54,215 +48,96 @@ const hour = (d: Date) => d.toLocaleTimeString("fr-FR", { hour: "2-digit", minut
 
 // ── Liste ──────────────────────────────────────────────────────────────────
 
-function ExamRow({ e, registered, eloApplied, now, past }: { e: MockExam; registered: boolean; eloApplied: boolean; now: number; past?: boolean }) {
-  const date = new Date(e.scheduled_at);
-  const w = examWindow(e, now);
-  return (
-    <li>
-      <Link href={`/mock-exams/${e.id}`} className="rl-row group flex items-center gap-4 px-4 py-3.5 md:px-5">
-        <span className={"flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-[11px] text-center " + (past ? "bg-surface" : "bg-surface-2")}>
-          <span className="text-[15px] font-bold leading-none tabular-nums">{date.toLocaleDateString("fr-FR", { day: "numeric", timeZone: TZ })}</span>
-          <span className="mt-0.5 text-[10.5px] font-semibold leading-none text-muted">{date.toLocaleDateString("fr-FR", { month: "short", timeZone: TZ }).replace(".", "")}</span>
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-[15px] font-semibold">{e.title}</span>
-            {!past && w.open && e.status === "open" && <span className="chip chip-active chip-sm">{LISTE.ouvert}</span>}
-            {registered && (
-              <span className="chip chip-quiet chip-sm">
-                <Check size={12} aria-hidden /> {past ? LISTE.participe : LISTE.inscrit}
-              </span>
-            )}
-            {eloApplied && <span className="chip chip-quiet chip-sm">{LISTE.eloApplique}</span>}
-          </span>
-          <span className="t-micro mt-1 block">
-            {past ? dayMonth(date) + " " + date.getFullYear() : `${longDate(date)} · ${hour(date)} · ${fmtMinutes(e.duration_minutes)}`} · {e.question_count} questions
-          </span>
-        </span>
-        <ChevronRight size={16} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
-      </Link>
-    </li>
-  );
+const E = SOUS_AFFRONTER.examens;
+
+/** « OCT », « DÉC », « JUIL » : le mois de l'examen, frappé sur son sceau. */
+function moisCourt(d: Date) {
+  return d.toLocaleDateString("fr-FR", { month: "short", timeZone: TZ }).replace(".", "").toUpperCase();
 }
 
-/** La carte « lieu » La Grande Salle : le prochain examen, son état et son bouton. */
-function GrandeSalle({ e, registered, now }: { e: MockExam; registered: boolean; now: number }) {
-  const date = new Date(e.scheduled_at);
-  const w = examWindow(e, now);
-  const live = e.status === "open" && w.open;
-  const etat = live ? SALLE.etatOuvert(dayMonth(w.end)) : w.over ? SALLE.etatFini : e.status === "draft" ? SALLE.etatPrepa : w.daysToStart > 0 ? SALLE.etatOuvre(w.daysToStart, dayMonth(w.start)) : SALLE.etatOuvert(dayMonth(w.end));
-  const image = <Illustration nom="mock-grande-salle" position="center 40%" />;
-  return (
-    <CarteLieu
-      visuel={image}
-      vignette={image}
-      marque={
-        <Sceau>
-          <Icone nom="examen" size={18} />
-        </Sceau>
-      }
-      nom={SALLE.nom}
-      tailleNom="text-[26px] lg:text-[34px]"
-      sousTitre={`${e.title} · ${e.question_count} questions · ${fmtMinutes(e.duration_minutes)}`}
-      etat={
-        <>
-          {etat}
-          {registered && (
-            <>
-              {" "}
-              <b className="font-semibold text-white">{SALLE.inscrit}</b>
-            </>
-          )}
-        </>
-      }
-      action={{ href: `/mock-exams/${e.id}`, label: w.over ? LISTE.resultats : live && registered ? LISTE.passer : registered ? LISTE.voir : LISTE.sinscrire }}
-      label={SALLE.nom}
-    />
-  );
-}
-
-/** Le héros : où tu en es d'un examen blanc à l'autre (ou, sans copie rendue, ce qui t'attend). */
-function Progression({ parcours }: { parcours: Parcours | null }) {
-  if (!parcours) {
-    return <HeroEpreuve label={SALLE.progression} eyebrow={SALLE.progression} titre={SALLE.debutTitre} micro={SALLE.debutMicro} texte={SALLE.debutTexte} />;
-  }
-  const { last, prev, faibles } = parcours;
-  const ecart = prev && prev.total === last.total ? SALLE.ecart(last.score - prev.score, prev.mois) : prev ? null : SALLE.premier;
-  return (
-    <HeroEpreuve
-      label={SALLE.progression}
-      eyebrow={SALLE.progression}
-      titre={SALLE.titreScore(last.score, last.total, last.mois)}
-      micro={SALLE.micro(last.pct, last.rang, last.joueurs, last.elo)}
-      texte={ecart ?? undefined}
-      texte2={faibles[0] ? SALLE.aTravailler(faibles[0].topic) : undefined}
-      actions={
-        <Link href={`/mock-exams/${last.id}`} className="ink-link">
-          {SALLE.revoirCopie}
-        </Link>
-      }
-      droite={faibles.length > 0 ? <ListePodium titre={SALLE.faibles} items={faibles.map((f) => ({ nom: f.topic, note: `${f.pct} %`, pct: f.pct }))} /> : undefined}
-    />
-  );
-}
-
+/**
+ * La liste des examens blancs, sur le modèle des sous-pages validé par Théo (2026-11-12) : l'en-tête
+ * commun (retour à S'affronter, la peinture de la Grande Salle), puis le cadre à zones. À gauche, les
+ * examens en carrousel de sceaux, ouvert sur le prochain (les passés juste avant lui dans l'anneau) ;
+ * un clic sur le sceau de devant ouvre l'examen (inscription, copie, classement). Dans la colonne
+ * grise, le classement général, court. Le panneau d'administration vient dessous (admin seulement).
+ */
 export function MockExamListView({
   exams,
-  registeredIds,
-  eloApplied,
   eloEnabled,
   admin,
-  now,
-  parcours = null,
+  classement = [],
 }: {
   exams: MockExam[];
-  registeredIds: string[];
-  eloApplied: Record<string, string>;
   eloEnabled: boolean;
-  /** panneau d'administration (rendu en bas de page) */
+  /** panneau d'administration (rendu sous le cadre) */
   admin?: React.ReactNode;
-  now: number;
-  /** ta progression d'un examen blanc à l'autre (null : pas encore de copie rendue) */
-  parcours?: Parcours | null;
+  /** le classement général (ELO), court : les premiers, et ta ligne si tu es plus bas */
+  classement?: Ligne[];
 }) {
-  const regs = new Set(registeredIds);
-  // à venir : par date croissante, le plus proche en premier
+  // à venir : par date croissante, le plus proche en premier ; passés : du plus ancien au plus récent
   const upcoming = exams.filter((e) => e.status !== "closed").sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
-  const past = exams.filter((e) => e.status === "closed");
-  const [next, suivant, ...later] = upcoming;
-
-  const bande = (
-    <>
-      <BandeEncre icone={<Icone nom="examen" size={22} />} titre={SALLE.bandeTitre} ligne={SALLE.bandeLigne} action={{ href: "/defi", label: SALLE.bandeAction }} />
-      <RangeeLiens
-        label={SALLE.liensLabel}
-        liens={[
-          { href: "/official-exams", icon: <Icone nom="examen" size={20} />, title: SALLE.officiels, desc: SALLE.officielsDesc },
-          { href: "/exam", icon: <Icone nom="examen" size={20} />, title: SALLE.examen, desc: SALLE.examenDesc },
-          { href: "/classement", icon: <Icone nom="classement" size={20} />, title: SALLE.classement, desc: SALLE.classementDesc },
-        ]}
-      />
-    </>
-  );
+  const past = exams.filter((e) => e.status === "closed").sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
+  const ordre = [...past, ...upcoming];
+  // l'anneau s'ouvre sur le prochain examen ; sans examen à venir, sur le dernier passé
+  const depart = upcoming.length > 0 ? past.length : Math.max(0, ordre.length - 1);
+  const pieces: Piece[] = ordre.map((e, i) => ({
+    cle: e.id,
+    href: `/mock-exams/${e.id}`,
+    numero: String(i + 1).padStart(2, "0"),
+    code: moisCourt(new Date(e.scheduled_at)),
+    titre: e.title,
+  }));
 
   return (
-    <div className="rl-page">
-      <div className="flex flex-col gap-7 md:gap-10">
-        <PageHero
-          kicker={
-            <span className="inline-flex items-center gap-1.5">
-              <Icone nom="examen" size={15} /> {SALLE.kicker} · {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
-            </span>
-          }
-          title={SALLE.titre}
+    <SousPage
+      entete={
+        <EnTeteSousPage
+          retour={RETOUR_AFFRONTER}
+          titre={E.titre}
+          ligne={eloEnabled ? LISTE.sousClasse : LISTE.sous}
+          illustration={{ nom: "mock-grande-salle", position: "center 40%" }}
         />
-
-        {next ? (
-          <div className="flex flex-col gap-4 md:gap-[18px]">
-            <RangeeLieu
-              droite={<GrandeSalle e={next} registered={regs.has(next.id)} now={now} />}
-              gauche={
-                <>
-                  <Progression parcours={parcours} />
-                  {suivant && (
-                    <TuileCalme
-                      icone={<Icone nom="examen" size={18} />}
-                      surTitre={SALLE.ensuite(Math.max(0, Math.ceil((new Date(suivant.scheduled_at).getTime() - now) / DAY)))}
-                      titre={suivant.title}
-                      ligne={`${LongDate(new Date(suivant.scheduled_at))} · ${suivant.question_count} questions · ${fmtMinutes(suivant.duration_minutes)}. ${regs.has(suivant.id) ? SALLE.inscrit : suivant.status === "open" ? "Inscription ouverte." : SALLE.etatPrepa}`}
-                      actions={
-                        <Link href={`/mock-exams/${suivant.id}`} className="btn btn-secondary rl-press min-h-[38px] px-3.5 text-[13.5px]">
-                          {regs.has(suivant.id) ? LISTE.voir : SALLE.inscrire} <ArrowRight size={15} aria-hidden />
-                        </Link>
-                      }
-                    />
-                  )}
-                </>
-              }
-            />
-            {bande}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4 md:gap-[18px]">
-            <section className="card-quiet rl-in grid place-items-center gap-2 px-6 py-12 text-center">
-              <Icone nom="examen" size={26} className="text-muted" />
-              <p className="t-h3 m-0">{LISTE.videTitre}</p>
-              <p className="t-small m-0">{LISTE.videTexte}</p>
-            </section>
-            {bande}
-          </div>
-        )}
-      </div>
-
-      {later.length > 0 && (
-        <section className="rl-section">
-          <SectionHead title={LISTE.ensuite} meta={LISTE.nExamens(later.length)} />
-          <ul className="card m-0 list-none divide-y divide-line overflow-hidden p-0">
-            {later.map((e) => (
-              <ExamRow key={e.id} e={e} registered={regs.has(e.id)} eloApplied={false} now={now} />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {past.length > 0 && (
-        <section className="rl-section">
-          <SectionHead title={LISTE.passes} meta={LISTE.passesMeta} />
-          <ul className="card-quiet m-0 list-none divide-y divide-line overflow-hidden p-0">
-            {past.map((e) => (
-              <ExamRow key={e.id} e={e} registered={regs.has(e.id)} eloApplied={Boolean(eloApplied[e.id])} now={now} past />
-            ))}
-          </ul>
-        </section>
-      )}
-
+      }
+    >
+      <CadreZones
+        gauche={{
+          titre: E.prochain,
+          contenu: pieces.length > 0 ? <Carrousel forme="sceau" pieces={pieces} action={E.ouvrir} depart={depart} /> : <p className="t-small m-0">{E.vide}</p>,
+        }}
+        droite={{ titre: E.classement, contenu: <ListeCourte lignes={classement} vide={E.classementVide} /> }}
+      />
       {admin}
-    </div>
+    </SousPage>
   );
+}
+
+/** L'état d'un examen en quelques mots : en préparation, ouvert jusqu'au…, ouverture dans…, terminé. */
+export function etatExamen(exam: Pick<MockExam, "scheduled_at" | "window_days" | "status">, now: number): string {
+  const w = examWindow(exam, now);
+  return exam.status === "draft"
+    ? LISTE.enPreparation
+    : exam.status === "closed" || w.over
+      ? DETAIL.termine
+      : w.open
+        ? LISTE.ouvertJusquau(dayMonth(w.end))
+        : DETAIL.ouvertureDans(w.hoursToStart, w.daysToStart);
+}
+
+/** La ligne de l'en-tête d'un examen : son état, son format, classé ou non. */
+export function ligneExamen(
+  exam: Pick<MockExam, "scheduled_at" | "window_days" | "status" | "question_count" | "duration_minutes">,
+  eloEnabled: boolean,
+  now: number,
+): string {
+  return [etatExamen(exam, now), `${exam.question_count} questions`, fmtMinutes(exam.duration_minutes), eloEnabled ? DETAIL.classe : null]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 // ── Détail ─────────────────────────────────────────────────────────────────
 
+/** L'ancien en-tête d'un examen (la page passe par EnTeteSousPage et ligneExamen) ; gardé pour les aperçus. */
 export function MockExamHeader({
   exam,
   eloEnabled,
@@ -273,15 +148,7 @@ export function MockExamHeader({
   now: number;
 }) {
   const date = new Date(exam.scheduled_at);
-  const w = examWindow(exam, now);
-  const state =
-    exam.status === "draft"
-      ? LISTE.enPreparation
-      : exam.status === "closed" || w.over
-        ? DETAIL.termine
-        : w.open
-          ? LISTE.ouvertJusquau(dayMonth(w.end))
-          : DETAIL.ouvertureDans(w.hoursToStart, w.daysToStart);
+  const state = etatExamen(exam, now);
   return (
     <PageHead
       back={{ href: "/mock-exams", label: DETAIL.retour }}

@@ -20,14 +20,17 @@ import { QUETE_VEILLE, pinceauPose } from "@/lib/codex/calendrier";
 import { ArbreCodex, Chemin, CodexTel, SegmentsTel, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
 import { quetesDeLaCarte, segmentDe, type VueSegment } from "@/lib/codex/carte";
 import { Feuille } from "@/components/ui/Feuille";
+import { EnTeteSousPage } from "@/components/ui/SousPage";
+import { SOUS_MOI } from "@/lib/voice-moi";
 import { annoncerDevoile } from "@/components/codex/annoncer";
 import e from "./Encre.module.css";
 import c from "./CodexEcran.module.css";
 import j from "./Aujourdhui.module.css";
 
-// L'écran du Codex (/codex), Codex simplifié (§3.3, §3.4) : le titre
-// « Codex », puis deux segments, sur téléphone comme sur ordinateur, gardés
-// dans l'URL (?vue=) :
+// L'écran du Codex (/codex), Codex simplifié (§3.3, §3.4) : l'en-tête commun
+// des sous-pages (retour à Moi, d'où l'on entre au Codex ; titre « Codex » ;
+// la peinture du lieu), puis deux segments, sur téléphone comme sur
+// ordinateur, gardés dans l'URL (?vue=) :
 //   Aujourd'hui    « À récupérer », le fil (la séance du jour en étapes, un
 //                  seul bouton plein) et les replis d'une ligne (Quêtes du
 //                  jour, Fait aujourd'hui, Préparation, l'acte, Ta semaine) :
@@ -166,7 +169,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
 
   return (
     <div className={`rl-wide rl-page ${e.carnet} ${c.page}`}>
-      <h1 className="t-h3 font-brand m-0">{CODEX.nom}</h1>
+      <EnTeteSousPage retour={SOUS_MOI.retour} titre={CODEX.nom} illustration={{ nom: "reviser-carnets", position: "50% 45%" }} />
       <div className={c.segments}>
         <SegmentsTel segment={segment === "carte" ? "tout" : segment} onChoisir={choisirSegment} />
       </div>

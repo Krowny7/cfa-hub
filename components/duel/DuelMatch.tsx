@@ -9,7 +9,9 @@ import { PARTIE } from "@/lib/voice-z2";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { DuelSide, StakeTile } from "@/components/duel/parts";
 import { EcranVs } from "@/components/arene/EcranVs";
+import { ColonneSeance } from "@/components/ui/SousPage";
 import { ARENE } from "@/lib/voice-arene";
+import { SOUS_AFFRONTER } from "@/lib/voice-affronter-sous";
 import {
   answerDuel,
   clock,
@@ -41,6 +43,8 @@ type Props = {
     /** commencer par l'écran « Prêt ? » */
     intro?: boolean;
   };
+  /** l'en-tête commun de la page (EnTeteSousPage), montré avant de commencer seulement */
+  entete?: React.ReactNode;
 };
 
 type Phase = "intro" | "loading" | "play" | "done";
@@ -48,7 +52,7 @@ type Phase = "intro" | "loading" | "play" | "done";
 // Le match (maquette V2-Duel-match) : en-tête « toi contre l'adversaire »,
 // chrono, avancement des deux joueurs, une question à la fois. La correction
 // et le score restent côté serveur jusqu'à la fin du duel.
-export function DuelMatch({ state, myMastery = null, demo }: Props) {
+export function DuelMatch({ state, myMastery = null, demo, entete = null }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => (demo ? null : createClient()), [demo]);
   const n = state.questionCount;
@@ -255,7 +259,10 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
   const low = phase === "play" && remaining <= 300;
 
   return (
-    <div className="grid gap-6 md:gap-8">
+    <>
+      {/* l'en-tête commun de la page : avant de commencer seulement (pendant la partie, la barre suffit) */}
+      {(phase === "intro" || phase === "loading") && entete}
+    <ColonneSeance>
       {/* L'écran VS à l'arrivée sur un duel pas encore commencé : le chrono ne part qu'à « Commencer », qui le retire */}
       {!demo && !state.me.startedAt && them && (
         <EcranVs
@@ -293,13 +300,10 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
       </header>
 
       {phase === "intro" || phase === "loading" ? (
-        <section className="card-hero rl-in mx-auto grid w-full max-w-[760px] gap-6 p-6 md:p-9">
+        <section className="card-hero rl-in grid w-full gap-6 p-6 md:p-9">
           <div>
-            <p className="kicker m-0">
-              {state.mode === "random" && !them ? "Duel au hasard" : `Contre ${theirName}`}
-              {" · expire dans "}
-              {timeLeftLabel(state.expiresAt, state.serverNow)}
-            </p>
+            {/* contre qui : dans l'en-tête de la page */}
+            <p className="kicker m-0">{SOUS_AFFRONTER.duel.expire(timeLeftLabel(state.expiresAt, state.serverNow))}</p>
             <h2 className="t-h1 m-0 mt-1.5">{PARTIE.avant}</h2>
           </div>
           <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
@@ -340,12 +344,12 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
           </div>
         </section>
       ) : phase === "done" || !q ? (
-        <section className="card rl-in mx-auto grid w-full max-w-[820px] place-items-center gap-2 p-8 text-center">
+        <section className="card rl-in grid w-full place-items-center gap-2 p-8 text-center">
           <h2 className="m-0 text-[24px] font-extrabold tracking-[-0.02em]">{PARTIE.copieRendueTitre}</h2>
           <p className="m-0 text-sm text-muted">{PARTIE.compare}</p>
         </section>
       ) : (
-        <div className="mx-auto grid w-full max-w-[820px] gap-[22px]">
+        <div className="grid w-full gap-[22px]">
           <p className="kicker m-0">
             Question {q.position + 1} sur {n} · {duelTopicLabel(q.topic)}
           </p>
@@ -416,7 +420,8 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </ColonneSeance>
+    </>
   );
 }
 
