@@ -2,7 +2,9 @@ import { shelfRows } from "@/components/reviser/Briques";
 import { AvanceFlashcards } from "@/components/reviser/AvanceFlashcards";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { pad2 } from "@/components/reviser/rail";
-import { Presentoir, type FormePiece } from "@/components/ui/Presentoir";
+import { Presentoir, type FormePiece, type Piece } from "@/components/ui/Presentoir";
+import { Carrousel } from "@/components/ui/Carrousel";
+import s from "./ListeReviser.module.css";
 import type { SubjectAvailability } from "@/components/reviser/catalog";
 import { LegendeAvance } from "@/components/reviser/Pastilles";
 import { CadrePrincipal, EnTeteSousPage, SousPage, type Ambiance } from "@/components/ui/SousPage";
@@ -29,6 +31,7 @@ export function ListeReviser({
   actions,
   apres,
   avances,
+  croupier,
 }: {
   kind: KindListe;
   subjects: SubjectAvailability[];
@@ -36,32 +39,39 @@ export function ListeReviser({
   actions?: React.ReactNode;
   apres?: React.ReactNode;
   avances?: AvancesProgramme;
+  /** flashcards : le panneau de droite (Léonard et la partie de cartes) ; à gauche, le carrousel des paquets */
+  croupier?: React.ReactNode;
 }) {
   const l = LIEUX[kind];
   const rows = shelfRows(kind, subjects);
   const suivi = kind === "cartes" && avances && Object.keys(avances.matieres).length > 0 ? avances : undefined;
+  const pieces: Piece[] = rows.map((r) => {
+      const avance = r.href ? suivi?.matieres[r.key] : undefined;
+      return {
+        cle: r.key,
+        href: r.href,
+        numero: pad2(r.index),
+        code: CODES[r.key] ?? r.key.slice(0, 3).toUpperCase(),
+        titre: r.name,
+        ligne: r.href ? r.meta : RV.aVenirUne,
+        pct: r.href ? r.pct : undefined,
+        pied: avance && suivi ? <AvanceFlashcards suivi={avance} joueur={suivi.joueur} /> : undefined,
+      };
+    });
   return (
     <SousPage entete={<EnTeteSousPage retour={RETOUR.reviser} titre={l.titre} ligne={l.desc} actions={actions} illustration={{ nom: l.illustration, position: l.position }} />}>
-      <CadrePrincipal ambiance={AMBIANCE[kind]} titre={RV.programme} aide={RV.programmeAide} tete={suivi ? <LegendeAvance /> : undefined}>
-        <Presentoir
-          forme={FORME[kind]}
-          ton={kind === "cartes" ? "sombre" : undefined}
-          label={RV.programme}
-          pieces={rows.map((r) => {
-            const avance = r.href ? suivi?.matieres[r.key] : undefined;
-            return {
-              cle: r.key,
-              href: r.href,
-              numero: pad2(r.index),
-              code: CODES[r.key] ?? r.key.slice(0, 3).toUpperCase(),
-              titre: r.name,
-              ligne: r.href ? r.meta : RV.aVenirUne,
-              pct: r.href ? r.pct : undefined,
-              pied: avance && suivi ? <AvanceFlashcards suivi={avance} joueur={suivi.joueur} /> : undefined,
-            };
-          })}
-        />
-      </CadrePrincipal>
+      {kind === "cartes" && croupier ? (
+        <CadrePrincipal ambiance="tapis" titre={RV.cartesTitre} aide={RV.cartesAide} tete={suivi ? <LegendeAvance /> : undefined}>
+          <div className={s.tapis}>
+            <Carrousel pieces={pieces} action={RV.cartesOuvrir} />
+            {croupier}
+          </div>
+        </CadrePrincipal>
+      ) : (
+        <CadrePrincipal ambiance={AMBIANCE[kind]} titre={RV.programme} aide={RV.programmeAide} tete={suivi ? <LegendeAvance /> : undefined}>
+          <Presentoir forme={FORME[kind]} ton={kind === "cartes" ? "sombre" : undefined} label={RV.programme} pieces={pieces} />
+        </CadrePrincipal>
+      )}
       {apres}
     </SousPage>
   );

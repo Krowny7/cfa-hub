@@ -36,6 +36,9 @@ export const PARTIE_ENTREE = {
   ligneMatiere: (matiere: string) => `Une partie sur ${matiere} : Léonard distribue, tu retournes, tu gagnes un jeton par carte maîtrisée.`,
   actionMatiere: "Partie de cartes",
   aide: "Une partie de flashcards où Léonard de Vinci est le croupier",
+  /** la bulle de Léonard, à droite du carrousel des flashcards */
+  invite: "Une partie ? Je distribue, tu retournes. Chaque carte maîtrisée te rapporte un jeton.",
+  lancer: "Lancer une partie",
 } as const;
 
 // ---------------------------------------------------------------------------

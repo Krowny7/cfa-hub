@@ -17,7 +17,8 @@ import { clesAvances, suiviProgramme } from "@/lib/flashcards/avancement";
 import { compterCartesMarquees } from "@/lib/flashcards/marquees";
 import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
 import { MARQUE_CARTE } from "@/lib/voice-z3c";
-import { ActionContour } from "@/components/ui/SousPage";
+import { ActionContour, ActionEncre } from "@/components/ui/SousPage";
+import { PanneauCroupier } from "@/components/flashcards/partie/PanneauCroupier";
 import { PARTIE_ENTREE } from "@/lib/voice-partie";
 import { subjectFromParam } from "@/components/ContentDetailHeader";
 
@@ -144,11 +145,15 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       kind="cartes"
       subjects={subjectsAvail}
       avances={avances}
+      croupier={
+        <PanneauCroupier pose="moqueur" bulle={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.invite}>
+          <ActionEncre href={hrefPartie}>
+            <Spade size={16} aria-hidden /> {PARTIE_ENTREE.lancer}
+          </ActionEncre>
+        </PanneauCroupier>
+      }
       actions={
         <>
-          <ActionContour href={hrefPartie} aide={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.aide}>
-            <Spade size={16} aria-hidden /> {PARTIE_ENTREE.actionMatiere}
-          </ActionContour>
           {nMarquees ? (
             <ActionContour href="/flashcards/marquees" aide={MARQUE_CARTE.entreeAide}>
               <Bookmark size={15} fill="currentColor" aria-hidden /> {MARQUE_CARTE.entree(nMarquees)}

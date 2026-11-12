@@ -1,0 +1,180 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { Piece } from "@/components/ui/Presentoir";
+import { ActionEncre } from "@/components/ui/SousPage";
+import s from "./Carrousel.module.css";
+
+// Le carrousel (idée de Théo, 2026-11-12, pour les flashcards) : les matières en anneau de cartes à
+// jouer, vu en perspective. On le tourne en faisant défiler à l'horizontale (pavé tactile, ou
+// Maj + molette), en le glissant (souris, doigt), aux flèches du clavier, aux boutons ‹ ›, ou en
+// cliquant une carte de côté, qui vient devant. La carte de devant s'ouvre ; dessous, sa matière,
+// son avancement et l'action. Au repos, l'anneau se cale sur la carte la plus proche. Le dos des
+// cartes se voit quand elles passent derrière. Sans mouvement réduit : pas de transition.
+
+const CALAGE_MS = 140;
+
+export function Carrousel({ pieces, action, depart = 0 }: { pieces: Piece[]; action: string; depart?: number }) {
+  const n = pieces.length;
+  const pas = 360 / Math.max(1, n);
+  const [pos, setPos] = useState(depart);
+  const [libre, setLibre] = useState(false);
+  const posRef = useRef(depart);
+  const minuteur = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const glisse = useRef<{ x: number; depart: number; bouge: boolean } | null>(null);
+  /** le dernier geste était un glissement : le clic qui le suit ne doit rien ouvrir */
+  const aGlisse = useRef(false);
+  const scene = useRef<HTMLDivElement | null>(null);
+
+  const actif = ((Math.round(pos) % n) + n) % n;
+  const p = pieces[actif];
+
+  function aller(v: number, transition = true) {
+    posRef.current = v;
+    setLibre(!transition);
+    setPos(v);
+  }
+  function caler() {
+    if (minuteur.current) clearTimeout(minuteur.current);
+    minuteur.current = setTimeout(() => aller(Math.round(posRef.current)), CALAGE_MS);
+  }
+  /** amène la carte i devant, par le plus court chemin */
+  function vers(i: number) {
+    const ici = posRef.current;
+    const base = ici - (((ici % n) + n) % n);
+    let cible = base + i;
+    if (cible - ici > n / 2) cible -= n;
+    if (ici - cible > n / 2) cible += n;
+    aller(cible);
+  }
+
+  // défilement horizontal (pavé tactile, Maj + molette) : écouteur non passif pour garder la page immobile
+  useEffect(() => {
+    const el = scene.current;
+    if (!el) return;
+    const roue = (e: WheelEvent) => {
+      const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.shiftKey ? e.deltaY : 0;
+      if (!dx) return;
+      e.preventDefault();
+      aller(posRef.current + dx / 160, false);
+      caler();
+    };
+    el.addEventListener("wheel", roue, { passive: false });
+    return () => el.removeEventListener("wheel", roue);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [n]);
+
+  useEffect(() => () => void (minuteur.current && clearTimeout(minuteur.current)), []);
+
+  if (!n) return null;
+  const rayon = `calc(var(--carte) / 2 / ${Math.tan(Math.PI / n).toFixed(4)} + 26px)`;
+
+  return (
+    <div className={s.carrousel}>
+      <div
+        ref={scene}
+        className={s.scene}
+        role="listbox"
+        tabIndex={0}
+        aria-label={action}
+        aria-activedescendant={`carte-${pieces[actif]?.cle}`}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight") aller(Math.round(posRef.current) + 1);
+          else if (e.key === "ArrowLeft") aller(Math.round(posRef.current) - 1);
+          else return;
+          e.preventDefault();
+        }}
+        onPointerDown={(e) => {
+          aGlisse.current = false;
+          glisse.current = { x: e.clientX, depart: posRef.current, bouge: false };
+        }}
+        onPointerMove={(e) => {
+          const g = glisse.current;
+          if (!g) return;
+          const dx = e.clientX - g.x;
+          if (!g.bouge && Math.abs(dx) < 6) return;
+          if (!g.bouge) (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+          g.bouge = true;
+          aller(g.depart - dx / 110, false);
+        }}
+        onPointerUp={() => {
+          aGlisse.current = !!glisse.current?.bouge;
+          if (aGlisse.current) aller(Math.round(posRef.current));
+          glisse.current = null;
+        }}
+        onPointerCancel={() => {
+          glisse.current = null;
+          aller(Math.round(posRef.current));
+        }}
+      >
+        <div className={s.anneau} data-libre={libre ? "1" : undefined} style={{ transform: `translateZ(calc(-1 * ${rayon})) rotateY(${-pos * pas}deg)` }}>
+          {pieces.map((c, i) => {
+            const devant = i === actif;
+            const carte = (
+              <>
+                <span className={s.recto}>
+                  <span className={s.coin}>
+                    {c.numero}
+                    <span className={s.enseigne}>♠</span>
+                  </span>
+                  <b className={s.code}>{c.code}</b>
+                  <span className={s.coinBas}>{c.numero}</span>
+                </span>
+                <span className={s.verso} aria-hidden />
+              </>
+            );
+            return (
+              <div
+                key={c.cle}
+                id={`carte-${c.cle}`}
+                role="option"
+                aria-selected={devant}
+                aria-label={c.titre}
+                className={s.place}
+                data-devant={devant ? "1" : undefined}
+                data-indispo={c.href ? undefined : "1"}
+                style={{ transform: `rotateY(${i * pas}deg) translateZ(${rayon})` }}
+              >
+                {devant && c.href ? (
+                  <Link href={c.href} className={s.carte} draggable={false} onClick={(e) => aGlisse.current && e.preventDefault()}>
+                    {carte}
+                  </Link>
+                ) : (
+                  <button type="button" className={s.carte} tabIndex={-1} onClick={() => !aGlisse.current && vers(i)}>
+                    {carte}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className={s.pied}>
+        <button type="button" className={s.fleche} aria-label="‹" onClick={() => aller(Math.round(posRef.current) - 1)}>
+          <ChevronLeft size={18} aria-hidden />
+        </button>
+        {p && (
+          <div className={s.choisie} aria-live="polite">
+            <span className={s.surtitre}>
+              {p.numero} · {p.code}
+            </span>
+            <span className={s.titre}>{p.titre}</span>
+            {p.ligne && <span className={s.ligne}>{p.ligne}</span>}
+            {p.pied}
+            {p.href && (
+              <span className={s.ouvrir}>
+                <ActionEncre href={p.href}>{action}</ActionEncre>
+              </span>
+            )}
+          </div>
+        )}
+        <button type="button" className={s.fleche} aria-label="›" onClick={() => aller(Math.round(posRef.current) + 1)}>
+          <ChevronRight size={18} aria-hidden />
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -116,6 +116,10 @@ export const RV = {
   coursLigneNeuve: (modules: number, minutes: number) => `${modules} modules, ${minutes} min.`,
   coursEcouter: "Écouter le cours",
   programme: "Le programme, matière par matière",
+  /** le carrousel des flashcards */
+  cartesTitre: "Choisis ta matière",
+  cartesAide: "fais tourner les paquets",
+  cartesOuvrir: "Voir ses paquets",
   programmeAide: "ta maîtrise · en filigrane, ce qui arrive",
   // flashcards : les cartes déjà vues de chaque matière, une pastille par paquet
   avanceVues: (vues: number, total: number) => `${vues}/${total} vues`,
