@@ -32,6 +32,7 @@ export function ListeReviser({
   avances,
   croupier,
   titreCroupier,
+  choisie,
 }: {
   kind: KindListe;
   subjects: SubjectAvailability[];
@@ -41,6 +42,8 @@ export function ListeReviser({
   croupier?: React.ReactNode;
   /** le titre de la colonne de droite, dans la bande noire */
   titreCroupier?: string;
+  /** la matière montrée dans l'annexe : le carrousel s'ouvre sur elle */
+  choisie?: string;
 }) {
   const l = LIEUX[kind];
   const rows = shelfRows(kind, subjects);
@@ -69,7 +72,7 @@ export function ListeReviser({
               {titreCroupier && <h2 className={s.zone + " " + s.zoneDroite}>{titreCroupier}</h2>}
             </div>
             <div className={s.gauche}>
-              <Carrousel pieces={pieces} action={RV.cartesOuvrir} />
+              <Carrousel pieces={pieces} action={RV.cartesOuvrir} depart={Math.max(0, pieces.findIndex((x) => x.cle === choisie))} />
             </div>
             {croupier}
           </div>

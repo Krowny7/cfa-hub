@@ -198,3 +198,17 @@ export function CadrePrincipal({
     </section>
   );
 }
+
+/**
+ * Le cadre annexe (choix de Théo, 2026-11-12) : sous le cadre principal, le même cadre classique,
+ * sa bande noire de titre en haut (blanche la nuit), puis son contenu. Pour ce qui complète
+ * l'essentiel de la page (les paquets d'une matière…).
+ */
+export function CadreAnnexe({ titre, children, id }: { titre: React.ReactNode; children: React.ReactNode; id?: string }) {
+  return (
+    <section id={id} className={s.annexe} aria-label={typeof titre === "string" ? titre : undefined}>
+      <h2 className={s.annexeBande}>{titre}</h2>
+      <div className={s.annexeCorps}>{children}</div>
+    </section>
+  );
+}

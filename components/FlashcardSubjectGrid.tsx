@@ -51,7 +51,6 @@ export function FlashcardSubjectGrid({
       srs
       progressLabel="vues"
       emptyLabel="Les cartes de cette matière sont en préparation."
-      note="Ta répétition espacée est enregistrée sur cet appareil : les cartes à revoir passent en premier."
     />
   );
 }

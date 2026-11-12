@@ -15,6 +15,7 @@ import { lireProgressions } from "@/lib/flashcards/progression-serveur";
 import { clesAvances, suiviProgramme } from "@/lib/flashcards/avancement";
 import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
 import { CoteCroupier } from "@/components/reviser/CoteCroupier";
+import { CadreAnnexe } from "@/components/ui/SousPage";
 import { PARTIE_ENTREE } from "@/lib/voice-partie";
 import { subjectFromParam } from "@/components/ContentDetailHeader";
 
@@ -134,6 +135,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       subjects={subjectsAvail}
       avances={avances}
       titreCroupier={PARTIE_ENTREE.titreZone}
+      choisie={paquets?.groups[0]?.key}
       croupier={
         <CoteCroupier titre={PARTIE_ENTREE.titreZone} href={hrefPartie} aide={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.aide} />
       }
@@ -141,16 +143,15 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
         <>
           <SynchroMarquesCartes joueur={user.id} />
           {paquets && (
-            <section id="paquets" className="rl-section scroll-mt-24" aria-label={RV.lesPaquets(paquets.name)}>
-              <h2 className="t-h2 m-0">{RV.lesPaquets(paquets.name)}</h2>
+            <CadreAnnexe id="paquets" titre={RV.lesPaquets(paquets.name)}>
               <FlashcardPaquets groups={paquets.groups} basePath="/flashcards" etats={etats} />
               {memo && (
-                <div className="mt-6 grid gap-3 md:mt-10">
-                  <h2 className="t-h2 m-0">{BOUCLE.memoCartesTitre(60)}</h2>
+                <div className="grid gap-3">
+                  <h3 className="t-h3 m-0">{BOUCLE.memoCartesTitre(60)}</h3>
                   <Memo src={memo.img} pdf={memo.pdf} titre={BOUCLE.memoCartesTitre(60)} ratio={RATIO_CARTES} />
                 </div>
               )}
-            </section>
+            </CadreAnnexe>
           )}
         </>
       }
