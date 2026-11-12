@@ -28,15 +28,12 @@ const FORME: Record<KindListe, FormePiece> = { fiche: "carnet", cours: "livret",
 export function ListeReviser({
   kind,
   subjects,
-  actions,
   apres,
   avances,
   croupier,
 }: {
   kind: KindListe;
   subjects: SubjectAvailability[];
-  /** les actions secondaires de l'en-tête (à contour) */
-  actions?: React.ReactNode;
   apres?: React.ReactNode;
   avances?: AvancesProgramme;
   /** flashcards : le panneau de droite (Léonard et la partie de cartes) ; à gauche, le carrousel des paquets */
@@ -59,9 +56,9 @@ export function ListeReviser({
       };
     });
   return (
-    <SousPage entete={<EnTeteSousPage retour={RETOUR.reviser} titre={l.titre} ligne={l.desc} actions={actions} illustration={{ nom: l.illustration, position: l.position }} />}>
+    <SousPage entete={<EnTeteSousPage retour={RETOUR.reviser} titre={l.titre} ligne={l.desc} illustration={{ nom: l.illustration, position: l.position }} />}>
       {kind === "cartes" && croupier ? (
-        <CadrePrincipal titre={RV.cartesTitre} aide={RV.cartesAide} tete={suivi ? <LegendeAvance /> : undefined}>
+        <CadrePrincipal>
           <div className={s.tapis}>
             <Carrousel pieces={pieces} action={RV.cartesOuvrir} />
             {croupier}

@@ -11,7 +11,6 @@ import {
   CloudOff,
   Download,
   ExternalLink,
-  FileText,
   ListChecks,
   Lock,
   Maximize2,
@@ -33,8 +32,8 @@ import { createSupabaseFicheApi, type FicheApi, type LogStorage } from "@/lib/fi
 import { clearRun, loadRun, restoreRun, saveRun, type RestoredRun } from "@/lib/ficheRunStore";
 import { anneau as voixAnneau, ligneAnneauSession, RATURE, VIDE } from "@/lib/voice";
 import { CARNET, FICHE, QUIZ, aReprendre, dateCourte, jourParis, lundiParis, memeJour, rateeFois, reprendreRatures } from "@/lib/voice-z4";
-import { OP, RETOUR } from "@/lib/voice-reviser";
-import { ActionContour, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { RETOUR } from "@/lib/voice-reviser";
+import { EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import {
   buildErrorPoolExport,
   computePageProgress,
@@ -431,39 +430,6 @@ export function FicheWorkspace({
   const activeTheme = pageTheme(activePage?.title);
   const successPct = totals.attempts > 0 ? Math.round(((totals.attempts - totals.wrong) / totals.attempts) * 100) : 0;
 
-  // à droite de l'en-tête : l'état global de la fiche, puis le one-pager (à contour)
-  const etatFiche = (
-    <div className="w-full md:w-[300px]">
-      {logLoading ? (
-        <div className="rl-skel h-[38px]" />
-      ) : (
-        <>
-          <div className="flex items-baseline justify-between gap-3 text-[12.5px] text-muted">
-            <span>
-              <span className="font-mono text-[13px] font-semibold text-white tabular-nums">{totals.mastered}</span>
-              <span className="font-mono tabular-nums">/{totals.total}</span> {FICHE.maitrisees(totals.mastered)}
-            </span>
-            {totals.weak > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setRun(null);
-                  changeTab("errors");
-                  setMobileView("train");
-                }}
-                className="font-semibold text-pen underline-offset-4 hover:underline"
-              >
-                {aReprendre(totals.weak)}
-              </button>
-            ) : (
-              <span>{rows.length === 0 ? "pas encore commencée" : VIDE.ratures.toLowerCase().replace(/[.]$/, "")}</span>
-            )}
-          </div>
-          <StackBar className="mt-2.5" mastered={totals.mastered} weak={totals.weak} total={totals.total} />
-        </>
-      )}
-    </div>
-  );
 
   return (
     <SousPage
@@ -473,16 +439,6 @@ export function FicheWorkspace({
           retour={{ href: backHref, label: backLabel }}
           titre={title}
           ligne={description}
-          actions={
-            <>
-              {etatFiche}
-              {onePagerUrl && (
-                <ActionContour href={onePagerUrl} aide={OP.lienFicheAide} nouvelOnglet>
-                  <FileText size={15} aria-hidden /> {OP.lienFiche}
-                </ActionContour>
-              )}
-            </>
-          }
         />
       }
     >

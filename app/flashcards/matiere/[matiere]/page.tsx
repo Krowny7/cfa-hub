@@ -1,12 +1,11 @@
 import { notFound, redirect } from "next/navigation";
-import { FileText, Spade } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { CFA_SUBJECTS, groupBySubject, plural } from "@/components/ContentDetailHeader";
 import { FlashcardReview, type FlashcardCard } from "@/components/FlashcardReview";
 import { MatiereVide, PaquetsDeLaMatiere } from "@/components/flashcards/Panneaux";
-import { ActionContour, ActionEncre, ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { ficheCartesFile, fichePaquetFile, memoCartesImage, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
 import { Memo } from "@/components/flashcards/Memo";
 import { RATIO_CARTES } from "@/lib/flashcards/memos";
@@ -16,7 +15,6 @@ import { cleMatiere, cleSet, etatAffiche, etatListe } from "@/lib/flashcards/pro
 import { lireProgressions } from "@/lib/flashcards/progression-serveur";
 import { EtatPaquetVivant } from "@/components/flashcards/EtatPaquetVivant";
 import { MATIERE_CARTES } from "@/lib/voice-z3c";
-import { PARTIE_ENTREE } from "@/lib/voice-partie";
 import { RETOUR } from "@/lib/voice-reviser";
 
 type PageProps = { params: Promise<{ matiere: string }> };
@@ -134,15 +132,9 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
   const idsDe = (setId: string) => cards.filter((c) => c.setId === setId).map((c) => c.id);
 
   // Gabarit C des sous-pages : l'en-tête commun (retour aux flashcards, la matière, une ligne
-  // et la pastille de la boucle ; une seule action à l'encre, « Partie de cartes », et au plus
-  // une à contour : le one-pager, sinon la fiche des cartes quand aucun mémo ne la propose
-  // plus bas), puis la colonne des séances (760 px).
+  // et la pastille de la boucle ; aucun bouton dans le cadre, hormis le retour), puis la colonne
+  // des séances (760 px).
   const ligneEntete = [MATIERE_CARTES.toute, ...(cards.length ? [plural(cards.length, "carte", "cartes"), MATIERE_CARTES.paquets(paquets.length)] : [])].join(" · ");
-  const secondaire = onePager
-    ? { href: onePager, libelle: BOUCLE.onePager, aide: BOUCLE.onePagerAide }
-    : ficheCartes && !memoCartes
-      ? { href: ficheCartes, libelle: BOUCLE.ficheCartes(cards.length || 60), aide: BOUCLE.ficheCartesAide }
-      : null;
   return (
     <SousPage
       entete={
@@ -155,22 +147,6 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
               <span>{ligneEntete}</span>
               {cards.length && progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} /> : null}
             </span>
-          }
-          actions={
-            cards.length > 0 || secondaire ? (
-              <>
-                {secondaire && (
-                  <ActionContour href={secondaire.href} aide={secondaire.aide} nouvelOnglet>
-                    <FileText size={16} aria-hidden /> {secondaire.libelle}
-                  </ActionContour>
-                )}
-                {cards.length > 0 && (
-                  <ActionEncre href={`/flashcards/partie?matiere=${subject.key}`}>
-                    <Spade size={16} aria-hidden /> {PARTIE_ENTREE.actionMatiere}
-                  </ActionEncre>
-                )}
-              </>
-            ) : null
           }
         />
       }

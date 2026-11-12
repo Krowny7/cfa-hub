@@ -122,14 +122,6 @@
   line-height: 1.45;
   color: var(--ink-2);
 }
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 4px;
-}
-
 /* les boutons : l'action principale à l'encre de l'espace, la secondaire à contour */
 .action {
   position: relative;
@@ -191,11 +183,14 @@
 
 /* ——— le cadre principal : l'essentiel de la page, dans la matière du lieu ——— */
 .principal {
+  --pad-t: 18px;
+  --pad-x: 18px;
+  --pad-b: 28px;
   position: relative;
   display: grid;
   gap: 18px;
   min-width: 0;
-  padding: 18px 18px 28px;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
   border: 1px solid var(--line);
   border-radius: 24px;
   background: var(--surface);
@@ -204,7 +199,9 @@
 }
 @media (min-width: 820px) {
   .principal {
-    padding: 22px 30px 36px;
+    --pad-t: 22px;
+    --pad-x: 30px;
+    --pad-b: 36px;
   }
 }
 .principalTete {

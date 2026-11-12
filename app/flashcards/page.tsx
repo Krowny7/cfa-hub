@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Bookmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ficheCartesFile, memoCartesImage, subjectByKey } from "@/components/reviser/catalog";
 import { Memo } from "@/components/flashcards/Memo";
@@ -14,10 +13,7 @@ import { RV } from "@/lib/voice-reviser";
 import { cleMatiere, cleSet, etatListe, type EtatListe } from "@/lib/flashcards/progression";
 import { lireProgressions } from "@/lib/flashcards/progression-serveur";
 import { clesAvances, suiviProgramme } from "@/lib/flashcards/avancement";
-import { compterCartesMarquees } from "@/lib/flashcards/marquees";
 import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
-import { MARQUE_CARTE } from "@/lib/voice-z3c";
-import { ActionContour } from "@/components/ui/SousPage";
 import { CoteCroupier } from "@/components/reviser/CoteCroupier";
 import { PARTIE_ENTREE } from "@/lib/voice-partie";
 import { subjectFromParam } from "@/components/ContentDetailHeader";
@@ -86,10 +82,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
     }
   }
 
-  // « Pour commencer » : le premier paquet de la première matière qui en a.
   const groups = flashcardGroups(system, counts);
-  const firstGroup = groups.find((g) => g.rows.length > 0 && !g.key.startsWith("x-")) ?? groups.find((g) => g.rows.length > 0);
-  const first = firstGroup?.rows[0] ?? null;
   const subjects: Record<string, string> = {};
   for (const g of groups) if (!g.key.startsWith("x-")) for (const r of g.rows) subjects[r.id] = g.name;
 
@@ -113,12 +106,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
         })
         .catch(() => null)
     : null;
-  const [subjectsAvail, progressions, nMarquees] = await Promise.all([
-    loadSubjectsSafe(supabase, user.id),
-    lireProgressions(supabase, user.id, cles),
-    // les flashcards marquées (null : table pas encore créée)
-    compterCartesMarquees(supabase),
-  ]);
+  const [subjectsAvail, progressions] = await Promise.all([loadSubjectsSafe(supabase, user.id), lireProgressions(supabase, user.id, cles)]);
   // où en est chaque boucle, par clé « set:<id> » / « matiere:<clé> » ; le
   // nombre de cartes compte celles ajoutées depuis une boucle bouclée
   const etats: Record<string, EtatListe> = {};
@@ -146,21 +134,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       subjects={subjectsAvail}
       avances={avances}
       croupier={
-        <CoteCroupier
-          href={hrefPartie}
-          bulle={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.invite}
-          action={PARTIE_ENTREE.lancer}
-          aide={PARTIE_ENTREE.aide}
-        />
-      }
-      actions={
-        <>
-          {nMarquees ? (
-            <ActionContour href="/flashcards/marquees" aide={MARQUE_CARTE.entreeAide}>
-              <Bookmark size={15} fill="currentColor" aria-hidden /> {MARQUE_CARTE.entree(nMarquees)}
-            </ActionContour>
-          ) : null}
-        </>
+        <CoteCroupier href={hrefPartie} aide={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.aide} />
       }
       apres={
         <>

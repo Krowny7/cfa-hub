@@ -60,20 +60,18 @@ export function LienRetour({ retour, className }: { retour: Retour; className?: 
 }
 
 /**
- * Le début de toutes les sous-pages : un cadre (choix de Théo, 2026-11-12) avec le retour, le titre,
- * une ligne et les actions à gauche, et l'illustration du lieu à droite quand la page en a une.
+ * Le début de toutes les sous-pages : un cadre (choix de Théo, 2026-11-12) avec le retour, le titre et
+ * une ligne à gauche, l'illustration du lieu à droite. Aucun bouton dans le cadre, hormis le retour.
  */
 export function EnTeteSousPage({
   retour,
   titre,
   ligne,
-  actions,
   illustration,
 }: {
   retour: Retour;
   titre: React.ReactNode;
   ligne?: React.ReactNode;
-  actions?: React.ReactNode;
   illustration?: { nom: IllustrationNom; position?: string };
 }) {
   return (
@@ -82,7 +80,6 @@ export function EnTeteSousPage({
         <LienRetour retour={retour} />
         <h1 className={"t-h1 rl-in " + s.titre}>{titre}</h1>
         {ligne && <p className={s.ligne}>{ligne}</p>}
-        {actions && <div className={s.actions}>{actions}</div>}
       </div>
       {illustration && (
         <div className={s.image}>

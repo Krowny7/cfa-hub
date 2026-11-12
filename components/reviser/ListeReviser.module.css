@@ -10,22 +10,36 @@
   .tapis {
     grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
     gap: 30px;
+    align-items: stretch;
   }
 }
 
-/* la colonne de droite : Léonard, le bouton, le petit tapis vert */
-/* sur un fond gris un peu plus foncé que le cadre (choix de Théo) */
+/* la colonne de droite : Léonard et le petit tapis vert, sur un fond gris un peu plus foncé que le
+   cadre, du haut en bas du cadre (elle mange les marges du cadre principal : --pad-*) */
 .cote {
   display: grid;
-  gap: 14px;
-  align-content: start;
+  gap: 16px;
+  align-content: end;
   min-width: 0;
-  padding: 14px;
-  border-radius: 20px;
+  margin: 0 calc(-1 * var(--pad-x, 18px)) calc(-1 * var(--pad-b, 28px));
+  padding: 18px var(--pad-x, 18px) var(--pad-b, 28px);
+  border-radius: 0 0 24px 24px;
   background: color-mix(in srgb, var(--ink) 5%, var(--surface));
 }
-.bouton {
-  display: grid;
+@media (min-width: 980px) {
+  .cote {
+    align-self: stretch;
+    margin: calc(-1 * var(--pad-t, 22px)) calc(-1 * var(--pad-x, 30px)) calc(-1 * var(--pad-b, 36px)) 0;
+    padding: 22px 26px 26px;
+    border-radius: 0 24px 24px 0;
+  }
+}
+.leonard {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+  margin-inline: auto;
 }
 /* le tapis vert : couleurs fixes (il reste vert de nuit) */
 .tapisMini {

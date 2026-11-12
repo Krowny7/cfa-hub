@@ -2,16 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Piece } from "@/components/ui/Presentoir";
-import { ActionEncre } from "@/components/ui/SousPage";
 import s from "./Carrousel.module.css";
 
 // Le carrousel (idée de Théo, 2026-11-12, pour les flashcards) : les matières en anneau de cartes à
 // jouer, vu en perspective. On le tourne en faisant défiler à l'horizontale (pavé tactile, ou
-// Maj + molette), en le glissant (souris, doigt), aux flèches du clavier, aux boutons ‹ ›, ou en
-// cliquant une carte de côté, qui vient devant. La carte de devant s'ouvre ; dessous, sa matière,
-// son avancement et l'action. Au repos, l'anneau se cale sur la carte la plus proche. Le dos des
+// Maj + molette), en le glissant (souris, doigt), aux flèches du clavier, ou en
+// cliquant une carte de côté, qui vient devant. La carte de devant s'ouvre ; dessous, seulement le
+// nom de sa matière (choix de Théo : rien d'autre). Au repos, l'anneau se cale sur la carte la plus proche. Le dos des
 // cartes se voit quand elles passent derrière. Sans mouvement réduit : pas de transition.
 
 const CALAGE_MS = 140;
@@ -152,29 +150,11 @@ export function Carrousel({ pieces, action, depart = 0 }: { pieces: Piece[]; act
         </div>
       </div>
 
-      <div className={s.pied}>
-        <button type="button" className={s.fleche} aria-label="‹" onClick={() => aller(Math.round(posRef.current) - 1)}>
-          <ChevronLeft size={18} aria-hidden />
-        </button>
-        {p && (
-          <div className={s.choisie} aria-live="polite">
-            <span className={s.surtitre}>
-              {p.numero} · {p.code}
-            </span>
-            <span className={s.titre}>{p.titre}</span>
-            {p.ligne && <span className={s.ligne}>{p.ligne}</span>}
-            {p.pied}
-            {p.href && (
-              <span className={s.ouvrir}>
-                <ActionEncre href={p.href}>{action}</ActionEncre>
-              </span>
-            )}
-          </div>
-        )}
-        <button type="button" className={s.fleche} aria-label="›" onClick={() => aller(Math.round(posRef.current) + 1)}>
-          <ChevronRight size={18} aria-hidden />
-        </button>
-      </div>
+      {p && (
+        <p className={s.nom} aria-live="polite">
+          {p.titre}
+        </p>
+      )}
     </div>
   );
 }

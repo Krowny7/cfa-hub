@@ -139,53 +139,15 @@
     0 18px 26px -16px rgba(0, 0, 0, 0.6);
 }
 
-/* sous l'anneau : la matière choisie, entre les deux flèches */
-.pied {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-}
-.fleche {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  border: 1px solid var(--line-2);
-  background: var(--surface);
-  color: var(--ink);
-  transition: border-color 0.15s ease;
-}
-.fleche:hover {
-  border-color: var(--ink-3);
-}
-.choisie {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  min-width: 0;
+/* sous l'anneau : le nom de la matière, rien d'autre */
+.nom {
+  margin: 0;
   text-align: center;
-  color: var(--ink);
-}
-.surtitre {
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--ink-3);
-}
-.titre {
   font-family: var(--font-brand), system-ui, sans-serif;
   font-size: 20px;
   line-height: 1.15;
+  color: var(--ink);
   text-wrap: balance;
-}
-.ligne {
-  font-size: 13px;
-  color: var(--ink-2);
-}
-.ouvrir {
-  margin-top: 8px;
 }
 
 @media (prefers-reduced-motion: reduce) {
