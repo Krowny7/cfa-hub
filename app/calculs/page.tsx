@@ -9,7 +9,8 @@ export const metadata = { title: "Calculs · Ranked Lobby" };
 // Exercices de calcul pur : les 10 matières (ouvertes ou « bientôt ») et le
 // prochain calcul à faire. Rattaché à l'espace S'entraîner (lib/nav.ts).
 // Avant migration_calc.sql, la progression vient du navigateur.
-export default async function CalculsPage() {
+export default async function CalculsPage({ searchParams }: { searchParams: Promise<{ dispo?: string }> }) {
+  const { dispo } = await searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
@@ -18,6 +19,6 @@ export default async function CalculsPage() {
   const subjects = calcSubjectCards().map(({ topic, slug, name, short, open, types, questions }) => ({ topic, slug, name, short, open, types, questions }));
 
   return (
-    <CalcHub subjects={subjects} progress={progress} db={progress !== null} owner={auth.user.id} />
+    <CalcHub subjects={subjects} progress={progress} db={progress !== null} owner={auth.user.id} dispo={dispo} />
   );
 }

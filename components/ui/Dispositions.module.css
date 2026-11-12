@@ -1,0 +1,440 @@
+/* Les trois autres dispositions de la zone de gauche (components/ui/Dispositions.tsx) : le pavé,
+   l'éventail, la sélection. Les objets gardent leur papier de jour comme de nuit ; le boîtier du pavé
+   reste ébène (couleur fixe : --noir devient clair la nuit). */
+
+/* ───────── le pavé ───────── */
+.boitier {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 26px;
+  background: linear-gradient(180deg, #2a1f16, #1a120b);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 22px 34px -22px rgba(0, 0, 0, 0.7);
+}
+@media (min-width: 900px) {
+  .boitier {
+    gap: 18px;
+    padding: 20px 22px 22px;
+  }
+}
+.ecran {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #e6e1d3;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  color: #1a120b;
+}
+.ecranNum {
+  flex: none;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.6;
+}
+.ecranNom {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-size: clamp(18px, 2.2vw, 26px);
+  line-height: 1.1;
+}
+.touches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 900px) {
+  .touches {
+    gap: 14px;
+  }
+}
+.touches li {
+  position: relative;
+  min-width: 0;
+}
+.touche {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 0.92;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #ece6da);
+  box-shadow:
+    inset 0 -6px 0 rgba(0, 0, 0, 0.16),
+    0 6px 0 -2px #0d0906,
+    0 10px 14px -8px rgba(0, 0, 0, 0.8);
+  color: #4a3120;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+a.touche:hover,
+a.touche:focus-visible {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.16),
+    0 3px 0 -2px #0d0906,
+    0 6px 10px -8px rgba(0, 0, 0, 0.8);
+  outline: none;
+}
+a.touche:active {
+  transform: translateY(5px);
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.16),
+    0 1px 0 -1px #0d0906;
+}
+.touche[data-indispo] {
+  opacity: 0.4;
+}
+.toucheNum {
+  position: absolute;
+  top: 7px;
+  left: 9px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b6458;
+}
+.toucheCode {
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(14px, 2.3vw, 26px);
+  line-height: 1;
+}
+/* le voyant de la touche conseillée */
+.touches li[data-conseil] .touche::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d24a32;
+  box-shadow: 0 0 8px 1px rgba(210, 74, 50, 0.7);
+}
+
+/* ───────── l'éventail ───────── */
+.eventail {
+  --carte: 76px;
+  --haut: calc(var(--carte) * 1.4);
+  /* l'écart maximal entre deux cartes, l'ouverture à droite de la carte levée, la rotation, la chute de l'arc */
+  --dxmax: 30px;
+  --ouvre: 34px;
+  --a: 4deg;
+  --dy: 1.6px;
+  container-type: inline-size;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.eventail[data-forme="tuile"] {
+  --haut: calc(var(--carte) * 1.2);
+}
+@media (min-width: 640px) {
+  .eventail {
+    --carte: 104px;
+    --dxmax: 50px;
+    --ouvre: 50px;
+    --a: 4.5deg;
+    --dy: 2.4px;
+  }
+}
+@media (min-width: 900px) {
+  .eventail {
+    --carte: 124px;
+    --dxmax: 62px;
+    --ouvre: 62px;
+    --a: 5deg;
+    --dy: 3px;
+  }
+}
+.main {
+  --n: 10;
+  /* --n vient de la main (posé en ligne) : l'écart se calcule ici */
+  --dx: min(var(--dxmax), calc((100cqw - var(--carte) - var(--ouvre) - 12px) / (var(--n) - 1)));
+  position: relative;
+  height: calc(var(--haut) + 40px + 20 * var(--dy) + 24px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.place {
+  --pousse: calc(var(--ouvre) / -2);
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  width: var(--carte);
+  height: var(--haut);
+  margin-left: calc(var(--carte) / -2);
+  transform: translateX(calc(var(--k) * var(--dx) + var(--pousse))) translateY(calc(var(--k) * var(--k) * var(--dy))) rotate(calc(var(--k) * var(--a)));
+  transition: transform 0.3s cubic-bezier(0.2, 0.85, 0.25, 1.15);
+}
+.place[data-droite] {
+  --pousse: calc(var(--ouvre) / 2);
+}
+.place[data-haut] {
+  transform: translateX(calc(var(--k) * var(--dx) + var(--pousse))) translateY(calc(var(--k) * var(--k) * var(--dy))) rotate(calc(var(--k) * var(--a))) translateY(-30px);
+}
+.carte {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  place-items: center;
+  padding: 9px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 12px;
+  background: #fbf8f2;
+  color: #4a3120;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.08),
+    -6px 14px 22px -14px rgba(0, 0, 0, 0.55);
+  outline: none;
+}
+.carte::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(180, 65, 47, 0.35);
+  border-radius: 8px;
+  pointer-events: none;
+}
+.eventail[data-forme="tuile"] .carte {
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff, #ece6da);
+  box-shadow:
+    inset 0 -6px 0 rgba(0, 0, 0, 0.12),
+    -6px 14px 22px -14px rgba(0, 0, 0, 0.55);
+}
+.eventail[data-forme="tuile"] .carte::after {
+  display: none;
+}
+.carte[data-indispo] {
+  background: #ece8e0;
+  color: #9a9286;
+}
+.carte:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--pal-2, var(--ink)),
+    -6px 14px 22px -14px rgba(0, 0, 0, 0.55);
+}
+.coin,
+.coinBas {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b6458;
+}
+.coin {
+  justify-self: start;
+  display: grid;
+  justify-items: center;
+  line-height: 1.1;
+}
+.coinCode {
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #4a3120;
+}
+@media (min-width: 900px) {
+  .coinCode {
+    font-size: 14px;
+  }
+}
+.coinBas {
+  justify-self: end;
+  transform: rotate(180deg);
+}
+.enseigne {
+  margin-left: 3px;
+  color: #b4412f;
+}
+.code {
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: calc(var(--carte) * 0.24);
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+/* le grand code ne se lit que sur la carte levée ; les autres montrent leur coin */
+.place[data-haut] .code {
+  opacity: 1;
+}
+.nom {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* ───────── la sélection ───────── */
+.niveaux {
+  display: grid;
+  gap: 8px 22px;
+  margin: 0;
+  padding: 0 0 0 18px;
+  list-style: none;
+}
+@media (min-width: 700px) {
+  .niveaux {
+    grid-auto-flow: column;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--lignes), auto);
+  }
+}
+.niveaux li {
+  position: relative;
+  min-width: 0;
+}
+.niveau {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 6px 14px 6px 10px;
+  overflow: hidden;
+  border-radius: 12px;
+  color: var(--ink);
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0.85, 0.25, 1.15),
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+.niveau[data-indispo] {
+  opacity: 0.42;
+}
+/* le curseur du choix, dans la marge */
+.niveau::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -18px;
+  border: 6px solid transparent;
+  border-left: 8px solid var(--ink);
+  transform: translateY(-50%);
+  opacity: 0;
+}
+.niveauNum {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.niveauCode {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #ffffff, #ece6da);
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.14),
+    0 0 0 1px rgba(0, 0, 0, 0.1);
+  color: #4a3120;
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+}
+.niveauNom {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15.5px;
+  font-weight: 650;
+}
+.niveauPct {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.jauge {
+  position: absolute;
+  left: 10px;
+  bottom: 0;
+  height: 3px;
+  max-width: calc(100% - 20px);
+  border-radius: 2px;
+  background: var(--ink-3);
+}
+/* la ligne choisie : l'aplat (noir le jour, clair la nuit), le curseur dans la marge ; elle suit le
+   survol et le clavier, et revient sur la ligne conseillée au repos */
+.niveaux li[data-choisi] .niveau,
+.niveaux li:hover a.niveau,
+.niveaux a.niveau:focus-visible {
+  transform: translateX(6px);
+  background: var(--ink);
+  color: var(--paper);
+  outline: none;
+}
+.niveaux:hover li[data-choisi]:not(:hover) .niveau,
+.niveaux:focus-within li[data-choisi]:not(:focus-within) .niveau {
+  transform: none;
+  background: transparent;
+  color: var(--ink);
+}
+.niveaux li[data-choisi] .niveau::before,
+.niveaux li:hover a.niveau::before,
+.niveaux a.niveau:focus-visible::before {
+  opacity: 1;
+}
+.niveaux:hover li[data-choisi]:not(:hover) .niveau::before,
+.niveaux:focus-within li[data-choisi]:not(:focus-within) .niveau::before {
+  opacity: 0;
+}
+.niveaux li[data-choisi] .niveauNum,
+.niveaux li[data-choisi] .niveauPct,
+.niveaux li:hover a.niveau .niveauNum,
+.niveaux li:hover a.niveau .niveauPct,
+.niveaux a.niveau:focus-visible .niveauNum,
+.niveaux a.niveau:focus-visible .niveauPct {
+  color: inherit;
+  opacity: 0.7;
+}
+.niveaux li[data-choisi] .jauge,
+.niveaux li:hover a.niveau .jauge,
+.niveaux a.niveau:focus-visible .jauge {
+  background: var(--paper);
+}
+.niveaux:hover li[data-choisi]:not(:hover) .niveauNum,
+.niveaux:hover li[data-choisi]:not(:hover) .niveauPct {
+  color: var(--ink-3);
+  opacity: 1;
+}
+.niveaux:hover li[data-choisi]:not(:hover) .jauge {
+  background: var(--ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .touche,
+  .place,
+  .niveau {
+    transition: none;
+  }
+}

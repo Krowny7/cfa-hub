@@ -1,6 +1,7 @@
 "use client";
 
 import { Carrousel } from "@/components/ui/Carrousel";
+import { Eventail, Niveaux, Pave } from "@/components/ui/Dispositions";
 import type { Piece } from "@/components/ui/Presentoir";
 import { ListeCourte, type Ligne } from "@/components/ui/Decors";
 import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
@@ -27,7 +28,8 @@ const S = SOUS_ENTRAINEMENT.calculs;
  * Props : `subjects` (lib/calc/index → calcSubjectCards), `progress` (base, null = repli local),
  * `db` (migration appliquée), `owner` (id du compte, clé du repli local).
  */
-export function CalcHub({ subjects, progress: server, db, owner }: { subjects: CalcHubSubject[]; progress: AllProgress | null; db: boolean; owner: string }) {
+/** `dispo` (essai, 2026-11-12) : « pave », « eventail » ou « niveaux » à la place du carrousel. */
+export function CalcHub({ subjects, progress: server, db, owner, dispo }: { subjects: CalcHubSubject[]; progress: AllProgress | null; db: boolean; owner: string; dispo?: string }) {
   useLocalImport(db, owner);
   const { progress } = useCalcProgress(server, owner);
   const open = subjects.filter((s) => s.open);
@@ -54,6 +56,7 @@ export function CalcHub({ subjects, progress: server, db, owner }: { subjects: C
     numero: numeroPiece(i),
     code: codeMatiere(s.topic, s.name),
     titre: s.name,
+    pct: stats.find((x) => x.s.topic === s.topic)?.precision ?? null,
   }));
   const depart = Math.max(0, pieces.findIndex((p) => p.cle === entree?.topic));
 
@@ -75,7 +78,19 @@ export function CalcHub({ subjects, progress: server, db, owner }: { subjects: C
       entete={<EnTeteSousPage retour={RETOUR_ENTRAINEMENT} titre={CALC.hubTitre} ligne={CALC.hubLigne} illustration={{ nom: "calculs-abaque", position: "50% 55%" }} />}
     >
       <CadreZones
-        gauche={{ titre: S.choisir, contenu: <Carrousel forme="tuile" pieces={pieces} action={S.ouvrir} depart={depart} /> }}
+        gauche={{
+          titre: S.choisir,
+          contenu:
+            dispo === "pave" ? (
+              <Pave pieces={pieces} action={S.ouvrir} depart={depart} />
+            ) : dispo === "eventail" ? (
+              <Eventail forme="tuile" pieces={pieces} action={S.ouvrir} depart={depart} />
+            ) : dispo === "niveaux" ? (
+              <Niveaux pieces={pieces} action={S.ouvrir} depart={depart} />
+            ) : (
+              <Carrousel forme="tuile" pieces={pieces} action={S.ouvrir} depart={depart} />
+            ),
+        }}
         droite={open.length > 0 ? { titre: S.session, contenu: <ListeCourte lignes={lignes} /> } : undefined}
       />
     </SousPage>
