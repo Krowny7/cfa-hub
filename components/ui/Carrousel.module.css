@@ -2,7 +2,7 @@
    fond classique de la page ; les cartes gardent leur papier de jour comme de nuit. */
 
 .carrousel {
-  --carte: 118px;
+  --carte: 128px;
   display: grid;
   align-content: center;
   gap: 4px;
@@ -10,7 +10,7 @@
 }
 @media (min-width: 900px) {
   .carrousel {
-    --carte: 132px;
+    --carte: 160px;
   }
 }
 
@@ -145,7 +145,7 @@
   margin: 0;
   text-align: center;
   font-family: var(--font-brand), system-ui, sans-serif;
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1.15;
   color: var(--ink);
   text-wrap: balance;

@@ -37,7 +37,7 @@
 .leonard {
   display: block;
   width: 100%;
-  max-width: 340px;
+  max-width: 280px;
   height: auto;
   margin-inline: auto;
 }
@@ -134,8 +134,9 @@
 /* le titre de chaque partie du cadre */
 .zone {
   margin: 0;
-  font-size: 17px;
-  font-weight: 750;
-  letter-spacing: -0.01em;
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 760;
+  line-height: 1.05;
+  letter-spacing: -0.034em;
   color: var(--ink);
 }
