@@ -7,7 +7,7 @@ import { CALC_LEVELS } from "@/lib/calc/types";
 /** Le nom d'un calcul sans sa parenthèse (« Taux de croissance (formule) » → « Taux de croissance »). */
 export const nomCourt = (name: string) => name.replace(/\s*\(.*\)$/, "");
 
-export type EtatType = { n: number; pct: number | null; tenus: number; niveaux: LevelState[] };
+export type EtatType = { n: number; ok: number; pct: number | null; tenus: number; niveaux: LevelState[] };
 
 /** Justes sur les derniers rounds (tous niveaux), niveaux tenus et état de chaque niveau d'un type. */
 export function etatType(p: TypeProgress | undefined): EtatType {
@@ -19,5 +19,5 @@ export function etatType(p: TypeProgress | undefined): EtatType {
     ok += p?.levels[l].last5Ok ?? 0;
     if (levelState(p?.levels[l]) === "tenu") tenus += 1;
   }
-  return { n, pct: n ? Math.round((ok / n) * 100) : null, tenus, niveaux: CALC_LEVELS.map((l) => levelState(p?.levels[l])) };
+  return { n, ok, pct: n ? Math.round((ok / n) * 100) : null, tenus, niveaux: CALC_LEVELS.map((l) => levelState(p?.levels[l])) };
 }

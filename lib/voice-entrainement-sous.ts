@@ -44,6 +44,16 @@ export const SOUS_ENTRAINEMENT = {
     reprendre: "À reprendre",
     tenus: (n: number) => (n > 1 ? "niveaux tenus" : "niveau tenu"),
     sur: (tenus: number, total: number) => `${nombre(tenus)} / ${nombre(total)}`,
+    /** la légende des pastilles du tableau */
+    legende: "F, M, D : facile, moyen, difficile",
+    session: "Session ciblée",
+    /** l'annexe : le graphique des points faibles */
+    faibles: "Tes points faibles",
+    seuil: "tenu",
+    detail: (ok: number, n: number, tenus: number) => `${pluriel(ok, "juste", "justes")} sur les ${nombre(n)} derniers essais · ${nombre(tenus)}/3 niveaux tenus`,
+    autres: (n: number) => `+ ${pluriel(n, "autre calcul à reprendre", "autres calculs à reprendre")}, au tableau`,
+    lecture: (nom: string, pct: string, niveaux: string) => `${nom}, ${pct}, ${niveaux}`,
+    niveaux: (tenus: number) => `${nombre(tenus)} sur 3 niveaux tenus`,
   },
   officiels: {
     choisir: "Choisis ta session",

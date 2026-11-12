@@ -104,12 +104,17 @@ export function Niveaux({ pieces, action, depart = 0 }: Props) {
   );
 }
 
+/** Une pièce du tableau : `or`, écrite à la craie jaune (ex. le Top 5) ; `puce`, à la place du numéro (★, –). */
+export type PieceTableau = Piece & { or?: boolean; puce?: string };
+
 /**
  * Le tableau noir : les matières écrites à la craie (la main du site, Caveat, grainée), cadre de bois,
- * rebord avec sa craie et sa brosse. La matière conseillée est entourée ; au survol, un trait de craie
- * la souligne. Une matière pas encore ouverte est à moitié effacée. Le `pied` d'une pièce s'écrit entre
- * son nom et son pourcentage (ex. les bâtons des calculs maîtrisés) ; `vide` remplace un pourcentage
- * pas encore mesuré ; `bas` : une ligne au pied du tableau (légende à gauche, lien à la craie à droite).
+ * rebord avec sa craie et sa brosse. La pièce conseillée (`depart`, -1 : aucune) est entourée ; au
+ * survol, un trait de craie la souligne. Une pièce indisponible est à moitié effacée. Le `pied` d'une
+ * pièce s'écrit entre son nom et son pourcentage (ex. les bâtons des calculs maîtrisés) ; `vide`
+ * remplace un pourcentage pas encore mesuré ; `bas` : une ligne au pied du tableau (légende à gauche,
+ * lien à la craie à droite). Avec `sections` (titres et nombres de pièces, dans l'ordre), les pièces se
+ * rangent sous des titres soulignés, sur deux colonnes équilibrées quand le tableau a la place.
  */
 export function Tableau({
   pieces,
@@ -117,9 +122,49 @@ export function Tableau({
   depart = 0,
   vide = "–",
   bas,
-}: Props & { vide?: string; bas?: { legende?: React.ReactNode; lien?: { titre: string; href: string } } }) {
+  sections,
+}: {
+  pieces: PieceTableau[];
+  action: string;
+  depart?: number;
+  vide?: string;
+  bas?: { legende?: React.ReactNode; lien?: { titre: string; href: string } };
+  sections?: { titre: string; nombre: number }[];
+}) {
   const id = "craie" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
   if (!pieces.length) return null;
+
+  const ligne = (p: PieceTableau, i: number) => (
+    <li key={p.cle} data-conseil={i === depart ? "1" : undefined} data-or={p.or ? "1" : undefined}>
+      <Lien p={p} className={s.ecrit}>
+        <span className={s.ecritNum}>{p.puce ?? `${Number(p.numero)}.`}</span>
+        <span className={s.ecritNom}>
+          {p.titre}
+          {i === depart && (
+            <svg className={s.entoure} viewBox="0 0 240 60" preserveAspectRatio="none" aria-hidden>
+              <use href={`#${id}-cercle`} />
+            </svg>
+          )}
+          <svg className={s.souligne} viewBox="0 0 240 10" preserveAspectRatio="none" aria-hidden>
+            <use href={`#${id}-trait`} />
+          </svg>
+        </span>
+        <span className={s.ecritMention}>{p.pied}</span>
+        <span className={s.ecritPct}>{p.pct != null ? `${Math.round(p.pct)} %` : p.href ? vide : ""}</span>
+      </Lien>
+    </li>
+  );
+
+  // les sections : des tranches successives de la liste
+  let debut = 0;
+  const tranches = (sections ?? [])
+    .map((x) => {
+      const t = { titre: x.titre, debut, items: pieces.slice(debut, debut + x.nombre) };
+      debut += x.nombre;
+      return t;
+    })
+    .filter((x) => x.items.length);
+
   return (
     <div className={s.tableau}>
       <svg width="0" height="0" className={s.defs} aria-hidden>
@@ -129,28 +174,20 @@ export function Tableau({
         </defs>
       </svg>
       <div className={s.ardoise}>
-        <ol className={s.craie} aria-label={action} style={{ "--lignes": Math.ceil(pieces.length / 2) } as React.CSSProperties}>
-          {pieces.map((p, i) => (
-            <li key={p.cle} data-conseil={i === depart ? "1" : undefined}>
-              <Lien p={p} className={s.ecrit}>
-                <span className={s.ecritNum}>{Number(p.numero)}.</span>
-                <span className={s.ecritNom}>
-                  {p.titre}
-                  {i === depart && (
-                    <svg className={s.entoure} viewBox="0 0 240 60" preserveAspectRatio="none" aria-hidden>
-                      <use href={`#${id}-cercle`} />
-                    </svg>
-                  )}
-                  <svg className={s.souligne} viewBox="0 0 240 10" preserveAspectRatio="none" aria-hidden>
-                    <use href={`#${id}-trait`} />
-                  </svg>
-                </span>
-                <span className={s.ecritMention}>{p.pied}</span>
-                <span className={s.ecritPct}>{p.pct != null ? `${Math.round(p.pct)} %` : p.href ? vide : ""}</span>
-              </Lien>
-            </li>
-          ))}
-        </ol>
+        {tranches.length ? (
+          <div className={s.craie} data-sections="1" aria-label={action}>
+            {tranches.map((x) => (
+              <section key={x.titre} className={s.section}>
+                <h3 className={s.sectionTitre}>{x.titre}</h3>
+                <ol className={s.sectionListe}>{x.items.map((p, j) => ligne(p, x.debut + j))}</ol>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <ol className={s.craie} aria-label={action} style={{ "--lignes": Math.ceil(pieces.length / 2) } as React.CSSProperties}>
+            {pieces.map(ligne)}
+          </ol>
+        )}
         {bas && (
           <div className={s.basTableau}>
             <span className={s.legendeCraie}>{bas.legende}</span>
@@ -181,6 +218,19 @@ export function Batons({ n, titre }: { n: number; titre?: string }) {
           {Array.from({ length: Math.min(k, 4) }, (_, j) => (
             <i key={j} />
           ))}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Des pastilles écrites à la craie (ex. F · M · D) : pleine, entourée, ou à peine tracée. */
+export function Pastilles({ items, titre }: { items: { lettre: string; etat: "plein" | "cercle" | "vide" }[]; titre?: string }) {
+  return (
+    <span className={s.pastilles} title={titre} aria-hidden>
+      {items.map((x, i) => (
+        <span key={i} className={s.pastille} data-etat={x.etat}>
+          {x.lettre}
         </span>
       ))}
     </span>

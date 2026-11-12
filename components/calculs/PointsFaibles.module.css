@@ -1,0 +1,174 @@
+/* Le graphique des points faibles (components/calculs/PointsFaibles.tsx) : une colonne de noms, la
+   piste des barres (repères à 0, 50 et 100 %, seuil « tenu » en pointillé), la valeur. Couleurs du
+   thème (encre, traits), jour comme nuit. */
+
+.graphique {
+  --nom: minmax(120px, 280px);
+  --val: 48px;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+.entete,
+.ligne,
+.axe {
+  display: grid;
+  grid-template-columns: var(--nom) minmax(0, 1fr) var(--val);
+  align-items: center;
+  gap: 14px;
+}
+.piste {
+  position: relative;
+  min-width: 0;
+}
+
+/* le nom du seuil, au-dessus du pointillé */
+.entete {
+  height: 16px;
+}
+.seuilNom {
+  position: absolute;
+  left: var(--seuil);
+  bottom: 0;
+  transform: translateX(-50%);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.barres {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ligne {
+  position: relative;
+  min-height: 38px;
+  padding: 0 4px;
+  border-radius: 10px;
+  color: var(--ink);
+  transition: background-color 0.15s ease;
+}
+.ligne:hover,
+.ligne:focus-visible {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  outline: none;
+}
+.ligne:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.nom {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+}
+/* la piste : repères discrets à 0, 50 et 100 %, le seuil en pointillé (continu d'une ligne à l'autre) */
+.ligne .piste {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  background:
+    linear-gradient(var(--line-2), var(--line-2)) 0 0 / 1px 100% no-repeat,
+    linear-gradient(var(--line), var(--line)) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--line), var(--line)) 100% 0 / 1px 100% no-repeat;
+}
+.ligne .piste::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--seuil);
+  border-left: 1.5px dashed var(--ink-3);
+}
+.barre {
+  display: block;
+  height: 10px;
+  border-radius: 0 4px 4px 0;
+  background: var(--ink);
+}
+.valeur {
+  justify-self: end;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+/* le détail, au survol ou au clavier */
+.bulle {
+  position: absolute;
+  right: calc(var(--val) + 18px);
+  bottom: calc(100% - 4px);
+  z-index: 2;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.ligne:hover .bulle,
+.ligne:focus-visible .bulle {
+  opacity: 1;
+  transform: none;
+}
+
+/* l'axe : 0, 50, 100 % */
+.axe {
+  height: 16px;
+}
+.axe .piste span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.axe .piste span:first-child {
+  transform: none;
+}
+.axe .piste span:last-child {
+  transform: translateX(-100%);
+}
+.reste {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .graphique {
+    --nom: minmax(96px, 38%);
+    --val: 40px;
+  }
+  .entete,
+  .ligne,
+  .axe {
+    gap: 10px;
+  }
+  .bulle {
+    white-space: normal;
+    left: 4px;
+    right: 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ligne,
+  .bulle {
+    transition: none;
+  }
+}
