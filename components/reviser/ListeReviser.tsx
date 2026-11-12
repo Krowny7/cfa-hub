@@ -52,7 +52,8 @@ export function ListeReviser({
       const avance = r.href ? suivi?.matieres[r.key] : undefined;
       return {
         cle: r.key,
-        href: r.href,
+        // flashcards : le paquet de devant ouvre la révision de sa matière
+    href: r.href && kind === "cartes" ? `/flashcards/matiere/${r.key}` : r.href,
         numero: pad2(r.index),
         code: CODES[r.key] ?? r.key.slice(0, 3).toUpperCase(),
         titre: r.name,
