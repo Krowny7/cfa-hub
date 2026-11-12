@@ -259,3 +259,90 @@
     padding: 24px 30px 32px;
   }
 }
+
+/* ——— le cadre à zones : bande noire des titres, l'essentiel à gauche, la colonne grise à droite ——— */
+.zones {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 30px;
+  row-gap: 18px;
+  align-items: center;
+}
+@media (min-width: 980px) {
+  .zones[data-deux] {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    row-gap: 0;
+    align-items: stretch;
+  }
+}
+/* la bande : noire sur papier, blanche la nuit ; elle mange les marges du cadre pour en toucher les bords */
+.bandeZones {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 30px;
+  align-items: center;
+  margin: calc(-1 * var(--pad-t)) calc(-1 * var(--pad-x)) 0;
+  padding: 16px var(--pad-x);
+  background: var(--ink);
+}
+@media (min-width: 980px) {
+  .zones[data-deux] .bandeZones {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    padding: 18px var(--pad-x);
+  }
+}
+.zoneTitre {
+  margin: 0;
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 760;
+  line-height: 1.05;
+  letter-spacing: -0.034em;
+  color: var(--ink);
+}
+.bandeZones .zoneTitre {
+  color: var(--paper);
+}
+.zoneTitreDroite {
+  display: none;
+}
+@media (min-width: 980px) {
+  .zoneTitreDroite {
+    display: block;
+    padding-left: 26px;
+  }
+  .zoneTitreMobile {
+    display: none;
+  }
+}
+.zoneG {
+  display: grid;
+  align-content: center;
+  gap: 16px;
+  min-width: 0;
+}
+@media (min-width: 980px) {
+  .zoneG {
+    padding-top: 22px;
+  }
+}
+/* la colonne grise, un peu plus foncée que le cadre, du bas de la bande au bas du cadre */
+.zoneD {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+  margin: 0 calc(-1 * var(--pad-x)) calc(-1 * var(--pad-b));
+  padding: 18px var(--pad-x) var(--pad-b);
+  border-radius: 0 0 24px 24px;
+  background: color-mix(in srgb, var(--ink) 5%, var(--surface));
+}
+@media (min-width: 980px) {
+  .zoneD {
+    align-self: stretch;
+    margin: 0 calc(-1 * var(--pad-x)) calc(-1 * var(--pad-b)) 0;
+    padding: 22px 26px 26px;
+    border-radius: 0 0 24px 0;
+  }
+}

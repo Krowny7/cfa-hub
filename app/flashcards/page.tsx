@@ -39,7 +39,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       titreCroupier={PARTIE_ENTREE.titreZone}
       choisie={matierePartie?.key}
       croupier={
-        <CoteCroupier titre={PARTIE_ENTREE.titreZone} href={hrefPartie} aide={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.aide} />
+        <CoteCroupier href={hrefPartie} aide={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.aide} />
       }
     />
   );

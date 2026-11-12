@@ -1,0 +1,169 @@
+/* Les petits décors de la colonne grise (components/ui/Decors.tsx). */
+
+.cliquable {
+  transition: transform 0.18s ease;
+}
+.cliquable:hover {
+  transform: translateY(-2px);
+}
+.cliquable:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 3px;
+}
+
+/* un chiffre */
+.chiffre {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 18px 12px;
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: center;
+}
+.valeur {
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(40px, 4.4vw, 60px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.legende {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+/* une courte liste */
+.liste {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ligne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.liste li[data-marque] .ligne {
+  outline: 1.5px solid var(--pal-2, var(--ink));
+}
+.ligneTitre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ligneDetail {
+  flex: none;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.vide {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+/* le mini mur épinglé */
+.mur {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 22px 12px 18px;
+  border-radius: 18px;
+  background: var(--surface);
+}
+.feuille {
+  position: relative;
+  width: 22%;
+  max-width: 72px;
+  aspect-ratio: 210 / 297;
+  object-fit: cover;
+  object-position: top;
+  border: 1px solid var(--line-2);
+  background: #fbf8f2;
+  box-shadow: 0 8px 14px -10px rgba(0, 0, 0, 0.5);
+  transform: rotate(-3deg);
+  transition: transform 0.3s cubic-bezier(0.2, 0.85, 0.25, 1.15);
+}
+.feuille:nth-child(2n) {
+  transform: rotate(2.5deg);
+}
+.mur:hover .feuille {
+  transform: translateY(-6px) rotate(0deg);
+}
+
+/* la platine */
+.platine {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 22px 12px 18px;
+  border-radius: 18px;
+  background: #2a1c12;
+  color: #f3ece0;
+}
+.disque {
+  display: grid;
+  place-items: center;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle, #151515 0 2px, #1d1d1d 2px 4px);
+  box-shadow: 0 10px 18px -10px rgba(0, 0, 0, 0.8);
+}
+.etiquette {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1a120b 0 4px, #d6a13f 5px);
+}
+.platine:hover .disque {
+  animation: tourner 2.4s linear infinite;
+}
+@keyframes tourner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.bras {
+  position: absolute;
+  top: 22px;
+  right: calc(50% - 88px);
+  width: 6px;
+  height: 92px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #d6a13f, #8a6a2a);
+  transform: rotate(24deg);
+  transform-origin: top center;
+}
+.platineTitre {
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cliquable,
+  .feuille {
+    transition: none;
+  }
+  .platine:hover .disque {
+    animation: none;
+  }
+}

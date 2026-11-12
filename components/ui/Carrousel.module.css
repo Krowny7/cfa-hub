@@ -157,3 +157,187 @@
     transition: none;
   }
 }
+
+/* ——— les objets : chaque page le sien ——— */
+.photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.carrousel[data-forme="portrait"] .recto {
+  overflow: hidden;
+  padding: 0;
+}
+.carrousel[data-forme="portrait"] .recto .code {
+  align-self: end;
+  width: 100%;
+  padding: 18px 8px 10px;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.65));
+  color: #fff;
+  font-size: calc(var(--carte) * 0.13);
+  text-align: center;
+  z-index: 1;
+}
+.carrousel[data-forme="portrait"] .coin,
+.carrousel[data-forme="portrait"] .coinBas,
+.carrousel:not([data-forme="cartes"]) .enseigne {
+  display: none;
+}
+.carrousel[data-forme="portrait"] .recto {
+  grid-template-rows: 1fr;
+}
+/* carnet (fiches) : page lignée, marge rouge, trous */
+.carrousel[data-forme="carnet"] .recto {
+  border-radius: 6px;
+  background:
+    radial-gradient(circle, rgba(17, 17, 17, 0.3) 2.6px, transparent 3.2px) 5px 14px / 12px 22px repeat-y,
+    linear-gradient(90deg, transparent 20px, rgba(180, 65, 47, 0.5) 20px 21.5px, transparent 21.5px),
+    repeating-linear-gradient(180deg, transparent 0 15px, rgba(45, 95, 150, 0.26) 15px 16px),
+    #fbf8f2;
+}
+.carrousel[data-forme="carnet"] .recto::after,
+.carrousel[data-forme="livret"] .recto::after {
+  display: none;
+}
+.carrousel[data-forme="carnet"] .verso {
+  background: #e9e1cf;
+  box-shadow: 0 18px 26px -16px rgba(0, 0, 0, 0.6);
+}
+/* livret (cours) : couverture sombre, dos, titre doré */
+.carrousel[data-forme="livret"] .recto,
+.carrousel[data-forme="livret"] .verso {
+  border-radius: 4px 12px 12px 4px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.38) 0 11px, rgba(255, 255, 255, 0.1) 11px 12px, transparent 12px),
+    #4a3120;
+  border-color: rgba(0, 0, 0, 0.4);
+  box-shadow:
+    inset 0 0 0 7px transparent,
+    inset 0 0 0 8px rgba(214, 161, 63, 0.5),
+    0 18px 26px -16px rgba(0, 0, 0, 0.6);
+}
+.carrousel[data-forme="livret"] .code {
+  color: #d6a13f;
+}
+.carrousel[data-forme="livret"] .coin,
+.carrousel[data-forme="livret"] .coinBas {
+  color: rgba(241, 233, 212, 0.6);
+}
+/* blanche (page blanche) : la feuille nue */
+.carrousel[data-forme="blanche"] .recto,
+.carrousel[data-forme="blanche"] .verso {
+  border-radius: 4px;
+  background: #fff;
+  border-color: rgba(17, 17, 17, 0.12);
+}
+.carrousel[data-forme="blanche"] .recto::after {
+  display: none;
+}
+.carrousel[data-forme="blanche"] .code {
+  color: rgba(17, 17, 17, 0.2);
+}
+/* livre (QCM) : un livre debout, son dos et ses filets */
+.carrousel[data-forme="livre"] .recto,
+.carrousel[data-forme="livre"] .verso {
+  border-radius: 3px 10px 10px 3px;
+  background:
+    linear-gradient(180deg, transparent 14%, rgba(214, 161, 63, 0.7) 14% 15.5%, transparent 15.5% 84.5%, rgba(214, 161, 63, 0.7) 84.5% 86%, transparent 86%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0 9px, transparent 9px),
+    #2d5f96;
+  border-color: rgba(0, 0, 0, 0.35);
+}
+.carrousel[data-forme="livre"] .recto::after {
+  display: none;
+}
+.carrousel[data-forme="livre"] .code {
+  color: #f3ece0;
+}
+.carrousel[data-forme="livre"] .coin,
+.carrousel[data-forme="livre"] .coinBas {
+  color: rgba(243, 236, 224, 0.7);
+}
+/* tuile (calculs) : une touche d'abaque, carrée, en relief */
+.carrousel[data-forme="tuile"] .anneau,
+.carrousel[data-forme="tuile"] .recto,
+.carrousel[data-forme="tuile"] .verso {
+  height: var(--carte);
+}
+.carrousel[data-forme="tuile"] .scene {
+  height: calc(var(--carte) + 70px);
+}
+.carrousel[data-forme="tuile"] .recto,
+.carrousel[data-forme="tuile"] .verso {
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff, #ece6da);
+  box-shadow:
+    inset 0 -6px 0 rgba(0, 0, 0, 0.12),
+    0 18px 26px -16px rgba(0, 0, 0, 0.6);
+}
+.carrousel[data-forme="tuile"] .recto::after {
+  display: none;
+}
+/* sceau (examens) : un sceau de cire rond */
+.carrousel[data-forme="sceau"] .anneau,
+.carrousel[data-forme="sceau"] .recto,
+.carrousel[data-forme="sceau"] .verso {
+  height: var(--carte);
+}
+.carrousel[data-forme="sceau"] .scene {
+  height: calc(var(--carte) + 70px);
+}
+.carrousel[data-forme="sceau"] .recto,
+.carrousel[data-forme="sceau"] .verso {
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d0705c, #b4412f 45%, #7a2a1d);
+  border-color: rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 0 0 7px rgba(255, 255, 255, 0.14),
+    0 18px 26px -16px rgba(0, 0, 0, 0.6);
+}
+.carrousel[data-forme="sceau"] .recto::after {
+  inset: 12px;
+  border-radius: 50%;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.carrousel[data-forme="sceau"] .code {
+  color: #fbf1e6;
+}
+.carrousel[data-forme="sceau"] .coin,
+.carrousel[data-forme="sceau"] .coinBas {
+  display: none;
+}
+/* dossier (cas pratiques) : une chemise cartonnée, son onglet */
+.carrousel[data-forme="dossier"] .recto,
+.carrousel[data-forme="dossier"] .verso {
+  border-radius: 4px 14px 4px 4px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0 18%, transparent 18%),
+    #e9d9b4;
+  border-color: rgba(0, 0, 0, 0.22);
+}
+.carrousel[data-forme="dossier"] .recto::after {
+  display: none;
+}
+/* porte (Salles) : une porte en bois, cintrée */
+.carrousel[data-forme="porte"] .recto,
+.carrousel[data-forme="porte"] .verso {
+  border-radius: 60px 60px 4px 4px;
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(0, 0, 0, 0.25) 48% 52%, transparent 52%),
+    linear-gradient(180deg, #7a5536, #4e3420);
+  border-color: rgba(0, 0, 0, 0.4);
+}
+.carrousel[data-forme="porte"] .recto::after {
+  display: none;
+}
+.carrousel[data-forme="porte"] .code {
+  color: #f3ece0;
+  font-size: calc(var(--carte) * 0.16);
+}
+.carrousel[data-forme="porte"] .coin,
+.carrousel[data-forme="porte"] .coinBas {
+  display: none;
+}

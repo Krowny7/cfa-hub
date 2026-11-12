@@ -4,10 +4,9 @@ import { SUBJECTS } from "@/components/reviser/catalog";
 import { pad2 } from "@/components/reviser/rail";
 import { Presentoir, type FormePiece, type Piece } from "@/components/ui/Presentoir";
 import { Carrousel } from "@/components/ui/Carrousel";
-import s from "./ListeReviser.module.css";
 import type { SubjectAvailability } from "@/components/reviser/catalog";
 import { LegendeAvance } from "@/components/reviser/Pastilles";
-import { CadrePrincipal, EnTeteSousPage, SousPage, type Ambiance } from "@/components/ui/SousPage";
+import { CadrePrincipal, CadreZones, EnTeteSousPage, SousPage, type Ambiance } from "@/components/ui/SousPage";
 import type { AvancesProgramme } from "@/lib/flashcards/avancement";
 import { LIEUX, RETOUR, RV, type KindListe } from "@/lib/voice-reviser";
 
@@ -65,19 +64,10 @@ export function ListeReviser({
   return (
     <SousPage entete={<EnTeteSousPage retour={RETOUR.reviser} titre={l.titre} ligne={l.desc} illustration={{ nom: l.illustration, position: l.position }} />}>
       {kind === "cartes" && croupier ? (
-        <CadrePrincipal>
-          <div className={s.tapis}>
-            {/* la bande noire des titres, sur toute la largeur du cadre */}
-            <div className={s.bande}>
-              <h2 className={s.zone}>{RV.cartesTitre}</h2>
-              {titreCroupier && <h2 className={s.zone + " " + s.zoneDroite}>{titreCroupier}</h2>}
-            </div>
-            <div className={s.gauche}>
-              <Carrousel pieces={pieces} action={RV.cartesOuvrir} depart={Math.max(0, pieces.findIndex((x) => x.cle === choisie))} />
-            </div>
-            {croupier}
-          </div>
-        </CadrePrincipal>
+        <CadreZones
+          gauche={{ titre: RV.cartesTitre, contenu: <Carrousel pieces={pieces} action={RV.cartesOuvrir} depart={Math.max(0, pieces.findIndex((x) => x.cle === choisie))} /> }}
+          droite={titreCroupier ? { titre: titreCroupier, contenu: croupier } : undefined}
+        />
       ) : (
         <CadrePrincipal ambiance={AMBIANCE[kind]} titre={RV.programme} aide={RV.programmeAide} tete={suivi ? <LegendeAvance /> : undefined}>
           <Presentoir forme={FORME[kind]} label={RV.programme} pieces={pieces} />

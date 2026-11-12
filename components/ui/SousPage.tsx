@@ -212,3 +212,32 @@ export function CadreAnnexe({ titre, children, id }: { titre: React.ReactNode; c
     </section>
   );
 }
+
+/**
+ * Le cadre à zones (le modèle des sous-pages validé par Théo sur les flashcards, 2026-11-12) : en
+ * haut, la bande noire des titres sur toute la largeur (blanche la nuit) ; dessous, l'essentiel à
+ * gauche (plus large) et, s'il y en a une, la colonne grise à droite, du haut en bas du cadre (le
+ * complément : un personnage, un mini-décor cliquable, un chiffre, une courte liste). Une zone seule
+ * prend toute la largeur. Pas de bouton superflu, pas de texte superflu.
+ */
+export type Zone = { titre: React.ReactNode; contenu: React.ReactNode };
+
+export function CadreZones({ gauche, droite }: { gauche: Zone; droite?: Zone }) {
+  return (
+    <section className={s.principal} aria-label={typeof gauche.titre === "string" ? gauche.titre : undefined}>
+      <div className={s.zones} data-deux={droite ? "1" : undefined}>
+        <div className={s.bandeZones}>
+          <h2 className={s.zoneTitre}>{gauche.titre}</h2>
+          {droite && <h2 className={s.zoneTitre + " " + s.zoneTitreDroite}>{droite.titre}</h2>}
+        </div>
+        <div className={s.zoneG}>{gauche.contenu}</div>
+        {droite && (
+          <div className={s.zoneD}>
+            <h2 className={s.zoneTitre + " " + s.zoneTitreMobile}>{droite.titre}</h2>
+            {droite.contenu}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
