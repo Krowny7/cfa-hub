@@ -1,7 +1,7 @@
 "use client";
 
 import { Carrousel } from "@/components/ui/Carrousel";
-import { Eventail, Niveaux, Pave } from "@/components/ui/Dispositions";
+import { Eventail, Niveaux, Pave, Tableau } from "@/components/ui/Dispositions";
 import type { Piece } from "@/components/ui/Presentoir";
 import { ListeCourte, type Ligne } from "@/components/ui/Decors";
 import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
@@ -28,7 +28,7 @@ const S = SOUS_ENTRAINEMENT.calculs;
  * Props : `subjects` (lib/calc/index → calcSubjectCards), `progress` (base, null = repli local),
  * `db` (migration appliquée), `owner` (id du compte, clé du repli local).
  */
-/** `dispo` (essai, 2026-11-12) : « pave », « eventail » ou « niveaux » à la place du carrousel. */
+/** `dispo` (essai, 2026-11-12) : « pave », « eventail », « niveaux » ou « tableau » à la place du carrousel. */
 export function CalcHub({ subjects, progress: server, db, owner, dispo }: { subjects: CalcHubSubject[]; progress: AllProgress | null; db: boolean; owner: string; dispo?: string }) {
   useLocalImport(db, owner);
   const { progress } = useCalcProgress(server, owner);
@@ -87,6 +87,8 @@ export function CalcHub({ subjects, progress: server, db, owner, dispo }: { subj
               <Eventail forme="tuile" pieces={pieces} action={S.ouvrir} depart={depart} />
             ) : dispo === "niveaux" ? (
               <Niveaux pieces={pieces} action={S.ouvrir} depart={depart} />
+            ) : dispo === "tableau" ? (
+              <Tableau pieces={pieces} action={S.ouvrir} depart={depart} />
             ) : (
               <Carrousel forme="tuile" pieces={pieces} action={S.ouvrir} depart={depart} />
             ),

@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { Piece } from "@/components/ui/Presentoir";
 import s from "./Dispositions.module.css";
 
 // Trois autres façons de poser les matières dans la zone de gauche du cadre à zones (CadreZones),
 // à la place du carrousel (demande de Théo, 2026-11-12, pour les calculs ou l'entraînement ciblé) :
-// le pavé (les touches d'une calculatrice et son écran), l'éventail (une main de cartes) et la
-// sélection (une liste façon choix de niveau). Toutes prennent les mêmes pièces que le carrousel ;
+// le pavé (les touches d'une calculatrice et son écran), l'éventail (une main de cartes), la
+// sélection (une liste façon choix de niveau) et le tableau noir (la liste écrite à la craie). Toutes prennent les mêmes pièces que le carrousel ;
 // `depart` est la pièce conseillée (voyant du pavé, carte levée de l'éventail, ligne choisie).
 // Sans mouvement réduit : rien ne bouge.
 
@@ -100,5 +100,52 @@ export function Niveaux({ pieces, action, depart = 0 }: Props) {
         </li>
       ))}
     </ol>
+  );
+}
+
+/**
+ * Le tableau noir : les matières écrites à la craie (la main du site, Caveat, grainée), cadre de bois,
+ * rebord avec sa craie et sa brosse. La matière conseillée est entourée ; au survol, un trait de craie
+ * la souligne. Une matière pas encore ouverte est à moitié effacée.
+ */
+export function Tableau({ pieces, action, depart = 0 }: Props) {
+  const id = "craie" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!pieces.length) return null;
+  return (
+    <div className={s.tableau}>
+      <svg width="0" height="0" className={s.defs} aria-hidden>
+        <defs>
+          <path id={`${id}-cercle`} vectorEffect="non-scaling-stroke" d="M18 34C10 18 62 6 128 7c62 1 108 9 106 25-2 17-58 24-118 22C58 52 10 46 9 30 8 17 40 9 72 8" />
+          <path id={`${id}-trait`} vectorEffect="non-scaling-stroke" d="M3 7C40 4 92 3 140 5c38 1 70 3 95 1" />
+        </defs>
+      </svg>
+      <div className={s.ardoise}>
+        <ol className={s.craie} aria-label={action} style={{ "--lignes": Math.ceil(pieces.length / 2) } as React.CSSProperties}>
+          {pieces.map((p, i) => (
+            <li key={p.cle} data-conseil={i === depart ? "1" : undefined}>
+              <Lien p={p} className={s.ecrit}>
+                <span className={s.ecritNum}>{Number(p.numero)}.</span>
+                <span className={s.ecritNom}>
+                  {p.titre}
+                  {i === depart && (
+                    <svg className={s.entoure} viewBox="0 0 240 60" preserveAspectRatio="none" aria-hidden>
+                      <use href={`#${id}-cercle`} />
+                    </svg>
+                  )}
+                  <svg className={s.souligne} viewBox="0 0 240 10" preserveAspectRatio="none" aria-hidden>
+                    <use href={`#${id}-trait`} />
+                  </svg>
+                </span>
+                <span className={s.ecritPct}>{p.pct != null ? `${Math.round(p.pct)} %` : p.href ? "–" : ""}</span>
+              </Lien>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className={s.rebord} aria-hidden>
+        <i className={s.baton} />
+        <i className={s.brosse} />
+      </div>
+    </div>
   );
 }
