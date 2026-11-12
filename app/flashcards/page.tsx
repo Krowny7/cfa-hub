@@ -133,6 +133,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       kind="cartes"
       subjects={subjectsAvail}
       avances={avances}
+      titreCroupier={PARTIE_ENTREE.titreZone}
       croupier={
         <CoteCroupier titre={PARTIE_ENTREE.titreZone} href={hrefPartie} aide={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.aide} />
       }

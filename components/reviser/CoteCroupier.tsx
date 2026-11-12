@@ -9,7 +9,8 @@ import s from "./ListeReviser.module.css";
 export function CoteCroupier({ href, aide, titre }: { href: string; aide: string; titre: string }) {
   return (
     <div className={s.cote}>
-      <h2 className={s.zone}>{titre}</h2>
+      {/* sur téléphone, la bande ne porte que le titre de gauche : celui-ci se montre ici */}
+      <h2 className={s.zone + " " + s.zoneMobile}>{titre}</h2>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={IMAGE_POSE.moqueur} alt="" width={598} height={660} decoding="async" className={s.leonard} />
       <Link href={href} className={s.tapisMini} aria-label={aide} title={aide}>

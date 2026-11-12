@@ -31,6 +31,7 @@ export function ListeReviser({
   apres,
   avances,
   croupier,
+  titreCroupier,
 }: {
   kind: KindListe;
   subjects: SubjectAvailability[];
@@ -38,6 +39,8 @@ export function ListeReviser({
   avances?: AvancesProgramme;
   /** flashcards : le panneau de droite (Léonard et la partie de cartes) ; à gauche, le carrousel des paquets */
   croupier?: React.ReactNode;
+  /** le titre de la colonne de droite, dans la bande noire */
+  titreCroupier?: string;
 }) {
   const l = LIEUX[kind];
   const rows = shelfRows(kind, subjects);
@@ -60,8 +63,12 @@ export function ListeReviser({
       {kind === "cartes" && croupier ? (
         <CadrePrincipal>
           <div className={s.tapis}>
-            <div className={s.gauche}>
+            {/* la bande noire des titres, sur toute la largeur du cadre */}
+            <div className={s.bande}>
               <h2 className={s.zone}>{RV.cartesTitre}</h2>
+              {titreCroupier && <h2 className={s.zone + " " + s.zoneDroite}>{titreCroupier}</h2>}
+            </div>
+            <div className={s.gauche}>
               <Carrousel pieces={pieces} action={RV.cartesOuvrir} />
             </div>
             {croupier}

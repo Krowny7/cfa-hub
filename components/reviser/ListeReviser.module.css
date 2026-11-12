@@ -1,16 +1,61 @@
-/* Les flashcards sur le tapis : le carrousel des paquets à gauche (plus large), Léonard et la
-   partie de cartes à droite. */
+/* Les flashcards : en haut, la bande noire des titres sur toute la largeur du cadre ; dessous, le
+   carrousel des paquets à gauche (plus large), Léonard et la partie de cartes à droite. */
 .tapis {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 22px;
+  column-gap: 30px;
+  row-gap: 18px;
   align-items: center;
 }
 @media (min-width: 980px) {
   .tapis {
     grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-    gap: 30px;
+    grid-template-rows: auto 1fr;
+    row-gap: 0;
     align-items: stretch;
+  }
+}
+/* la bande : noire sur papier, blanche la nuit (--ink / --paper s'inversent avec le thème) ; elle
+   mange les marges du cadre pour en toucher les bords */
+.bande {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 30px;
+  align-items: center;
+  margin: calc(-1 * var(--pad-t, 18px)) calc(-1 * var(--pad-x, 18px)) 0;
+  padding: 16px var(--pad-x, 18px);
+  background: var(--ink);
+}
+@media (min-width: 980px) {
+  .bande {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    padding: 18px var(--pad-x, 30px);
+  }
+}
+.bande .zone {
+  color: var(--paper);
+}
+.zoneDroite {
+  display: none;
+}
+@media (min-width: 980px) {
+  .zoneDroite {
+    display: block;
+    padding-left: 26px;
+  }
+  .zoneMobile {
+    display: none;
+  }
+}
+.gauche {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+}
+@media (min-width: 980px) {
+  .gauche {
+    padding-top: 22px;
   }
 }
 
@@ -29,9 +74,9 @@
 @media (min-width: 980px) {
   .cote {
     align-self: stretch;
-    margin: calc(-1 * var(--pad-t, 22px)) calc(-1 * var(--pad-x, 30px)) calc(-1 * var(--pad-b, 36px)) 0;
+    margin: 0 calc(-1 * var(--pad-x, 30px)) calc(-1 * var(--pad-b, 36px)) 0;
     padding: 22px 26px 26px;
-    border-radius: 0 24px 24px 0;
+    border-radius: 0 0 24px 0;
   }
 }
 .leonard {
@@ -120,17 +165,6 @@
   }
 }
 
-/* la colonne du carrousel : son titre en haut, l'anneau centré dans la hauteur qui reste */
-.gauche {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 8px;
-  min-width: 0;
-  align-self: stretch;
-}
-.gauche > :last-child {
-  align-self: center;
-}
 /* le titre de chaque partie du cadre */
 .zone {
   margin: 0;
