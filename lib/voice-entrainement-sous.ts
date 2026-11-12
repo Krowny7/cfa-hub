@@ -33,6 +33,11 @@ export const SOUS_ENTRAINEMENT = {
     toutes: "Toutes les matières",
     aEntamer: "à entamer",
     justes: (pct: number) => `${nombre(pct)} %`,
+    /** la légende des bâtons de craie du tableau */
+    legende: "= un calcul maîtrisé",
+    maitrises: (n: number, total: number) => `${pluriel(n, "calcul maîtrisé", "calculs maîtrisés")} sur ${nombre(total)}`,
+    /** la lecture d'une ligne du tableau (lecteur d'écran) */
+    lecture: (nom: string, pct: string, maitrises: string) => `${nom}, ${pct}, ${maitrises}`,
   },
   calculsMatiere: {
     registres: "Ses calculs",

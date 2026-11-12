@@ -107,9 +107,17 @@ export function Niveaux({ pieces, action, depart = 0 }: Props) {
 /**
  * Le tableau noir : les matières écrites à la craie (la main du site, Caveat, grainée), cadre de bois,
  * rebord avec sa craie et sa brosse. La matière conseillée est entourée ; au survol, un trait de craie
- * la souligne. Une matière pas encore ouverte est à moitié effacée.
+ * la souligne. Une matière pas encore ouverte est à moitié effacée. Le `pied` d'une pièce s'écrit entre
+ * son nom et son pourcentage (ex. les bâtons des calculs maîtrisés) ; `vide` remplace un pourcentage
+ * pas encore mesuré ; `bas` : une ligne au pied du tableau (légende à gauche, lien à la craie à droite).
  */
-export function Tableau({ pieces, action, depart = 0 }: Props) {
+export function Tableau({
+  pieces,
+  action,
+  depart = 0,
+  vide = "–",
+  bas,
+}: Props & { vide?: string; bas?: { legende?: React.ReactNode; lien?: { titre: string; href: string } } }) {
   const id = "craie" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
   if (!pieces.length) return null;
   return (
@@ -137,16 +145,44 @@ export function Tableau({ pieces, action, depart = 0 }: Props) {
                     <use href={`#${id}-trait`} />
                   </svg>
                 </span>
-                <span className={s.ecritPct}>{p.pct != null ? `${Math.round(p.pct)} %` : p.href ? "–" : ""}</span>
+                <span className={s.ecritMention}>{p.pied}</span>
+                <span className={s.ecritPct}>{p.pct != null ? `${Math.round(p.pct)} %` : p.href ? vide : ""}</span>
               </Lien>
             </li>
           ))}
         </ol>
+        {bas && (
+          <div className={s.basTableau}>
+            <span className={s.legendeCraie}>{bas.legende}</span>
+            {bas.lien && (
+              <Link href={bas.lien.href} className={s.lienCraie}>
+                {bas.lien.titre} →
+              </Link>
+            )}
+          </div>
+        )}
       </div>
       <div className={s.rebord} aria-hidden>
         <i className={s.baton} />
         <i className={s.brosse} />
       </div>
     </div>
+  );
+}
+
+/** Des bâtons de craie (|||| barrés par cinq) : un compte qu'on lit d'un coup d'œil. */
+export function Batons({ n, titre }: { n: number; titre?: string }) {
+  if (n <= 0) return null;
+  const groupes = Array.from({ length: Math.ceil(n / 5) }, (_, g) => Math.min(5, n - g * 5));
+  return (
+    <span className={s.batons} title={titre} aria-hidden>
+      {groupes.map((k, g) => (
+        <span key={g} className={s.groupe} data-barre={k === 5 ? "1" : undefined}>
+          {Array.from({ length: Math.min(k, 4) }, (_, j) => (
+            <i key={j} />
+          ))}
+        </span>
+      ))}
+    </span>
   );
 }
