@@ -47,8 +47,6 @@
   .image {
     min-height: 150px;
     order: 0;
-    /* séparée du texte par une diagonale, sur sa gauche */
-    clip-path: polygon(16% 0, 100% 0, 100% 100%, 0 100%);
   }
 }
 .image > img {
@@ -59,46 +57,25 @@
   object-fit: cover;
 }
 
-/* l'illustration se peint au pinceau, coup après coup (comme le ninja de l'intro) : quatre
-   coups de brosse (public/peinture/coup-*.svg, bords rugueux) traversent l'image l'un après
-   l'autre, puis un dernier calque plein ferme les trous. Seuls les masques bougent. */
-.image > img {
-  -webkit-mask-image: url(/peinture/coup-1.svg), url(/peinture/coup-2.svg), url(/peinture/coup-1.svg), url(/peinture/coup-2.svg), linear-gradient(#000, #000);
-  mask-image: url(/peinture/coup-1.svg), url(/peinture/coup-2.svg), url(/peinture/coup-1.svg), url(/peinture/coup-2.svg), linear-gradient(#000, #000);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: 0 -6%, 100% 30%, 0 66%, 100% 106%, 0 0;
-  mask-position: 0 -6%, 100% 30%, 0 66%, 100% 106%, 0 0;
-  -webkit-mask-size: 0% 42%, 0% 42%, 0% 42%, 0% 42%, 0% 100%;
-  mask-size: 0% 42%, 0% 42%, 0% 42%, 0% 42%, 0% 100%;
-  animation: peindre 1.5s cubic-bezier(0.3, 0.6, 0.25, 1) 0.15s forwards;
-}
-@keyframes peindre {
-  28% {
-    -webkit-mask-size: 135% 42%, 30% 42%, 0% 42%, 0% 42%, 0% 100%;
-    mask-size: 135% 42%, 30% 42%, 0% 42%, 0% 42%, 0% 100%;
+/* le bord gauche de l'illustration se désagrège, comme les jambes du ninja de l'intro : une
+   diagonale qui s'effiloche en traînées de brosse et en gouttes, jusqu'au papier
+   (public/peinture/bord.svg, sur la moitié gauche ; la moitié droite reste pleine). */
+@media (min-width: 820px) {
+  .cadre[data-illustre="1"] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
-  52% {
-    -webkit-mask-size: 135% 42%, 135% 42%, 45% 42%, 0% 42%, 0% 100%;
-    mask-size: 135% 42%, 135% 42%, 45% 42%, 0% 42%, 0% 100%;
+  .image {
+    clip-path: none;
   }
-  76% {
-    -webkit-mask-size: 135% 42%, 135% 42%, 135% 42%, 70% 42%, 0% 100%;
-    mask-size: 135% 42%, 135% 42%, 135% 42%, 70% 42%, 0% 100%;
-  }
-  92% {
-    -webkit-mask-size: 135% 42%, 135% 42%, 135% 42%, 135% 42%, 0% 100%;
-    mask-size: 135% 42%, 135% 42%, 135% 42%, 135% 42%, 0% 100%;
-  }
-  to {
-    -webkit-mask-size: 135% 42%, 135% 42%, 135% 42%, 135% 42%, 100% 100%;
-    mask-size: 135% 42%, 135% 42%, 135% 42%, 135% 42%, 100% 100%;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
   .image > img {
-    animation: none;
-    -webkit-mask-image: none;
-    mask-image: none;
+    -webkit-mask-image: url(/peinture/bord.svg), linear-gradient(90deg, transparent 0 46%, #000 46%);
+    mask-image: url(/peinture/bord.svg), linear-gradient(90deg, transparent 0 46%, #000 46%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 50% 100%, 100% 100%;
+    mask-size: 50% 100%, 100% 100%;
+    -webkit-mask-position: 0 0, 0 0;
+    mask-position: 0 0, 0 0;
   }
 }
+
