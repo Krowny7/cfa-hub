@@ -5,7 +5,8 @@
   position: relative;
 }
 
-/* le cadre de l'en-tête : contenu à gauche, illustration du lieu à droite */
+/* le cadre de l'en-tête : contenu à gauche, illustration du lieu à droite ; bas (choix de
+   Théo : peu de hauteur, l'illustration large) */
 .cadre {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -18,25 +19,27 @@
 }
 @media (min-width: 820px) {
   .cadre[data-illustre="1"] {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   }
 }
 .contenu {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 6px;
   min-width: 0;
-  padding: 20px 22px;
+  padding: 16px 20px;
 }
 @media (min-width: 820px) {
   .contenu {
-    padding: 22px 34px;
+    padding: 16px 30px;
   }
 }
+
 .image {
   position: relative;
-  min-height: 120px;
+  min-height: 104px;
   overflow: hidden;
   background: var(--surface);
   order: -1;
@@ -45,8 +48,9 @@
 }
 @media (min-width: 820px) {
   .image {
-    min-height: 150px;
+    min-height: 118px;
     order: 0;
+    clip-path: none;
   }
 }
 .image > img {
@@ -59,24 +63,128 @@
 
 /* le bord gauche de l'illustration se défait en touches de peinture à l'huile, comme les jambes
    du ninja de l'intro : des coups de brosse en diagonale, striés et secs au bout, de plus en
-   plus clairsemés vers le texte (public/peinture/bord.svg, sur la moitié gauche ; la moitié
-   droite reste pleine). Fixe : rien ne bouge. */
+   plus clairsemés vers le texte (public/peinture/bord.svg, sur le tiers gauche ; le reste
+   est plein). Fixe : rien ne bouge. */
 @media (min-width: 820px) {
-  .cadre[data-illustre="1"] {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .image {
-    clip-path: none;
-  }
   .image > img {
-    -webkit-mask-image: url(/peinture/bord.svg), linear-gradient(90deg, transparent 0 46%, #000 46%);
-    mask-image: url(/peinture/bord.svg), linear-gradient(90deg, transparent 0 46%, #000 46%);
+    -webkit-mask-image: url(/peinture/bord.svg), linear-gradient(90deg, transparent 0 33%, #000 33%);
+    mask-image: url(/peinture/bord.svg), linear-gradient(90deg, transparent 0 33%, #000 33%);
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
-    -webkit-mask-size: 50% 100%, 100% 100%;
-    mask-size: 50% 100%, 100% 100%;
+    -webkit-mask-size: 36% 100%, 100% 100%;
+    mask-size: 36% 100%, 100% 100%;
     -webkit-mask-position: 0 0, 0 0;
     mask-position: 0 0, 0 0;
   }
 }
 
+/* le retour : un bouton classique, noir sur papier, blanc en thème nuit (--ink / --paper
+   s'inversent avec le thème) */
+.retour {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 13px 0 10px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    transform 0.12s ease,
+    opacity 0.15s ease;
+}
+.retour:hover {
+  color: var(--paper);
+  opacity: 0.86;
+}
+.retour:active {
+  transform: scale(0.97);
+}
+.retour:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 3px;
+}
+/* le titre du cadre : un cran sous celui des pages principales, et bas */
+.titre {
+  margin: 0;
+  text-wrap: balance;
+  font-size: clamp(26px, 2.6vw, 34px);
+}
+.ligne {
+  margin: 0;
+  max-width: 58ch;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* les boutons : l'action principale à l'encre de l'espace, la secondaire à contour */
+.action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: transform 0.12s ease;
+}
+.action:active {
+  transform: scale(0.98);
+}
+.action:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 3px;
+}
+.action:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.encre {
+  color: #fff;
+  background: var(--pal-1, #111);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+.encre:hover {
+  color: #fff;
+}
+.texte {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.contour {
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+}
+.contour:hover {
+  border-color: var(--pal-2, var(--ink-3));
+}
+
+/* la colonne des questions, la même pour toutes les séances */
+.seance {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}

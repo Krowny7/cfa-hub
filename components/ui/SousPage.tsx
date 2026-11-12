@@ -45,7 +45,7 @@ export function SousPage({ entete, premier, children, className }: { entete: Rea
 }
 
 /**
- * Le retour vers la page parente (flèche, pastille de l'espace, nom de la page), seul : pour un
+ * Le retour vers la page parente (un bouton noir sur papier, blanc la nuit : flèche + nom de la page), seul : pour un
  * écran qui garde son propre décor (la partie de cartes). Il pose lui-même la palette de
  * l'espace, pour que la pastille ait sa couleur hors de SousPage.
  */
@@ -54,7 +54,6 @@ export function LienRetour({ retour, className }: { retour: Retour; className?: 
   return (
     <Link href={retour.href} className={[s.retour, className].filter(Boolean).join(" ")} style={styleDePalette(p)}>
       <ArrowLeft size={14} aria-hidden />
-      <span className={s.pastille} aria-hidden />
       <span>{retour.label}</span>
     </Link>
   );
