@@ -218,7 +218,7 @@ const subjects: SubjectAvailability[] = SUBJECTS.map((s) => ({
   check("les matières sans suivi gardent leur ligne d'avant, la matière à venir aussi", avec2.includes("4 paquets · 60 cartes") && avec2.includes(">à venir<"));
   check("la maîtrise (barre, %) reste en place", avec2.includes("62 %") && avec2.includes('role="progressbar"'));
 
-  const page = (kind: "cartes" | "fiche", a?: typeof avances) => renderToStaticMarkup(<ListeReviser kind={kind} subjects={subjects} suite={<div />} avances={a} />);
+  const page = (kind: "cartes" | "fiche", a?: typeof avances) => renderToStaticMarkup(<ListeReviser kind={kind} subjects={subjects} avances={a} />);
   const cartesAvec = page("cartes", avances);
   check("la page : légende au-dessus de l'index, avancement dans les lignes", cartesAvec.includes("Une pastille par paquet") && cartesAvec.includes(">21/60 vues<"));
   const cartesSans = page("cartes");

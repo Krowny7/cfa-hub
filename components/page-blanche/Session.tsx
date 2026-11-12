@@ -57,7 +57,7 @@ export function SessionPageBlanche({
 
   // la page d'une phase : l'en-tête commun, puis la colonne de la séance
   const page = (titre: React.ReactNode, ligne: React.ReactNode, contenu: React.ReactNode) => (
-    <SousPage entete={<EnTeteSousPage retour={RETOUR.pageBlanche} titre={titre} ligne={ligne} />}>
+    <SousPage entete={<EnTeteSousPage retour={RETOUR.pageBlanche} illustration={{ nom: "reviser-page-blanche", position: "50% 62%" }} titre={titre} ligne={ligne} />}>
       <ColonneSeance>{contenu}</ColonneSeance>
     </SousPage>
   );

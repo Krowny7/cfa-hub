@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { EncreVive } from "@/components/nav/EncreVive";
+import { Illustration } from "@/components/ui/Illustration";
+import type { IllustrationNom } from "@/lib/illustrations";
 import { PALETTES, paletteDeChemin, styleDePalette, type Palette } from "@/lib/palettes";
 import s from "./SousPage.module.css";
 
@@ -58,15 +60,36 @@ export function LienRetour({ retour, className }: { retour: Retour; className?: 
   );
 }
 
-export function EnTeteSousPage({ retour, titre, ligne, actions }: { retour: Retour; titre: React.ReactNode; ligne?: React.ReactNode; actions?: React.ReactNode }) {
+/**
+ * Le début de toutes les sous-pages : un cadre (choix de Théo, 2026-11-12) avec le retour, le titre,
+ * une ligne et les actions à gauche, et l'illustration du lieu à droite quand la page en a une.
+ */
+export function EnTeteSousPage({
+  retour,
+  titre,
+  ligne,
+  actions,
+  illustration,
+}: {
+  retour: Retour;
+  titre: React.ReactNode;
+  ligne?: React.ReactNode;
+  actions?: React.ReactNode;
+  illustration?: { nom: IllustrationNom; position?: string };
+}) {
   return (
-    <header className={s.entete}>
-      <div className={s.gauche}>
+    <header className={s.cadre} data-illustre={illustration ? "1" : undefined}>
+      <div className={s.contenu}>
         <LienRetour retour={retour} />
         <h1 className={"t-h1 rl-in " + s.titre}>{titre}</h1>
         {ligne && <p className={s.ligne}>{ligne}</p>}
+        {actions && <div className={s.actions}>{actions}</div>}
       </div>
-      {actions && <div className={s.actions}>{actions}</div>}
+      {illustration && (
+        <div className={s.image}>
+          <Illustration nom={illustration.nom} position={illustration.position} decorative eager />
+        </div>
+      )}
     </header>
   );
 }

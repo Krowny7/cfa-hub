@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ListeReviser, SuiteListe } from "@/components/reviser/ListeReviser";
+import { ListeReviser } from "@/components/reviser/ListeReviser";
 import { loadSubjectsSafe } from "@/components/reviser/load";
 import { OnePagersAcces } from "@/components/reviser/OnePagers";
 import { onePagerItems } from "@/components/reviser/shelves";
@@ -18,7 +18,6 @@ export default async function FichesPage() {
     <ListeReviser
       kind="fiche"
       subjects={subjects}
-      suite={<SuiteListe kind="fiche" subjects={subjects} />}
       apres={<OnePagersAcces items={onePagerItems()} />}
     />
   );

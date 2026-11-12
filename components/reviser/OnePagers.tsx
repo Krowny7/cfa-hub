@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ArrowUpRight, ChevronRight, Layers } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { pad2 } from "@/components/reviser/rail";
 import type { OnePagerItem } from "@/components/reviser/shelves";
 import { OP } from "@/lib/voice-reviser";
-import { MATIERE_CARTES } from "@/lib/voice-z3c";
+import { Presentoir, type Piece } from "@/components/ui/Presentoir";
 import s from "./OnePagers.module.css";
 
 // Les one-pagers (une page A4 PDF par matière) : la grille de vignettes de
@@ -12,54 +12,23 @@ import s from "./OnePagers.module.css";
 // leurs URL signées, générées côté serveur. Sans état ni requête.
 
 /**
- * La grille des one-pagers : vignette A4, rang et code, matière, poids à
- * l'examen ; au pied, les flashcards de la matière (le combo de la veille).
- * `url` null : PDF indisponible (feuille en filigrane, sans lien).
+ * Les one-pagers sur le présentoir (components/ui/Presentoir) : la vignette A4 de chaque matière,
+ * rang et code, poids à l'examen ; le PDF s'ouvre dans un nouvel onglet. `url` null : PDF
+ * indisponible (feuille en filigrane, sans lien).
  */
 export function OnePagersGrille({ items }: { items: (OnePagerItem & { url: string | null })[] }) {
-  return (
-    <ul className={s.grille}>
-      {items.map((it) => {
-        const inner = (
-          <>
-            <span className={s.vignette}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={it.thumb} alt="" width={300} height={425} loading="lazy" decoding="async" />
-            </span>
-            <span className={s.legende}>
-              <span className="min-w-0 flex-1">
-                <span className="t-micro block font-mono font-semibold">
-                  {pad2(it.index)} · {it.code}
-                </span>
-                <span className={s.nom + " mt-1"}>{it.name}</span>
-                <span className="t-micro mt-1 block">{it.url ? it.weight : OP.indisponible}</span>
-              </span>
-              {it.url && <ArrowUpRight size={16} aria-hidden className="mt-0.5 shrink-0 text-muted" />}
-            </span>
-          </>
-        );
-        return (
-          <li key={it.key} className="min-w-0">
-            <div className={(it.url ? "card rl-lift " : "card-quiet " + s.indispo + " ") + s.carte}>
-              {it.url ? (
-                <a href={it.url} target="_blank" rel="noopener noreferrer" aria-label={OP.ouvrir(it.name)} className={s.ouvrir}>
-                  {inner}
-                </a>
-              ) : (
-                <div aria-disabled className={s.ouvrir}>
-                  {inner}
-                </div>
-              )}
-              <Link href={`/flashcards/matiere/${it.key}`} className={s.cartes} aria-label={MATIERE_CARTES.lienCarteAide(it.name)}>
-                <Layers size={14} aria-hidden /> {MATIERE_CARTES.lienCarte}
-                <ChevronRight size={14} aria-hidden className={s.chevron} />
-              </Link>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
+  const pieces: Piece[] = items.map((it) => ({
+    cle: it.key,
+    href: it.url,
+    externe: true,
+    numero: pad2(it.index),
+    code: it.code,
+    titre: it.name,
+    ligne: (it.url ? it.weight : OP.indisponible) ?? undefined,
+    image: it.thumb,
+    aria: OP.ouvrir(it.name),
+  }));
+  return <Presentoir pieces={pieces} label={OP.titre} />;
 }
 
 /** L'accès depuis /fiches : une petite pile de feuilles, un titre, une ligne, vers /fiches/one-pagers. */

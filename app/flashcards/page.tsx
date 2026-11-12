@@ -8,7 +8,6 @@ import { BOUCLE } from "@/lib/voice-z3c";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FlashcardPaquets, flashcardGroups, flashcardPaquets, paquetsDeMatiere } from "@/components/FlashcardSubjectGrid";
 import type { ContentSetRow } from "@/components/ContentListPage";
-import { SuiteFlashcards } from "@/components/reviser/SuiteFlashcards";
 import { ListeReviser } from "@/components/reviser/ListeReviser";
 import { loadSubjectsSafe } from "@/components/reviser/load";
 import { RV } from "@/lib/voice-reviser";
@@ -157,7 +156,6 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
           ) : null}
         </>
       }
-      suite={<SuiteFlashcards fallback={first && firstGroup ? { id: first.id, title: first.title, subject: firstGroup.name } : null} counts={counts} subjects={subjects} />}
       apres={
         <>
           <SynchroMarquesCartes joueur={user.id} />

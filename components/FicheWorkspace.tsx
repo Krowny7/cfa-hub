@@ -469,6 +469,7 @@ export function FicheWorkspace({
     <SousPage
       entete={
         <EnTeteSousPage
+          illustration={{ nom: "reviser-carnets" }}
           retour={{ href: backHref, label: backLabel }}
           titre={title}
           ligne={description}

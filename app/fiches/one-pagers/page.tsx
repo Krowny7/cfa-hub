@@ -31,7 +31,7 @@ export default async function OnePagersPage() {
   }
 
   return (
-    <SousPage entete={<EnTeteSousPage retour={RETOUR.fiches} titre={OP.titre} ligne={OP.desc} />}>
+    <SousPage entete={<EnTeteSousPage retour={RETOUR.fiches} illustration={{ nom: "reviser-peche" }} titre={OP.titre} ligne={OP.desc} />}>
       <section className="rl-section rl-in" aria-label={OP.grille}>
         <OnePagersGrille items={items.map((it) => ({ ...it, url: urls.get(it.file) ?? null }))} />
         <p className="t-micro m-0">{OP.impression}</p>

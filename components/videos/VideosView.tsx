@@ -192,7 +192,7 @@ export function VideosView({
   const groupes = video ? groupesDeMatiere(video) : [];
 
   return (
-    <SousPage className={s.page} entete={<EnTeteSousPage retour={{ href: "/reviser", label: T.retour }} titre={T.titre} ligne={T.sous} />}>
+    <SousPage className={s.page} entete={<EnTeteSousPage retour={{ href: "/reviser", label: T.retour }} illustration={{ nom: "reviser-bibliotheque" }} titre={T.titre} ligne={T.sous} />}>
 
       <section aria-label={T.lesVideos}>
         <ul className={s.rail}>

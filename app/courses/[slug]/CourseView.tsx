@@ -28,6 +28,7 @@ export function CourseView({
     <SousPage
       entete={
         <EnTeteSousPage
+          illustration={{ nom: "reviser-pupitre" }}
           retour={RETOUR.cours}
           titre={course.title}
           ligne={

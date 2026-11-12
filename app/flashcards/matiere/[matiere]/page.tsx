@@ -147,6 +147,7 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
     <SousPage
       entete={
         <EnTeteSousPage
+          illustration={{ nom: "reviser-casier" }}
           retour={RETOUR.flashcards}
           titre={subject.name}
           ligne={

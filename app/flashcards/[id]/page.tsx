@@ -53,7 +53,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
 
   if (setErr || !setData) {
     // le retour de l'en-tête ramène aux flashcards : pas de second bouton
-    return <SousPage entete={<EnTeteSousPage retour={RETOUR.flashcards} titre={t(locale, "flashcards.notFound")} ligne={BOUCLE.paquetIntrouvable} />} />;
+    return <SousPage entete={<EnTeteSousPage retour={RETOUR.flashcards} illustration={{ nom: "reviser-casier" }} titre={t(locale, "flashcards.notFound")} ligne={BOUCLE.paquetIntrouvable} />} />;
   }
 
   const set = setData as unknown as SetRow;
@@ -109,6 +109,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
     <SousPage
       entete={
         <EnTeteSousPage
+          illustration={{ nom: "reviser-casier" }}
           retour={RETOUR.flashcards}
           titre={parts.main}
           ligne={

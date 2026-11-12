@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ListeReviser, SuiteListe } from "@/components/reviser/ListeReviser";
+import { ListeReviser } from "@/components/reviser/ListeReviser";
 import { loadSubjectsSafe } from "@/components/reviser/load";
 
 // Cours complets : un deck PDF + un audio narré par matière, décrits dans
@@ -13,5 +13,5 @@ export default async function CoursesPage() {
   if (!auth.user) redirect("/login");
 
   const subjects = await loadSubjectsSafe(supabase, auth.user.id);
-  return <ListeReviser kind="cours" subjects={subjects} suite={<SuiteListe kind="cours" subjects={subjects} />} />;
+  return <ListeReviser kind="cours" subjects={subjects} />;
 }

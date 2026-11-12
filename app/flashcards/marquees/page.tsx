@@ -42,6 +42,7 @@ export default async function FlashcardsMarqueesPage() {
     <SousPage
       entete={
         <EnTeteSousPage
+          illustration={{ nom: "moi-marquees" }}
           retour={RETOUR.flashcards}
           titre={MARQUE_CARTE.titre}
           ligne={cards.length ? `${plural(cards.length, "carte", "cartes")} · ${MARQUE_CARTE.matieres(matieres)}` : undefined}

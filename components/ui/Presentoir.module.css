@@ -1,0 +1,266 @@
+/* Le présentoir (components/ui/Presentoir.tsx) : des pièces posées de travers sur la table,
+   leur pile derrière ; elles se posent à l'arrivée, se redressent et s'ouvrent au survol. */
+
+.table {
+  --ressort: cubic-bezier(0.2, 0.85, 0.25, 1.15);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 40px 28px;
+  margin: 0;
+  padding: 14px 6px 4px;
+  list-style: none;
+}
+@media (min-width: 900px) {
+  .table {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 48px 34px;
+  }
+}
+
+/* chaque place a son angle, pour que la table ne soit pas une grille droite */
+.place {
+  --r: -1.6deg;
+  min-width: 0;
+  animation: poser 0.6s var(--ressort) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.place:nth-child(4n + 2) {
+  --r: 1.3deg;
+}
+.place:nth-child(4n + 3) {
+  --r: -0.5deg;
+}
+.place:nth-child(4n + 4) {
+  --r: 1.9deg;
+}
+@keyframes poser {
+  from {
+    opacity: 0;
+    transform: translateY(-26px) rotate(calc(var(--r) * 5)) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lien {
+  display: grid;
+  gap: 14px;
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+}
+.lien:focus-visible .face {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 4px;
+}
+
+/* l'objet : la face et sa pile, au même format */
+.objet {
+  position: relative;
+  display: block;
+  aspect-ratio: 210 / 297;
+}
+.table[data-forme="paquet"] .objet {
+  aspect-ratio: 5 / 7;
+}
+.face,
+.pile i {
+  position: absolute;
+  inset: 0;
+  border-radius: 7px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+}
+.table[data-forme="paquet"] .face,
+.table[data-forme="paquet"] .pile i {
+  border-radius: 14px;
+}
+.face {
+  z-index: 2;
+  overflow: hidden;
+  transform: rotate(var(--r));
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.04),
+    0 16px 26px -18px rgba(0, 0, 0, 0.5);
+  transition:
+    transform 0.45s var(--ressort),
+    box-shadow 0.45s ease;
+}
+.face > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.pile {
+  position: absolute;
+  inset: 0;
+}
+.pile i {
+  background: var(--surface-2);
+  transition: transform 0.45s var(--ressort);
+}
+.pile i:nth-child(1) {
+  transform: rotate(calc(var(--r) - 3.5deg)) translate(-3px, 3px);
+}
+.pile i:nth-child(2) {
+  transform: rotate(calc(var(--r) + 2.5deg)) translate(3px, 2px);
+}
+
+/* survol / clavier : la pièce se redresse et se soulève, la pile s'ouvre en éventail */
+.lien:hover .face,
+.lien:focus-visible .face {
+  transform: translateY(-12px) rotate(0deg);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.04),
+    0 30px 42px -24px rgba(0, 0, 0, 0.55);
+}
+.lien:hover .pile i:nth-child(1),
+.lien:focus-visible .pile i:nth-child(1) {
+  transform: rotate(-9deg) translate(-16px, -4px);
+}
+.lien:hover .pile i:nth-child(2),
+.lien:focus-visible .pile i:nth-child(2) {
+  transform: rotate(8deg) translate(16px, -4px);
+}
+
+/* la face dessinée (sans vignette) : une feuille écrite, ou une carte à jouer */
+.dessin {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 8px;
+  padding: 14px 14px 12px;
+  background:
+    radial-gradient(120% 60% at 100% 0%, color-mix(in srgb, var(--pal-3, #999) 22%, transparent), transparent 70%),
+    var(--surface);
+}
+.coin,
+.coinBas {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.coinBas {
+  justify-self: end;
+}
+.code {
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(26px, 2.6vw, 34px);
+  line-height: 1;
+  color: var(--pal-1, var(--ink));
+}
+:global(html[data-theme="nuit"]) .code {
+  color: var(--pal-4, var(--ink));
+}
+.lignes {
+  align-self: start;
+  height: 46%;
+  background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--ink) 10%, transparent) 0 2px, transparent 2px 11px);
+  mask-image: linear-gradient(90deg, #000 70%, transparent);
+}
+/* la carte à jouer : un liseré intérieur, le code au centre, les coins */
+.table[data-forme="paquet"] .dessin {
+  grid-template-rows: auto 1fr auto;
+  place-items: center;
+}
+.table[data-forme="paquet"] .dessin::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid color-mix(in srgb, var(--pal-2, var(--ink)) 45%, transparent);
+  border-radius: 9px;
+  pointer-events: none;
+}
+.table[data-forme="paquet"] .coin {
+  justify-self: start;
+}
+.table[data-forme="paquet"] .lignes {
+  display: none;
+}
+
+/* la légende, sous l'objet */
+.legende {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.surtitre {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+.titre {
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.ligne {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.mesure {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.jauge {
+  flex: 1;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+.jauge i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--pal-2, var(--ink));
+}
+.pct {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pied {
+  margin-top: 8px;
+}
+
+/* pas encore disponible : en filigrane, sans mouvement */
+.place[data-indispo] .objet,
+.place[data-indispo] .legende {
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .place {
+    animation: none;
+  }
+  .face,
+  .pile i {
+    transition: none;
+  }
+  .lien:hover .face,
+  .lien:focus-visible .face {
+    transform: rotate(var(--r));
+  }
+  .lien:hover .pile i:nth-child(1),
+  .lien:focus-visible .pile i:nth-child(1) {
+    transform: rotate(calc(var(--r) - 3.5deg)) translate(-3px, 3px);
+  }
+  .lien:hover .pile i:nth-child(2),
+  .lien:focus-visible .pile i:nth-child(2) {
+    transform: rotate(calc(var(--r) + 2.5deg)) translate(3px, 2px);
+  }
+}
