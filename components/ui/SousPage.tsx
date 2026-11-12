@@ -164,3 +164,40 @@ export function ActionContour({
 export function ColonneSeance({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={[s.seance, className].filter(Boolean).join(" ")}>{children}</div>;
 }
+
+/**
+ * Le cadre principal d'une sous-page (choix de Théo, 2026-11-12) : sous l'en-tête, la grande carte
+ * qui porte l'essentiel de la page ; l'annexe vient dessous, sans cadre. `ambiance` donne au cadre
+ * la matière du lieu, pour qu'on reconnaisse la page d'un coup d'œil : « carnet » (papier
+ * quadrillé), « pupitre » (parchemin doré), « tapis » (le tapis vert du casino), « mur » (le
+ * mur où l'on épingle), « marbre » (le palais blanc), « papier » (neutre).
+ */
+export type Ambiance = "papier" | "carnet" | "pupitre" | "tapis" | "mur" | "marbre";
+
+export function CadrePrincipal({
+  ambiance = "papier",
+  titre,
+  aide,
+  tete,
+  children,
+}: {
+  ambiance?: Ambiance;
+  titre?: React.ReactNode;
+  aide?: React.ReactNode;
+  /** sous le titre (une légende…) */
+  tete?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={s.principal} data-ambiance={ambiance} aria-label={typeof titre === "string" ? titre : undefined}>
+      {(titre || aide) && (
+        <div className={s.principalTete}>
+          {titre && <h2 className={s.principalTitre}>{titre}</h2>}
+          {aide && <span className={s.principalAide}>{aide}</span>}
+        </div>
+      )}
+      {tete}
+      {children}
+    </section>
+  );
+}

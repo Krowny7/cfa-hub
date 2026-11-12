@@ -5,6 +5,7 @@ import { nombre } from "@/lib/voice";
 const pluriel = (n: number, mot: string) => (n > 1 ? `${mot}s` : mot);
 
 export const PB = {
+  matieresTitre: "Les matières, copie par copie",
   titre: "La page blanche",
   sous: "Tu récites sur ton papier, tu révèles, tu te notes. Ce que tu rates revient au tour suivant.",
   /** le lieu de la peinture, en légende de la rangée héros */

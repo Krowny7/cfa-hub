@@ -1,53 +1,5 @@
-/* La page blanche : le choix de la matière, puis la feuille, sur le papier du site. L'en-tête,
-   la rangée héros et la colonne de la séance sont ceux des sous-pages (components/ui/SousPage). */
-.matieres {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.matiere {
-  display: grid;
-  gap: 8px;
-  height: 100%;
-  padding: 18px;
-  border: 1px solid var(--pencil-2);
-  border-radius: 16px;
-  background: var(--surface);
-  box-shadow: var(--shadow-1);
-  color: inherit;
-  text-decoration: none;
-  transition: transform var(--dur-2) var(--ease-out);
-}
-@media (hover: hover) {
-  .matiere:hover {
-    transform: translateY(-3px);
-  }
-}
-.matiere b {
-  font-size: 16px;
-  line-height: 1.2;
-}
-.reste {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--ink-2);
-}
-.jauge {
-  display: block;
-  height: 6px;
-  overflow: hidden;
-  border-radius: 99px;
-  background: var(--paper-2);
-}
-.jauge i {
-  display: block;
-  height: 100%;
-  border-radius: 99px;
-  background: var(--ink);
-}
+/* La page blanche : la feuille de la séance, sur le papier du site. L'en-tête, le cadre principal,
+   le présentoir des matières et la colonne de la séance sont communs aux sous-pages. */
 .compte {
   margin: 0;
   font-family: var(--font-mono);

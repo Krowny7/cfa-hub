@@ -30,9 +30,18 @@ export type Piece = {
   aria?: string;
 };
 
-export function Presentoir({ pieces, forme = "feuille", label }: { pieces: Piece[]; forme?: "feuille" | "paquet"; label?: string }) {
+/**
+ * La forme dit le lieu, pour qu'on reconnaisse la page d'un coup d'œil : « carnet » (fiches : page
+ * lignée, marge rouge, trous), « livret » (cours : couverture sombre, titre doré), « paquet »
+ * (flashcards : carte à jouer), « epingle » (one-pagers : la vignette épinglée), « blanche » (la page
+ * blanche : feuille nue), « feuille » (par défaut). `ton` « sombre » : posé sur une table sombre
+ * (le tapis vert), les légendes passent en clair et les faces gardent leur papier.
+ */
+export type FormePiece = "feuille" | "carnet" | "livret" | "paquet" | "epingle" | "blanche";
+
+export function Presentoir({ pieces, forme = "feuille", ton, label }: { pieces: Piece[]; forme?: FormePiece; ton?: "sombre"; label?: string }) {
   return (
-    <ul className={s.table} data-forme={forme} aria-label={label}>
+    <ul className={s.table} data-forme={forme} data-ton={ton} aria-label={label}>
       {pieces.map((p, i) => (
         <li key={p.cle} className={s.place} style={{ "--i": i } as React.CSSProperties} data-indispo={p.href ? undefined : "1"}>
           <Lien piece={p}>
@@ -47,7 +56,10 @@ export function Presentoir({ pieces, forme = "feuille", label }: { pieces: Piece
                   <img src={p.image} alt="" loading="lazy" decoding="async" />
                 ) : (
                   <span className={s.dessin} aria-hidden>
-                    <span className={s.coin}>{p.numero}</span>
+                    <span className={s.coin}>
+                      {p.numero}
+                      <span className={s.enseigne}>♠</span>
+                    </span>
                     <b className={s.code}>{p.code}</b>
                     <span className={s.lignes} />
                     <span className={s.coinBas}>{p.numero}</span>

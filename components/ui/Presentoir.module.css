@@ -264,3 +264,149 @@
     transform: rotate(calc(var(--r) + 2.5deg)) translate(3px, 2px);
   }
 }
+
+/* ——— les formes : chaque lieu son objet ——— */
+
+/* carnet (fiches) : page lignée, marge rouge, trous de reliure à gauche */
+.table[data-forme="carnet"] .dessin {
+  padding-left: 26px;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--ink) 28%, transparent) 2.4px, transparent 3px) 4px 14px / 12px 22px repeat-y,
+    linear-gradient(90deg, transparent 19px, rgba(180, 65, 47, 0.5) 19px 20.5px, transparent 20.5px),
+    repeating-linear-gradient(180deg, transparent 0 15px, color-mix(in srgb, #2d5f96 26%, transparent) 15px 16px),
+    var(--surface);
+  background-position:
+    4px 14px,
+    0 0,
+    0 30px,
+    0 0;
+}
+.table[data-forme="carnet"] .lignes {
+  display: none;
+}
+
+/* livret (cours complets) : couverture sombre, dos plus foncé, titre doré dans un filet */
+.table[data-forme="livret"] .objet {
+  aspect-ratio: 3 / 4;
+}
+.table[data-forme="livret"] .face,
+.table[data-forme="livret"] .pile i {
+  border-radius: 4px 10px 10px 4px;
+  border-color: rgba(0, 0, 0, 0.35);
+}
+.table[data-forme="livret"] .pile i {
+  background: #3a2718;
+}
+.table[data-forme="livret"] .dessin {
+  place-items: center;
+  grid-template-rows: auto 1fr auto;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.38) 0 10px, rgba(255, 255, 255, 0.1) 10px 11px, transparent 11px),
+    radial-gradient(120% 80% at 70% 0%, rgba(214, 161, 63, 0.18), transparent 60%),
+    #4a3120;
+}
+.table[data-forme="livret"] .dessin::after {
+  content: "";
+  position: absolute;
+  inset: 12px 10px 12px 20px;
+  border: 1px solid rgba(214, 161, 63, 0.55);
+  border-radius: 4px;
+  pointer-events: none;
+}
+.table[data-forme="livret"] .code {
+  color: #d6a13f;
+}
+.table[data-forme="livret"] .coin,
+.table[data-forme="livret"] .coinBas {
+  color: rgba(241, 233, 212, 0.6);
+  justify-self: center;
+}
+.table[data-forme="livret"] .lignes {
+  display: none;
+}
+
+/* paquet (flashcards) : la carte à jouer, son enseigne dans le coin */
+.enseigne {
+  display: none;
+}
+.table[data-forme="paquet"] .enseigne {
+  display: inline;
+  margin-left: 4px;
+  color: #b4412f;
+}
+
+/* epingle (one-pagers) : la vignette tenue au mur par une punaise */
+.table[data-forme="epingle"] .objet::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: -7px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0a08f 0 20%, #b4412f 45%, #7a2a1d 100%);
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%) rotate(var(--r));
+  transition: transform 0.45s var(--ressort);
+}
+.table[data-forme="epingle"] .lien:hover .objet::after,
+.table[data-forme="epingle"] .lien:focus-visible .objet::after {
+  transform: translate(-50%, -12px);
+}
+.table[data-forme="epingle"] .pile {
+  display: none;
+}
+
+/* blanche (la page blanche) : la feuille nue, presque rien d'écrit */
+.table[data-forme="blanche"] .dessin {
+  background: #fff;
+}
+.table[data-forme="blanche"] .code {
+  color: rgba(17, 17, 17, 0.16);
+}
+.table[data-forme="blanche"] .coin,
+.table[data-forme="blanche"] .coinBas {
+  color: rgba(17, 17, 17, 0.35);
+}
+.table[data-forme="blanche"] .lignes {
+  display: none;
+}
+.table[data-forme="blanche"] .face,
+.table[data-forme="blanche"] .pile i {
+  background: #fff;
+  border-color: rgba(17, 17, 17, 0.12);
+}
+
+/* sur une table sombre (le tapis vert) : les faces gardent leur papier, les légendes en clair */
+.table[data-ton="sombre"] .face,
+.table[data-ton="sombre"] .dessin {
+  background-color: #fbf8f2;
+}
+.table[data-ton="sombre"] .pile i {
+  background: #e6dfd0;
+  border-color: rgba(0, 0, 0, 0.2);
+}
+.table[data-ton="sombre"] .coin,
+.table[data-ton="sombre"] .coinBas {
+  color: #6b6458;
+}
+.table[data-ton="sombre"] .code {
+  color: #4a3120;
+}
+.table[data-ton="sombre"] .surtitre {
+  color: rgba(243, 236, 224, 0.6);
+}
+.table[data-ton="sombre"] .titre {
+  color: #f3ece0;
+}
+.table[data-ton="sombre"] .ligne,
+.table[data-ton="sombre"] .pct {
+  color: rgba(243, 236, 224, 0.8);
+}
+.table[data-ton="sombre"] .jauge {
+  background: rgba(255, 255, 255, 0.16);
+}
+.table[data-ton="sombre"] .jauge i {
+  background: #d6a13f;
+}

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnePagersGrille } from "@/components/reviser/OnePagers";
 import { onePagerItems } from "@/components/reviser/shelves";
-import { EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { CadrePrincipal, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { OP, RETOUR } from "@/lib/voice-reviser";
 
 export const metadata = { title: "One-pagers · Ranked Lobby" };
@@ -32,10 +32,10 @@ export default async function OnePagersPage() {
 
   return (
     <SousPage entete={<EnTeteSousPage retour={RETOUR.fiches} illustration={{ nom: "reviser-peche" }} titre={OP.titre} ligne={OP.desc} />}>
-      <section className="rl-section rl-in" aria-label={OP.grille}>
+      <CadrePrincipal ambiance="mur">
         <OnePagersGrille items={items.map((it) => ({ ...it, url: urls.get(it.file) ?? null }))} />
-        <p className="t-micro m-0">{OP.impression}</p>
-      </section>
+      </CadrePrincipal>
+      <p className="t-micro m-0">{OP.impression}</p>
     </SousPage>
   );
 }
