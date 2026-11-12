@@ -19,7 +19,7 @@
 .cote {
   display: grid;
   gap: 16px;
-  align-content: end;
+  align-content: start;
   min-width: 0;
   margin: 0 calc(-1 * var(--pad-x, 18px)) calc(-1 * var(--pad-b, 28px));
   padding: 18px var(--pad-x, 18px) var(--pad-b, 28px);
@@ -118,4 +118,24 @@
   .cartesMini i {
     transition: none;
   }
+}
+
+/* la colonne du carrousel : son titre en haut, l'anneau centré dans la hauteur qui reste */
+.gauche {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+  min-width: 0;
+  align-self: stretch;
+}
+.gauche > :last-child {
+  align-self: center;
+}
+/* le titre de chaque partie du cadre */
+.zone {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }

@@ -4,7 +4,8 @@
 .carrousel {
   --carte: 118px;
   display: grid;
-  gap: 14px;
+  align-content: center;
+  gap: 4px;
   min-width: 0;
 }
 @media (min-width: 900px) {

@@ -39,6 +39,8 @@ export const PARTIE_ENTREE = {
   /** la bulle de Léonard, à droite du carrousel des flashcards */
   invite: "Une partie ? Je distribue, tu retournes. Chaque carte maîtrisée te rapporte un jeton.",
   lancer: "Lancer une partie",
+  /** le titre de la colonne de Léonard, sur la page des flashcards */
+  titreZone: "Essaie une partie",
 } as const;
 
 // ---------------------------------------------------------------------------

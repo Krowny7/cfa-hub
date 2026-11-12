@@ -60,7 +60,10 @@ export function ListeReviser({
       {kind === "cartes" && croupier ? (
         <CadrePrincipal>
           <div className={s.tapis}>
-            <Carrousel pieces={pieces} action={RV.cartesOuvrir} />
+            <div className={s.gauche}>
+              <h2 className={s.zone}>{RV.cartesTitre}</h2>
+              <Carrousel pieces={pieces} action={RV.cartesOuvrir} />
+            </div>
             {croupier}
           </div>
         </CadrePrincipal>
