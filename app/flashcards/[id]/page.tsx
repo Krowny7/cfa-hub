@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Layers } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -6,7 +5,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { FlashcardReview } from "@/components/FlashcardReview";
 import { FlashcardCardEditor } from "@/components/FlashcardCardEditor";
 import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
-import { ContentDetailHeader, DisclosureRow, plural, splitTitle, subjectOfFolder, subjectOfTitle, visibilityLabel } from "@/components/ContentDetailHeader";
+import { DisclosureRow, plural, splitTitle, subjectOfFolder, subjectOfTitle } from "@/components/ContentDetailHeader";
+import { ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { RETOUR } from "@/lib/voice-reviser";
 import { fichePaquetFile, memoPaquetImage, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
 import { Memo } from "@/components/flashcards/Memo";
 import { RATIO_PAQUET, boitesMemo } from "@/lib/flashcards/memos";
@@ -51,16 +52,8 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   ]);
 
   if (setErr || !setData) {
-    return (
-      <div className="mx-auto grid max-w-[560px] justify-items-start gap-3 pt-4 md:pt-10">
-        <p className="t-eyebrow">Flashcards</p>
-        <h1 className="t-h1 m-0">{t(locale, "flashcards.notFound")}</h1>
-        <p className="t-small">Il a peut-être été supprimé, ou il n&apos;est pas partagé avec toi.</p>
-        <Link href="/flashcards" className="btn btn-secondary mt-3">
-          Retour aux flashcards
-        </Link>
-      </div>
-    );
+    // le retour de l'en-tête ramène aux flashcards : pas de second bouton
+    return <SousPage entete={<EnTeteSousPage retour={RETOUR.flashcards} titre={t(locale, "flashcards.notFound")} ligne={BOUCLE.paquetIntrouvable} />} />;
   }
 
   const set = setData as unknown as SetRow;
@@ -88,7 +81,8 @@ export default async function FlashcardSetPage({ params }: PageProps) {
     }
   }
   const subject = subjectOfFolder(nomDossier) ?? subjectOfTitle(set.title);
-  const eyebrow = [subject?.name, parts.lead].filter(Boolean).join(" · ") || null;
+  // la seule ligne de l'en-tête : matière, repère du paquet, cartes (sans Public / Privé)
+  const ligneEntete = [subject?.name, parts.lead, plural(cards.length, "carte", "cartes")].filter(Boolean).join(" · ");
 
   // Le one-pager de la matière (une page A4, bucket privé « fiches », URL
   // signée d'une heure) : proposé en fin de boucle, absent s'il n'est pas en ligne.
@@ -108,66 +102,74 @@ export default async function FlashcardSetPage({ params }: PageProps) {
     onePagerSlug && numero ? signer(memoPaquetImage(onePagerSlug, numero)) : Promise.resolve(null),
   ]);
 
+  // Gabarit C des sous-pages : l'en-tête commun (retour aux flashcards, le thème du paquet, une
+  // ligne et la pastille « Maîtrisé »), puis la colonne des séances (760 px). Ni « Mémo » ni
+  // « Partager » en tête (demande de l'utilisateur) : le mémo est sous la révision.
   return (
-    <div className="mx-auto flex w-full max-w-[780px] flex-col gap-8 md:gap-10">
-      <RecentFlashcardSetTracker id={id} title={set.title} />
+    <SousPage
+      entete={
+        <EnTeteSousPage
+          retour={RETOUR.flashcards}
+          titre={parts.main}
+          ligne={
+            <span className="inline-flex min-h-[26px] flex-wrap items-center gap-x-3 gap-y-1">
+              <span>{ligneEntete}</span>
+              {progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} seulementFini /> : null}
+            </span>
+          }
+        />
+      }
+    >
+      <ColonneSeance>
+        <RecentFlashcardSetTracker id={id} title={set.title} />
 
-      <ContentDetailHeader
-        backHref="/flashcards"
-        backLabel={t(locale, "nav.flashcards")}
-        title={parts.main}
-        eyebrow={eyebrow}
-        meta={[plural(cards.length, "carte", "cartes"), visibilityLabel(set.visibility)]}
-        etat={progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} seulementFini /> : null}
-        // ni « Mémo » ni « Partager » en tête (demande de l'utilisateur) : le mémo est sous la révision
-      />
+        {/* La révision est l'usage quotidien : premier contenu visible, sans défilement */}
+        <FlashcardReview
+          cards={cards}
+          setId={id}
+          traitsJour={traitsJour}
+          matiere={subject?.key}
+          matiereNom={subject?.name ?? null}
+          theme={themePaquet(set.title)}
+          onePager={onePager}
+          autresHref={subject ? `/flashcards?subject=${subject.key}#paquets` : "/flashcards"}
+          compte={progressions ? { cle, ligne, lueA: Date.now() } : null}
+          joueur={auth.user.id}
+        />
 
-      {/* La révision est l'usage quotidien : premier contenu visible, sans défilement */}
-      <FlashcardReview
-        cards={cards}
-        setId={id}
-        traitsJour={traitsJour}
-        matiere={subject?.key}
-        matiereNom={subject?.name ?? null}
-        theme={themePaquet(set.title)}
-        onePager={onePager}
-        autresHref={subject ? `/flashcards?subject=${subject.key}#paquets` : "/flashcards"}
-        compte={progressions ? { cle, ligne, lueA: Date.now() } : null}
-        joueur={auth.user.id}
-      />
-
-      {memo && onePagerSlug && numero ? (
-        // le mémo du paquet : la zone de la carte à l'écran surlignée en jaune (demande de l'utilisateur)
-        <section className="rl-section mt-6 md:mt-10" aria-labelledby="memo-paquet">
-          <h2 id="memo-paquet" className="t-h3 m-0">
-            {BOUCLE.memoPaquetTitre}
-          </h2>
-          <Memo
-            src={memo}
-            pdf={fiche}
-            titre={`${BOUCLE.memoPaquetTitre} · ${themePaquet(set.title)}`}
-            ratio={RATIO_PAQUET}
-            boites={boitesMemo(onePagerSlug, numero)}
-            positions={Object.fromEntries(cards.map((c, i) => [c.id, i + 1]))}
-          />
-        </section>
-      ) : (
-        // Le set : toutes les cartes, en lecture seule (paquets sans mémo), repliées
-        <section className="rl-section mt-6 md:mt-10" aria-labelledby="set-cartes">
-          <h2 id="set-cartes" className="t-h3 m-0">
-            Le set
-          </h2>
-          <div className="card divide-y divide-line overflow-hidden">
-            <DisclosureRow
-              icon={<Layers size={18} aria-hidden />}
-              title={t(locale, "flashcards.allCards")}
-              sub={`${plural(cards.length, "carte", "cartes")} · recto et verso`}
-            >
-              <FlashcardCardEditor cards={cards} />
-            </DisclosureRow>
-          </div>
-        </section>
-      )}
-    </div>
+        {memo && onePagerSlug && numero ? (
+          // le mémo du paquet : la zone de la carte à l'écran surlignée en jaune (demande de l'utilisateur)
+          <section className="rl-section mt-6 md:mt-10" aria-labelledby="memo-paquet">
+            <h2 id="memo-paquet" className="t-h3 m-0">
+              {BOUCLE.memoPaquetTitre}
+            </h2>
+            <Memo
+              src={memo}
+              pdf={fiche}
+              titre={`${BOUCLE.memoPaquetTitre} · ${themePaquet(set.title)}`}
+              ratio={RATIO_PAQUET}
+              boites={boitesMemo(onePagerSlug, numero)}
+              positions={Object.fromEntries(cards.map((c, i) => [c.id, i + 1]))}
+            />
+          </section>
+        ) : (
+          // Le set : toutes les cartes, en lecture seule (paquets sans mémo), repliées
+          <section className="rl-section mt-6 md:mt-10" aria-labelledby="set-cartes">
+            <h2 id="set-cartes" className="t-h3 m-0">
+              Le set
+            </h2>
+            <div className="card divide-y divide-line overflow-hidden">
+              <DisclosureRow
+                icon={<Layers size={18} aria-hidden />}
+                title={t(locale, "flashcards.allCards")}
+                sub={`${plural(cards.length, "carte", "cartes")} · recto et verso`}
+              >
+                <FlashcardCardEditor cards={cards} />
+              </DisclosureRow>
+            </div>
+          </section>
+        )}
+      </ColonneSeance>
+    </SousPage>
   );
 }

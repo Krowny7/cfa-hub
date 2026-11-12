@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, Check, Minus, Plus } from "lucide-react";
+import { Check, Minus, Plus } from "lucide-react";
+import { LienRetour } from "@/components/ui/SousPage";
 import {
   MAINS_POSSIBLES,
   PAR_MAIN,
@@ -83,9 +83,8 @@ export function ReglagesPartie({
       </PanneauCroupier>
 
       <div className={s.feuille}>
-        <Link href="/flashcards" className={s.retour}>
-          <ArrowLeft size={15} aria-hidden /> {T.retour}
-        </Link>
+        {/* le retour commun des sous-pages (flèche, pastille de l'espace) ; le reste garde le décor de la partie */}
+        <LienRetour retour={{ href: "/flashcards", label: T.retour }} />
         <div className={s.titre}>
           <p className="t-eyebrow m-0">{T.surTitre}</p>
           <h1>{T.titre}</h1>

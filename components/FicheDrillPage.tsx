@@ -89,23 +89,22 @@ export async function FicheDrillPage({
     }))
     .sort((a, b) => a.page - b.page);
 
-  // Page large (.rl-wide, alignée sur la barre du haut) : cours et quiz côte à
-  // côte sur grand écran. L'en-tête (retour, titre, état de la fiche) est
-  // rendu par FicheWorkspace, qui connaît la progression.
+  // Gabarit B des sous-pages (SousPage, 1 240 px) : cours et quiz côte à côte
+  // sur grand écran. La page entière (l'en-tête commun, avec l'état de la
+  // fiche et le one-pager à droite) est rendue par FicheWorkspace, qui connaît
+  // la progression.
   return (
-    <div className="rl-wide">
-      <FicheWorkspace
-        title={config.title}
-        description={config.description}
-        pdfUrl={pdfUrl}
-        pdfDownloadName={config.pdfDownloadName}
-        pdfLabel={config.pdfLabel}
-        onePagerUrl={onePagerUrl}
-        totalPages={config.totalPages}
-        drillSets={drillSets}
-        initialPage={initialPage}
-        traitsDuJour={traits}
-      />
-    </div>
+    <FicheWorkspace
+      title={config.title}
+      description={config.description}
+      pdfUrl={pdfUrl}
+      pdfDownloadName={config.pdfDownloadName}
+      pdfLabel={config.pdfLabel}
+      onePagerUrl={onePagerUrl}
+      totalPages={config.totalPages}
+      drillSets={drillSets}
+      initialPage={initialPage}
+      traitsDuJour={traits}
+    />
   );
 }

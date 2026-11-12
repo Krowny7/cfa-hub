@@ -103,6 +103,8 @@ function depuis(ms: number): string {
 // La boucle « À revoir » (FlashcardReview) : on repasse les cartes à revoir,
 // mélangées, tour après tour, jusqu'à zéro.
 export const BOUCLE = {
+  /** la page d'un paquet introuvable (le titre vient de flashcards.notFound) */
+  paquetIntrouvable: "Il a peut-être été supprimé, ou il n'est pas partagé avec toi.",
   tour: (n: number) => `Tour ${nombre(n)}`,
   /** sous la barre segmentée */
   compte: (m: number, r: number, reste: number) => `${nombre(m)} maîtrisée${m > 1 ? "s" : ""} · ${nombre(r)} à revoir · ${nombre(reste)} restante${reste > 1 ? "s" : ""}`,
@@ -181,7 +183,6 @@ export const MARQUE_CARTE = {
   entree: (n: number) => `Flashcards marquées · ${nombre(n)}`,
   entreeAide: "Réviser les cartes que tu as marquées, en boucle jusqu'à zéro à revoir",
   // la révision des marquées (/flashcards/marquees)
-  surTitre: "Flashcards · tes marquées",
   titre: "Flashcards marquées",
   matieres: (n: number) => pluriel(n, "matière", "matières"),
   vide: "Aucune flashcard marquée.",
@@ -190,7 +191,6 @@ export const MARQUE_CARTE = {
   /** la lecture a échoué (la table existe) : ni état vide ni appareil */
   indisponibleTitre: "Flashcards marquées indisponibles",
   indisponible: "Tes flashcards marquées n'ont pas pu être chargées. Recharge la page dans un instant.",
-  retour: "Retour aux flashcards",
 } as const;
 
 // Où en est la boucle d'un paquet (ou d'une matière), dans les listes : un
@@ -213,7 +213,8 @@ export const ETAT_PAQUET = {
 
 // La révision de toute une matière (/flashcards/matiere/<clé>).
 export const MATIERE_CARTES = {
-  surTitre: "Flashcards · toute la matière",
+  /** le début de la ligne de l'en-tête */
+  toute: "Toute la matière",
   appelTitre: "Réviser toute la matière",
   appelCompte: (n: number) => cartes(n),
   appelLigne: (paquets: number) =>

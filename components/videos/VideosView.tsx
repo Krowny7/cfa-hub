@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
-import { ArrowLeft, Check, Clapperboard, Play, SkipBack, SkipForward } from "lucide-react";
+import { Check, Clapperboard, Play, SkipBack, SkipForward } from "lucide-react";
 import { dureeVideo, groupesDeMatiere, matiereDe, type VideoResume } from "@/lib/videos";
 import { VIDEOS_TXT as T, dureeTexte, horodatage } from "@/lib/voice-videos";
 import s from "./Videos.module.css";
+import { EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 
 export type SourceVideo = { src: string | null; affiche: string | null };
 
@@ -191,14 +192,7 @@ export function VideosView({
   const groupes = video ? groupesDeMatiere(video) : [];
 
   return (
-    <div className={"rl-wide " + s.page}>
-      <header className="min-w-0">
-        <Link href="/reviser" className={s.retour}>
-          <ArrowLeft size={14} aria-hidden /> {T.retour}
-        </Link>
-        <h1 className="t-h1 mt-3">{T.titre}</h1>
-        <p className="t-small mt-2 max-w-[62ch]">{T.sous}</p>
-      </header>
+    <SousPage className={s.page} entete={<EnTeteSousPage retour={{ href: "/reviser", label: T.retour }} titre={T.titre} ligne={T.sous} />}>
 
       <section aria-label={T.lesVideos}>
         <ul className={s.rail}>
@@ -381,6 +375,6 @@ export function VideosView({
           <p className="t-small mt-3">{T.aucune}</p>
         </div>
       )}
-    </div>
+    </SousPage>
   );
 }

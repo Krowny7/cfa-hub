@@ -93,6 +93,8 @@ export const CARNET = {
 export const FICHE = {
   maitrisees: (n: number) => (n > 1 ? "maîtrisées" : "maîtrisée"),
   jamaisVues: (n: number) => (n > 1 ? "jamais vues" : "jamais vue"),
+  /** l'étiquette du PDF quand aucune page n'est choisie (la matière est déjà le titre de la page) */
+  lePdf: "La fiche en PDF",
 } as const;
 
 // ---------------------------------------------------------------------------

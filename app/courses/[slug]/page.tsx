@@ -36,7 +36,6 @@ export default async function CoursePage({
 
   const pdfUrl = pdfRes.error ? null : (pdfRes.data?.signedUrl ?? null);
   const audioUrl = audioRes.error ? null : (audioRes.data?.signedUrl ?? null);
-  const downloadName = `${course.title.replace(/[^A-Za-z0-9]+/g, "_")}_Cours_Complet.pdf`;
 
-  return <CourseView course={course} pdfUrl={pdfUrl} audioUrl={audioUrl} downloadName={downloadName} startModule={startModule} />;
+  return <CourseView course={course} pdfUrl={pdfUrl} audioUrl={audioUrl} startModule={startModule} />;
 }

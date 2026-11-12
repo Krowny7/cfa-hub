@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ChevronRight } from "lucide-react";
-import { Illustration } from "@/components/ui/Illustration";
+import { ChevronRight } from "lucide-react";
 import { MasteryLine, TwoColumnRows } from "@/components/reviser/SubjectRows";
 import { pad2 } from "@/components/reviser/rail";
 import { SUBJECTS, type SubjectAvailability } from "@/components/reviser/catalog";
@@ -8,10 +7,11 @@ import { ficheInfo } from "@/components/reviser/shelves";
 import { AvanceFlashcards } from "@/components/reviser/AvanceFlashcards";
 import type { AvancesProgramme } from "@/lib/flashcards/avancement";
 import { COURSES } from "@/lib/courses";
-import { LIEUX, RV, type KindListe } from "@/lib/voice-reviser";
+import { RV, type KindListe } from "@/lib/voice-reviser";
 
 // Briques de mise en page des listes de Réviser (/fiches, /courses,
-// /flashcards) : en-tête, carte horizontale du lieu, index du programme.
+// /flashcards) : les lignes du programme et leur index. L'en-tête et la
+// rangée héros sont ceux des sous-pages (ListeReviser, Heros).
 // Sans état ni requête : tout vient des props.
 
 export const subjectIndex = (key: string) => SUBJECTS.findIndex((s) => s.key === key) + 1;
@@ -38,36 +38,6 @@ export function shelfRows(kind: KindListe, subjects: SubjectAvailability[]): She
       meta: s.flashcardSets ? `${s.flashcardSets} paquet${s.flashcardSets > 1 ? "s" : ""} · ${s.flashcardSets * 15} cartes` : "",
     };
   });
-}
-
-/** En-tête compact d'une liste : retour à Réviser, grand titre, une phrase. */
-export function ListeEntete({ title, desc }: { title: string; desc: string }) {
-  return (
-    <header className="flex flex-col gap-3">
-      <Link href="/reviser" className="t-small inline-flex w-fit items-center gap-1.5 font-semibold hover:text-white">
-        <ArrowLeft size={14} aria-hidden /> {RV.retour}
-      </Link>
-      <h1 className="t-hero rl-in m-0">{title}</h1>
-      <p className="t-body m-0 max-w-[560px] text-muted">{desc}</p>
-    </header>
-  );
-}
-
-/** La carte horizontale du lieu (« Les carnets », « Le pupitre », « Le casier ») : image à gauche (300×169 sur ordinateur, 112×84 sur téléphone), nom, une ligne, « n matières sur 10 ». */
-export function LieuHorizontal({ kind, n }: { kind: KindListe; n: number }) {
-  const l = LIEUX[kind];
-  return (
-    <figure className="card rl-in m-0 grid min-w-0 grid-cols-[112px_minmax(0,1fr)] items-center gap-4 overflow-hidden py-3 pr-5 pl-3 md:grid-cols-[300px_minmax(0,1fr)] md:gap-7 md:py-0 md:pr-7 md:pl-0">
-      <div className="h-[84px] w-[112px] overflow-hidden rounded-[12px] md:h-[169px] md:w-[300px] md:rounded-none">
-        <Illustration nom={l.illustration} position={l.position} />
-      </div>
-      <figcaption className="flex min-w-0 flex-col gap-1.5">
-        <span className="font-brand text-[24px] leading-none md:text-[32px]">{l.nom}</span>
-        <span className="t-small">{l.ligne}</span>
-        <span className="t-micro font-semibold">{RV.surDix(n)}</span>
-      </figcaption>
-    </figure>
-  );
 }
 
 /**

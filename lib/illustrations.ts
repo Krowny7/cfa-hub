@@ -104,7 +104,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/reviser-carnets.webp",
     alt: "Une double page des carnets de Léonard",
     credit: "Léonard de Vinci, Codex Arundel 263 ff. 174v-175r, British Library. Domaine public (commons.wikimedia.org, Codex_Arundel_263_ff.174v-175r).",
-    emplacement: "/fiches : carte horizontale du lieu « Les carnets » sous l'en-tête, image 16:9 de 300×169 px sur ordinateur, 112×84 px sur téléphone.",
+    emplacement: "/fiches : peinture du lieu « Les carnets » dans la rangée héros, à droite de la carte « ta suite » (elle couvre sa case).",
     prompt:
       STYLE +
       "Sujet : sur une table de bois patinée, plusieurs carnets de Léonard ouverts : pages couvertes de croquis sépia (engrenages, études de mains, schémas), écriture en miroir illisible, un fusain, une règle et un compas posés dessus. Lumière dorée de fin de journée rasant le papier depuis la gauche. Palette chaude : ocre, Sienne, brun, or. Aucun personnage, aucun texte lisible. Format 16:9, sujet au centre pour permettre un recadrage en 4:3.",
@@ -113,7 +113,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/reviser-pupitre.webp",
     alt: "Un cabinet d'étude, ses étagères et son pupitre",
     credit: "Antonello da Messina, Saint Jérôme dans son étude (vers 1475), recadré sans le personnage. Domaine public (commons.wikimedia.org, Antonello_da_Messina_-_St_Jerome_in_his_study).",
-    emplacement: "/courses : carte horizontale du lieu « Le pupitre » sous l'en-tête, image 16:9 de 300×169 px sur ordinateur, 112×84 px sur téléphone.",
+    emplacement: "/courses : peinture du lieu « Le pupitre » dans la rangée héros, à droite de la carte « ta suite » (elle couvre sa case).",
     prompt:
       STYLE +
       "Sujet : un lutrin de bois sculpté près d'une fenêtre en plein cintre, un grand livre ouvert dessus, une bougie, des étagères de livres derrière, quelques feuillets sur un tabouret. Lumière dorée de fin de journée qui traverse la pièce en diagonale, poussière dans le rayon. Palette chaude : ocre, Sienne, brun, or, ombres bleutées. Aucun personnage, aucun texte lisible. Format 16:9, lutrin légèrement à droite du centre, recadrable en 4:3.",
@@ -122,7 +122,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/reviser-casier.webp",
     alt: "Un meuble à casiers en marqueterie",
     credit: "Recadrage des casiers à claire-voie du studiolo de Gubbio, Metropolitan Museum of Art, CC0 (commons.wikimedia.org, Studiolo_from_the_Ducal_Palace_in_Gubbio_MET_DT213911).",
-    emplacement: "/flashcards : carte horizontale du lieu « Le casier » sous l'en-tête, image 16:9 de 300×169 px sur ordinateur, 112×84 px sur téléphone.",
+    emplacement: "/flashcards : peinture du lieu « Le casier » dans la rangée héros, à droite de la carte « ta suite » (elle couvre sa case).",
     prompt:
       STYLE +
       "Sujet : un meuble à casiers en bois sombre aux portes à claire-voie, des petites cases pleines de cartes de papier vergé jauni ; un tiroir entrouvert, quelques cartes en éventail sur la tablette, une ficelle et un sceau de cire. Lumière dorée de fin de journée venant de la gauche. Palette chaude : ocre, Sienne, brun, or. Aucun personnage, aucun texte lisible. Format 16:9, sujet au centre, recadrable en 4:3.",
@@ -215,7 +215,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/reviser-page-blanche.webp",
     alt: "Un palais blanc à dôme doré entre deux immenses sabliers, dans un vide blanc ; deux samouraïs assis de dos",
     credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-04), choisie par Théo pour La page blanche.",
-    emplacement: "Réviser : petite carte La page blanche. /page-blanche : bandeau de tête.",
+    emplacement: "Réviser : petite carte La page blanche. /page-blanche : peinture de la rangée héros, à droite de la carte « ta suite ».",
     prompt: "Reprends exactement la technique, la lumière et le style de la peinture jointe (huile au couteau, empâtements, décor de jeu vidéo). Un vide blanc immense, un palais blanc à dôme doré entre deux sabliers géants, deux samouraïs minuscules, l'un à écharpe vermillon, assis de dos.",
   },
   "calculs-abaque": {

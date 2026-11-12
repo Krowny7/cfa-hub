@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowRight,
-  ArrowUpRight,
   BarChart3,
   BookOpen,
   Check,
@@ -36,7 +33,8 @@ import { createSupabaseFicheApi, type FicheApi, type LogStorage } from "@/lib/fi
 import { clearRun, loadRun, restoreRun, saveRun, type RestoredRun } from "@/lib/ficheRunStore";
 import { anneau as voixAnneau, ligneAnneauSession, RATURE, VIDE } from "@/lib/voice";
 import { CARNET, FICHE, QUIZ, aReprendre, dateCourte, jourParis, lundiParis, memeJour, rateeFois, reprendreRatures } from "@/lib/voice-z4";
-import { OP } from "@/lib/voice-reviser";
+import { OP, RETOUR } from "@/lib/voice-reviser";
+import { ActionContour, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import {
   buildErrorPoolExport,
   computePageProgress,
@@ -102,7 +100,8 @@ function setUrlParams(params: Record<string, string | null>) {
   }
 }
 
-// Mise en page des fiches : le cours (PDF) à gauche, l'entraînement à droite
+// Mise en page des fiches (gabarit B des sous-pages : l'en-tête commun, puis
+// la zone de travail en 1 240 px) : le cours (PDF) à gauche, l'entraînement à droite
 // sur grand écran ; deux onglets "Cours / Entraînement" sur mobile. Toute
 // réponse est journalisée (quiz_answer_log) : c'est ce qui alimente la
 // progression par page, le carnet d'erreurs (et ses ratures) et le graphique.
@@ -110,8 +109,8 @@ function setUrlParams(params: Record<string, string | null>) {
 export function FicheWorkspace({
   title,
   description,
-  backHref = "/fiches",
-  backLabel = "Fiches de révision",
+  backHref = RETOUR.fiches.href,
+  backLabel = RETOUR.fiches.label,
   pdfUrl,
   pdfDownloadName,
   pdfLabel,
@@ -432,588 +431,591 @@ export function FicheWorkspace({
   const activeTheme = pageTheme(activePage?.title);
   const successPct = totals.attempts > 0 ? Math.round(((totals.attempts - totals.wrong) / totals.attempts) * 100) : 0;
 
+  // à droite de l'en-tête : l'état global de la fiche, puis le one-pager (à contour)
+  const etatFiche = (
+    <div className="w-full md:w-[300px]">
+      {logLoading ? (
+        <div className="rl-skel h-[38px]" />
+      ) : (
+        <>
+          <div className="flex items-baseline justify-between gap-3 text-[12.5px] text-muted">
+            <span>
+              <span className="font-mono text-[13px] font-semibold text-white tabular-nums">{totals.mastered}</span>
+              <span className="font-mono tabular-nums">/{totals.total}</span> {FICHE.maitrisees(totals.mastered)}
+            </span>
+            {totals.weak > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setRun(null);
+                  changeTab("errors");
+                  setMobileView("train");
+                }}
+                className="font-semibold text-pen underline-offset-4 hover:underline"
+              >
+                {aReprendre(totals.weak)}
+              </button>
+            ) : (
+              <span>{rows.length === 0 ? "pas encore commencée" : VIDE.ratures.toLowerCase().replace(/[.]$/, "")}</span>
+            )}
+          </div>
+          <StackBar className="mt-2.5" mastered={totals.mastered} weak={totals.weak} total={totals.total} />
+        </>
+      )}
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-6 md:gap-8">
-      {/* ── En-tête : retour, titre, une ligne ; à droite l'état global de la fiche ── */}
-      <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
-        <div className="min-w-0">
-          <Link href={backHref} className="t-small inline-flex items-center gap-1.5 font-semibold hover:text-white">
-            <ArrowLeft size={14} aria-hidden /> {backLabel}
-          </Link>
-          <h1 className="t-h1 mt-3">{title}</h1>
-          {description && <p className="t-small mt-2 max-w-[560px]">{description}</p>}
-          {onePagerUrl && (
-            <a
-              href={onePagerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={OP.lienFicheAide}
-              className="ink-link mt-3 inline-flex items-center gap-1 text-[14px] font-semibold"
-            >
-              <FileText size={14} aria-hidden /> {OP.lienFiche} <ArrowUpRight size={14} aria-hidden />
-            </a>
-          )}
-        </div>
-        <div className="w-full md:w-[300px]">
-          {logLoading ? (
-            <div className="rl-skel h-[38px]" />
-          ) : (
+    <SousPage
+      entete={
+        <EnTeteSousPage
+          retour={{ href: backHref, label: backLabel }}
+          titre={title}
+          ligne={description}
+          actions={
             <>
-              <div className="flex items-baseline justify-between gap-3 text-[12.5px] text-muted">
-                <span>
-                  <span className="font-mono text-[13px] font-semibold text-white tabular-nums">{totals.mastered}</span>
-                  <span className="font-mono tabular-nums">/{totals.total}</span> {FICHE.maitrisees(totals.mastered)}
-                </span>
-                {totals.weak > 0 ? (
+              {etatFiche}
+              {onePagerUrl && (
+                <ActionContour href={onePagerUrl} aide={OP.lienFicheAide} nouvelOnglet>
+                  <FileText size={15} aria-hidden /> {OP.lienFiche}
+                </ActionContour>
+              )}
+            </>
+          }
+        />
+      }
+    >
+      <div className="flex flex-col gap-6 md:gap-8">
+        {/* Bascule Cours / Entraînement — mobile uniquement */}
+        <SegTabs
+          label="Affichage"
+          className="w-full lg:hidden"
+          equal
+          value={mobileView}
+          onChange={setMobileView}
+          items={[
+            { key: "course", label: "Cours", icon: <Icone nom="cours" size={16} /> },
+            { key: "train", label: "Entraînement", icon: <Icone nom="entrainer" size={16} /> },
+          ]}
+        />
+
+        <div className={wide ? "grid gap-6" : "grid items-start gap-6 lg:grid-cols-2 xl:gap-8"}>
+          {/* ── Cours (PDF) ── */}
+          <section
+            aria-label="Cours"
+            className={`${mobileView === "course" ? "block" : "hidden"} min-w-0 lg:block ${
+              wide ? "lg:order-2" : "lg:sticky lg:top-[84px]"
+            }`}
+          >
+            {!pdfSrc ? (
+              <div className="card-quiet px-6 py-12 text-center">
+                <BookOpen size={20} className="mx-auto text-muted" aria-hidden />
+                <p className="t-small mt-3">Impossible de charger la fiche pour le moment. Réessaie dans un instant.</p>
+              </div>
+            ) : (
+              <div className="card overflow-hidden">
+                <div className={"flex items-center gap-2 py-2 pl-4 pr-2 " + (pdfOpen ? "border-b border-line" : "")}>
+                  <BookOpen size={15} className="shrink-0 text-muted" aria-hidden />
+                  {/* sans page choisie : « La fiche en PDF » (le nom de la matière est déjà le titre), le détail en infobulle */}
+                  <p className="min-w-0 flex-1 truncate text-[13px] font-semibold" title={pdfLabel}>
+                    {selectedPage ? `Synthèse · page ${selectedPage}` : FICHE.lePdf}
+                  </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setRun(null);
-                      changeTab("errors");
-                      setMobileView("train");
-                    }}
-                    className="font-semibold text-pen underline-offset-4 hover:underline"
+                    onClick={() => setPdfOpen((o) => !o)}
+                    aria-expanded={pdfOpen}
+                    className="btn btn-ghost btn-sm shrink-0"
                   >
-                    {aReprendre(totals.weak)}
+                    {pdfOpen ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
+                    <span>
+                      {pdfOpen ? "Masquer" : "Afficher"}
+                      <span className="hidden sm:inline"> le PDF</span>
+                    </span>
                   </button>
-                ) : (
-                  <span>{rows.length === 0 ? "pas encore commencée" : VIDE.ratures.toLowerCase().replace(/[.]$/, "")}</span>
-                )}
-              </div>
-              <StackBar className="mt-2.5" mastered={totals.mastered} weak={totals.weak} total={totals.total} />
-            </>
-          )}
-        </div>
-      </header>
-
-      {/* Bascule Cours / Entraînement — mobile uniquement */}
-      <SegTabs
-        label="Affichage"
-        className="w-full lg:hidden"
-        equal
-        value={mobileView}
-        onChange={setMobileView}
-        items={[
-          { key: "course", label: "Cours", icon: <Icone nom="cours" size={16} /> },
-          { key: "train", label: "Entraînement", icon: <Icone nom="entrainer" size={16} /> },
-        ]}
-      />
-
-      <div className={wide ? "grid gap-6" : "grid items-start gap-6 lg:grid-cols-2 xl:gap-8"}>
-        {/* ── Cours (PDF) ── */}
-        <section
-          aria-label="Cours"
-          className={`${mobileView === "course" ? "block" : "hidden"} min-w-0 lg:block ${
-            wide ? "lg:order-2" : "lg:sticky lg:top-[84px]"
-          }`}
-        >
-          {!pdfSrc ? (
-            <div className="card-quiet px-6 py-12 text-center">
-              <BookOpen size={20} className="mx-auto text-muted" aria-hidden />
-              <p className="t-small mt-3">Impossible de charger la fiche pour le moment. Réessaie dans un instant.</p>
-            </div>
-          ) : (
-            <div className="card overflow-hidden">
-              <div className={"flex items-center gap-2 py-2 pl-4 pr-2 " + (pdfOpen ? "border-b border-line" : "")}>
-                <BookOpen size={15} className="shrink-0 text-muted" aria-hidden />
-                <p className="min-w-0 flex-1 truncate text-[13px] font-semibold" title={pdfLabel}>
-                  {selectedPage ? `Synthèse · page ${selectedPage}` : pdfLabel}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setPdfOpen((o) => !o)}
-                  aria-expanded={pdfOpen}
-                  className="btn btn-ghost btn-sm shrink-0"
-                >
-                  {pdfOpen ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
-                  <span>
-                    {pdfOpen ? "Masquer" : "Afficher"}
-                    <span className="hidden sm:inline"> le PDF</span>
-                  </span>
-                </button>
-                <a
-                  href={pdfUrl ?? "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-ghost btn-sm shrink-0 px-2.5"
-                  aria-label="Ouvrir le PDF dans un nouvel onglet"
-                  title="Ouvrir dans un nouvel onglet"
-                >
-                  <ExternalLink size={15} aria-hidden />
-                  <span className="hidden xl:inline">Ouvrir</span>
-                </a>
-                <a
-                  href={pdfUrl ?? "#"}
-                  download={pdfDownloadName}
-                  className="btn btn-ghost btn-sm shrink-0 px-2.5"
-                  aria-label="Télécharger le PDF"
-                  title="Télécharger"
-                >
-                  <Download size={15} aria-hidden />
-                  <span className="hidden xl:inline">Télécharger</span>
-                </a>
-              </div>
-              {pdfOpen && (
-                <iframe
-                  key={pdfPage ?? 0}
-                  src={pdfSrc}
-                  title={`${title} — fiche`}
-                  className={`block w-full bg-surface-2 ${wide ? "h-[80vh]" : "h-[72vh] lg:h-[calc(100vh-9.75rem)]"}`}
-                />
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* ── Entraînement ── */}
-        <section
-          aria-label="Entraînement"
-          className={`${mobileView === "train" ? "flex" : "hidden"} min-w-0 flex-col gap-5 lg:flex ${
-            wide ? "lg:order-1 lg:mx-auto lg:w-full lg:max-w-3xl" : ""
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <SegTabs
-              label="Entraînement"
-              className="min-w-0 flex-1 sm:flex-none"
-              value={tab}
-              onChange={(t) => {
-                changeTab(t);
-                setRun(null);
-                setNotice(null);
-                setConfirmReset(null);
-              }}
-              items={tabs}
-            />
-            <button
-              type="button"
-              onClick={toggleWide}
-              className="icon-btn ml-auto hidden lg:inline-grid"
-              aria-label={wide ? "Remettre le cours à côté du quiz" : "Quiz en pleine largeur, cours en dessous"}
-              title={wide ? "Remettre le cours à côté du quiz" : "Quiz en pleine largeur, cours en dessous"}
-            >
-              {wide ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            </button>
-          </div>
-
-          {storage === "device" && (
-            <div className="card-quiet flex gap-3 px-4 py-3.5" role="note">
-              <CloudOff size={16} className="mt-0.5 shrink-0 text-muted" aria-hidden />
-              <p className="t-small">
-                Tes erreurs et ta progression sont bien sauvegardées, mais seulement sur cet appareil : la sauvegarde sur ton
-                compte n&apos;est pas encore activée (migration SQL à appliquer). Dès qu&apos;elle le sera, tout ce qui est
-                enregistré ici sera envoyé automatiquement sur ton compte.
-              </p>
-            </div>
-          )}
-          {notice && (
-            <p className="t-small" role="status">
-              {notice}
-            </p>
-          )}
-
-          {!run && savedRun && (
-            <div className="card flex flex-wrap items-center gap-x-4 gap-y-3 py-3.5 pl-5 pr-3.5">
-              <div className="min-w-0 flex-1">
-                <p className="t-eyebrow">{savedRun.done.length >= savedRun.items.length ? QUIZ.termine : QUIZ.enCours}</p>
-                <p className="mt-1 truncate text-[15px] font-semibold tracking-[-0.01em]">{savedRun.title}</p>
-                <p className="t-micro mt-0.5">
-                  {savedRun.done.length >= savedRun.items.length
-                    ? QUIZ.aRelire
-                    : QUIZ.avance(savedRun.done.length, savedRun.items.length)}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <button type="button" className="btn btn-ghost btn-sm text-muted" onClick={discardSavedRun}>
-                  Abandonner
-                </button>
-                <button type="button" className="btn btn-primary" onClick={resumeRun}>
-                  <Play size={14} aria-hidden />
-                  {savedRun.done.length >= savedRun.items.length ? QUIZ.voirCopie : QUIZ.reprendre}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {run ? (
-            <FicheQuizRunner
-              key={run.key}
-              items={run.items}
-              mode={run.mode}
-              title={run.title}
-              fiche={title}
-              api={api}
-              initialRunId={run.runId}
-              initialDone={run.done}
-              carnet={carnet}
-              themeOf={themeOf}
-              anneau={anneauFin}
-              onProgress={(done, runId) => persistProgress(run, done, runId)}
-              onAnswered={(row) => {
-                setRows((prev) => [...prev, row]);
-                setAnsweredHere((n) => n + 1);
-              }}
-              onPause={() => setRun(null)}
-              onClose={() => {
-                discardSavedRun();
-                setRun(null);
-              }}
-              onReplay={(items) => {
-                discardSavedRun();
-                startRun(pickRandom(items, items.length), "errors", QUIZ.titreReprise(items.length));
-              }}
-            />
-          ) : tab === "quiz" ? (
-            <div className="flex flex-col gap-6">
-              {activePage && activeProgress && (
-                <div className="card-hero p-6 md:p-7">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="t-eyebrow">
-                      Page {activePage.page}
-                      {pdfPage ? ` · synthèse p. ${pdfPage}` : ""}
-                    </p>
-                    {activeProgress.attempts > 0 && (
-                      <span className="font-mono text-[12.5px] text-muted tabular-nums">
-                        <span className="font-semibold text-white">{activeProgress.mastered}</span>/{activeProgress.total}
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="t-h2 mt-2">{activeTheme ?? `Page ${activePage.page}`}</h2>
-                  <StackBar
-                    className="mt-5"
-                    mastered={activeProgress.mastered}
-                    weak={activeProgress.weak}
-                    total={activeProgress.total}
+                  <a
+                    href={pdfUrl ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-ghost btn-sm shrink-0 px-2.5"
+                    aria-label="Ouvrir le PDF dans un nouvel onglet"
+                    title="Ouvrir dans un nouvel onglet"
+                  >
+                    <ExternalLink size={15} aria-hidden />
+                    <span className="hidden xl:inline">Ouvrir</span>
+                  </a>
+                  <a
+                    href={pdfUrl ?? "#"}
+                    download={pdfDownloadName}
+                    className="btn btn-ghost btn-sm shrink-0 px-2.5"
+                    aria-label="Télécharger le PDF"
+                    title="Télécharger"
+                  >
+                    <Download size={15} aria-hidden />
+                    <span className="hidden xl:inline">Télécharger</span>
+                  </a>
+                </div>
+                {pdfOpen && (
+                  <iframe
+                    key={pdfPage ?? 0}
+                    src={pdfSrc}
+                    title={`${title} — fiche`}
+                    className={`block w-full bg-surface-2 ${wide ? "h-[80vh]" : "h-[72vh] lg:h-[calc(100vh-9.75rem)]"}`}
                   />
-                  <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-muted">
-                    <li className="inline-flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-white" aria-hidden />
-                      {activeProgress.mastered} {FICHE.maitrisees(activeProgress.mastered)}
-                    </li>
-                    <li className="inline-flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-pen" aria-hidden />
-                      {aReprendre(activeProgress.weak)}
-                    </li>
-                    <li className="inline-flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full ring-1 ring-inset ring-line-2" aria-hidden />
-                      {activeProgress.unseen} {FICHE.jamaisVues(activeProgress.unseen)}
-                    </li>
-                  </ul>
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className={`btn btn-lg ${savedRun ? "btn-secondary" : "btn-primary"}`}
-                      onClick={() =>
-                        startRun(
-                          activePage.questions.map((q) => ({ q, page: activePage.page })),
-                          "page",
-                          activeTheme ? `Page ${activePage.page} · ${activeTheme}` : `Page ${activePage.page}`
-                        )
-                      }
-                    >
-                      Lancer le quiz
-                      <span className="font-normal opacity-70">· {activePage.questions.length} questions</span>
-                      <ArrowRight size={16} aria-hidden />
-                    </button>
-                    {pdfSrc && (
-                      <button type="button" className="btn btn-secondary btn-lg lg:hidden" onClick={() => setMobileView("course")}>
-                        Voir la synthèse
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
+            )}
+          </section>
 
-              <div>
-                <h2 className="t-eyebrow mb-3">Toutes les pages</h2>
-                <div className="@container">
-                  <div className="grid grid-cols-2 gap-2 @sm:grid-cols-3 @xl:grid-cols-4">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                      const set = byPage.get(page);
-                      const p = progressByPage.get(page);
-                      const isActive = selectedPage === page;
-                      const theme = pageTheme(set?.title);
-                      const allMastered = !!p && p.attempts > 0 && p.unseen === 0 && p.weak === 0;
-                      return (
-                        <button
-                          key={page}
-                          type="button"
-                          disabled={!set}
-                          onClick={() => selectPage(page)}
-                          aria-pressed={isActive}
-                          title={theme ? `Page ${page} — ${theme}` : `Page ${page}`}
-                          className={`flex min-h-[96px] flex-col rounded-[14px] p-3 text-left transition-[background-color,box-shadow] duration-200 ${
-                            !set
-                              ? "card-quiet cursor-not-allowed opacity-50"
-                              : isActive
-                                ? "bg-surface shadow-[var(--shadow-1)] ring-[1.5px] ring-white"
-                                : "card-quiet"
-                          }`}
-                        >
-                          <span className="flex items-center justify-between gap-2 font-mono text-[11.5px] font-semibold text-muted">
-                            P{page}
-                            {!set ? (
-                              <Lock size={12} aria-label="Bientôt" />
-                            ) : p && p.weak > 0 ? (
-                              <span className="inline-flex items-center gap-1 text-pen" aria-label={aReprendre(p.weak)}>
-                                <span className="h-1.5 w-1.5 rounded-full bg-pen" aria-hidden />
-                                {p.weak}
-                              </span>
-                            ) : allMastered ? (
-                              <Check size={13} strokeWidth={2.6} className="text-white" aria-label="Page maîtrisée" />
-                            ) : null}
-                          </span>
-                          <span className="mt-1.5 line-clamp-2 text-[13px] font-semibold leading-snug tracking-[-0.006em] text-white">
-                            {set ? theme ?? `Page ${page}` : "Bientôt"}
-                          </span>
-                          {set && p && (
-                            <span className="mt-auto block pt-3">
-                              <StackBar thin mastered={p.mastered} weak={p.weak} total={p.total} />
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+          {/* ── Entraînement ── */}
+          <section
+            aria-label="Entraînement"
+            className={`${mobileView === "train" ? "flex" : "hidden"} min-w-0 flex-col gap-5 lg:flex ${
+              wide ? "lg:order-1 lg:mx-auto lg:w-full lg:max-w-3xl" : ""
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <SegTabs
+                label="Entraînement"
+                className="min-w-0 flex-1 sm:flex-none"
+                value={tab}
+                onChange={(t) => {
+                  changeTab(t);
+                  setRun(null);
+                  setNotice(null);
+                  setConfirmReset(null);
+                }}
+                items={tabs}
+              />
+              <button
+                type="button"
+                onClick={toggleWide}
+                className="icon-btn ml-auto hidden lg:inline-grid"
+                aria-label={wide ? "Remettre le cours à côté du quiz" : "Quiz en pleine largeur, cours en dessous"}
+                title={wide ? "Remettre le cours à côté du quiz" : "Quiz en pleine largeur, cours en dessous"}
+              >
+                {wide ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+            </div>
+
+            {storage === "device" && (
+              <div className="card-quiet flex gap-3 px-4 py-3.5" role="note">
+                <CloudOff size={16} className="mt-0.5 shrink-0 text-muted" aria-hidden />
+                <p className="t-small">
+                  Tes erreurs et ta progression sont bien sauvegardées, mais seulement sur cet appareil : la sauvegarde sur ton
+                  compte n&apos;est pas encore activée (migration SQL à appliquer). Dès qu&apos;elle le sera, tout ce qui est
+                  enregistré ici sera envoyé automatiquement sur ton compte.
+                </p>
+              </div>
+            )}
+            {notice && (
+              <p className="t-small" role="status">
+                {notice}
+              </p>
+            )}
+
+            {!run && savedRun && (
+              <div className="card flex flex-wrap items-center gap-x-4 gap-y-3 py-3.5 pl-5 pr-3.5">
+                <div className="min-w-0 flex-1">
+                  <p className="t-eyebrow">{savedRun.done.length >= savedRun.items.length ? QUIZ.termine : QUIZ.enCours}</p>
+                  <p className="mt-1 truncate text-[15px] font-semibold tracking-[-0.01em]">{savedRun.title}</p>
+                  <p className="t-micro mt-0.5">
+                    {savedRun.done.length >= savedRun.items.length
+                      ? QUIZ.aRelire
+                      : QUIZ.avance(savedRun.done.length, savedRun.items.length)}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button type="button" className="btn btn-ghost btn-sm text-muted" onClick={discardSavedRun}>
+                    Abandonner
+                  </button>
+                  <button type="button" className="btn btn-primary" onClick={resumeRun}>
+                    <Play size={14} aria-hidden />
+                    {savedRun.done.length >= savedRun.items.length ? QUIZ.voirCopie : QUIZ.reprendre}
+                  </button>
                 </div>
               </div>
-            </div>
-          ) : tab === "errors" ? (
-            logLoading ? (
-              <div className="rl-skel h-[260px]" />
-            ) : (
-              <div className="flex flex-col gap-5">
-                {poolItems.length === 0 && ratures.duJour.size === 0 ? (
-                  // carnet vide : page propre
-                  <div className="card-quiet flex flex-col items-center px-6 py-14 text-center">
-                    <Icone nom="erreurs" size={26} className="text-muted" />
-                    <p className="t-h3 mt-4">{VIDE.ratures}</p>
-                    <p className="t-small mt-1.5 max-w-[360px]">{rows.length === 0 ? CARNET.videNeuf : CARNET.videPropre}</p>
-                    {ratures.total > 0 && <HistoireRatures semaine={ratures.semaine} total={ratures.total} className="mt-6 justify-center" />}
-                  </div>
-                ) : (
+            )}
+
+            {run ? (
+              <FicheQuizRunner
+                key={run.key}
+                items={run.items}
+                mode={run.mode}
+                title={run.title}
+                fiche={title}
+                api={api}
+                initialRunId={run.runId}
+                initialDone={run.done}
+                carnet={carnet}
+                themeOf={themeOf}
+                anneau={anneauFin}
+                onProgress={(done, runId) => persistProgress(run, done, runId)}
+                onAnswered={(row) => {
+                  setRows((prev) => [...prev, row]);
+                  setAnsweredHere((n) => n + 1);
+                }}
+                onPause={() => setRun(null)}
+                onClose={() => {
+                  discardSavedRun();
+                  setRun(null);
+                }}
+                onReplay={(items) => {
+                  discardSavedRun();
+                  startRun(pickRandom(items, items.length), "errors", QUIZ.titreReprise(items.length));
+                }}
+              />
+            ) : tab === "quiz" ? (
+              <div className="flex flex-col gap-6">
+                {activePage && activeProgress && (
                   <div className="card-hero p-6 md:p-7">
-                    {/* le compteur du carnet : rayé et réécrit quand des ratures sont reprises aujourd'hui */}
-                    <CompteurBarre
-                      avant={poolItems.length + ratures.duJour.size}
-                      apres={poolItems.length}
-                      libelle={CARNET.libelle}
-                      taille={60}
-                      anime={!!ratureVues.current && [...ratures.duJour].some((id) => !ratureVues.current?.has(id))}
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="t-eyebrow">
+                        Page {activePage.page}
+                        {pdfPage ? ` · synthèse p. ${pdfPage}` : ""}
+                      </p>
+                      {activeProgress.attempts > 0 && (
+                        <span className="font-mono text-[12.5px] text-muted tabular-nums">
+                          <span className="font-semibold text-white">{activeProgress.mastered}</span>/{activeProgress.total}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="t-h2 mt-2">{activeTheme ?? `Page ${activePage.page}`}</h2>
+                    <StackBar
+                      className="mt-5"
+                      mastered={activeProgress.mastered}
+                      weak={activeProgress.weak}
+                      total={activeProgress.total}
                     />
-                    <p className="t-micro mt-3">{poolItems.length > 0 ? QUIZ.regle : VIDE.ratures}</p>
-                    {poolItems.length > 0 && (
-                      <div className="mt-6 flex flex-wrap gap-2">
-                        <button type="button" className="btn btn-primary btn-lg" onClick={startErrors}>
-                          <RotateCcw size={16} aria-hidden />
-                          {reprendreRatures(poolItems.length)}
-                        </button>
-                        <CopyButton copied={copied} onClick={copyPoolForAi} className="btn-lg">
-                          Copier pour l&apos;IA
-                        </CopyButton>
-                      </div>
-                    )}
-                    {ratures.total > 0 && (
-                      <HistoireRatures semaine={ratures.semaine} total={ratures.total} className="mt-6 border-t border-line pt-5" />
-                    )}
-                  </div>
-                )}
-
-                {carnetItems.length > 0 && (
-                  <div className="card p-1.5">
-                    {carnetItems.map((it) => {
-                      const s = states.get(it.q.id);
-                      const rayee = ratures.duJour.has(it.q.id);
-                      return (
-                        <button
-                          key={it.q.id}
-                          type="button"
-                          onClick={() => selectPage(it.page)}
-                          className="rl-row flex w-full items-start gap-3 rounded-[12px] px-3 py-3 text-left"
-                          title="Afficher la synthèse de cette page"
-                        >
-                          <span className="mt-px shrink-0 rounded-[7px] bg-surface-2 px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-muted">
-                            P{it.page}
-                          </span>
-                          {rayee ? (
-                            <LigneRayee
-                              id={it.q.id}
-                              vues={ratureVues}
-                              className="min-w-0 flex-1 text-[13.5px] leading-snug text-body"
-                            >
-                              {enonceCourt(it.q.prompt)}
-                            </LigneRayee>
-                          ) : (
-                            <span className="line-clamp-2 min-w-0 flex-1 text-[13.5px] leading-snug text-body">{it.q.prompt}</span>
-                          )}
-                          {rayee ? (
-                            <span className="mt-px shrink-0 font-mono text-[11.5px] font-semibold text-muted">rayée</span>
-                          ) : (
-                            <span className="mt-px shrink-0 font-mono text-[12px] font-semibold text-pen tabular-nums" aria-label={rateeFois(s?.wrong ?? 0)}>
-                              ×{s?.wrong ?? 0}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* l'historique : on raye, on n'efface pas */}
-                {ratures.anciennes.length > 0 && (
-                  <section aria-labelledby="fiche-rayees" className="flex flex-col gap-3">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <h3 id="fiche-rayees" className="t-eyebrow m-0">
-                        {CARNET.rayees} · {ratures.anciennes.length}
-                      </h3>
-                      {ratures.anciennes.length > 6 && (
-                        <button type="button" className="ink-link text-[12.5px] font-semibold" onClick={() => setShowAllRayees((v) => !v)}>
-                          {showAllRayees ? "Replier" : `Voir les ${ratures.anciennes.length}`}
+                    <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-muted">
+                      <li className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-white" aria-hidden />
+                        {activeProgress.mastered} {FICHE.maitrisees(activeProgress.mastered)}
+                      </li>
+                      <li className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-pen" aria-hidden />
+                        {aReprendre(activeProgress.weak)}
+                      </li>
+                      <li className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full ring-1 ring-inset ring-line-2" aria-hidden />
+                        {activeProgress.unseen} {FICHE.jamaisVues(activeProgress.unseen)}
+                      </li>
+                    </ul>
+                    <div className="mt-6 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className={`btn btn-lg ${savedRun ? "btn-secondary" : "btn-primary"}`}
+                        onClick={() =>
+                          startRun(
+                            activePage.questions.map((q) => ({ q, page: activePage.page })),
+                            "page",
+                            activeTheme ? `Page ${activePage.page} · ${activeTheme}` : `Page ${activePage.page}`
+                          )
+                        }
+                      >
+                        Lancer le quiz
+                        <span className="font-normal opacity-70">· {activePage.questions.length} questions</span>
+                        <ArrowRight size={16} aria-hidden />
+                      </button>
+                      {pdfSrc && (
+                        <button type="button" className="btn btn-secondary btn-lg lg:hidden" onClick={() => setMobileView("course")}>
+                          Voir la synthèse
                         </button>
                       )}
                     </div>
-                    <div className="card-quiet p-1.5">
-                      {(showAllRayees ? ratures.anciennes : ratures.anciennes.slice(0, 6)).map(({ it, at }) => (
-                        <button
-                          key={it.q.id}
-                          type="button"
-                          onClick={() => selectPage(it.page)}
-                          className="rl-row flex w-full items-start gap-3 rounded-[12px] px-3 py-2.5 text-left"
-                          title="Afficher la synthèse de cette page"
-                        >
-                          <span className="mt-px shrink-0 rounded-[7px] px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-muted">P{it.page}</span>
-                          <Rature rayee son={false} trait={it.q.id.length % 2 ? "b" : "a"} className="min-w-0 flex-1 text-[13px] leading-snug">
-                            {enonceCourt(it.q.prompt, 90)}
-                          </Rature>
-                          <span className="mt-px hidden shrink-0 font-mono text-[11px] text-muted sm:inline">{CARNET.rayeeLe(dateCourte(at) ?? "")}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </section>
+                  </div>
                 )}
-              </div>
-            )
-          ) : tab === "mixed" ? (
-            <div className="card-hero p-6 md:p-7">
-              <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-surface-2" aria-hidden>
-                <Shuffle size={19} />
-              </span>
-              <h2 className="t-h2 mt-5">Bilan aléatoire</h2>
-              <p className="t-small mt-2 max-w-[460px]">
-                {MIXED_SIZE} questions tirées au hasard parmi toutes les pages de la fiche : pour vérifier que tu retiens
-                vraiment, sans connaître l&apos;ordre ni la page.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <button type="button" className="btn btn-primary btn-lg" disabled={allItems.length === 0} onClick={startMixed}>
-                  <Shuffle size={16} aria-hidden /> Lancer un bilan aléatoire
-                </button>
-                <span className="t-micro">
-                  {allItems.length} questions disponibles sur {drillSets.length} pages
-                </span>
-              </div>
-            </div>
-          ) : logLoading ? (
-            <div className="rl-skel h-[420px]" />
-          ) : (
-            <div className="card p-5 md:p-7">
-              <dl className="grid grid-cols-3 gap-3">
-                <Stat label="Maîtrisées" value={String(totals.mastered)} sub={`/${totals.total}`} />
-                <Stat label="À reprendre" value={String(totals.weak)} pen={totals.weak > 0} />
-                <Stat label="Précision" value={`${successPct} %`} />
-              </dl>
 
-              <hr className="rule my-6" />
-              <h3 className="t-h3">Évolution des scores</h3>
-              <div className="mt-4">
-                <FicheProgressChart runs={runs} />
-              </div>
-
-              <hr className="rule my-6" />
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <h3 className="t-h3">Par page</h3>
-                <span className="t-micro">des plus faibles aux plus solides</span>
-              </div>
-              <div className="mt-4 grid gap-4">
-                {[...progress]
-                  .sort((a, b) => {
-                    const ra = a.attempts > 0 ? a.wrongAttempts / a.attempts : -1;
-                    const rb = b.attempts > 0 ? b.wrongAttempts / b.attempts : -1;
-                    return rb - ra;
-                  })
-                  .map((p) => {
-                    const errRate = p.attempts > 0 ? Math.round((p.wrongAttempts / p.attempts) * 100) : null;
-                    const theme = pageTheme(byPage.get(p.page)?.title);
-                    return (
-                      <div key={p.page} className="grid gap-2">
-                        <div className="flex items-center gap-3">
+                <div>
+                  <h2 className="t-eyebrow mb-3">Toutes les pages</h2>
+                  <div className="@container">
+                    <div className="grid grid-cols-2 gap-2 @sm:grid-cols-3 @xl:grid-cols-4">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                        const set = byPage.get(page);
+                        const p = progressByPage.get(page);
+                        const isActive = selectedPage === page;
+                        const theme = pageTheme(set?.title);
+                        const allMastered = !!p && p.attempts > 0 && p.unseen === 0 && p.weak === 0;
+                        return (
                           <button
+                            key={page}
                             type="button"
-                            className="min-w-0 flex-1 truncate text-left text-[14px] font-semibold tracking-[-0.006em] underline-offset-4 hover:underline"
-                            onClick={() => selectPage(p.page)}
-                            title="Afficher cette page"
+                            disabled={!set}
+                            onClick={() => selectPage(page)}
+                            aria-pressed={isActive}
+                            title={theme ? `Page ${page} — ${theme}` : `Page ${page}`}
+                            className={`flex min-h-[96px] flex-col rounded-[14px] p-3 text-left transition-[background-color,box-shadow] duration-200 ${
+                              !set
+                                ? "card-quiet cursor-not-allowed opacity-50"
+                                : isActive
+                                  ? "bg-surface shadow-[var(--shadow-1)] ring-[1.5px] ring-white"
+                                  : "card-quiet"
+                            }`}
                           >
-                            <span className="mr-2 font-mono text-[12px] font-semibold text-muted">P{p.page}</span>
-                            {theme ?? `Page ${p.page}`}
+                            <span className="flex items-center justify-between gap-2 font-mono text-[11.5px] font-semibold text-muted">
+                              P{page}
+                              {!set ? (
+                                <Lock size={12} aria-label="Bientôt" />
+                              ) : p && p.weak > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-pen" aria-label={aReprendre(p.weak)}>
+                                  <span className="h-1.5 w-1.5 rounded-full bg-pen" aria-hidden />
+                                  {p.weak}
+                                </span>
+                              ) : allMastered ? (
+                                <Check size={13} strokeWidth={2.6} className="text-white" aria-label="Page maîtrisée" />
+                              ) : null}
+                            </span>
+                            <span className="mt-1.5 line-clamp-2 text-[13px] font-semibold leading-snug tracking-[-0.006em] text-white">
+                              {set ? theme ?? `Page ${page}` : "Bientôt"}
+                            </span>
+                            {set && p && (
+                              <span className="mt-auto block pt-3">
+                                <StackBar thin mastered={p.mastered} weak={p.weak} total={p.total} />
+                              </span>
+                            )}
                           </button>
-                          <span className={`shrink-0 text-[12.5px] tabular-nums ${errRate !== null && errRate >= 30 ? "text-pen" : "text-muted"}`}>
-                            {errRate === null ? "pas encore faite" : `${errRate} % d'erreurs`}
-                          </span>
-                          {p.attempts > 0 &&
-                            (confirmReset === p.page ? (
-                              <button
-                                type="button"
-                                className="shrink-0 text-[12.5px] font-semibold text-pen hover:underline"
-                                onClick={() => doReset(p.page)}
-                              >
-                                Confirmer ?
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="grid h-7 w-7 shrink-0 place-items-center rounded-[8px] text-muted transition-colors hover:bg-surface-2 hover:text-white"
-                                onClick={() => setConfirmReset(p.page)}
-                                aria-label={`Réinitialiser la page ${p.page}`}
-                                title="Réinitialiser cette page"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            ))}
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : tab === "errors" ? (
+              logLoading ? (
+                <div className="rl-skel h-[260px]" />
+              ) : (
+                <div className="flex flex-col gap-5">
+                  {poolItems.length === 0 && ratures.duJour.size === 0 ? (
+                    // carnet vide : page propre
+                    <div className="card-quiet flex flex-col items-center px-6 py-14 text-center">
+                      <Icone nom="erreurs" size={26} className="text-muted" />
+                      <p className="t-h3 mt-4">{VIDE.ratures}</p>
+                      <p className="t-small mt-1.5 max-w-[360px]">{rows.length === 0 ? CARNET.videNeuf : CARNET.videPropre}</p>
+                      {ratures.total > 0 && <HistoireRatures semaine={ratures.semaine} total={ratures.total} className="mt-6 justify-center" />}
+                    </div>
+                  ) : (
+                    <div className="card-hero p-6 md:p-7">
+                      {/* le compteur du carnet : rayé et réécrit quand des ratures sont reprises aujourd'hui */}
+                      <CompteurBarre
+                        avant={poolItems.length + ratures.duJour.size}
+                        apres={poolItems.length}
+                        libelle={CARNET.libelle}
+                        taille={60}
+                        anime={!!ratureVues.current && [...ratures.duJour].some((id) => !ratureVues.current?.has(id))}
+                      />
+                      <p className="t-micro mt-3">{poolItems.length > 0 ? QUIZ.regle : VIDE.ratures}</p>
+                      {poolItems.length > 0 && (
+                        <div className="mt-6 flex flex-wrap gap-2">
+                          <button type="button" className="btn btn-primary btn-lg" onClick={startErrors}>
+                            <RotateCcw size={16} aria-hidden />
+                            {reprendreRatures(poolItems.length)}
+                          </button>
+                          <CopyButton copied={copied} onClick={copyPoolForAi} className="btn-lg">
+                            Copier pour l&apos;IA
+                          </CopyButton>
                         </div>
-                        <StackBar mastered={p.mastered} weak={p.weak} total={p.total} />
-                      </div>
-                    );
-                  })}
-              </div>
+                      )}
+                      {ratures.total > 0 && (
+                        <HistoireRatures semaine={ratures.semaine} total={ratures.total} className="mt-6 border-t border-line pt-5" />
+                      )}
+                    </div>
+                  )}
 
-              <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-line pt-5">
-                <CopyButton copied={copied} onClick={copyPoolForAi} disabled={poolItems.length === 0} className="btn-sm">
-                  Copier mes erreurs pour l&apos;IA
-                </CopyButton>
-                {confirmReset === "all" ? (
-                  <>
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => doReset("all")}>
-                      Confirmer : tout effacer
-                    </button>
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(null)}>
-                      Annuler
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm text-muted"
-                    disabled={rows.length === 0}
-                    onClick={() => setConfirmReset("all")}
-                  >
-                    <Trash2 size={13} aria-hidden /> Réinitialiser toute la fiche
+                  {carnetItems.length > 0 && (
+                    <div className="card p-1.5">
+                      {carnetItems.map((it) => {
+                        const s = states.get(it.q.id);
+                        const rayee = ratures.duJour.has(it.q.id);
+                        return (
+                          <button
+                            key={it.q.id}
+                            type="button"
+                            onClick={() => selectPage(it.page)}
+                            className="rl-row flex w-full items-start gap-3 rounded-[12px] px-3 py-3 text-left"
+                            title="Afficher la synthèse de cette page"
+                          >
+                            <span className="mt-px shrink-0 rounded-[7px] bg-surface-2 px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-muted">
+                              P{it.page}
+                            </span>
+                            {rayee ? (
+                              <LigneRayee
+                                id={it.q.id}
+                                vues={ratureVues}
+                                className="min-w-0 flex-1 text-[13.5px] leading-snug text-body"
+                              >
+                                {enonceCourt(it.q.prompt)}
+                              </LigneRayee>
+                            ) : (
+                              <span className="line-clamp-2 min-w-0 flex-1 text-[13.5px] leading-snug text-body">{it.q.prompt}</span>
+                            )}
+                            {rayee ? (
+                              <span className="mt-px shrink-0 font-mono text-[11.5px] font-semibold text-muted">rayée</span>
+                            ) : (
+                              <span className="mt-px shrink-0 font-mono text-[12px] font-semibold text-pen tabular-nums" aria-label={rateeFois(s?.wrong ?? 0)}>
+                                ×{s?.wrong ?? 0}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* l'historique : on raye, on n'efface pas */}
+                  {ratures.anciennes.length > 0 && (
+                    <section aria-labelledby="fiche-rayees" className="flex flex-col gap-3">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h3 id="fiche-rayees" className="t-eyebrow m-0">
+                          {CARNET.rayees} · {ratures.anciennes.length}
+                        </h3>
+                        {ratures.anciennes.length > 6 && (
+                          <button type="button" className="ink-link text-[12.5px] font-semibold" onClick={() => setShowAllRayees((v) => !v)}>
+                            {showAllRayees ? "Replier" : `Voir les ${ratures.anciennes.length}`}
+                          </button>
+                        )}
+                      </div>
+                      <div className="card-quiet p-1.5">
+                        {(showAllRayees ? ratures.anciennes : ratures.anciennes.slice(0, 6)).map(({ it, at }) => (
+                          <button
+                            key={it.q.id}
+                            type="button"
+                            onClick={() => selectPage(it.page)}
+                            className="rl-row flex w-full items-start gap-3 rounded-[12px] px-3 py-2.5 text-left"
+                            title="Afficher la synthèse de cette page"
+                          >
+                            <span className="mt-px shrink-0 rounded-[7px] px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-muted">P{it.page}</span>
+                            <Rature rayee son={false} trait={it.q.id.length % 2 ? "b" : "a"} className="min-w-0 flex-1 text-[13px] leading-snug">
+                              {enonceCourt(it.q.prompt, 90)}
+                            </Rature>
+                            <span className="mt-px hidden shrink-0 font-mono text-[11px] text-muted sm:inline">{CARNET.rayeeLe(dateCourte(at) ?? "")}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              )
+            ) : tab === "mixed" ? (
+              <div className="card-hero p-6 md:p-7">
+                <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-surface-2" aria-hidden>
+                  <Shuffle size={19} />
+                </span>
+                <h2 className="t-h2 mt-5">Bilan aléatoire</h2>
+                <p className="t-small mt-2 max-w-[460px]">
+                  {MIXED_SIZE} questions tirées au hasard parmi toutes les pages de la fiche : pour vérifier que tu retiens
+                  vraiment, sans connaître l&apos;ordre ni la page.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <button type="button" className="btn btn-primary btn-lg" disabled={allItems.length === 0} onClick={startMixed}>
+                    <Shuffle size={16} aria-hidden /> Lancer un bilan aléatoire
                   </button>
-                )}
+                  <span className="t-micro">
+                    {allItems.length} questions disponibles sur {drillSets.length} pages
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
-        </section>
+            ) : logLoading ? (
+              <div className="rl-skel h-[420px]" />
+            ) : (
+              <div className="card p-5 md:p-7">
+                <dl className="grid grid-cols-3 gap-3">
+                  <Stat label="Maîtrisées" value={String(totals.mastered)} sub={`/${totals.total}`} />
+                  <Stat label="À reprendre" value={String(totals.weak)} pen={totals.weak > 0} />
+                  <Stat label="Précision" value={`${successPct} %`} />
+                </dl>
+
+                <hr className="rule my-6" />
+                <h3 className="t-h3">Évolution des scores</h3>
+                <div className="mt-4">
+                  <FicheProgressChart runs={runs} />
+                </div>
+
+                <hr className="rule my-6" />
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <h3 className="t-h3">Par page</h3>
+                  <span className="t-micro">des plus faibles aux plus solides</span>
+                </div>
+                <div className="mt-4 grid gap-4">
+                  {[...progress]
+                    .sort((a, b) => {
+                      const ra = a.attempts > 0 ? a.wrongAttempts / a.attempts : -1;
+                      const rb = b.attempts > 0 ? b.wrongAttempts / b.attempts : -1;
+                      return rb - ra;
+                    })
+                    .map((p) => {
+                      const errRate = p.attempts > 0 ? Math.round((p.wrongAttempts / p.attempts) * 100) : null;
+                      const theme = pageTheme(byPage.get(p.page)?.title);
+                      return (
+                        <div key={p.page} className="grid gap-2">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              className="min-w-0 flex-1 truncate text-left text-[14px] font-semibold tracking-[-0.006em] underline-offset-4 hover:underline"
+                              onClick={() => selectPage(p.page)}
+                              title="Afficher cette page"
+                            >
+                              <span className="mr-2 font-mono text-[12px] font-semibold text-muted">P{p.page}</span>
+                              {theme ?? `Page ${p.page}`}
+                            </button>
+                            <span className={`shrink-0 text-[12.5px] tabular-nums ${errRate !== null && errRate >= 30 ? "text-pen" : "text-muted"}`}>
+                              {errRate === null ? "pas encore faite" : `${errRate} % d'erreurs`}
+                            </span>
+                            {p.attempts > 0 &&
+                              (confirmReset === p.page ? (
+                                <button
+                                  type="button"
+                                  className="shrink-0 text-[12.5px] font-semibold text-pen hover:underline"
+                                  onClick={() => doReset(p.page)}
+                                >
+                                  Confirmer ?
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="grid h-7 w-7 shrink-0 place-items-center rounded-[8px] text-muted transition-colors hover:bg-surface-2 hover:text-white"
+                                  onClick={() => setConfirmReset(p.page)}
+                                  aria-label={`Réinitialiser la page ${p.page}`}
+                                  title="Réinitialiser cette page"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              ))}
+                          </div>
+                          <StackBar mastered={p.mastered} weak={p.weak} total={p.total} />
+                        </div>
+                      );
+                    })}
+                </div>
+
+                <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-line pt-5">
+                  <CopyButton copied={copied} onClick={copyPoolForAi} disabled={poolItems.length === 0} className="btn-sm">
+                    Copier mes erreurs pour l&apos;IA
+                  </CopyButton>
+                  {confirmReset === "all" ? (
+                    <>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => doReset("all")}>
+                        Confirmer : tout effacer
+                      </button>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(null)}>
+                        Annuler
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm text-muted"
+                      disabled={rows.length === 0}
+                      onClick={() => setConfirmReset("all")}
+                    >
+                      <Trash2 size={13} aria-hidden /> Réinitialiser toute la fiche
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
       </div>
-    </div>
+    </SousPage>
   );
 }
 

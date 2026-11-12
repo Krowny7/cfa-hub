@@ -1,18 +1,21 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
 import katex from "katex";
-import { ArrowLeft, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { enregistrerTour, recommencerMatiere } from "@/app/page-blanche/actions";
 import { copiesARendre, lignesDesCopies } from "@/lib/formules/tour";
 import type { Copie, Formule } from "@/lib/formules/types";
+import { ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { PB } from "@/lib/voice-page-blanche";
+import { RETOUR } from "@/lib/voice-reviser";
 import s from "./PageBlanche.module.css";
 
 // Un tour de la page blanche. Les copies : le joueur avance une par une et écrit sur son
 // papier. Le corrigé : tout est révélé d'un coup, il note chaque ligne en vert ou en rouge.
 // Le bilan : ce qu'il a raté forme les copies du tour suivant.
+// Gabarit C des sous-pages : l'en-tête commun (retour à la page blanche, titre selon la
+// phase), puis la colonne des séances (760 px).
 
 type Phase = "copies" | "corrige" | "bilan";
 
@@ -52,10 +55,11 @@ export function SessionPageBlanche({
   const notees = Object.keys(notes).length;
   const reussies = Object.values(notes).filter(Boolean).length;
 
-  const retour = (
-    <Link href="/page-blanche" className={s.retour}>
-      <ArrowLeft size={15} aria-hidden /> {PB.retour}
-    </Link>
+  // la page d'une phase : l'en-tête commun, puis la colonne de la séance
+  const page = (titre: React.ReactNode, ligne: React.ReactNode, contenu: React.ReactNode) => (
+    <SousPage entete={<EnTeteSousPage retour={RETOUR.pageBlanche} titre={titre} ligne={ligne} />}>
+      <ColonneSeance>{contenu}</ColonneSeance>
+    </SousPage>
   );
 
   function valider() {
@@ -100,10 +104,10 @@ export function SessionPageBlanche({
 
   if (aRendre.length === 0 || phase === "bilan") {
     const reste = copiesARendre(copies, acquises);
-    return (
-      <div className={s.colonne}>
-        {retour}
-        <h1 className="t-h1 m-0">{nom}</h1>
+    return page(
+      nom,
+      null,
+      <>
         {phase === "bilan" && <p className={s.bilan}>{PB.bilan(reussies, notees)}</p>}
         {reste.length > 0 ? (
           <button type="button" className="btn btn-primary rl-press w-fit" onClick={tourSuivant}>
@@ -122,17 +126,15 @@ export function SessionPageBlanche({
             {PB.echec}
           </p>
         )}
-      </div>
+      </>,
     );
   }
 
   if (phase === "corrige") {
-    return (
-      <div className={s.colonne}>
-        <header className={s.tete}>
-          <h1 className="t-h1 m-0">{PB.corrige}</h1>
-          <p className="t-small m-0">{PB.corrigeSous}</p>
-        </header>
+    return page(
+      PB.corrige,
+      PB.corrigeSous,
+      <>
         {aRendre.map((c) => (
           <section key={c.id} className={s.feuille} aria-label={c.titre}>
             <h2 className={s.titreCopie}>{c.titre}</h2>
@@ -171,21 +173,16 @@ export function SessionPageBlanche({
             {occupe ? PB.enregistrement : PB.valider}
           </button>
         </div>
-      </div>
+      </>,
     );
   }
 
   const c = aRendre[ici];
   const derniere = ici === aRendre.length - 1;
-  return (
-    <div className={s.colonne}>
-      {retour}
-      <header className={s.tete}>
-        <h1 className="t-h1 m-0">{nom}</h1>
-        <p className={s.compte}>
-          {PB.tour(tour)} · {PB.copies(aRendre.length)}
-        </p>
-      </header>
+  return page(
+    nom,
+    `${PB.tour(tour)} · ${PB.copies(aRendre.length)}`,
+    <>
       <section className={s.feuille} aria-label={c.titre}>
         <p className={s.numero}>{PB.copie(ici + 1, aRendre.length)}</p>
         <h2 className={s.titreCopie}>{c.titre}</h2>
@@ -219,6 +216,6 @@ export function SessionPageBlanche({
           {derniere ? PB.reveler : PB.suivante}
         </button>
       </div>
-    </div>
+    </>,
   );
 }

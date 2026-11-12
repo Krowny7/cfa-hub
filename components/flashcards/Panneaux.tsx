@@ -201,15 +201,6 @@ export function Reprise({
 }
 
 /** Le lien vers le one-pager de la matière (PDF, nouvel onglet). */
-/** Une fiche tirée des flashcards (mini-fiche d'un paquet, fiche de toutes les cartes) : PDF dans un nouvel onglet. */
-export function LienFiche({ href, libelle, aide, className = "btn btn-secondary btn-sm min-h-[44px]" }: { href: string; libelle: string; aide: string; className?: string }) {
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={className} title={aide}>
-      <FileText size={16} aria-hidden /> {libelle} <ArrowUpRight size={14} aria-hidden className="text-muted" />
-    </a>
-  );
-}
-
 export function LienOnePager({ href, className = "btn btn-secondary btn-lg" }: { href: string; className?: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className={className} title={BOUCLE.onePagerAide}>

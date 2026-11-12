@@ -50,8 +50,14 @@ try {
   });
 } catch (e) {
   const sortie = String(e.stdout || "") + String(e.stderr || "");
-  const erreurs = sortie.split("\n").filter((l) => /error TS\d+/.test(l));
-  if (erreurs.length === 0) process.exit(0);
+  // app/preview-da : vieilles pages d'essai, hors du dépôt (.git/info/exclude) ; le serveur de dev
+  // régénère leurs types dans .next/types : leurs erreurs ne concernent pas le code livré
+  // (accord de Théo, 2026-11-12).
+  const erreurs = sortie.split("\n").filter((l) => /error TS\d+/.test(l) && !/preview-da|^\.next[\\/]types[\\/]validator/.test(l));
+  if (erreurs.length === 0) {
+    writeFileSync(tampon, empreinte);
+    process.exit(0);
+  }
   process.stderr.write(`tsc : ${erreurs.length} erreur(s) de type. Corrige-les avant de rendre la main :\n${erreurs.slice(0, 40).join("\n")}\n`);
   process.exit(2);
 }

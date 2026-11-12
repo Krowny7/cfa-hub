@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Bookmark } from "lucide-react";
+import { Bookmark, Spade } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ficheCartesFile, memoCartesImage, subjectByKey } from "@/components/reviser/catalog";
 import { Memo } from "@/components/flashcards/Memo";
@@ -9,7 +8,7 @@ import { BOUCLE } from "@/lib/voice-z3c";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FlashcardPaquets, flashcardGroups, flashcardPaquets, paquetsDeMatiere } from "@/components/FlashcardSubjectGrid";
 import type { ContentSetRow } from "@/components/ContentListPage";
-import { BandeReprise } from "@/components/reviser/BandeReprise";
+import { SuiteFlashcards } from "@/components/reviser/SuiteFlashcards";
 import { ListeReviser } from "@/components/reviser/ListeReviser";
 import { loadSubjectsSafe } from "@/components/reviser/load";
 import { RV } from "@/lib/voice-reviser";
@@ -19,7 +18,8 @@ import { clesAvances, suiviProgramme } from "@/lib/flashcards/avancement";
 import { compterCartesMarquees } from "@/lib/flashcards/marquees";
 import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
 import { MARQUE_CARTE } from "@/lib/voice-z3c";
-import { AppelPartie } from "@/components/flashcards/AppelPartie";
+import { ActionContour } from "@/components/ui/SousPage";
+import { PARTIE_ENTREE } from "@/lib/voice-partie";
 import { subjectFromParam } from "@/components/ContentDetailHeader";
 
 type FlashcardRow = ContentSetRow & {
@@ -31,17 +31,19 @@ type SearchParams = { view?: string; subject?: string };
 type PageProps = { searchParams?: Promise<SearchParams> };
 
 // Les flashcards du site sont les paquets officiels (« Système ») : on ne crée
-// ni n'importe de paquet. La liste suit le gabarit commun de Réviser (carte du
-// lieu « Le casier », bande « Reprendre », index du programme, puis les paquets
+// ni n'importe de paquet. La liste suit le gabarit commun de Réviser (en-tête
+// avec « Partie de cartes » et « Marquées » à contour, rangée héros : la carte
+// « ta suite » qui reprend le dernier paquet et la peinture du lieu « Le
+// casier » ; index du programme, puis les paquets
 // de la matière choisie, chacun avec où en est sa boucle sur le compte :
 // flashcard_progress, puis relue sur l'appareil s'il a plus récent ; rien si
 // la table n'est pas encore créée). Dans l'index du programme, chaque matière
 // montre ses cartes déjà vues et une pastille par paquet (lib/flashcards/
 // avancement.ts : toutes les boucles des paquets et des matières, en une
-// seule lecture). Sous la bande, une entrée discrète « Flashcards marquées ·
-// N » vers leur révision (/flashcards/marquees), seulement s'il y en a (rien
-// sans la table) ; des marques gardées sur l'appareil qui rejoignent le compte
-// font relire la page une fois (SynchroMarquesCartes), pour que l'entrée
+// seule lecture). Dans l'en-tête, « Flashcards marquées · N » vers leur
+// révision (/flashcards/marquees), seulement s'il y en a (rien sans la
+// table) ; des marques gardées sur l'appareil qui rejoignent le compte font
+// relire la page une fois (SynchroMarquesCartes), pour que l'entrée
 // apparaisse.
 export default async function FlashcardsPage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
@@ -134,45 +136,44 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
   // l'avancement de chaque matière pour l'index (undefined : table pas encore créée, l'index reste tel quel)
   const avances = progressions ? suiviProgramme(groups, progressions, user.id) : undefined;
 
-  const bande = (
-    <>
-      <BandeReprise fallback={first && firstGroup ? { id: first.id, title: first.title, subject: firstGroup.name } : null} counts={counts} subjects={subjects} />
-      <SynchroMarquesCartes joueur={user.id} />
-    </>
-  );
-  // « La partie de cartes » (Léonard, croupier) : bien en vue, sous la bande ; la matière choisie dans l'index est cochée d'avance
+  // « La partie de cartes » (Léonard, croupier) : la matière choisie dans l'index est cochée d'avance
   const matierePartie = subjectFromParam(sp.subject);
-  const partie = <AppelPartie matiere={matierePartie?.key} matiereNom={matierePartie?.name} />;
+  const hrefPartie = matierePartie ? `/flashcards/partie?matiere=${encodeURIComponent(matierePartie.key)}` : "/flashcards/partie";
 
   return (
     <ListeReviser
       kind="cartes"
       subjects={subjectsAvail}
       avances={avances}
-      bande={
-        <div className="flex flex-col gap-4">
-          {bande}
-          {partie}
+      actions={
+        <>
+          <ActionContour href={hrefPartie} aide={matierePartie ? PARTIE_ENTREE.ligneMatiere(matierePartie.name) : PARTIE_ENTREE.aide}>
+            <Spade size={16} aria-hidden /> {PARTIE_ENTREE.actionMatiere}
+          </ActionContour>
           {nMarquees ? (
-            <Link href="/flashcards/marquees" className="ink-link inline-flex min-h-[44px] w-fit items-center gap-1.5 text-[14px] font-semibold" title={MARQUE_CARTE.entreeAide}>
-              <Bookmark size={15} fill="currentColor" aria-hidden /> {MARQUE_CARTE.entree(nMarquees)} <ArrowRight size={14} aria-hidden />
-            </Link>
+            <ActionContour href="/flashcards/marquees" aide={MARQUE_CARTE.entreeAide}>
+              <Bookmark size={15} fill="currentColor" aria-hidden /> {MARQUE_CARTE.entree(nMarquees)}
+            </ActionContour>
           ) : null}
-        </div>
+        </>
       }
-      suite={
-        paquets && (
-          <section id="paquets" className="rl-section scroll-mt-24" aria-label={RV.lesPaquets(paquets.name)}>
-            <h2 className="t-h2 m-0">{RV.lesPaquets(paquets.name)}</h2>
-            <FlashcardPaquets groups={paquets.groups} basePath="/flashcards" etats={etats} />
-            {memo && (
-              <div className="mt-6 grid gap-3 md:mt-10">
-                <h2 className="t-h2 m-0">{BOUCLE.memoCartesTitre(60)}</h2>
-                <Memo src={memo.img} pdf={memo.pdf} titre={BOUCLE.memoCartesTitre(60)} ratio={RATIO_CARTES} />
-              </div>
-            )}
-          </section>
-        )
+      suite={<SuiteFlashcards fallback={first && firstGroup ? { id: first.id, title: first.title, subject: firstGroup.name } : null} counts={counts} subjects={subjects} />}
+      apres={
+        <>
+          <SynchroMarquesCartes joueur={user.id} />
+          {paquets && (
+            <section id="paquets" className="rl-section scroll-mt-24" aria-label={RV.lesPaquets(paquets.name)}>
+              <h2 className="t-h2 m-0">{RV.lesPaquets(paquets.name)}</h2>
+              <FlashcardPaquets groups={paquets.groups} basePath="/flashcards" etats={etats} />
+              {memo && (
+                <div className="mt-6 grid gap-3 md:mt-10">
+                  <h2 className="t-h2 m-0">{BOUCLE.memoCartesTitre(60)}</h2>
+                  <Memo src={memo.img} pdf={memo.pdf} titre={BOUCLE.memoCartesTitre(60)} ratio={RATIO_CARTES} />
+                </div>
+              )}
+            </section>
+          )}
+        </>
       }
     />
   );

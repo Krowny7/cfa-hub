@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icone } from "@/components/adn/icons";
-import { BandeEncre } from "@/components/ui/BandeEncre";
+import { CarteSuite } from "@/components/reviser/Heros";
 import { ago } from "@/components/ContinueReviewing";
 import { plural, splitTitle, subjectOfTitle } from "@/components/ContentDetailHeader";
 import { readRecentFlashcardSets } from "@/components/RecentFlashcardSetTracker";
@@ -10,12 +10,13 @@ import { RV } from "@/lib/voice-reviser";
 
 type Entree = { id: string; title: string; ts: number };
 
-// La bande d'encre de /flashcards : « Reprendre » le dernier paquet ouvert
-// (historique local du navigateur, voir RecentFlashcardSetTracker), sinon la
-// suggestion du serveur (« Pour commencer »). Rendu serveur = la suggestion,
-// pour que la bande ne saute pas à l'hydratation. Sans suggestion ni
-// historique, rien.
-export function BandeReprise({
+// La carte « ta suite » de /flashcards (rangée héros) : « Reprendre » le
+// dernier paquet ouvert (historique local du navigateur, voir
+// RecentFlashcardSetTracker), sinon la suggestion du serveur (« Pour
+// commencer »). Rendu serveur = la suggestion, pour que la carte ne saute pas
+// à l'hydratation. Sans suggestion ni historique, rien (la peinture du lieu
+// prend alors toute la rangée).
+export function SuiteFlashcards({
   fallback,
   counts,
   subjects,
@@ -43,7 +44,7 @@ export function BandeReprise({
   const meta = [matiere, n !== null ? plural(n, "carte", "cartes") : null, histo && head.ts ? ago(head.ts, Date.now()) : null].filter(Boolean).join(" · ");
 
   return (
-    <BandeEncre
+    <CarteSuite
       icone={<Icone nom="flashcards" size={22} />}
       titre={histo ? RV.reprendre(parts.main) : RV.commencer(parts.main)}
       ligne={meta ? `${meta}. ${RV.ordreCartes}` : RV.ordreCartes}

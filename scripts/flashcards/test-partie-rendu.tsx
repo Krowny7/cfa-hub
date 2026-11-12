@@ -1,12 +1,13 @@
-// Rendu de l'écran « Prépare ta partie », de la carte d'entrée, de la table de
+// Rendu de l'écran « Prépare ta partie », de la table de
 // jeu et du bilan (react-dom/server,
 // sans base, réseau ni navigateur) :
 //   npx tsx --tsconfig tsconfig.json scripts/flashcards/test-partie-rendu.tsx [dossier-de-sortie]
 // Vérifie les matières (puces, cochées, sans cartes grisées), les paquets
 // listés, les réglages (3/5/10, cartes par main, interrupteurs), le résumé,
 // les jetons, la table (autant de cartes que par main), « Distribuer »
-// (actif, grisé, en cours), l'erreur de donne, les phrases de Léonard ; et la
-// carte d'entrée (lien avec ou sans matière). Avec un dossier en argument
+// (actif, grisé, en cours), l'erreur de donne, les phrases de Léonard. (La
+// carte d'entrée de la page Flashcards est devenue une action « Partie de
+// cartes » de l'en-tête, le 2026-11-12.) Avec un dossier en argument
 // (jamais écrit en dur : un chemin du bac à sable dans un fichier du dépôt
 // casse le CSS du site), écrit aussi des pages HTML statiques, la feuille de
 // style incluse, à regarder dans un navigateur.
@@ -15,7 +16,6 @@ import fs from "node:fs";
 import path from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { AppelPartie } from "@/components/flashcards/AppelPartie";
 import { ReglagesPartie } from "@/components/flashcards/partie/ReglagesPartie";
 import { BilanPartie } from "@/components/flashcards/partie/BilanPartie";
 import { TableDeJeu } from "@/components/flashcards/partie/TableDeJeu";
@@ -99,12 +99,6 @@ const occupe = rendre({ occupe: true });
 check("donne en route : « Léonard bat les cartes… », bouton non actif", occupe.includes("Léonard bat les cartes…") && /disabled="">Léonard bat/.test(occupe));
 const err = rendre({ erreur: "Léonard n'a pas pu aller chercher les cartes." });
 check("erreur de donne : annoncée", /role="alert"/.test(err) && err.includes("pas pu aller chercher"));
-
-// --- la carte d'entrée
-const e1 = renderToStaticMarkup(<AppelPartie />);
-const e2 = renderToStaticMarkup(<AppelPartie matiere="fixed_income" matiereNom="Fixed Income" />);
-check("entrée : lien vers la partie, toutes matières", e1.includes('href="/flashcards/partie"') && e1.includes("La partie de cartes") && e1.includes("Jouer"));
-check("entrée avec matière : pré-cochée dans l'adresse, nommée dans la phrase", e2.includes('href="/flashcards/partie?matiere=fixed_income"') && e2.includes("Une partie sur Fixed Income"));
 
 
 // --- la table de jeu (états figés : ApercuTable)
@@ -223,8 +217,6 @@ addEventListener('load',function(){(document.fonts&&document.fonts.ready||Promis
   fs.writeFileSync(path.join(sortie, "reglages-nuit.html"), page(html, "nuit", 1180, cssReglages));
   fs.writeFileSync(path.join(sortie, "reglages-mobile.html"), page(cinq, "clair", 390, cssReglages));
   fs.writeFileSync(path.join(sortie, "reglages-vide.html"), page(vide, "clair", 1180, cssReglages));
-  fs.writeFileSync(path.join(sortie, "entree.html"), page(`<div style="display:grid;gap:16px;padding:8px">${e1}${e2}</div>`, "clair", 900, cssReglages));
-  fs.writeFileSync(path.join(sortie, "entree-mobile.html"), page(`<div style="display:grid;gap:16px">${e2}</div>`, "clair", 390, cssReglages));
   // la table
   const tables: Record<string, string> = { "table-donne": t0, "table-recto": t1, "table-verso": t2, "table-jugees": t3, "table-main-reussie": t4, "table-main2": t6, "table-fin": t7, "table-5": table({ ouverte: { id: id(2), face: "recto" } }, partieExemple(1, 5)) };
   for (const [nom, h] of Object.entries(tables)) {

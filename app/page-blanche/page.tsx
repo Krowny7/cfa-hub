@@ -1,16 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Illustration } from "@/components/ui/Illustration";
-import { CATALOGUE, TOTAL_FORMULES, lignesDe } from "@/lib/formules";
+import { Icone } from "@/components/adn/icons";
+import { CarteSuite, HerosLieu } from "@/components/reviser/Heros";
+import { EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { CATALOGUE, lignesDe } from "@/lib/formules";
 import { copiesARendre } from "@/lib/formules/tour";
 import { topicLabel } from "@/lib/practiceTopics";
 import { createClient } from "@/lib/supabase/server";
 import { PB } from "@/lib/voice-page-blanche";
+import { RETOUR } from "@/lib/voice-reviser";
 import s from "@/components/page-blanche/PageBlanche.module.css";
 
 export const metadata = { title: "La page blanche · Ranked Lobby" };
 
 // La page blanche : le choix de la matière, avec ce qu'il reste à rendre dans chacune.
+// Gabarit A des sous-pages : l'en-tête (retour à Réviser), puis, dans le cadre de la page,
+// la rangée héros (la carte « ta suite » : une matière entamée d'abord, sinon la première pas
+// commencée ; la peinture du palais blanc à droite), puis la liste des matières.
 export default async function PageBlanchePage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -19,39 +25,45 @@ export default async function PageBlanchePage() {
   const { data } = await supabase.from("formules_maitrise").select("formule").eq("user_id", auth.user.id).eq("maitrisee", true);
   const maitrisees = new Set((data ?? []).map((r) => r.formule as string));
 
+  const matieres = CATALOGUE.map((m) => ({
+    m,
+    total: lignesDe(m),
+    faites: m.copies.reduce((t, c) => t + c.formules.filter((f) => maitrisees.has(f.id)).length, 0),
+    aRendre: copiesARendre(m.copies, maitrisees).length,
+  }));
+  const entamee = matieres.find((x) => x.faites > 0 && x.faites < x.total);
+  const suite = entamee ?? matieres.find((x) => x.total > 0 && x.faites === 0);
+
   return (
-    <div className="rl-wide rl-page">
-      <div className="flex flex-col gap-7">
-        <div className={s.bandeau}>
-          <Illustration nom="reviser-page-blanche" position="50% 62%" decorative eager />
-        </div>
-        <header className="flex flex-col gap-3">
-          <p className="t-small m-0 font-semibold">{PB.kicker}</p>
-          <h1 className="t-hero rl-in m-0">{PB.titre}</h1>
-          <p className="t-small m-0 max-w-[62ch]">{PB.sous}</p>
-          <p className="m-0 font-mono text-[13px] font-semibold tabular-nums">
-            {PB.total(TOTAL_FORMULES)} · {PB.maitrisees(maitrisees.size, TOTAL_FORMULES)}
-          </p>
-        </header>
-        <ul className={s.matieres}>
-          {CATALOGUE.map((m) => {
-            const total = lignesDe(m);
-            const faites = m.copies.reduce((t, c) => t + c.formules.filter((f) => maitrisees.has(f.id)).length, 0);
-            return (
-              <li key={m.matiere}>
-                <Link href={`/page-blanche/${m.matiere}`} className={s.matiere}>
-                  <b>{topicLabel(m.matiere)}</b>
-                  <span className={s.reste}>{PB.copies(copiesARendre(m.copies, maitrisees).length)}</span>
-                  <span className={s.jauge} aria-hidden>
-                    <i style={{ width: `${total ? (faites / total) * 100 : 0}%` }} />
-                  </span>
-                  <span className={s.compte}>{PB.maitrisees(faites, total)}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </div>
+    <SousPage
+      entete={<EnTeteSousPage retour={RETOUR.reviser} titre={PB.titre} ligne={PB.sous} />}
+      premier={
+        <HerosLieu illustration="reviser-page-blanche" position="50% 62%" nom={PB.lieu}>
+          {suite && (
+            <CarteSuite
+              icone={<Icone nom="fiche" size={22} />}
+              titre={entamee ? PB.suiteReprendre(topicLabel(suite.m.matiere)) : PB.suiteCommencer(topicLabel(suite.m.matiere))}
+              ligne={`${PB.copies(suite.aRendre)} · ${PB.maitrisees(suite.faites, suite.total)}`}
+              action={{ href: `/page-blanche/${suite.m.matiere}`, label: PB.suiteAction }}
+            />
+          )}
+        </HerosLieu>
+      }
+    >
+      <ul className={s.matieres}>
+        {matieres.map(({ m, total, faites, aRendre }) => (
+          <li key={m.matiere}>
+            <Link href={`/page-blanche/${m.matiere}`} className={s.matiere}>
+              <b>{topicLabel(m.matiere)}</b>
+              <span className={s.reste}>{PB.copies(aRendre)}</span>
+              <span className={s.jauge} aria-hidden>
+                <i style={{ width: `${total ? (faites / total) * 100 : 0}%` }} />
+              </span>
+              <span className={s.compte}>{PB.maitrisees(faites, total)}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </SousPage>
   );
 }

@@ -1,0 +1,121 @@
+/* La rangée héros des catalogues de Réviser (components/reviser/Heros.tsx) : la carte
+   « ta suite » à gauche, la peinture du lieu à droite. Dans le cadre de la page, la rangée
+   prend la hauteur qui reste (.rl-cadre) : la carte pose sa recommandation en bas, la
+   peinture couvre toute sa case. */
+
+.heros {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+@media (min-width: 900px) {
+  .heros {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 20px;
+  }
+}
+/* rien à reprendre : la peinture seule, sur toute la rangée */
+.heros > :only-child {
+  grid-column: 1 / -1;
+}
+
+/* ——— La carte « ta suite » ——— */
+.suite {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+  min-width: 0;
+  padding: 22px;
+}
+@media (min-width: 768px) {
+  .suite {
+    padding: 28px 30px 30px;
+  }
+}
+.haut {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.icone {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: var(--surface-2);
+  color: var(--pal-1, var(--ink));
+}
+.bas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.titre {
+  margin: 0;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: clamp(24px, 2.4vw, 32px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.ligne {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.action {
+  margin-top: 10px;
+}
+
+/* ——— La peinture du lieu ——— */
+.lieu {
+  position: relative;
+  min-width: 0;
+  min-height: 200px;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--surface-2);
+  box-shadow: var(--shadow-1);
+}
+@media (min-width: 900px) {
+  .lieu {
+    min-height: 320px;
+  }
+}
+.lieu > img {
+  position: absolute;
+  inset: 0;
+}
+/* la légende reste sombre de jour comme de nuit : couleur fixe */
+.legende {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  padding: 7px 12px 8px;
+  border-radius: 10px;
+  background: rgba(26, 18, 11, 0.72);
+  color: #fff;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: -0.005em;
+}
+@media (min-width: 768px) {
+  .legende {
+    left: 18px;
+    bottom: 18px;
+    font-size: 19px;
+  }
+}

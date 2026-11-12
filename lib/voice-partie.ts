@@ -29,21 +29,13 @@ export const MATIERES_PARTIE: Record<string, { nom: string; abrege: string }> = 
 };
 
 // ---------------------------------------------------------------------------
-// Les entrées : la page Flashcards et la page d'une matière
+// Les entrées : l'action « Partie de cartes » de l'en-tête de la page Flashcards et de la page d'une matière
 
 export const PARTIE_ENTREE = {
-  titre: "La partie de cartes",
-  /** carte de la page Flashcards */
-  ligne: "Léonard distribue des mains de cartes face cachée. Tu cherches la réponse, tu retournes, tu dis si tu maîtrises : un jeton par carte maîtrisée.",
-  /** avec une matière déjà choisie */
+  /** l'infobulle, avec une matière déjà choisie */
   ligneMatiere: (matiere: string) => `Une partie sur ${matiere} : Léonard distribue, tu retournes, tu gagnes un jeton par carte maîtrisée.`,
-  action: "Jouer",
   actionMatiere: "Partie de cartes",
-  /** le petit titre de la carte, au-dessus du titre */
-  surTitre: "Léonard · croupier",
   aide: "Une partie de flashcards où Léonard de Vinci est le croupier",
-  /** le sceau de la carte */
-  jetons: "jetons",
 } as const;
 
 // ---------------------------------------------------------------------------

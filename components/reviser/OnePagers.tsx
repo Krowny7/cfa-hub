@@ -1,28 +1,15 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, ChevronRight, Layers } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Layers } from "lucide-react";
 import { pad2 } from "@/components/reviser/rail";
 import type { OnePagerItem } from "@/components/reviser/shelves";
 import { OP } from "@/lib/voice-reviser";
 import { MATIERE_CARTES } from "@/lib/voice-z3c";
 import s from "./OnePagers.module.css";
 
-// Les one-pagers (une page A4 PDF par matière) : la page /fiches/one-pagers
-// (en-tête, grille de vignettes) et la carte d'accès posée sous l'index de
+// Les one-pagers (une page A4 PDF par matière) : la grille de vignettes de
+// /fiches/one-pagers et la carte d'accès posée sous l'index de
 // /fiches. Les PDF vivent dans le bucket privé « fiches » : la page reçoit
 // leurs URL signées, générées côté serveur. Sans état ni requête.
-
-/** En-tête de la page : retour aux fiches, grand titre, une phrase. */
-export function OnePagersEntete() {
-  return (
-    <header className="flex flex-col gap-3">
-      <Link href="/fiches" className="t-small inline-flex w-fit items-center gap-1.5 font-semibold hover:text-white">
-        <ArrowLeft size={14} aria-hidden /> {OP.retour}
-      </Link>
-      <h1 className="t-hero rl-in m-0">{OP.titre}</h1>
-      <p className="t-body m-0 max-w-[560px] text-muted">{OP.desc}</p>
-    </header>
-  );
-}
 
 /**
  * La grille des one-pagers : vignette A4, rang et code, matière, poids à
