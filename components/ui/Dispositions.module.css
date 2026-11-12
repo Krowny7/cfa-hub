@@ -1,6 +1,6 @@
-/* Les trois autres dispositions de la zone de gauche (components/ui/Dispositions.tsx) : le pavé,
-   l'éventail, la sélection. Les objets gardent leur papier de jour comme de nuit ; le boîtier du pavé
-   reste ébène (couleur fixe : --noir devient clair la nuit). */
+/* Les quatre autres dispositions de la zone de gauche (components/ui/Dispositions.tsx) : le pavé,
+   l'éventail, la sélection, le tableau noir. Les objets gardent leur papier de jour comme de nuit ; le
+   boîtier du pavé et le tableau gardent des couleurs fixes (--noir devient clair la nuit). */
 
 /* ───────── le pavé ───────── */
 .boitier {
@@ -438,7 +438,9 @@ a.touche:active {
   height: 0;
   overflow: hidden;
 }
+/* la mise en page suit la largeur du tableau (la zone de gauche se partage dès 980 px de fenêtre) */
 .tableau {
+  container: tableau / inline-size;
   width: 100%;
   max-width: 820px;
   margin: 0 auto;
@@ -465,7 +467,7 @@ a.touche:active {
     inset 0 0 0 2px rgba(0, 0, 0, 0.35),
     inset 0 8px 20px rgba(0, 0, 0, 0.45);
 }
-@media (min-width: 900px) {
+@container tableau (min-width: 600px) {
   .ardoise {
     padding: 22px 28px 20px 34px;
   }
@@ -482,7 +484,7 @@ a.touche:active {
   -webkit-mask-size: 140px;
   mask-size: 140px;
 }
-@media (min-width: 700px) {
+@container tableau (min-width: 600px) {
   .craie {
     grid-auto-flow: column;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -510,7 +512,7 @@ a.touche:active {
   outline: none;
   transition: opacity 0.2s ease;
 }
-@media (min-width: 900px) {
+@container tableau (min-width: 660px) {
   .ecrit {
     font-size: 26px;
   }

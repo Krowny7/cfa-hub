@@ -5,11 +5,12 @@ import { useId, useState } from "react";
 import type { Piece } from "@/components/ui/Presentoir";
 import s from "./Dispositions.module.css";
 
-// Trois autres façons de poser les matières dans la zone de gauche du cadre à zones (CadreZones),
+// Quatre autres façons de poser les matières dans la zone de gauche du cadre à zones (CadreZones),
 // à la place du carrousel (demande de Théo, 2026-11-12, pour les calculs ou l'entraînement ciblé) :
 // le pavé (les touches d'une calculatrice et son écran), l'éventail (une main de cartes), la
-// sélection (une liste façon choix de niveau) et le tableau noir (la liste écrite à la craie). Toutes prennent les mêmes pièces que le carrousel ;
-// `depart` est la pièce conseillée (voyant du pavé, carte levée de l'éventail, ligne choisie).
+// sélection (une liste façon choix de niveau) et le tableau noir (la liste écrite à la craie).
+// Toutes prennent les mêmes pièces que le carrousel ; `depart` est la pièce conseillée (voyant du
+// pavé, carte levée de l'éventail, ligne choisie, matière entourée au tableau).
 // Sans mouvement réduit : rien ne bouge.
 
 type Props = { pieces: Piece[]; action: string; depart?: number };
