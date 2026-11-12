@@ -57,9 +57,10 @@
   object-fit: cover;
 }
 
-/* le bord gauche de l'illustration se désagrège, comme les jambes du ninja de l'intro : une
-   diagonale qui s'effiloche en traînées de brosse et en gouttes, jusqu'au papier
-   (public/peinture/bord.svg, sur la moitié gauche ; la moitié droite reste pleine). */
+/* le bord gauche de l'illustration se défait en touches de peinture à l'huile, comme les jambes
+   du ninja de l'intro : des coups de brosse en diagonale, striés et secs au bout, de plus en
+   plus clairsemés vers le texte (public/peinture/bord.svg, sur la moitié gauche ; la moitié
+   droite reste pleine). Fixe : rien ne bouge. */
 @media (min-width: 820px) {
   .cadre[data-illustre="1"] {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
