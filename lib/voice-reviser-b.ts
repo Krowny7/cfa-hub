@@ -79,6 +79,8 @@ export const ETAGERE = {
   bibliotheque: "La bibliothèque des cours",
   /** la platine : elle joue l'audio sur place, la matière se choisit dessous */
   platine: "La platine",
+  /** l'étiquette au-dessus de la platine */
+  platineTitre: "Jouer juste l'audio",
   matieres: "Le disque sur la platine",
   ecouter: (titre: string) => `Écouter ${titre}`,
   reprendreA: (titre: string, temps: string) => `Reprendre ${titre} à ${temps}`,

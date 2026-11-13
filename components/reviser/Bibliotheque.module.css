@@ -464,6 +464,14 @@
 }
 
 /* ——— la platine : grande, elle ne sert qu'à écouter ——— */
+/* la colonne de la platine : son étiquette au-dessus, alignée sur son bord */
+.colonnePlatine {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  justify-self: center;
+}
 .platine {
   position: relative;
   display: grid;
