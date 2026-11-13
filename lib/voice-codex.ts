@@ -337,3 +337,21 @@ export const BOUTON_JOUEUR = {
   aria: "Mon profil, quêtes et réglages",
   ariaRecompenses: (n: number) => `Mon profil, ${n} récompense${n > 1 ? "s" : ""} à récolter`,
 };
+
+// ── Le prochain palier, en grand sous la porte du Codex (direction du 2026-11-13) ──
+export const PALIER = {
+  etiquette: "Prochain palier",
+  ensuite: "Ensuite",
+  heros: "quêtes faites",
+  xp: (n: number) => `+${n} XP`,
+  minutes: (n: number) => `${n} min`,
+  ouvrir: "Voir la quête",
+  /** la ligne d'état de la porte : la phase, et ce qui attend « Récupérer » */
+  ligne: (phase: string, n: number) => (n > 0 ? `${phase} · ${nombre(n)} à récupérer` : phase),
+  /** les deux replis sous l'arbre */
+  aujourdhui: "Aujourd'hui",
+  tout: "Tout le Codex",
+  aRecuperer: (n: number) => `${nombre(n)} à récupérer`,
+  /** la veillée (V3 §7.1) */
+  plusRien: "On ne commence plus rien.",
+};

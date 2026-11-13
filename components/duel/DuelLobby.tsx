@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
 import { BanniereSeule } from "@/components/classement/PodiumBannieres";
+import { ArcLigne } from "@/components/ui/ArcCoin";
+import { couleurArc } from "@/components/ui/ArcElectrique";
 import type { BoardRow } from "@/components/classement/types";
 import { AmiBouton } from "@/components/profil/AmiBouton";
 import { ActionEncre, EnTeteSousPage, Etiquette, SousPage } from "@/components/ui/SousPage";
@@ -73,27 +75,14 @@ export function EnTeteDuel({ ligne, heros = null, enjeu = null }: { ligne?: Reac
   );
 }
 
-// L'arc électrique du face-à-face, figé (la maquette validée) : un seul zigzag d'un cadre à l'autre, qui passe sous le
-// tampon, en trois couches (la lueur, le cœur avec ses branches, le fil blanc). Il s'allume une fois à l'arrivée, rien
-// ne tourne ensuite.
-const ZIGZAG =
-  "M0 42 L34 33 L58 50 L92 28 L118 46 L146 35 L170 57 L204 31 L232 45 L262 25 L288 50 L318 37 L346 55 L372 30 L404 47 L430 27 L458 51 L486 35 L514 54 L542 32 L568 46 L600 39";
-const BRANCHES = "M146 35 L158 16 L176 21 L190 4 M430 27 L446 62 L464 58 L476 76 M92 28 L84 12 M514 54 L528 72";
+// L'arc électrique du face-à-face : le courant des 5 du jour (même moteur, même couleur que la carte de l'accueil),
+// tiré d'une bannière à l'autre sous le tampon ; il coule en continu, une décharge passe d'un camp à l'autre toutes
+// les 4,2 s. Posé (une image) en mouvement réduit, en pause hors écran (components/ui/ArcCoin.tsx, demande de Théo
+// du 2026-11-13).
+/** le palier de l'arc des 5 du jour (PALIER_ECLAIR de CarteCinq : l'aura cyan clair) */
+const ARC_PALIER = 3;
 function ArcDuel() {
-  return (
-    <svg className={s.arc} viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden focusable="false">
-      <g data-c="l">
-        <path d={ZIGZAG} />
-      </g>
-      <g data-c="c">
-        <path d={ZIGZAG} />
-        <path d={BRANCHES} />
-      </g>
-      <g data-c="b">
-        <path d={ZIGZAG} />
-      </g>
-    </svg>
-  );
+  return <ArcLigne couleur={couleurArc(ARC_PALIER)} className={s.arc} />;
 }
 
 /** « 2e », « 1er » */

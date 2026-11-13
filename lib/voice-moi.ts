@@ -53,30 +53,13 @@ export const REG = {
 
 export const SOUS_MOI = {
   retour: { href: "/moi", label: "Moi" },
-  /** Ratures et Marquées : la zone de gauche (la liste) et la colonne grise (le chiffre) */
-  carnet: "Ton carnet",
-  aReprendre: "À reprendre",
   ratures: {
     titre: "Tes ratures",
-    /** la règle du carnet, en une ligne ; `seche` : avec le séchage (migration_v3_profil.sql §3a) */
-    ligne: (seche: boolean) =>
-      seche ? "Une rature se raye quand tu la réussis au moins un jour après l'erreur." : "Une rature sort du carnet quand tu la réussis deux fois de suite.",
-    legende: (n: number) => `rature${s(n)} en cours`,
-  },
-  marquees: {
-    ligne: "Ce que tu as gardé pour plus tard : l'énoncé, la bonne réponse et l'explication.",
-    legendeQuestions: (n: number) => `question${s(n)} marquée${s(n)}`,
-    legendeCartes: (n: number) => `flashcard${s(n)} marquée${s(n)}`,
   },
   pieces: {
     titre: "Mes pièces",
-    ligne: "Tout ce qui se porte sur ton profil. Rien ne s'achète : chaque pièce se gagne.",
-    etagere: "L'étagère",
-    plusRare: "La plus rare",
     indisponible: "L'étagère ne s'ouvre pas pour le moment. Réessaie dans un instant.",
   },
-  historique: "Ton historique",
-  reglages: { compte: "Ton compte", examen: "Ton examen" },
 };
 
 // ── La page Moi « La synthèse » (maquette D) ──────────────────────────────
@@ -375,6 +358,7 @@ export const ACTIVITES = {
   aujourdhui: "Aujourd'hui",
   hier: "Hier",
   /** le résumé de la sélection : « 7 séances · 41/70 justes · 59 % » */
+  justes: (ok: number, n: number) => `${ok}/${n} justes${n > 0 ? ` · ${Math.round((100 * ok) / n)} %` : ""}`,
   bilan: (seances: number, ok: number, n: number) => `${seances} séance${seances > 1 ? "s" : ""} · ${ok}/${n} justes${n > 0 ? ` · ${Math.round((100 * ok) / n)} %` : ""}`,
   sansRature: "Aucune rature dans cette sélection : rien à reprendre.",
   aucune: "Aucune séance pour ce choix.",
@@ -384,4 +368,64 @@ export const ACTIVITES = {
   copieVide: "Ces ratures ne sont pas encore au carnet : réessaie dans un instant.",
   /** l'en-tête du texte copié */
   copieTitre: (selection: string, n: number) => `Mes ratures · ${selection} (${n} question${n > 1 ? "s" : ""})`,
+};
+
+// ── Le gabarit « Dossier » des sous-pages de Moi (direction du 2026-11-13) ──
+// La porte porte UN chiffre-héros vrai ; dessous, des filets nommés dans la
+// marge (étiquettes Mono), un relevé de chiffres, le détail derrière des replis.
+
+export const DOSSIER = {
+  ratures: {
+    heros: "en cours",
+    /** la ligne d'état de la porte : la dernière rature */
+    ligne: (quand: string) => `La dernière ${quand}`,
+    /** le carnet vidé */
+    lignePropre: "Plus rien en cours",
+    tampon: "Carnet propre",
+    releve: "Le relevé",
+    semaine: "rayées en 7 jours",
+    sechent: "sèchent encore",
+    scellees: "scellées",
+    anciennes: "anciennes",
+    carnet: "Le carnet",
+    /** le carnet sert à consulter ; /revoir sert à agir */
+    agir: "Reprendre mes ratures",
+    agirAria: "Ouvrir À revoir : les ratures sèches, la plus ancienne d'abord",
+  },
+  marquees: {
+    herosQuestions: (n: number) => `question${s(n)} marquée${s(n)}`,
+    herosCartes: (n: number) => `flashcard${s(n)} marquée${s(n)}`,
+    /** la ligne d'état : les matières, la dernière marquée */
+    ligne: (matieres: number, quand: string) => `${matieres} matière${s(matieres)} · la dernière ${quand}`,
+    liste: "La liste",
+  },
+  pieces: {
+    heros: "pièces à toi",
+    /** la ligne d'état : ce que le joueur porte */
+    ligne: (portees: string[]) => `Tu portes : ${portees.join(" · ")}`,
+    rare: "La plus rare",
+    etagere: "L'étagère",
+  },
+  activites: {
+    heros: (n: number) => `séance${s(n)}`,
+    /** la ligne d'état : la dernière séance, la précision sur 7 jours */
+    ligne: (quand: string, pct: number | null) => (pct === null ? `Dernière séance ${quand}` : `Dernière séance ${quand} · ${pct} % sur 7 jours`),
+    historique: "L'historique",
+  },
+  reglages: {
+    herosJ: "avant l'examen",
+    herosPasse: "examen passé",
+    /** la ligne d'état : l'objectif et les questions déjà posées (sans J-n : il est en héros) */
+    ligne: (objectif: number, posees: number) => `Objectif ${objectif.toLocaleString("fr-FR")} questions · ${posees.toLocaleString("fr-FR")} posées`,
+    examen: "Ton examen",
+    compte: "Ton compte",
+    apparence: "Apparence",
+    repos: "Repos de la série",
+    sons: "Sons",
+    confidentialite: "Confidentialité",
+    groupes: "Groupes",
+    sortie: "Sortie",
+    deconnecter: "Se déconnecter",
+    deconnecterLigne: "Tes révisions et ton rang restent sauvegardés sur ton compte.",
+  },
 };

@@ -1,5 +1,6 @@
 "use client";
 
+import { Repli } from "@/components/moi/Dossier";
 import { useState, useTransition } from "react";
 import { CalendarOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
@@ -37,7 +38,8 @@ const T = {
 /** La fonction ou la table manque encore (même règle que baseAbsente, lib/profil/sceaux-base.ts, module serveur). */
 const absente = (e: { code?: string; message?: string } | null) => !!e && (["PGRST202", "PGRST205", "42883", "42P01"].includes(e.code ?? "") || /could not find|does not exist/i.test(e.message ?? ""));
 
-export function ReposSerie({ initial }: { initial: ReposInitial | null }) {
+/** `repli` : le titre du repli qui l'entoure (réglages de Moi) ; masqué avec lui quand la table manque (pas de repli vide). */
+export function ReposSerie({ initial, repli }: { initial: ReposInitial | null; repli?: string }) {
   const [poses, setPoses] = useState<JourPause[]>(initial?.poses ?? []);
   const [cache, setCache] = useState(!initial);
   const [genre, setGenre] = useState<GenrePause>("repos");
@@ -87,7 +89,7 @@ export function ReposSerie({ initial }: { initial: ReposInitial | null }) {
 
   // « Déjà posés » : aujourd'hui et après (les jours passés ne servent qu'aux règles)
   const plages = plagesDe(poses.filter((p) => p.jour >= aujourdhui));
-  return (
+  const corps = (
     <div id="repos" className="card flex flex-col gap-3 p-[22px]">
       <h3 className="m-0 flex items-center gap-2 text-[13px] font-semibold text-muted">
         <CalendarOff size={15} aria-hidden /> {T.titre}
@@ -146,4 +148,5 @@ export function ReposSerie({ initial }: { initial: ReposInitial | null }) {
       </div>
     </div>
   );
+  return repli ? <Repli titre={repli}>{corps}</Repli> : corps;
 }

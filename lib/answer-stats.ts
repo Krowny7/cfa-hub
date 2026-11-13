@@ -727,7 +727,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   }
   for (const r of setSessions ?? []) {
     const id = `ps:${r.id}`;
-    passages.set(id, { source: "qcm", label: "Session chronométrée", at: r.occurred_at ?? "", href: "/session" });
+    passages.set(id, { source: "qcm", label: "Session chronométrée", at: r.occurred_at ?? "", href: r.set_id ? `/qcm/${r.set_id}` : "/session" });
     contribs.push({ source: "qcm", passage: id, target: r.set_id ? { kind: "set", setId: r.set_id, title: r.set_title } : { kind: "bucket", subject: subjectByName((r.set_title ?? "").split(" — ")[0]) ?? "other", themeKey: `title:${r.set_title}`, label: r.set_title || "QCM", tag: null, order: 2000 }, n: num(r.total), ok: Math.min(num(r.correct), num(r.total)) });
   }
 

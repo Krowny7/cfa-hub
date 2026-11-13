@@ -17,7 +17,7 @@ import s from "./Salles.module.css";
 // et son code ; on arrive dans le salon, où l'admin règle la partie. `demo`
 // (aperçus) : rien ne part.
 
-export function FormCreer({ demo = false }: { demo?: boolean }) {
+export function FormCreer({ demo = false, sobre = false }: { demo?: boolean; /** sans les phrases d'aide (passées en title) : /salles, replié */ sobre?: boolean }) {
   const router = useRouter();
   const uid = useId();
   const [nom, setNom] = useState("");
@@ -72,7 +72,7 @@ export function FormCreer({ demo = false }: { demo?: boolean }) {
             setErreur(null);
           }}
         />
-        <span id={`${uid}-nom-aide`} className={s.aide}>
+        <span id={`${uid}-nom-aide`} className={sobre ? "sr-only" : s.aide}>
           {SALLES.nomAide}
         </span>
       </div>
@@ -80,19 +80,19 @@ export function FormCreer({ demo = false }: { demo?: boolean }) {
       <fieldset className={s.bloc}>
         <legend className={s.libelle}>{SALLES.visibiliteLabel}</legend>
         <div className={s.deux} role="radiogroup" aria-label={SALLES.visibiliteLabel} onKeyDown={flechesRadios}>
-          <button type="button" role="radio" aria-checked={!publique} tabIndex={!publique ? 0 : -1} className={s.puce} onClick={() => setPublique(false)}>
+          <button type="button" role="radio" aria-checked={!publique} tabIndex={!publique ? 0 : -1} className={s.puce} title={sobre ? SALLES.priveeAide : undefined} onClick={() => setPublique(false)}>
             <b>
               <Lock size={15} aria-hidden style={{ display: "inline", verticalAlign: "-2px", marginRight: 6 }} />
               {SALLES.privee}
             </b>
-            <span>{SALLES.priveeAide}</span>
+            {!sobre && <span>{SALLES.priveeAide}</span>}
           </button>
-          <button type="button" role="radio" aria-checked={publique} tabIndex={publique ? 0 : -1} className={s.puce} onClick={() => setPublique(true)}>
+          <button type="button" role="radio" aria-checked={publique} tabIndex={publique ? 0 : -1} className={s.puce} title={sobre ? SALLES.publiqueAide : undefined} onClick={() => setPublique(true)}>
             <b>
               <Globe size={15} aria-hidden style={{ display: "inline", verticalAlign: "-2px", marginRight: 6 }} />
               {SALLES.publique}
             </b>
-            <span>{SALLES.publiqueAide}</span>
+            {!sobre && <span>{SALLES.publiqueAide}</span>}
           </button>
         </div>
       </fieldset>

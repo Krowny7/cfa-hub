@@ -83,8 +83,8 @@ export function MockExamRegistration({
   // à l'encre de l'espace.
   if (!registered && nu) {
     return (
-      <div className="grid min-w-0 justify-items-start gap-4" aria-label={INSCRIPTION.surTitre}>
-        {(count || ranked) && <p className="t-small m-0">{[count, ranked ? INSCRIPTION.classe : null].filter(Boolean).join(" · ")}</p>}
+      // le nombre d'inscrits est le chiffre-héros de la page, la règle ELO passe en title (règle 1)
+      <div className="grid min-w-0 justify-items-start gap-4" aria-label={INSCRIPTION.surTitre} title={[count, ranked ? INSCRIPTION.classe : null].filter(Boolean).join(" · ") || undefined}>
         {msg && (
           <p className="m-0 text-sm" aria-live="polite">
             {msg}
@@ -129,7 +129,7 @@ export function MockExamRegistration({
         </span>
         <div className="min-w-0">
           <p className="m-0 text-[16px] font-bold tracking-[-0.01em]">{INSCRIPTION.inscrit}</p>
-          {(count || ranked) && <p className="t-small m-0 mt-0.5">{[count, ranked ? INSCRIPTION.classeCourt : null].filter(Boolean).join(" · ")}</p>}
+          {!nu && (count || ranked) && <p className="t-small m-0 mt-0.5">{[count, ranked ? INSCRIPTION.classeCourt : null].filter(Boolean).join(" · ")}</p>}
           {msg && (
             <p className="m-0 mt-1.5 text-sm" aria-live="polite">
               {msg}

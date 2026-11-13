@@ -1,0 +1,426 @@
+/* La lecture (direction « le lieu, puis l'objet », 2026-11-13) : /courses/<slug> (le deck et l'audio) et
+   /fiches/<matière> (la synthèse et son quiz). Plus de bande noire ni de colonne grise : le document à
+   gauche, posé sur la scène, l'instrument à droite, chacun nommé par une étiquette Mono. */
+.lecture {
+  display: grid;
+  gap: 28px;
+  min-width: 0;
+}
+@media (min-width: 980px) {
+  .lecture {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    align-items: start;
+    gap: 32px;
+  }
+  .lecture[data-large] {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
+  }
+  .colonne {
+    position: sticky;
+    top: 84px;
+  }
+}
+.zone {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+}
+/* le document : une feuille posée, son ombre de contact */
+.document {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--surface-2, #ece6da);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent),
+    0 22px 34px -24px rgba(0, 0, 0, 0.45);
+}
+.document iframe {
+  display: block;
+  width: 100%;
+  height: 72vh;
+  border: 0;
+}
+@media (min-width: 980px) {
+  .document iframe {
+    height: calc(100vh - 11rem);
+  }
+}
+.vide {
+  margin: 0;
+  padding: 48px 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+/* les pages d'une fiche : de vraies pages papier (couleurs FIXES), blanches tant qu'elles ne sont pas
+   commencées, à moitié écrites si entamées, pleines et cornées une fois faites */
+.cases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 6px 0 0;
+  list-style: none;
+}
+.case {
+  position: relative;
+  display: grid;
+  align-content: end;
+  justify-items: start;
+  width: 46px;
+  height: 60px;
+  padding: 0 0 6px 7px;
+  border: 0;
+  border-radius: 2px;
+  background: #fbf8f2;
+  box-shadow:
+    0 0 0 1px rgba(26, 18, 11, 0.12),
+    0 8px 12px -10px rgba(0, 0, 0, 0.5);
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(26, 18, 11, 0.55);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.2s cubic-bezier(0.2, 0.85, 0.25, 1.15);
+}
+/* l'écriture de la page : des lignes, jusqu'à mi-page (entamée) ou pleine page (faite) */
+.case::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 7px;
+  right: 9px;
+  height: 0;
+  background: repeating-linear-gradient(180deg, rgba(26, 18, 11, 0.38) 0 1.5px, transparent 1.5px 5px);
+}
+.case[data-etat="entamee"]::before {
+  height: 17px;
+}
+.case[data-etat="faite"]::before {
+  height: 32px;
+}
+.case[data-etat="faite"] {
+  color: #1a120b;
+}
+/* le coin corné d'une page faite */
+.case[data-etat="faite"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(225deg, var(--paper, #f4efe4) 0 50%, #d9cfbd 50% 100%);
+  box-shadow: -1px 1px 2px rgba(0, 0, 0, 0.18);
+}
+.case[aria-pressed="true"] {
+  transform: translateY(-5px);
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 3px;
+}
+.case:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.case:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .case:not(:disabled):hover {
+    transform: translateY(-3px) rotate(-1deg);
+  }
+  .case[aria-pressed="true"]:hover {
+    transform: translateY(-5px);
+  }
+}
+.rature {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--pen, #c0392b);
+  font-size: 10px;
+  line-height: 17px;
+  text-align: center;
+  color: #fff;
+  z-index: 1;
+}
+:global(html[data-theme="nuit"]) .case {
+  box-shadow:
+    0 0 0 1px rgba(239, 227, 200, 0.25),
+    0 8px 12px -10px rgba(0, 0, 0, 0.7);
+}
+:global(html[data-theme="nuit"]) .case[aria-pressed="true"] {
+  outline-color: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+@media (prefers-reduced-motion: reduce) {
+  .case {
+    transition: none;
+  }
+}
+
+/* ——— /courses/<slug> : la platine ébène de /courses, en grand (couleurs FIXES, liseré clair la nuit).
+   Les jetons du thème sont redéfinis dedans : le lecteur (CourseAudioPlayer, mode « nu ») s'y écrit
+   clair sur sombre, comme la nuit. ——— */
+.platine {
+  --ink: #efe3c8;
+  --ink-2: rgba(239, 227, 200, 0.66);
+  --ink-3: rgba(239, 227, 200, 0.46);
+  --paper: #1a120b;
+  --well: rgba(239, 227, 200, 0.14);
+  --hero-top: #1a120b;
+  --line: rgba(239, 227, 200, 0.13);
+  --line-2: rgba(239, 227, 200, 0.22);
+  --surface: #241910;
+  --surface-2: rgba(255, 240, 210, 0.07);
+  --control: rgba(255, 240, 210, 0.06);
+  --color-white: #efe3c8;
+  --color-black: #1a120b;
+  --color-muted: rgba(239, 227, 200, 0.62);
+  --color-body: rgba(239, 227, 200, 0.86);
+  --color-surface: #241910;
+  --color-surface-2: rgba(255, 240, 210, 0.07);
+  --color-line: rgba(239, 227, 200, 0.13);
+  --color-line-2: rgba(239, 227, 200, 0.22);
+  position: relative;
+  display: grid;
+  gap: 18px;
+  padding: 20px 20px 14px;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 240, 210, 0.07), transparent 38%),
+    #1a120b;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
+    inset -1px -2px 0 rgba(0, 0, 0, 0.55),
+    0 22px 34px -22px rgba(0, 0, 0, 0.6);
+  color: #efe3c8;
+}
+:global(html[data-theme="nuit"]) .platine {
+  box-shadow:
+    0 0 0 1px rgba(239, 227, 200, 0.2),
+    inset 1px 1px 0 rgba(255, 236, 200, 0.12);
+}
+.platineTete {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  min-height: 132px;
+}
+.plateau {
+  position: relative;
+  flex: none;
+  width: 132px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #0b0806;
+  box-shadow: inset 0 0 0 2px rgba(201, 164, 92, 0.2);
+}
+.disque {
+  position: absolute;
+  inset: 4%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 31%, rgba(255, 255, 255, 0.05) 31.5%, transparent 32.5%),
+    conic-gradient(from 20deg, rgba(255, 255, 255, 0.07), transparent 12%, transparent 48%, rgba(255, 255, 255, 0.06) 56%, transparent 66%),
+    repeating-radial-gradient(circle, #141414 0 1.6px, #1c1c1c 1.6px 3.2px);
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.8);
+  will-change: transform;
+}
+.label {
+  display: grid;
+  place-items: center;
+  width: 36%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1a120b 0 3px, #c9a45c 4px);
+  font-family: var(--font-brand), "Dela Gothic One", sans-serif;
+  font-size: 11px;
+  line-height: 1;
+  color: #1a120b;
+  padding-bottom: 22px;
+}
+.bras {
+  position: absolute;
+  top: 2px;
+  left: 118px;
+  width: 5px;
+  height: 78px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #e0be78, #8a6a2a);
+  transform: rotate(24deg);
+  transform-origin: top center;
+}
+.bras::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: -5px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #2c2016;
+  box-shadow: inset 0 0 0 2px rgba(201, 164, 92, 0.45);
+}
+.platineNom {
+  margin: 0 0 4px auto;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(201, 164, 92, 0.85);
+}
+
+/* ——— /fiches/<matière> : la séance de lecture ——— */
+/* les onglets : des étiquettes Mono soulignées, sans boîte */
+.onglets {
+  display: flex;
+  gap: 22px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.onglet {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 0 10px;
+  border: 0;
+  background: none;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3, var(--ink-2));
+  cursor: pointer;
+}
+.onglet[aria-pressed="true"] {
+  color: var(--ink);
+}
+.onglet[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--pal-2, var(--ink));
+}
+.onglet:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 4px;
+}
+.onglet b {
+  font-weight: 600;
+  color: var(--pen, #c0392b);
+}
+/* la page choisie : son titre écrit sous les cases, l'avancement en filet de 2 px */
+.page {
+  display: grid;
+  gap: 10px;
+}
+.pageTitre {
+  margin: 0;
+  font-size: clamp(22px, 2vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.pageKicker {
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3, var(--ink-2));
+}
+.filetPage {
+  display: flex;
+  height: 2px;
+  border-radius: 1px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.filetPage i:nth-child(1) {
+  background: var(--ink);
+}
+.filetPage i:nth-child(2) {
+  background: var(--pen, #c0392b);
+}
+.legendePage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.legendePage b {
+  font-weight: 600;
+  color: var(--ink);
+}
+.legendePage li:nth-child(2) b {
+  color: var(--pen, #c0392b);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+/* le PDF : une feuille posée, sa barre en Mono */
+.barreDoc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.barreDoc p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.document[data-ferme] .barreDoc {
+  border-bottom: 0;
+}

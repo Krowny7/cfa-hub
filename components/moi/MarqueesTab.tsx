@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Bookmark, Check } from "lucide-react";
+import { ArrowRight, Bookmark, Check, ChevronDown } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { Explanation } from "@/components/session/parts";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
@@ -33,7 +33,9 @@ const ORIGINE: Record<SourceMarque, string> = {
 };
 const jour = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 
-export function MarqueesTab({ marquees, cartes }: { marquees: Marquees; cartes?: { available: boolean; n: number; erreur?: boolean } }) {
+// `compact` (gabarit Dossier de Moi) : une ligne par question, comme le carnet de ratures (l'énoncé en deux
+// lignes, la rubrique et la date en micro, le chevron) ; la bonne réponse et l'explication derrière la ligne.
+export function MarqueesTab({ marquees, cartes, compact = false }: { marquees: Marquees; cartes?: { available: boolean; n: number; erreur?: boolean }; compact?: boolean; now?: number }) {
   const etat = useMarques();
   // le magasin des flashcards, relu par la partie qui les liste (CartesMarqueesTab)
   const etatCartes = useMarquesCartes();
@@ -45,6 +47,7 @@ export function MarqueesTab({ marquees, cartes }: { marquees: Marquees; cartes?:
     return [...n.entries()].sort((a, b) => b[1] - a[1]);
   }, [marquees.items]);
   const [filtre, setFiltre] = useState<string | null>(null);
+  const [ouverte, setOuverte] = useState<string | null>(null);
 
   if (!marquees.available) {
     const n = etat.ids.size;
@@ -99,10 +102,85 @@ export function MarqueesTab({ marquees, cartes }: { marquees: Marquees; cartes?:
           ))}
         </div>
       )}
-      {items.map((it) => (
-        <CarteMarquee key={it.questionId} it={it} retiree={etat.pret && !etat.local && !etat.ids.has(it.questionId)} />
-      ))}
+      {compact ? (
+        <ul className="m-0 flex list-none flex-col divide-y divide-[var(--line)] p-0">
+          {items.map((it) => (
+            <LigneMarquee
+              key={it.questionId}
+              it={it}
+              retiree={etat.pret && !etat.local && !etat.ids.has(it.questionId)}
+              ouverte={ouverte === it.questionId}
+              onOuvrir={() => setOuverte((o) => (o === it.questionId ? null : it.questionId))}
+            />
+          ))}
+        </ul>
+      ) : (
+        items.map((it) => <CarteMarquee key={it.questionId} it={it} retiree={etat.pret && !etat.local && !etat.ids.has(it.questionId)} />)
+      )}
     </div>
+  );
+}
+
+const clip = (s: string, n = 180) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
+
+/** Une question marquée en une ligne (comme LigneRature) : l'énoncé, la rubrique · l'origine · la date ; ouverte, le détail. */
+function LigneMarquee({ it, retiree, ouverte, onOuvrir }: { it: QuestionMarquee; retiree: boolean; ouverte: boolean; onOuvrir: () => void }) {
+  const id = `marquee-${it.questionId}`;
+  return (
+    <li className={"py-1 transition-opacity " + (retiree ? "opacity-55" : "")}>
+      <button type="button" className="rl-row flex w-full items-start gap-3 rounded-[12px] px-2 py-3 text-left" aria-expanded={ouverte} aria-controls={id} onClick={onOuvrir}>
+        <span className="min-w-0 flex-1">
+          {!ouverte && <span className="mb-1 line-clamp-2 block text-[14px] leading-snug">{clip(it.prompt)}</span>}
+          <span className="t-micro block">
+            {it.rubrique}
+            {it.page !== null && <> · p. {it.page}</>}
+            {it.source && <> · {ORIGINE[it.source]}</>} · {retiree ? "marque retirée" : jour(it.flaggedAt)}
+          </span>
+        </span>
+        <ChevronDown size={16} aria-hidden className={"mt-0.5 shrink-0 text-muted transition-transform " + (ouverte ? "rotate-180" : "")} />
+      </button>
+      {ouverte && (
+        <div id={id} className="rl-in grid gap-4 px-2 pb-4 pt-1">
+          <CorpsMarquee it={it} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+/** Le détail d'une question marquée : l'énoncé, les choix (la bonne réponse), l'explication, la marque, la page. */
+function CorpsMarquee({ it }: { it: QuestionMarquee }) {
+  return (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <QuestionPrompt text={it.prompt} className="min-w-0 flex-1 text-[15.5px] font-semibold leading-[1.6] tracking-[-0.006em] break-words [overflow-wrap:anywhere] md:text-[16px]" />
+        <MarqueQuestion questionId={it.questionId} source={it.source ?? "fiche"} />
+      </div>
+      <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-2 p-0">
+        {it.choices.map((c, ci) => {
+          const bonne = it.answered && it.correctIndex === ci;
+          return (
+            <li key={ci} className={"flex items-start gap-3 rounded-[12px] border px-3 py-2.5 text-[14.5px] leading-[1.5] " + (bonne ? "border-white bg-surface font-semibold" : "border-line text-muted")}>
+              <span className={"grid h-6 w-6 shrink-0 place-items-center rounded-[7px] font-mono text-[12px] font-semibold " + (bonne ? "bg-white text-black" : "bg-surface-2")}>
+                {bonne ? <Check size={13} strokeWidth={2.6} aria-hidden /> : LETTRES[ci]}
+              </span>
+              <span className="min-w-0 flex-1 pt-[1px] break-words [overflow-wrap:anywhere]">{c}</span>
+              {bonne && <span className="t-micro hidden shrink-0 pt-[3px] font-semibold text-white sm:inline">Bonne réponse</span>}
+            </li>
+          );
+        })}
+      </ul>
+      {it.answered ? (
+        it.explanation && <Explanation text={it.explanation} />
+      ) : (
+        <p className="t-micro m-0">Réponds-y une fois (fiche, session, QCM…) pour voir ici la bonne réponse et l&apos;explication.</p>
+      )}
+      {it.href && (
+        <Link href={it.href} className="ink-link inline-flex items-center gap-1 text-[13px] font-semibold">
+          Revoir la page {it.page} de la fiche <ArrowRight size={13} aria-hidden />
+        </Link>
+      )}
+    </>
   );
 }
 

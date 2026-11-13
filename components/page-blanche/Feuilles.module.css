@@ -1,0 +1,229 @@
+/* /page-blanche : les feuilles nues (components/page-blanche/Feuilles.tsx). Le papier garde sa couleur
+   de jour comme de nuit (#fdfbf6) ; la nuit, un liseré clair remplace l'ombre. */
+
+.scene {
+  --papier: #fdfbf6;
+  --encre-f: #1c1712;
+  display: grid;
+  gap: 26px;
+  min-width: 0;
+}
+.feuilles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 18px;
+  margin: 0;
+  padding: 8px 4px 0;
+  list-style: none;
+}
+@media (min-width: 620px) {
+  .feuilles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 900px) {
+  .feuilles {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 30px 26px;
+    padding: 12px 10px 0;
+  }
+}
+.place {
+  position: relative;
+  min-width: 0;
+  transform: rotate(var(--a, 0deg));
+  animation: pbPose 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes pbPose {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotate(var(--a, 0deg));
+  }
+}
+.feuille {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  justify-items: start;
+  gap: 2px;
+  aspect-ratio: 1 / 1.3;
+  padding: 12px 14px 14px;
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), transparent 40%),
+    var(--papier);
+  color: var(--encre-f);
+  box-shadow:
+    0 0 0 1px rgba(28, 23, 18, 0.07),
+    0 1px 1px rgba(0, 0, 0, 0.06),
+    0 14px 22px -14px rgba(0, 0, 0, 0.45);
+  text-decoration: none;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms ease;
+}
+.feuille:hover {
+  color: var(--encre-f);
+}
+@media (hover: hover) {
+  .feuille:hover {
+    transform: translateY(-5px) rotate(calc(var(--a, 0deg) * -0.6));
+    box-shadow:
+      0 0 0 1px rgba(28, 23, 18, 0.08),
+      0 24px 28px -16px rgba(0, 0, 0, 0.45);
+  }
+}
+.feuille:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 4px;
+}
+.num {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(28, 23, 18, 0.45);
+}
+.code {
+  align-self: center;
+  justify-self: center;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: clamp(24px, 2.6vw, 34px);
+  line-height: 1;
+  margin-top: 2px;
+  letter-spacing: -0.01em;
+}
+.nom {
+  justify-self: center;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  white-space: normal;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  min-height: 2.5em;
+  color: rgba(28, 23, 18, 0.66);
+}
+/* dix lignes réglées ; une ligne écrite à l'encre par dixième de formules maîtrisées */
+.lignes {
+  justify-self: stretch;
+  display: grid;
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+  min-height: 70px;
+  margin: 8px 0 2px;
+  background: repeating-linear-gradient(180deg, transparent 0 calc(10% - 1px), rgba(46, 74, 120, 0.2) calc(10% - 1px) 10%);
+}
+.ecrit {
+  align-self: end;
+  height: 70%;
+  margin-bottom: 1px;
+  overflow: visible;
+  fill: none;
+  stroke: #24314d;
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.compte {
+  justify-self: center;
+  margin-top: 6px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.compte[data-zero] {
+  color: rgba(28, 23, 18, 0.4);
+}
+/* une matière rendue en entier : le tampon, comme celui de /revoir (Dela, double filet, de travers),
+   posé sur les lignes, sous le code */
+.tampon {
+  position: absolute;
+  top: 62%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  padding: 5px 10px 4px;
+  border: 2px solid #b4412f;
+  border-radius: 5px;
+  box-shadow:
+    inset 0 0 0 2px #fdfbf6,
+    inset 0 0 0 3.5px #b4412f;
+  background: rgba(253, 251, 246, 0.82);
+  color: #b4412f;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+/* la feuille conseillée : entourée à l'encre de la palette (tracé commencé en haut à droite) */
+.entoure {
+  position: absolute;
+  inset: -12px;
+  width: calc(100% + 24px);
+  height: calc(100% + 24px);
+  overflow: visible;
+  fill: none;
+  stroke: var(--pal-2, var(--ink));
+  stroke-width: 2.6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+@media (max-width: 619px) {
+  .entoure {
+    inset: -8px;
+    width: calc(100% + 16px);
+    height: calc(100% + 16px);
+  }
+}
+.action {
+  display: flex;
+  justify-content: center;
+}
+/* téléphone : l'action passe au-dessus des feuilles (cinq rangées) */
+@media (max-width: 619px) {
+  .action {
+    order: -1;
+  }
+  .action > * {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+@media (min-width: 900px) {
+  .feuille {
+    aspect-ratio: 1 / 1.15;
+  }
+}
+
+:global(html[data-theme="nuit"]) .feuille {
+  box-shadow: 0 0 0 1px rgba(241, 233, 212, 0.3);
+}
+/* la nuit, le cercle passe sur le fond sombre : l'encre de la palette, éclaircie */
+:global(html[data-theme="nuit"]) .entoure {
+  stroke: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .place {
+    animation: none;
+  }
+  .feuille {
+    transition: none;
+  }
+}
+:global(html[data-theme="nuit"]) .feuille:focus-visible {
+  outline-color: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}

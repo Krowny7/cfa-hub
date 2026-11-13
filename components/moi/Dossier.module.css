@@ -1,0 +1,252 @@
+/* Le gabarit « Dossier » de Moi (components/moi/Dossier.tsx) : une colonne de papier, des filets,
+   l'étiquette Mono dans la marge, le relevé des chiffres, les replis. --ink s'inverse la nuit : les
+   filets suivent le thème d'eux-mêmes. */
+
+.dossier {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  /* le double filet d'ouverture du dossier */
+  border-top: 3px double color-mix(in srgb, var(--ink) 78%, transparent);
+  padding-top: 6px;
+}
+
+.filet {
+  display: grid;
+  /* l'étiquette s'aligne sur le titre de la porte (même retrait que son padding interne) */
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 28px;
+  padding: 22px 28px 26px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.filet:first-child {
+  border-top: 0;
+}
+.marge {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 3px;
+}
+.etiquette {
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.corps {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* le relevé : des chiffres alignés, des filets verticaux entre eux */
+.releve {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.case {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 6px;
+  min-width: 0;
+  padding: 2px 26px 2px 0;
+  margin-right: 26px;
+  border-right: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.case:last-child {
+  border-right: 0;
+  margin-right: 0;
+}
+.valeur {
+  margin: 0;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 40px;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+  color: var(--pal-3, var(--ink));
+}
+.legende {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* un repli : sa ligne sous un filet, le « + » qui devient « − » */
+.repli {
+  border-top: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.repli:last-child {
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.repliTete {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 54px;
+  padding: 6px 2px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.repliTete::-webkit-details-marker {
+  display: none;
+}
+.repliTitre {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.repliCompte {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.plus {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.plus::before,
+.plus::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ink);
+  transition: transform 180ms ease;
+}
+.plus::after {
+  transform: rotate(90deg);
+}
+.repli[open] > .repliTete .plus::after {
+  transform: rotate(0deg);
+}
+.repli[open] > .repliTete .repliTitre {
+  color: var(--pal-3, var(--ink));
+}
+/* la nuit, le jade s'éclaircit (lisible sur le fond nuit) */
+:global(html[data-theme="nuit"]) .valeur,
+:global(html[data-theme="nuit"]) .repli[open] > .repliTete .repliTitre {
+  color: color-mix(in oklab, var(--pal-3) 60%, white);
+}
+
+/* le contenu garde une largeur de lecture, collé à gauche */
+.corps {
+  min-width: 0;
+  max-width: 760px;
+}
+.corpsLarge {
+  max-width: none;
+}
+
+/* « CARNET PROPRE » : le tampon du carnet vidé (comme « tout est à jour » sur /revoir) */
+.tampon {
+  margin: 0;
+  padding: 8px 18px 7px;
+  border: 3px solid var(--pal-3, var(--ink));
+  border-radius: 6px;
+  color: var(--pal-3, var(--ink));
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 20px;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: rotate(-6deg);
+}
+:global(html[data-theme="nuit"]) .tampon {
+  color: color-mix(in oklab, var(--pal-3) 60%, white);
+  border-color: color-mix(in oklab, var(--pal-3) 60%, white);
+}
+.repliTete:hover .repliTitre {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}
+.repliTete:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.repliCorps {
+  padding: 4px 2px 24px;
+}
+
+/* les cartes des réglages, posées à plat entre les filets (fond, bord et ombre retirés) */
+.plat :global(.card),
+.plat :global(.card-quiet) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 859px) {
+  .filet {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px 0 22px;
+  }
+  .corps {
+    max-width: none;
+  }
+  .marge {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0;
+  }
+  /* téléphone : le relevé en trois colonnes égales, sans filet vertical qui pendrait au bout d'une ligne */
+  .releve {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 14px 12px;
+    width: 100%;
+  }
+  .case {
+    padding: 0;
+    margin: 0;
+    border-right: 0;
+  }
+  .valeur {
+    font-size: 30px;
+  }
+  .legende {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plus::before,
+  .plus::after {
+    transition: none;
+  }
+}
+
+/* posée à plat, une carte des réglages perd son petit titre : l'étiquette du filet ou le repli le dit déjà */
+.plat :global(.card) > h3:first-child,
+.plat :global(.card) > div:first-child > h3:first-child {
+  display: none;
+}

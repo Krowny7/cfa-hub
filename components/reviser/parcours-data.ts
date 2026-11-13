@@ -61,7 +61,7 @@ async function toutes<T>(page: (from: number, to: number) => PromiseLike<{ data:
  * les fiches y écrivent, lib/ficheApi), dans l'ordre de la clé (pages
  * stables). null : illisible.
  */
-async function vuesParSet(supabase: SupabaseClient, userId: string): Promise<Map<string, number> | null> {
+export async function vuesParSet(supabase: SupabaseClient, userId: string): Promise<Map<string, number> | null> {
   const { data, error } = await supabase.rpc("avancement_fiches");
   if (!error && Array.isArray(data)) return new Map((data as { set_id: string; vues: number }[]).map((r) => [r.set_id, Number(r.vues) || 0]));
   if (!fonctionAbsente(error)) return null;

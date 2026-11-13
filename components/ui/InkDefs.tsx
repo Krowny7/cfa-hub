@@ -84,6 +84,11 @@ export function InkDefs() {
         {/* pathLength : les pourcentages de tracé (halo, enso, objectif) s'appliquent tels quels */}
         <path id="rl-ring-axis" d={RING_FULL_AXIS} pathLength={100} />
         <path id="rl-swash" d={SWASH} />
+        {/* le signe « conseillé » des sous-pages : un cercle tracé à la main (repère 120 × 160, étiré
+            par preserveAspectRatio="none", trait constant), commencé en haut à droite ; et une ligne
+            d'écriture (repère 100 × 10) pour les feuilles de la page blanche qui se remplissent */}
+        <path id="rl-cercle-main" vectorEffect="non-scaling-stroke" d="M100 9c11 6 15 32 14 72-1 40-3 60-15 70-13 8-69 8-85 0C4 145 3 110 4 76 5 36 3 13 16 7 36 1 80 3 108 13" />
+        <path id="rl-trait-ecrit" vectorEffect="non-scaling-stroke" d="M1 6c4-3 6 2 10 0s5-4 9-1 6 2 9-1 5-2 8 1 7 1 10-1 5-3 9 0 6 2 10-1 4-2 8 1 6 1 9-1 5-1 8 0" />
       </defs>
     </svg>
   );

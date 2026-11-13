@@ -13,6 +13,12 @@
     --carte: 160px;
   }
 }
+/* grand (/flashcards) : des cartes de 190 px dès 1200 px (TableCartes.module.css suit : --c) */
+@media (min-width: 1200px) {
+  .carrousel[data-grand] {
+    --carte: 190px;
+  }
+}
 
 .scene {
   position: relative;
@@ -340,4 +346,36 @@
 .carrousel[data-forme="porte"] .coin,
 .carrousel[data-forme="porte"] .coinBas {
   display: none;
+}
+
+/* la mention en Mono écrite sur la pièce de devant (Piece.marque, ajout du 2026-11-13) : « 38/60 vues » */
+.marque {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  transform: translateX(-50%);
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: rgba(26, 18, 11, 0.9);
+  color: #f1e9d4;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* la pièce conseillée (prop conseil) : sa mention entourée à la main, à l'encre de la palette */
+.marqueCercle {
+  position: absolute;
+  inset: -7px -9px;
+  width: calc(100% + 18px);
+  height: calc(100% + 14px);
+  overflow: visible;
+  fill: none;
+  stroke: var(--pal-2, #1c1712);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  pointer-events: none;
 }

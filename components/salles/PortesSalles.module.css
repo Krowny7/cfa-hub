@@ -1,0 +1,319 @@
+/* Les portes de /salles (lot 4 du 2026-11-13). L'ébène est une matière fixe : la porte garde ses
+   couleurs la nuit, avec un liseré clair. */
+.vitrine {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  padding: 14px 0 4px;
+  background: radial-gradient(60% 300px at 50% 0, color-mix(in srgb, var(--ink) 3.5%, transparent), transparent 75%);
+}
+.rangee {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 34px 38px;
+  width: 100%;
+  margin: 0;
+  padding: 26px 22px 0;
+  list-style: none;
+}
+.arrivee {
+  width: 100%;
+  min-width: 0;
+}
+.place {
+  position: relative;
+  flex: 0 0 auto;
+}
+/* l'arrivée : une fois par session (ArriveeUneFois pose data-arrivee) */
+.arrivee[data-arrivee] .place {
+  animation: pose 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes pose {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.lien {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  width: 182px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.lien:focus-visible {
+  outline: 2px solid var(--pal-1, var(--ink));
+  outline-offset: 6px;
+  border-radius: 8px;
+}
+
+.porte {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  width: 156px;
+  height: 224px;
+  padding-top: 26px;
+  border: 6px solid #2b1d13;
+  border-bottom: 0;
+  border-radius: 78px 78px 3px 3px;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 1px), #0b0705 calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05), transparent 40%, transparent 60%, rgba(255, 255, 255, 0.04)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 3px, transparent 3px 11px),
+    #1a120b;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 236, 214, 0.08),
+    inset 0 -40px 40px -30px rgba(0, 0, 0, 0.5),
+    0 18px 26px -16px rgba(30, 12, 4, 0.55);
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* les panneaux moulurés des deux battants */
+.porte::before,
+.porte::after {
+  content: "";
+  position: absolute;
+  bottom: 14px;
+  width: calc(50% - 16px);
+  height: 34%;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 236, 214, 0.1),
+    inset 0 0 0 4px rgba(0, 0, 0, 0.25);
+}
+.porte::before {
+  left: 9px;
+}
+.porte::after {
+  right: 9px;
+}
+
+.plaque {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: #f3ebdb;
+  color: #1a120b;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+.plaque i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a49a8c;
+}
+.porte[data-moment="direct"] .plaque {
+  background: #1f7a52;
+  color: #f2fff7;
+}
+.porte[data-moment="direct"] .plaque i {
+  background: #8ff0bd;
+  box-shadow: 0 0 6px #8ff0bd;
+}
+.porte[data-moment="salon"] .plaque i {
+  background: #d98a3d;
+}
+
+/* les présents, en Dela sur les battants (au-dessus des moulures) */
+.compte {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  display: grid;
+  justify-items: center;
+  margin-top: -40px;
+  line-height: 1;
+  color: #f3ebdb;
+}
+.compte b {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 50px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+.compte small {
+  margin-top: 4px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(243, 235, 219, 0.78);
+}
+/* en direct : un mince filet de lumière verte entre les deux battants (image fixe) */
+.fente {
+  position: absolute;
+  top: 18px;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  translate: -50% 0;
+  background: linear-gradient(180deg, transparent, rgba(143, 240, 189, 0.95) 18%, rgba(143, 240, 189, 0.95) 100%);
+  box-shadow: 0 0 8px 1px rgba(70, 214, 140, 0.7), 0 0 22px 4px rgba(70, 214, 140, 0.25);
+}
+.poignees {
+  position: absolute;
+  top: 74%;
+  left: 50%;
+  width: 20px;
+  height: 6px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle at 3px 50%, #c9a46a 2.4px, transparent 2.9px),
+    radial-gradient(circle at 17px 50%, #c9a46a 2.4px, transparent 2.9px);
+}
+
+/* la lumière qui passe sous la porte (image fixe) */
+.lumiere {
+  width: 182px;
+  height: 14px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.22), transparent);
+  filter: blur(1.5px);
+}
+.lumiere[data-moment="direct"] {
+  background: radial-gradient(closest-side, rgba(70, 214, 140, 0.75), rgba(70, 214, 140, 0.18) 60%, transparent);
+}
+.lumiere[data-moment="salon"] {
+  background: radial-gradient(closest-side, rgba(240, 168, 84, 0.65), rgba(240, 168, 84, 0.14) 60%, transparent);
+}
+
+.nom {
+  max-width: 100%;
+  margin-top: 8px;
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sous {
+  margin-top: 2px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* la salle en direct avancée vers toi : elle grandit sur la ligne de sol (les noms restent alignés),
+   avec une ombre de contact plus dense (sur la place : la pression de .rl-presse reste sur le lien) */
+.place[data-conseil] {
+  z-index: 1;
+  scale: 1.07;
+  transform-origin: 50% 100%;
+}
+.place[data-conseil] .porte {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 236, 214, 0.08),
+    inset 0 -40px 40px -30px rgba(0, 0, 0, 0.5),
+    0 22px 26px -14px rgba(30, 12, 4, 0.7);
+}
+.entoure {
+  position: absolute;
+  top: -16px;
+  left: -6px;
+  width: calc(100% + 12px);
+  height: 258px;
+  overflow: visible;
+  fill: none;
+  stroke: var(--pal-1, var(--ink));
+  stroke-width: 2.4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .lien:hover .porte {
+    transform: translateY(-5px);
+  }
+  .lien:hover .nom {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.sol {
+  justify-self: center;
+  width: min(90%, 1000px);
+  height: 20px;
+  margin-top: -40px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.12), transparent);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+:global(html[data-theme="nuit"]) .porte {
+  box-shadow:
+    0 0 0 1px rgba(241, 233, 212, 0.28),
+    inset 0 -40px 40px -30px rgba(0, 0, 0, 0.5);
+}
+:global(html[data-theme="nuit"]) .entoure {
+  stroke: #f1e9d4;
+}
+:global(html[data-theme="nuit"]) .lumiere:not([data-moment="direct"]):not([data-moment="salon"]) {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), transparent);
+}
+
+/* téléphone : toutes les salles visibles, sur deux colonnes (portes de 132 px) */
+@media (max-width: 760px) {
+  .rangee {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-items: center;
+    gap: 30px 12px;
+    padding: 30px 8px 6px;
+  }
+  .lien {
+    width: 100%;
+    max-width: 160px;
+  }
+  .porte {
+    width: 132px;
+    height: 190px;
+    padding-top: 22px;
+    border-radius: 66px 66px 3px 3px;
+  }
+  .compte b {
+    font-size: 42px;
+  }
+  .lumiere {
+    width: 150px;
+  }
+  .entoure {
+    height: 222px;
+  }
+  .sol {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrivee[data-arrivee] .place,
+  .place,
+  .porte,
+  .lien {
+    animation: none;
+    transition: none;
+  }
+}

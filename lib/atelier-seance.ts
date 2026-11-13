@@ -82,7 +82,19 @@ export type AtelierPasse = { id: string; date: string; minutes: number; xp: numb
 export type HistoriqueAteliers = { ateliers: AtelierPasse[]; noms: Record<string, { libelle: string }> };
 
 /** Une notion proposée à l'ouverture (un point faible). calcul : jouée seulement en calcul ; aCalcul : un bloc Calcul est possible (type de calcul rattaché, clé service présente). */
-export type NotionProposee = { notion: string; libelle: string; repere: string; enCours: number; calcul: boolean; aCalcul: boolean };
+export type NotionProposee = {
+  notion: string;
+  libelle: string;
+  repere: string;
+  enCours: number;
+  calcul: boolean;
+  aCalcul: boolean;
+  /** la précision récente de la notion (%), sous le seuil « tenu » ; null : pas encore mesurée */
+  pct?: number | null;
+  /** les réponses récentes qui la mesurent, et les justes */
+  n?: number;
+  ok?: number;
+};
 
 /** Les éléments jouables : un calcul qui existe encore, une question avec son énoncé et au moins deux choix (une question neuve retirée de la banque pendant un Atelier en cours n'en a plus). */
 export const itemsPool = (s: Pick<SeanceAtelier, "items">): ItemPool[] =>

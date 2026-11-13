@@ -134,17 +134,13 @@
   border-radius: 50%;
   background: radial-gradient(circle, #1a120b 0 4px, #d6a13f 5px);
 }
-/* le disque tourne au survol et s'arrête là où il est (plus de retour sec à 0°) */
+/* le disque accélère au survol, ralentit et s'arrête là où il est (DisqueTournant, en JS) */
 .disque {
-  animation: tourner 2.4s linear infinite paused;
+  will-change: transform;
 }
-.platine:hover .disque {
-  animation-play-state: running;
-}
-@keyframes tourner {
-  to {
-    transform: rotate(360deg);
-  }
+.etiquette {
+  /* un repère sur l'étiquette, pour qu'on voie le disque tourner */
+  box-shadow: inset 0 -14px 0 -11px #f3ece0;
 }
 .bras {
   position: absolute;
@@ -166,9 +162,5 @@
   .cliquable,
   .feuille {
     transition: none;
-  }
-  .disque,
-  .platine:hover .disque {
-    animation: none;
   }
 }

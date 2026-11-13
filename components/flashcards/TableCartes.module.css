@@ -1,0 +1,219 @@
+/* /flashcards en une scène (components/flashcards/TableCartes.tsx) : le carrousel et Léonard sur la
+   même ligne de sol. --c suit la taille des cartes du carrousel (Carrousel.module.css : 128 px, 160 px
+   dès 900 px) ; le sol passe sous les cartes (30 px de marge haute + 1,4 × la carte). Le tapis garde
+   son vert de jour comme de nuit. */
+
+.table {
+  --c: 128px;
+  --sol: calc(30px + var(--c) * 1.4);
+  display: grid;
+  min-width: 0;
+}
+@media (min-width: 900px) {
+  .table {
+    --c: 160px;
+  }
+}
+/* suit Carrousel.module.css (data-grand) : 190 px dès 1200 px */
+@media (min-width: 1200px) {
+  .table {
+    --c: 190px;
+  }
+}
+/* la rangée : le carrousel et Léonard ; sur ordinateur, centrée dans une scène de hauteur réservée
+   (plus de vide sous la porte ni en bas de l'écran) */
+.rangee {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  min-width: 0;
+}
+@media (min-width: 760px) {
+  .table {
+    min-height: min(62vh, 620px);
+    align-content: center;
+    padding-top: 40px;
+  }
+  .rangee {
+    grid-template-columns: minmax(0, 720px) 290px;
+    justify-content: center;
+    gap: 0 56px;
+  }
+  /* la ligne de sol commune, d'un bord à l'autre de la rangée */
+  .rangee::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--sol);
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-2) 10%, var(--line-2) 90%, transparent);
+    pointer-events: none;
+  }
+}
+.paquets {
+  position: relative;
+  min-width: 0;
+}
+/* l'ombre de contact des paquets */
+.paquets::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(var(--sol) - 9px);
+  width: min(70%, 520px);
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.16), transparent);
+  pointer-events: none;
+}
+
+.croupier {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+.debout {
+  position: relative;
+  width: min(100%, 290px);
+  height: var(--sol);
+}
+@media (max-width: 759px) {
+  .debout {
+    height: 240px;
+  }
+}
+.debout::after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -9px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.2), transparent);
+  pointer-events: none;
+}
+.leonard {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  height: calc(100% - 30px);
+  width: auto;
+  max-width: none;
+  transform: translateX(-50%);
+  pointer-events: none;
+  user-select: none;
+}
+/* le petit tapis vert, devant Léonard : un clic lance la partie */
+.tapis {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: block;
+  height: 86px;
+  overflow: hidden;
+  border: 1px solid #0f2a1e;
+  border-radius: 14px 14px 10px 10px;
+  background: radial-gradient(130% 100% at 50% 0%, #2c6a4e 0%, #1d4a37 55%, #143426 100%);
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.35),
+    0 2px 0 #0c2118;
+}
+.tapis::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(214, 161, 63, 0.4);
+  border-radius: 10px;
+  pointer-events: none;
+}
+.tapis:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 3px;
+}
+.cartesTapis i {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  width: 34px;
+  height: 48px;
+  border-radius: 5px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.13) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.13) 0 2px, transparent 2px 7px),
+    #7a2a1d;
+  box-shadow:
+    inset 0 0 0 3px #fbf8f2,
+    0 6px 10px -5px rgba(0, 0, 0, 0.6);
+  transition: transform 0.35s cubic-bezier(0.2, 0.85, 0.25, 1.15);
+}
+.cartesTapis i:nth-child(1) {
+  transform: translate(-50%, -50%) translateX(-26px) rotate(-14deg);
+}
+.cartesTapis i:nth-child(2) {
+  transform: translate(-50%, -50%) translateY(-3px);
+}
+.cartesTapis i:nth-child(3) {
+  transform: translate(-50%, -50%) translateX(26px) rotate(14deg);
+}
+@media (hover: hover) {
+  .tapis:hover .cartesTapis i:nth-child(1) {
+    transform: translate(-50%, -50%) translateX(-40px) translateY(-4px) rotate(-22deg);
+  }
+  .tapis:hover .cartesTapis i:nth-child(2) {
+    transform: translate(-50%, -50%) translateY(-9px);
+  }
+  .tapis:hover .cartesTapis i:nth-child(3) {
+    transform: translate(-50%, -50%) translateX(40px) translateY(-4px) rotate(22deg);
+  }
+}
+.jeton {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #b4412f;
+  box-shadow:
+    inset 0 0 0 3px #b4412f,
+    inset 0 0 0 5px #fbf8f2,
+    0 4px 8px -2px rgba(0, 0, 0, 0.6);
+}
+/* sous le sol, en face du nom de la matière : le nom du tapis */
+.nomTapis {
+  margin: 14px 0 0;
+  text-align: center;
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+@media (min-width: 760px) {
+  .nomTapis {
+    margin-top: 39px;
+  }
+}
+
+:global(html[data-theme="nuit"]) .paquets::after,
+:global(html[data-theme="nuit"]) .debout::after {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), transparent);
+}
+:global(html[data-theme="nuit"]) .tapis {
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(241, 233, 212, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cartesTapis i {
+    transition: none;
+  }
+}

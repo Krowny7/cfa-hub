@@ -19,6 +19,8 @@ export const VIDEOS_TXT = {
   vitesse: (r: number) => `${virgule(r)}×`,
   vitesseAide: (r: number) => `Vitesse de lecture : ${virgule(r)}×. Appuie pour changer.`,
   reprise: (h: string) => `Reprise à ${h}, là où tu t'étais arrêté.`,
+  /** dans la ligne d'état de la porte */
+  repriseCourte: (h: string) => `reprise à ${h}`,
   partieVue: "Vue",
   indisponible: "La vidéo ne se charge pas pour le moment. Réessaie dans un instant.",
   aucune: "Les vidéos arrivent bientôt.",

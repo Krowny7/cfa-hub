@@ -1,6 +1,6 @@
 import { ChargementSousPage } from "@/components/ui/ChargementSousPage";
 
-// Le chargement de la sous-page : la forme de la porte et de la scène (components/ui/ChargementSousPage).
+// Le chargement de la sous-page : la porte, puis la rangée face cachée (components/ui/ChargementSousPage).
 export default function Loading() {
-  return <ChargementSousPage />;
+  return <ChargementSousPage rangee={{ n: 4, taille: [226, 328] }} />;
 }

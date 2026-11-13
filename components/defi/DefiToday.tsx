@@ -14,7 +14,7 @@ type Props = {
   /** ma correction, si ma copie est rendue */
   review: DailyReviewItem[];
   nowIso: string;
-  /** la série d'encre (colonne grise des 5 du jour) ; absente : la colonne ne s'affiche pas */
+  /** la série d'encre (chiffre-héros de la porte des 5 du jour) ; absente : les jours d'affilée */
   serie?: SerieDuJour | null;
   /** aperçu : la copie en cours avec des questions d'exemple, aucune requête */
   demo?: {

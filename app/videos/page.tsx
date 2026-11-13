@@ -5,7 +5,9 @@ import { VideosView, type SourceVideo } from "@/components/videos/VideosView";
 
 // Vidéos résumé : même architecture que les cours complets (bucket privé "courses", URL signées de six heures,
 // pour qu'une heure de lecture avec des pauses ne tombe pas sur un lien expiré). ?v=<slug> choisit la vidéo.
-// Un seul aller-retour signe les parties de la vidéo choisie (vidéo et affiche de chacune).
+// Un seul aller-retour signe les parties de la vidéo choisie (vidéo et affiche de chacune). Depuis le 2026-11-13,
+// les vidéos sont un rayon de /courses : /videos sans ?v= (ou avec une vidéo inconnue) y renvoie ; le lecteur
+// reste ici, sur /videos?v=<slug>.
 export default async function VideosPage({ searchParams }: { searchParams?: Promise<{ v?: string | string[] }> }) {
   const sp = await (searchParams ?? Promise.resolve(undefined));
   const demande = Array.isArray(sp?.v) ? sp?.v[0] : sp?.v;
@@ -15,7 +17,8 @@ export default async function VideosPage({ searchParams }: { searchParams?: Prom
   if (!auth.user) redirect("/login");
 
   const enLigne = videosEnLigne();
-  const video = enLigne.find((v) => v.slug === demande) ?? enLigne[0] ?? null;
+  const video = enLigne.find((v) => v.slug === demande) ?? null;
+  if (!video) redirect("/courses#videos");
   const chemins = new Set<string>();
   for (const p of video?.parties ?? []) {
     chemins.add(`${p.fichier}.mp4`);

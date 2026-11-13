@@ -2,7 +2,7 @@ import Link from "next/link";
 import s from "./Decors.module.css";
 
 // Les petits décors de la colonne grise du cadre à zones (CadreZones) : un chiffre, une courte liste,
-// un mini mur épinglé, une platine. Sans texte superflu ; un décor cliquable mène quelque part.
+// et, depuis 2026-11-13, plus de mini mur ni de platine (le mur et la platine vivent dans les rayons de Réviser B). Sans texte superflu ; un décor cliquable mène quelque part.
 // Composants serveur (sans état).
 
 /** Un seul chiffre, en grand, et sa légende. */
@@ -52,27 +52,3 @@ export function ListeCourte({ lignes, vide }: { lignes: Ligne[]; vide?: React.Re
   );
 }
 
-/** Un petit mur où des feuilles sont épinglées (les one-pagers) : mène à leur page. */
-export function MurMini({ images, href, aide }: { images: string[]; href: string; aide: string }) {
-  return (
-    <Link href={href} className={s.mur} aria-label={aide} title={aide}>
-      {images.slice(0, 4).map((src, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={src + i} src={src} alt="" loading="lazy" decoding="async" className={s.feuille} />
-      ))}
-    </Link>
-  );
-}
-
-/** Une platine (l'audio des cours) : un disque qui tourne au survol, mène à l'écoute. */
-export function Platine({ href, aide, titre }: { href: string; aide: string; titre?: React.ReactNode }) {
-  return (
-    <Link href={href} className={s.platine} aria-label={aide} title={aide}>
-      <span className={s.disque} aria-hidden>
-        <span className={s.etiquette} />
-      </span>
-      <span className={s.bras} aria-hidden />
-      {titre && <span className={s.platineTitre}>{titre}</span>}
-    </Link>
-  );
-}

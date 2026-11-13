@@ -14,16 +14,15 @@ import {
   MockExamLeaderboard,
   MockExamTopicTable,
   dayMonth,
-  ligneExamen,
+  packDe,
   type LeaderRow,
   type TopicCell,
 } from "@/components/session/MockExamViews";
+import { ClassementCourt, ScenePack } from "@/components/MockExamPacks";
 import { cleanTopic, pctOf, type ReviewQuestion } from "@/components/session/review";
-import { ListeCourte, type Ligne } from "@/components/ui/Decors";
-import { CadreZones, EnTeteSousPage, SousPage, type Zone } from "@/components/ui/SousPage";
+import { EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
 import { DETAIL, ELO_EXAMEN } from "@/lib/voice-z3b";
 import { RETOUR_EXAMENS, SOUS_AFFRONTER } from "@/lib/voice-affronter-sous";
-import { rangOrdinal } from "@/lib/voice-z2c";
 import { PARAM_DEBRIEF, lireDebrief, secondesDe, type EtatDebrief } from "@/lib/debrief";
 
 const E = SOUS_AFFRONTER.examens;
@@ -230,8 +229,6 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
           ? { delta: null, note: ELO_EXAMEN.tropPeu }
           : null;
 
-  const daysUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 86_400_000);
-
   const leaderRows: LeaderRow[] = allResults.map((r) => {
     const p = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
     return {
@@ -250,14 +247,46 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
     ) as Record<string, TopicCell>,
   }));
 
-  // Sur le modèle des sous-pages (2026-11-12) : l'en-tête commun (retour aux examens blancs, le titre,
-  // l'état et le format en une ligne, la peinture de la Grande Salle).
+  // L'en-tête commun (retour aux examens blancs, la peinture de la Grande Salle) : la donnée vit sur le
+  // pack (date, format, état), l'en-tête dit l'état du joueur (règle 1). La ligne : inscrit ou non,
+  // l'ouverture, ta place ; le chiffre-héros ne compte jamais ce qui est listé dessous : ta copie, sinon
+  // les inscrits (l'inscription ne les affiche plus), sinon la meilleure copie d'un examen fini.
+  const monPct = myResult ? pctOf(myResult.score, myResult.total) : null;
+  const heuresAvantFin = Math.ceil((windowEnd.getTime() - now.getTime()) / 3_600_000);
+  const maPlace = leaderRows.findIndex((r) => r.userId === auth.user!.id);
+  const jourOuverture = windowStart.toLocaleDateString("fr-FR", { weekday: "long", timeZone: "Europe/Paris" });
+  const ligne =
+    exam.status === "draft"
+      ? null
+      : alreadyDone
+        ? maPlace >= 0 && leaderRows.length > 1
+          ? E.placeSur(maPlace + 1, leaderRows.length)
+          : E.copieRendue
+        : windowClosed || exam.status === "closed"
+          ? E.pasDeCopie
+          : isRegistered
+            ? withinWindow
+              ? E.inscritOuvert
+              : E.inscritOuverture(jourOuverture)
+            : E.pasInscrit;
+  const meilleure = leaderRows.length > 0 ? Math.max(...leaderRows.map((r) => pctOf(r.score, r.total))) : null;
+  const heros =
+    monPct !== null
+      ? { valeur: `${monPct} %`, legende: E.taCopie }
+      : exam.status !== "draft" && !windowClosed && exam.status !== "closed" && registrantCount
+        ? { valeur: registrantCount, legende: E.inscrits(registrantCount) }
+        : (windowClosed || exam.status === "closed") && meilleure !== null
+          ? { valeur: `${meilleure} %`, legende: E.meilleureCopie }
+          : null;
+  const enjeu = exam.status === "open" && withinWindow && !alreadyDone && heuresAvantFin <= 48 ? E.seFerme(Math.max(1, heuresAvantFin)) : null;
   const entete = (
     <EnTeteSousPage
       retour={RETOUR_EXAMENS}
       titre={exam.title}
-      ligne={ligneExamen(exam, eloEnabled, now.getTime())}
+      ligne={ligne}
       illustration={{ nom: "mock-grande-salle", position: "center 40%" }}
+      heros={heros}
+      enjeu={enjeu}
     />
   );
 
@@ -328,49 +357,49 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
     );
   }
 
-  // Hors séance : le cadre à zones. À gauche, où en est l'examen pour toi (pas encore ouvert, ta place
-  // à réserver, bientôt ton tour, fenêtre terminée) ; dans la colonne grise, son classement en court.
-  const texte = (t: React.ReactNode) => <p className="t-body m-0 max-w-[560px] text-muted">{t}</p>;
+  // Hors séance (lot 4 du 2026-11-13) : le pack de l'examen en grand, son état écrit dessus ; à côté,
+  // où en est l'examen pour toi (pas encore publié, bientôt ton tour, ta place à réserver, fenêtre
+  // terminée) et l'action ; dessous, son classement en court (les premiers, et ta ligne si tu es plus bas).
   const inscription = <MockExamRegistration examId={exam.id} isRegistered={isRegistered} registrantCount={registrantCount} ranked={eloEnabled} nu />;
-  let gauche: Zone;
+  // à côté du pack : seulement ce qu'il ne dit pas (l'action d'inscription, le classement)
+  let titreEtat: string | null = null;
+  let texteEtat: React.ReactNode = null;
+  let suite: React.ReactNode = null;
   if (exam.status === "draft") {
-    // Examen pas encore publié
-    gauche = { titre: DETAIL.pasOuvertTitre, contenu: texte(DETAIL.pasOuvertTexte) };
+    // Examen pas encore publié (le pack dit « en préparation »)
+    texteEtat = DETAIL.pasOuvertTexte;
   } else if (isRegistered && !alreadyDone && !withinWindow && !windowClosed) {
-    // Inscrit, mais la fenêtre de passage n'a pas encore commencé
-    gauche = {
-      titre: DETAIL.bientotTitre,
-      contenu: (
-        <div className="grid min-w-0 gap-5">
-          <div className="flex flex-wrap items-center justify-between gap-5">
-            {texte(DETAIL.bientotTexte(windowStart.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" }), dayMonth(windowEnd)))}
-            {daysUntil > 0 && <span className="t-num text-[40px]">{`J-${daysUntil}`}</span>}
-          </div>
-          {inscriptionOuverte && inscription}
-        </div>
-      ),
-    };
+    // Inscrit, la fenêtre n'a pas commencé (la ligne dit le jour d'ouverture) : la désinscription
+    titreEtat = DETAIL.bientotTitre;
+    suite = inscriptionOuverte ? inscription : null;
   } else if (inscriptionOuverte) {
     // Pas encore inscrit, la fenêtre court encore : ta place à réserver
-    gauche = { titre: E.inscription, contenu: inscription };
-  } else {
-    // Fenêtre terminée (inscrit sans copie, ou examen clos)
-    gauche = { titre: DETAIL.finiTitre, contenu: texte(windowClosed ? DETAIL.finiTexte(dayMonth(windowEnd)) : E.clos) };
+    titreEtat = E.inscription;
+    suite = inscription;
   }
+  // Fenêtre terminée : le pack dit « manqué » ou « terminé », la ligne « pas de copie » : rien de plus
 
   // le classement de l'examen, court : les premiers, et ta ligne si tu es plus bas
-  const maPlace = leaderRows.findIndex((r) => r.userId === auth.user!.id);
   const tete = maPlace >= 5 ? [...leaderRows.slice(0, 4).map((r, i) => ({ r, i })), { r: leaderRows[maPlace], i: maPlace }] : leaderRows.slice(0, 5).map((r, i) => ({ r, i }));
-  const lignes: Ligne[] = tete.map(({ r, i }) => ({
+  const lignes = tete.map(({ r, i }) => ({
     cle: r.userId,
-    titre: `${rangOrdinal(i + 1)} · ${r.userId === auth.user!.id ? E.toi : r.name}`,
-    detail: E.pct(pctOf(r.score, r.total)),
-    marque: r.userId === auth.user!.id,
+    rang: i + 1,
+    nom: r.userId === auth.user!.id ? E.toi : r.name,
+    score: E.pct(pctOf(r.score, r.total)),
+    href: `/people/${r.userId}`,
+    moi: r.userId === auth.user!.id,
   }));
 
   return (
     <SousPage entete={entete}>
-      <CadreZones gauche={gauche} droite={showLeaderboard ? { titre: E.classementExamen, contenu: <ListeCourte lignes={lignes} /> } : undefined} />
+      <ScenePack
+        p={packDe(exam, now.getTime(), monPct)}
+        titre={titreEtat}
+        texte={texteEtat}
+        classement={showLeaderboard ? <ClassementCourt titre={E.classementExamen} lignes={lignes} /> : null}
+      >
+        {suite}
+      </ScenePack>
     </SousPage>
   );
 }

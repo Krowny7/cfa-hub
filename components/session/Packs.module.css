@@ -1,0 +1,470 @@
+/* /official-exams « les packs scellés » (components/session/OfficialExamsView.tsx) : les sessions en
+   packs d'ébène biseautés, liseré d'or sobre, nom en Dela, sceau noir uni ; le pack passé porte sa
+   meilleure copie tamponnée. Couleurs fixes de jour comme de nuit ; la nuit, un liseré clair
+   remplace l'ombre. */
+
+.rayon,
+.plateau {
+  --dos: #1a120b;
+  --dos-haut: #261a10;
+  --ivoire: #f1e9d4;
+  --ivoire-2: rgba(241, 233, 212, 0.6);
+  --ivoire-3: rgba(241, 233, 212, 0.36);
+  --or: rgba(214, 161, 63, 0.4);
+}
+.rayon {
+  margin: 0;
+  padding: 18px 0 10px;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 30px 26px;
+  align-items: end;
+}
+.place {
+  min-width: 0;
+  animation: pose 0.45s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+.rayon[data-calme] .place {
+  animation: none;
+}
+@keyframes pose {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+.pack {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  justify-items: start;
+  aspect-ratio: 0.7;
+  padding: 20px 20px 22px;
+  border-radius: 18px;
+  overflow: hidden;
+  color: var(--ivoire);
+  background:
+    radial-gradient(130% 60% at 50% -10%, rgba(241, 233, 212, 0.1), transparent 60%),
+    repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, var(--dos-haut), var(--dos));
+  box-shadow:
+    inset 0 1px 0 rgba(241, 233, 212, 0.14),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.45),
+    0 2px 0 #0d0905,
+    0 28px 40px -26px rgba(0, 0, 0, 0.6);
+  transition: transform 0.28s cubic-bezier(0.3, 0.7, 0.2, 1), box-shadow 0.28s ease;
+}
+/* le biseau : le liseré d'or en retrait du bord */
+.pack::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--or);
+  pointer-events: none;
+}
+/* le pack choisi s'avance d'un cran */
+.place[data-choisi] .pack {
+  transform: translateY(-14px);
+  box-shadow:
+    inset 0 1px 0 rgba(241, 233, 212, 0.18),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.45),
+    0 2px 0 #0d0905,
+    0 44px 54px -26px rgba(0, 0, 0, 0.75);
+}
+.place[data-choisi] .pack::before {
+  border-color: rgba(214, 161, 63, 0.85);
+  box-shadow: 0 0 12px -2px rgba(214, 161, 63, 0.35);
+}
+@media (hover: hover) {
+  .place:not([data-choisi]) .pack:hover {
+    transform: translateY(-6px);
+  }
+}
+.pack:focus-visible {
+  outline: 2px solid var(--pal-3, var(--ivoire));
+  outline-offset: 4px;
+}
+:global(html[data-theme="nuit"]) .pack {
+  box-shadow:
+    inset 0 1px 0 rgba(241, 233, 212, 0.14),
+    0 0 0 1px rgba(241, 233, 212, 0.18),
+    0 28px 40px -26px rgba(0, 0, 0, 0.8);
+}
+
+.haut {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ivoire-2);
+}
+.nom {
+  position: relative;
+  align-self: center;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: clamp(56px, 6.4vw, 84px);
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  color: var(--ivoire);
+}
+.session {
+  position: relative;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ivoire);
+}
+
+/* le sceau noir uni, à cheval sur le bas du pack */
+.sceau {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #2a2622, #0b0907 70%);
+  box-shadow:
+    inset 0 0 0 3px #0b0907,
+    inset 0 0 0 4px rgba(241, 233, 212, 0.14),
+    0 3px 6px rgba(0, 0, 0, 0.55);
+}
+.sceau span {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 15px;
+  color: rgba(241, 233, 212, 0.78);
+  letter-spacing: 0.02em;
+}
+.scelle {
+  position: relative;
+  margin-top: 6px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ivoire-2);
+}
+/* le pack passé : le sceau s'est fendu, la meilleure copie est tamponnée */
+.pack[data-ouvert] .sceau {
+  background: none;
+  box-shadow: none;
+}
+.pack[data-ouvert] .sceau::before,
+.pack[data-ouvert] .sceau::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #2a2622, #0b0907 70%);
+  box-shadow:
+    inset 0 0 0 3px #0b0907,
+    inset 0 0 0 4px rgba(241, 233, 212, 0.14),
+    0 3px 6px rgba(0, 0, 0, 0.55);
+}
+.pack[data-ouvert] .sceau::before {
+  clip-path: polygon(0 0, 58% 0, 50% 38%, 56% 62%, 44% 100%, 0 100%);
+  translate: -2px 1px;
+  rotate: -4deg;
+}
+.pack[data-ouvert] .sceau::after {
+  clip-path: polygon(58% 0, 100% 0, 100% 100%, 44% 100%, 56% 62%, 50% 38%);
+  translate: 2px -1px;
+  rotate: 3deg;
+}
+.pack[data-ouvert] .sceau span {
+  position: relative;
+  z-index: 1;
+  opacity: 0.55;
+}
+/* à la pression d'un pack scellé, le sceau s'enfonce comme sous un tampon */
+.pack:not([data-ouvert]):active .sceau {
+  animation: sceauPresse 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes sceauPresse {
+  0% {
+    scale: 1;
+  }
+  45% {
+    scale: 0.86;
+  }
+  75% {
+    scale: 1.04;
+  }
+  100% {
+    scale: 1;
+  }
+}
+.tampon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  rotate: -9deg;
+  padding: 4px 12px 2px;
+  border: 3px solid var(--pal-3, #e9dcc0);
+  border-radius: 8px;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--pal-3, #e9dcc0);
+  mix-blend-mode: screen;
+  opacity: 0.92;
+}
+.tampon[data-neuf] {
+  animation: tampon 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation-delay: 0.3s;
+}
+@keyframes tampon {
+  from {
+    opacity: 0;
+    scale: 1.5;
+  }
+}
+.pack[data-ouvert] .nom {
+  justify-self: center;
+  opacity: 0.32;
+}
+
+@media (max-width: 640px) {
+  .rayon {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 14px;
+  }
+  .pack {
+    padding: 16px 14px 16px;
+    border-radius: 14px;
+  }
+  .pack::before {
+    inset: 6px;
+    border-radius: 9px;
+  }
+  .nom {
+    font-size: 52px;
+  }
+  .haut {
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+  }
+  .session {
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+  }
+  .sceau {
+    width: 44px;
+    height: 44px;
+    right: 12px;
+    bottom: 12px;
+  }
+  .sceau span {
+    font-size: 12px;
+  }
+  .tampon {
+    font-size: 22px;
+    border-width: 2.5px;
+  }
+  .place[data-choisi] .pack {
+    transform: translateY(-8px);
+  }
+}
+
+/* le pack ouvert, en place : un plateau d'ébène, l'action en grand au centre, les matières en tuiles */
+.plateau {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  padding: 30px 30px 28px;
+  border-radius: 20px;
+  color: var(--ivoire);
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(241, 233, 212, 0.08), transparent 60%),
+    repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, var(--dos-haut), var(--dos));
+  box-shadow:
+    inset 0 1px 0 rgba(241, 233, 212, 0.12),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+    0 2px 0 #0d0905,
+    0 30px 50px -32px rgba(0, 0, 0, 0.55);
+  scroll-margin-top: 96px;
+}
+.plateau::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 13px;
+  border: 1px solid var(--or);
+  pointer-events: none;
+}
+:global(html[data-theme="nuit"]) .plateau {
+  box-shadow:
+    inset 0 1px 0 rgba(241, 233, 212, 0.12),
+    0 0 0 1px rgba(241, 233, 212, 0.16),
+    0 30px 50px -32px rgba(0, 0, 0, 0.8);
+}
+.plateauNote {
+  position: relative;
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ivoire-2);
+  text-align: center;
+}
+.complet > * {
+  min-width: 320px;
+  min-height: 56px;
+  padding: 0 30px;
+  border-radius: 14px;
+  font-size: 16.5px;
+  font-weight: 700;
+}
+.tuiles {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.tuile {
+  position: relative;
+  min-width: 0;
+}
+.tuileLien {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  min-height: 66px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(241, 233, 212, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(241, 233, 212, 0.1);
+  color: var(--ivoire);
+  transition: background-color 0.15s ease;
+}
+@media (hover: hover) {
+  .tuileLien:hover {
+    background: rgba(241, 233, 212, 0.1);
+    color: var(--ivoire);
+  }
+}
+.tuileLien:focus-visible,
+.tuileVar:focus-visible {
+  outline: 2px solid var(--pal-3, var(--ivoire));
+  outline-offset: 2px;
+}
+.tuileCode {
+  grid-row: 1 / 3;
+  align-self: center;
+  min-width: 46px;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+}
+.tuileNom {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ivoire-2);
+}
+.tuileQ {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ivoire);
+}
+/* les variantes : un lien Mono posé dans le coin de la tuile */
+.tuileVar {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: inline-grid;
+  place-items: center;
+  min-height: 26px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ivoire-2);
+  box-shadow: inset 0 0 0 1px rgba(241, 233, 212, 0.2);
+}
+@media (hover: hover) {
+  .tuileVar:hover {
+    color: var(--ivoire);
+    box-shadow: inset 0 0 0 1px var(--ivoire);
+  }
+}
+@media (max-width: 900px) {
+  .tuiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* l'action du plateau : sur téléphone, elle prend la largeur et peut passer à la ligne */
+.complet {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+}
+@media (max-width: 640px) {
+  .plateau {
+    padding: 20px 16px 18px;
+    border-radius: 16px;
+    justify-items: stretch;
+  }
+  .plateau::before {
+    inset: 6px;
+    border-radius: 11px;
+  }
+  .complet > * {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    padding: 10px 16px;
+    white-space: normal;
+    text-align: center;
+  }
+  .tuiles {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .tuileLien {
+    min-height: 60px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .place,
+  .tampon[data-neuf],
+  .pack:not([data-ouvert]):active .sceau {
+    animation: none;
+  }
+  .pack {
+    transition: none;
+  }
+}

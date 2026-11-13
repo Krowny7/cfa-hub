@@ -2,59 +2,45 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MockExamAdmin } from "@/components/MockExamAdmin";
 import { MockExamListView, type MockExam } from "@/components/session/MockExamViews";
-import type { Ligne } from "@/components/ui/Decors";
-import { displayName } from "@/components/classement/format";
+import { pctOf } from "@/components/session/review";
 import { duelsReady } from "@/lib/duels";
-import { getLeaderboard, getLeaderboardRank, getMockExamEloAppliedAt, getMyRating } from "@/lib/rating";
-import { SOUS_AFFRONTER } from "@/lib/voice-affronter-sous";
-import { rangOrdinal } from "@/lib/voice-z2c";
+import { getMockExamEloAppliedAt } from "@/lib/rating";
 
-const E = SOUS_AFFRONTER.examens;
-
-// Les examens blancs : l'en-tête commun, puis le carrousel des examens (ouvert sur le prochain) et,
-// dans la colonne grise, le classement général en court (les premiers, et ta ligne si tu es plus bas).
+// Les examens blancs (lot 4 du 2026-11-13) : la porte, puis la vitrine des packs scellés (un par
+// examen, le prochain entouré, tes copies rendues tamponnées de leur score) et l'action à l'encre
+// qui ouvre le prochain. Le classement général est sur /classement.
 export default async function MockExamsPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
   const uid = auth.user.id;
 
-  const [examsRes, adminRes, eloEnabled, top, mine] = await Promise.all([
+  const [examsRes, adminRes, eloEnabled, mesRes, inscRes] = await Promise.all([
     supabase
       .from("mock_exams")
       .select("id,title,description,scheduled_at,duration_minutes,question_count,status,window_days")
       .order("scheduled_at", { ascending: false }),
     supabase.rpc("is_app_admin"),
     duelsReady(supabase),
-    getLeaderboard(supabase, 5),
-    getMyRating(supabase, uid),
+    // tes copies rendues (la RLS les rend lisibles), tamponnées sur leur pack
+    supabase.from("mock_exam_results").select("exam_id,score,total").eq("user_id", uid),
+    // tes inscriptions (la RLS ne montre que les tiennes) : la ligne d'état de la porte
+    supabase.from("mock_exam_registrations").select("exam_id").eq("user_id", uid),
   ]);
 
   const exams = (examsRes.data ?? []) as MockExam[];
   const isAdmin = adminRes.data === true;
-  // hors des cinq premiers : ta place, à la cinquième ligne
-  const dedans = top.some((r) => r.userId === uid);
-  const [eloApplied, rang] = await Promise.all([
-    isAdmin && eloEnabled ? getMockExamEloAppliedAt(supabase, exams.map((e) => e.id)) : Promise.resolve({} as Record<string, string>),
-    dedans || top.length === 0 ? Promise.resolve(null) : getLeaderboardRank(supabase, uid, mine.elo),
-  ]);
-
-  const classement: Ligne[] = [
-    ...(rang !== null ? top.slice(0, 4) : top).map((r) => ({
-      cle: r.userId,
-      titre: `${rangOrdinal(r.rank)} · ${r.userId === uid ? E.toi : displayName(r.username, r.userId)}`,
-      detail: E.elo(r.elo),
-      href: `/people/${r.userId}`,
-      marque: r.userId === uid,
-    })),
-    ...(rang !== null ? [{ cle: uid, titre: `${rangOrdinal(rang)} · ${E.toi}`, detail: E.elo(mine.elo), marque: true }] : []),
-  ];
+  const scores: Record<string, number> = {};
+  for (const r of (mesRes.data ?? []) as { exam_id: string; score: number; total: number }[]) scores[r.exam_id] = pctOf(r.score, r.total);
+  const eloApplied = isAdmin && eloEnabled ? await getMockExamEloAppliedAt(supabase, exams.map((e) => e.id)) : ({} as Record<string, string>);
 
   return (
     <MockExamListView
       exams={exams}
       eloEnabled={eloEnabled}
-      classement={classement}
+      scores={scores}
+      now={Date.now()}
+      inscrits={((inscRes.data ?? []) as { exam_id: string }[]).map((r) => r.exam_id)}
       admin={isAdmin ? <MockExamAdmin exams={exams} eloAppliedAt={eloApplied} eloEnabled={eloEnabled} /> : undefined}
     />
   );

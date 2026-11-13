@@ -1,3 +1,4 @@
+import { joursAvantExamen } from "@/lib/codex/moteur";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -29,6 +30,7 @@ import { lireTrophees } from "@/lib/trophees";
 import { lireEtagere } from "@/components/moi/pieces-data";
 import { MesPieces } from "@/components/moi/MesPieces";
 import { lirePauses } from "@/components/moi/repos-data";
+import { DOSSIER } from "@/lib/voice-moi";
 
 export const metadata = { title: "Moi · Ranked Lobby" };
 
@@ -158,10 +160,24 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     />
   ) : null;
 
+  // les réglages : le chiffre-héros de la porte, les jours avant l'examen (jour de Paris, comme l'objectif)
+  const reglage = tab === "reglages" ? reglageInitial(objectif) : null;
+  const joursAvant = reglage?.examen ? joursAvantExamen(reglage.aujourdhui.slice(0, 10), reglage.examen.slice(0, 10)) : null;
+  // la ligne d'état des réglages : l'objectif et ce qui est déjà posé (sans J-n : il est en héros)
+  const ligneReglages = reglage?.meta ? DOSSIER.reglages.ligne(reglage.meta.total, reglage.avant + reglage.jour) : null;
+  const herosReglages =
+    joursAvant === null || Number.isNaN(joursAvant)
+      ? null
+      : joursAvant >= 0
+        ? { valeur: `J-${joursAvant}`, legende: DOSSIER.reglages.herosJ }
+        : { valeur: `J+${-joursAvant}`, legende: DOSSIER.reglages.herosPasse };
+
   return (
     <MoiView
       d={d}
       tab={tab}
+      herosReglages={herosReglages}
+      ligneReglages={ligneReglages}
       vueMarquees={vueMarquees}
       now={now}
       pieces={etagere}
@@ -169,7 +185,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
         <SettingsPanel
           activeGroupId={profile?.active_group_id ?? null}
           groups={(groupsRes.data ?? []) as unknown as GroupRow[]}
-          objectif={reglageInitial(objectif)}
+          objectif={reglage ?? reglageInitial(objectif)}
           sobre={user.user_metadata?.rl_sobre === true}
           repos={repos}
         />

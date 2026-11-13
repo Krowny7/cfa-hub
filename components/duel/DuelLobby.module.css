@@ -5,12 +5,10 @@
    --pal-1..5 (florence). Téléphone : les deux bannières réduites côte à côte, VS sur la jonction,
    le bouton pleine largeur. Nuit : les bannières gardent leurs couleurs fixes, un liseré clair les
    détache du fond. Les deux bannières se tournent l'une vers l'autre (±9°, ±6° au téléphone) ; l'arc est
-   figé (un SVG en trois couches). Mouvement : l'arrivée une fois (les bannières des deux bords, le tampon,
-   l'éclair de l'arc), le survol, la pression ; rien en boucle, rien en mouvement réduit. */
+   le courant des 5 du jour (ArcLigne, une toile qui coule en continu, demande de Théo). Mouvement : l'arrivée une fois (les bannières des deux bords, le tampon,
+   l'éclair de l'arc), le survol, la pression ; seul l'arc vit en continu, posé en mouvement réduit. */
 
 .arene {
-  --arc-lueur: var(--pal-3, #a8c0d6);
-  --arc-coeur: color-mix(in srgb, var(--pal-3, #a8c0d6) 52%, #1d3247);
   position: relative;
   isolation: isolate;
   display: grid;
@@ -115,7 +113,7 @@
   max-width: none;
   order: 0;
 }
-/* le halo électrique du n° 1 autour de son insigne tourne en boucle (souffle, graines du bruit) : ici l'arc figé
+/* le halo électrique du n° 1 autour de son insigne : ici l'arc
    entre les deux bannières suffit ; masqué, il se met aussi en pause (hors écran pour son IntersectionObserver) */
 .place [data-arc] {
   display: none;
@@ -190,7 +188,8 @@
   align-self: center;
   margin-bottom: 0;
 }
-/* l'arc électrique figé : il sort du cadre de l'un, passe sous le VS et entre dans le cadre de l'autre (sous les bannières) */
+/* l'arc électrique (le courant des 5 du jour, une toile animée : ArcLigne) : il sort du cadre de l'un, passe sous le VS
+   et entre dans le cadre de l'autre (sous les bannières) ; sa lueur est dessinée dans la toile */
 .arc {
   grid-area: vs;
   align-self: end;
@@ -200,35 +199,12 @@
   width: calc(100% + 128px);
   height: 80px;
   margin: 0 0 16px -64px;
-  overflow: visible;
   pointer-events: none;
-  filter: drop-shadow(0 0 7px var(--arc-lueur)) drop-shadow(0 0 2px var(--arc-lueur));
+  user-select: none;
   animation: eclair 0.5s 0.62s ease-out backwards;
 }
-.arc path {
-  fill: none;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-.arc [data-c="l"] path {
-  stroke: var(--arc-lueur);
-  stroke-width: 12;
-  opacity: 0.5;
-}
-.arc [data-c="c"] path {
-  stroke: var(--arc-coeur);
-  stroke-width: 3;
-}
-.arc [data-c="c"] path + path {
-  stroke-width: 1.8;
-}
-.arc [data-c="b"] path {
-  stroke: #fff;
-  stroke-width: 1.1;
-}
-:global(html[data-theme="nuit"]) .arene {
-  --arc-coeur: var(--pal-3, #a8c0d6);
+:global(html[data-discreet="1"]) .arc {
+  display: none;
 }
 
 .mise {

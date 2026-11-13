@@ -2,7 +2,10 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { parseMoiTab } from "@/components/moi/data";
+import { ActionContour } from "@/components/ui/SousPage";
+import { signOutAndLeave } from "@/components/SignOutButton";
 
 // Deux petits morceaux interactifs de l'espace Moi.
 
@@ -23,4 +26,16 @@ export function OngletParAncre() {
     if (t && t !== "stats" && !new URLSearchParams(window.location.search).get("onglet")) router.replace(`/moi?onglet=${t}`);
   }, [router]);
   return null;
+}
+
+/** La sortie des réglages : un seul bouton à contour, « Se déconnecter », et ce qui reste sauvegardé. */
+export function SortieDuCompte({ libelle, ligne }: { libelle: string; ligne: string }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      <ActionContour onClick={() => void signOutAndLeave()}>
+        <LogOut size={15} aria-hidden /> {libelle}
+      </ActionContour>
+      <p className="t-micro m-0">{ligne}</p>
+    </div>
+  );
 }

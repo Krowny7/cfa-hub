@@ -52,7 +52,7 @@ export async function pageDuJour(format: FormatDefi) {
           phase === "done" ? getDailyReview(supabase, info.day, format) : Promise.resolve([] as DailyReviewItem[]),
         ]);
 
-  // les 5 du jour : la série d'encre, dans la colonne grise (une lecture, null sans la migration)
+  // les 5 du jour : la série d'encre, chiffre-héros de la porte (une lecture, null sans la migration)
   const statut = phase !== "playing" && format === "cinq" ? await lireSerieEncre(supabase) : null;
   const serie = statut ? { jours: statut.serieAffichee, fait: statut.fait, reste: Math.max(0, statut.seuil - statut.aujourdhui) } : null;
 

@@ -6,7 +6,10 @@ import { Check, Clapperboard, SkipBack, SkipForward } from "lucide-react";
 import { dureeVideo, groupesDeMatiere, type VideoResume } from "@/lib/videos";
 import { VIDEOS_TXT as T, dureeTexte, horodatage } from "@/lib/voice-videos";
 import s from "./Videos.module.css";
-import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { EnTeteSousPage, Etiquette, Scene, SousPage } from "@/components/ui/SousPage";
+import { RETOUR } from "@/lib/voice-reviser";
+import { ETAGERE } from "@/lib/voice-reviser-b";
+import l from "@/components/reviser/Lecture.module.css";
 
 export type SourceVideo = { src: string | null; affiche: string | null };
 
@@ -17,6 +20,8 @@ export type SourceVideo = { src: string | null; affiche: string | null };
 // ouverts. Une vidéo d'une heure est une suite de parties jouées à la suite : à la fin d'une partie, la suivante
 // démarre seule. L'appareil garde, pour chaque vidéo, l'endroit où on s'est arrêté et ce qu'on a déjà vu
 // (localStorage, lu après le montage : le serveur rend la page sans historique).
+// Direction « le lieu, puis l'objet » (2026-11-13) : les vidéos sont un rayon de /courses (retour « Cours
+// complets ») ; plus de cadre à zones : le lecteur à gauche sur la scène, le programme à droite.
 
 const VITESSES = [1, 1.25, 1.5, 1.75, 2];
 const CLE_VITESSE = "rl_video_vitesse";
@@ -120,7 +125,7 @@ export function VideosView({ videos, video, sources }: { videos: VideoResume[]; 
     const ol = liste.current;
     if (!ol || ol.scrollHeight <= ol.clientHeight + 4) return;
     const el = ol.querySelector<HTMLElement>(`[data-partie="${partie}"]`);
-    if (el) ol.scrollTo({ top: Math.max(0, el.offsetTop - 44), behavior: "smooth" });
+    if (el) ol.scrollTo({ top: Math.max(0, el.offsetTop - 12), behavior: "smooth" });
   }, [partie]);
 
   function allerA(i: number, debut: number, jouer = true) {
@@ -176,14 +181,37 @@ export function VideosView({ videos, video, sources }: { videos: VideoResume[]; 
   // la part vue de cette vidéo et ce qu'il en reste : dites une seule fois, sous le lecteur
   const pct = video ? partVue(video, vu) : 0;
   const etat = !video || !pct ? T.pasCommencee : pct < 100 ? `${T.vue(pct)} · ${T.reste(dureeTexte(dureeVideo(video) * (1 - pct / 100)))}` : T.vue(pct);
+  // l'appareil lu (le suivi arrive après le montage) : avant, le chiffre-héros et la ligne restent invisibles
+  const lu = vu.length > 0;
+  const total = video ? dureeVideo(video) : 0;
+  const heros = !video
+    ? null
+    : pct >= 100
+      ? { valeur: ETAGERE.videoHerosVueValeur, legende: ETAGERE.videoHerosVue }
+      : pct > 0
+        ? { valeur: ETAGERE.heures((total * (1 - pct / 100)) / 60), legende: ETAGERE.videoHerosReste }
+        : { valeur: ETAGERE.heures(total / 60), legende: ETAGERE.videoHerosNeuve };
+  const ligneEtat = reprise !== null && pct > 0 && pct < 100 ? `${T.vue(pct)} · ${T.repriseCourte(horodatage(reprise))}` : etat;
+  const voile = { fontStyle: "normal" as const, opacity: lu ? 1 : 0, transition: "opacity 0.25s ease" };
 
   return (
-    <SousPage className={s.page} entete={<EnTeteSousPage retour={{ href: "/reviser", label: T.retour }} illustration={{ nom: "reviser-bibliotheque" }} titre={T.titre} ligne={T.sous} />}>
+    <SousPage
+      className={s.page}
+      entete={
+        <EnTeteSousPage
+          retour={RETOUR.cours}
+          illustration={{ nom: "reviser-bibliotheque", position: "50% 92%" }}
+          kicker={video ? T.serie(video.numero) : undefined}
+          titre={video ? video.titre : T.titre}
+          ligne={video ? <i style={voile}>{ligneEtat}</i> : T.sous}
+          heros={heros ? { valeur: <i style={voile}>{heros.valeur}</i>, legende: <i style={voile}>{heros.legende}</i> } : null}
+        />
+      }
+    >
       {video && p ? (
-        <CadreZones
-          gauche={{
-            titre: video.titre,
-            contenu: (
+        <Scene>
+          <div className={l.lecture}>
+          <section className={l.zone} aria-label={video.titre}>
               <div className={s.lecteur}>
                 <nav className={s.onglets} aria-label={T.lesVideos}>
                   {videos.map((v) => {
@@ -237,7 +265,7 @@ export function VideosView({ videos, video, sources }: { videos: VideoResume[]; 
                 </div>
 
                 <div className={s.infos}>
-                  <p className={s.etat}>{etat}</p>
+                  <p className={s.etat + " sr-only"}>{etat}</p>
                   <div className={s.commandes}>
                     <button type="button" className="icon-btn" disabled={partie === 0} onClick={() => allerA(partie - 1, 0)} aria-label={T.precedente} title={T.precedente}>
                       <SkipBack size={16} aria-hidden />
@@ -275,13 +303,13 @@ export function VideosView({ videos, video, sources }: { videos: VideoResume[]; 
                     </div>
                   ))}
                 </div>
-                {reprise !== null && <p className={s.reprise}>{T.reprise(horodatage(reprise))}</p>}
+
               </div>
-            ),
-          }}
-          droite={{
-            titre: T.programme,
-            contenu: (
+          </section>
+          <section className={l.zone + " " + l.colonne} aria-label={T.programme}>
+            <div className={l.tete}>
+              <Etiquette as="h2">{T.programme}</Etiquette>
+            </div>
               <ol ref={liste} className={s.programme} aria-label={T.programme}>
                 {groupes.map((g) => (
                   <li key={g.matiere + g.parties[0].i}>
@@ -321,9 +349,9 @@ export function VideosView({ videos, video, sources }: { videos: VideoResume[]; 
                   </li>
                 ))}
               </ol>
-            ),
-          }}
-        />
+          </section>
+          </div>
+        </Scene>
       ) : (
         <div className={s.vide}>
           <Clapperboard size={20} aria-hidden />

@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { EncreVive } from "@/components/nav/EncreVive";
 import { Illustration } from "@/components/ui/Illustration";
 import { porteDe, type IllustrationNom } from "@/lib/illustrations";
 import { PALETTES, paletteDeChemin, styleDePalette, type Palette } from "@/lib/palettes";
-import { SPACES, activeSpace } from "@/lib/nav";
 import s from "./SousPage.module.css";
 
 // Le gabarit commun des sous-pages (chantier du 2026-11-12, plan validé par Théo) :
@@ -60,17 +59,14 @@ export function LienRetour({ retour, className }: { retour: Retour; className?: 
   );
 }
 
-/** Le kicker par défaut : l'espace, puis la page parente quand ce n'est pas l'espace lui-même (« S'ENTRAÎNER · CALCULS »). */
-function kickerDe(chemin: string, retour: Retour): string | null {
-  const espace = SPACES.find((x) => x.key === activeSpace(chemin));
-  if (!espace) return retour.label;
-  return retour.href === espace.href ? espace.label : `${espace.label} · ${retour.label}`;
-}
+/** Le cadrage d'une peinture de la série quand elle remplace une image provisoire : les personnages dans la porte
+ * (la cascade : les deux ninjas sur leurs rochers et le pied de la chute, vers 75 % de la hauteur). */
+const POSITION_PORTE: Partial<Record<IllustrationNom, string>> = { "accueil-cascade": "50% 80%" };
 
 /**
  * Le début de toutes les sous-pages, « la porte » (direction de l'équipe validée par Théo, 2026-11-13) :
- * le cadre bas, avec à gauche le retour, le kicker (espace · page parente, en capitales Mono), le titre
- * plein et une ligne d'état ; à droite la peinture de la carte qu'on vient de cliquer (série au
+ * le cadre bas, avec à gauche le retour, le titre plein et une ligne d'état (plus de surtitre par défaut :
+ * il redisait le nom du bouton retour, « S'AFFRONTER » sous « ← S'affronter » ; Théo, 2026-11-13) ; à droite la peinture de la carte qu'on vient de cliquer (série au
  * couteau), son bord gauche en grosses touches de couteau (public/peinture/touches.svg) ; sur la
  * peinture, sur un voile sombre, UN chiffre-héros en Dela (`heros`). `enjeu` : une étiquette rouge en
  * capitales, seulement quand elle est vraie (« SE FIGE DANS 5 H », « EN DIRECT »). Aucun bouton hormis
@@ -84,20 +80,26 @@ export function EnTeteSousPage({
   kicker,
   heros,
   enjeu,
+  enjeuTon,
+  voile,
 }: {
   retour: Retour;
   titre: React.ReactNode;
   ligne?: React.ReactNode;
-  illustration?: { nom: IllustrationNom; position?: string };
-  /** remplace le kicker calculé (null : aucun) */
+  /** `porte` : le cadrage quand la peinture est remplacée par celle de la série (porteDe) ; sans lui, POSITION_PORTE */
+  illustration?: { nom: IllustrationNom; position?: string; porte?: string };
+  /** un surtitre, seulement s'il dit autre chose que le bouton retour (aucun par défaut) */
   kicker?: React.ReactNode | null;
   heros?: { valeur: React.ReactNode; legende: React.ReactNode } | null;
   enjeu?: React.ReactNode | null;
+  /** « direct » : l'étiquette passe au vert (« EN DIRECT » des Salles, ajout du lot 4) ; rouge par défaut */
+  enjeuTon?: "direct";
+  /** « fort » : un voile plus sombre sous le chiffre-héros, pour une peinture claire (ajout du lot 4, Salles) */
+  voile?: "fort";
 }) {
-  const chemin = usePathname() ?? "/";
-  const k = kicker === undefined ? kickerDe(chemin, retour) : kicker;
+  const k = kicker ?? null;
   const chiffre = heros ? (
-    <p className={s.heros}>
+    <p className={s.heros} data-voile={voile}>
       <b>{heros.valeur}</b>
       <span>{heros.legende}</span>
     </p>
@@ -111,7 +113,7 @@ export function EnTeteSousPage({
           <h1 className={"rl-in " + s.titre}>{titre}</h1>
           {ligne && <p className={s.ligne}>{ligne}</p>}
           {enjeu && (
-            <p className={s.enjeu}>
+            <p className={s.enjeu} data-ton={enjeuTon}>
               <i aria-hidden />
               {enjeu}
             </p>
@@ -124,7 +126,7 @@ export function EnTeteSousPage({
           {/* une image provisoire de maître ancien cède la place à la peinture de la série (son cadrage ne vaut plus) */}
           <Illustration
             nom={porteDe(illustration.nom)}
-            position={porteDe(illustration.nom) === illustration.nom ? illustration.position : "50% 62%"}
+            position={porteDe(illustration.nom) === illustration.nom ? illustration.position : (illustration.porte ?? POSITION_PORTE[porteDe(illustration.nom)] ?? "50% 62%")}
             decorative
             eager
           />
@@ -160,6 +162,16 @@ export function Etiquette({ children, as: Tag = "p" }: { children: React.ReactNo
   return <Tag className={s.etiquette}>{children}</Tag>;
 }
 
+/**
+ * L'attente d'un lien à l'encre (ajout du 2026-11-13, Réviser A) : tant que la page suivante se
+ * charge (useLinkStatus, Next 15.3+), le bouton reste enfoncé et l'encre pulse une fois. Rendu dans
+ * le Link, sans rien afficher d'autre.
+ */
+function AttenteLien() {
+  const { pending } = useLinkStatus();
+  return <span className={s.attente} data-pending={pending ? "1" : undefined} aria-hidden />;
+}
+
 export function ActionEncre({
   href,
   onClick,
@@ -185,6 +197,7 @@ export function ActionEncre({
       <Link href={href} className={cls} data-palette={p.key} aria-label={label} autoFocus={autoFocus}>
         <EncreVive tons={p.liquide} />
         <span className={s.texte}>{children}</span>
+        <AttenteLien />
       </Link>
     );
   return (

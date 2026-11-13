@@ -1,0 +1,264 @@
+/* La plaque des séries éclair (components/eclair/Plaque.tsx) : ébène biseauté, ivoire, or sobre.
+   Couleurs FIXES de jour comme de nuit ; la nuit, un liseré clair remplace l'ombre. */
+
+.plaque {
+  --ebene: #1a120b;
+  --ivoire: #f3ecdc;
+  --or: #d6a13f;
+  --rouge: #e0694f;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  width: min(100%, 540px);
+  margin: 0 auto;
+  padding: 22px 20px 20px;
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 70% at 30% 0%, rgba(255, 255, 255, 0.07), transparent 60%),
+    repeating-linear-gradient(97deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 8px),
+    var(--ebene);
+  color: var(--ivoire);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+    0 2px 3px rgba(0, 0, 0, 0.18),
+    0 34px 46px -28px rgba(0, 0, 0, 0.6);
+  animation: plPose 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+/* le biseau et le double filet d'or sobre */
+.plaque::before,
+.plaque::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+.plaque::before {
+  inset: 8px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--or) 40%, transparent);
+}
+.plaque::after {
+  inset: 12px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--or) 14%, transparent);
+}
+@media (min-width: 600px) {
+  .plaque {
+    padding: 28px 34px 26px;
+  }
+}
+
+.haut,
+.pied {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  width: 100%;
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(243, 236, 220, 0.62);
+}
+.pied {
+  justify-content: center;
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+.chiffre {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px 14px;
+  min-width: 0;
+  max-width: 100%;
+  margin: 2px 0 0;
+}
+.chiffre b {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 96px;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ivoire);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+}
+@media (min-width: 600px) {
+  .chiffre b {
+    font-size: 120px;
+  }
+}
+.chiffre > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0 8px;
+  white-space: nowrap;
+  padding-bottom: 12px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--or) 80%, transparent);
+}
+
+.cases {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(5, 52px);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (max-width: 420px) {
+  .cases {
+    grid-template-columns: repeat(5, 44px);
+    gap: 8px;
+  }
+}
+.cases li {
+  display: grid;
+  place-items: center;
+  height: 52px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1.5px rgba(243, 236, 220, 0.2);
+  background: rgba(0, 0, 0, 0.22);
+  animation: plCase 300ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(120ms + var(--i, 0) * 50ms);
+}
+@media (max-width: 420px) {
+  .cases li {
+    height: 44px;
+  }
+}
+.cases li[data-etat="ok"] {
+  background: var(--ivoire);
+  color: var(--ebene);
+  box-shadow:
+    inset 0 -2px 0 #e2d6bb,
+    0 6px 10px -6px rgba(0, 0, 0, 0.7);
+}
+.cases li[data-etat="ko"] {
+  background: rgba(224, 105, 79, 0.12);
+  color: var(--rouge);
+  box-shadow: inset 0 0 0 1.5px var(--rouge);
+}
+/* le pourcentage, à côté des justes (PctScore pose text-muted : on garde l'ivoire de la plaque) */
+.chiffre .pct {
+  color: rgba(243, 236, 220, 0.72);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+@media (max-width: 420px) {
+  .chiffre b {
+    font-size: clamp(56px, 20vw, 88px);
+  }
+  .chiffre > span {
+    flex-basis: 100%;
+    justify-content: center;
+    padding-bottom: 0;
+  }
+}
+/* le verdict, tamponné en haut à droite de la plaque (le langage du tampon TENU) */
+.tampon {
+  position: absolute;
+  z-index: 2;
+  top: 22px;
+  right: 22px;
+  padding: 5px 10px 4px;
+  border: 3px solid var(--rouge);
+  border-radius: 6px;
+  color: var(--rouge);
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.92;
+  transform: rotate(-8deg);
+  animation: plTampon 380ms cubic-bezier(0.2, 0.9, 0.25, 1) 520ms both;
+}
+.plaque[data-tampon] .haut {
+  padding-right: 140px;
+}
+@media (max-width: 420px) {
+  .tampon {
+    top: 18px;
+    right: 16px;
+    font-size: 12px;
+  }
+  .plaque[data-tampon] .haut {
+    padding-right: 112px;
+  }
+}
+
+@keyframes plPose {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes plTampon {
+  from {
+    opacity: 0;
+    transform: scale(1.6) rotate(-14deg);
+  }
+}
+@keyframes plCase {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plaque,
+  .cases li,
+  .tampon {
+    animation: none;
+  }
+}
+:global(html[data-theme="nuit"]) .plaque {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(243, 236, 220, 0.18);
+}
+
+/* sous la plaque : l'action, centrée */
+.action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 22px;
+}
+/* téléphone : l'action prend toute la largeur */
+@media (max-width: 559px) {
+  .action :global(.rl-encre) {
+    width: 100%;
+    min-height: 52px;
+    justify-content: center;
+  }
+}
+.note {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--pen);
+}

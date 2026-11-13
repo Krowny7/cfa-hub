@@ -25,3 +25,10 @@
     display: none;
   }
 }
+
+/* « Aujourd'hui » et « Tout le Codex » : deux replis sous l'arbre (components/moi/Dossier, Repli) */
+.replis {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}

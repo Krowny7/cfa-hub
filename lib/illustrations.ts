@@ -274,6 +274,20 @@ export const ILLUSTRATIONS = {
     emplacement: "/practice : carte « lieu » Le Studiolo, 16:10 sur ordinateur, vignette portrait 88×110 px sur téléphone. /entrainement : moitié droite du diptyque (Entraînement ciblé), agrandie depuis le bas (.fondBas) car le duel est vers 68 % de la hauteur. /entrainement aussi : le grand lieu peint sans titre ni action, en bas à gauche, cadré 50% 50%.",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : le studiolo d'un savant florentin vers 1500, dans l'univers de Léonard de Vinci. Un pupitre incliné porte une copie vierge et une plume dans son encrier, un sablier en verre et bois tourné est posé à côté, des traités reliés sont empilés, un mécanisme à engrenages trône sur une étagère. Une fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, terre de Sienne, brun, ivoire, touches de vert sauge). Vue de trois quarts, le pupitre et le sablier au centre, le haut de l'image calme. Sans personnage, sans texte lisible, sans cadre. Format paysage 16:10, 1600×1000.",
   },
+  "practice-studiolo-porte": {
+    src: "/illustrations/practice-studiolo-porte.webp",
+    alt: "Deux samouraïs en duel sur un radeau de glace, entre des icebergs",
+    credit: "La mer de glace (practice-studiolo), recadrée sur le duel au radeau de glace (2026-11-13) pour la porte de /practice.",
+    emplacement: "/practice : la porte de la sous-page (EnTeteSousPage), environ 640×192 px sur ordinateur ; les duellistes au centre (environ 70 px de haut), le chiffre-héros en bas à droite sur l'eau.",
+    prompt: "Recadrage de practice-studiolo (x 360 à 1020, y 416 à 614 sur 1312×816), agrandi à 1000×300 : le refaire depuis cette image si elle change.",
+  },
+  "practice-studiolo-arches": {
+    src: "/illustrations/practice-studiolo-arches.webp",
+    alt: "Une arche de glace au-dessus d'une mer gelée, deux samouraïs en duel sur un radeau de glace",
+    credit: "La mer de glace (practice-studiolo), recadrée sur l'arche et le duel (2026-11-13) pour la porte de /official-exams.",
+    emplacement: "/official-exams : la porte de la sous-page (EnTeteSousPage), environ 640×192 px sur ordinateur ; l'arche à gauche, le duel au centre droit, le chiffre-héros en bas à droite. Distincte de la porte de /practice (le duel en gros plan).",
+    prompt: "Recadrage de practice-studiolo (x 130 à 990, y 190 à 560 sur 1312×816), agrandi à 1032×444 : le refaire depuis cette image si elle change.",
+  },
   "practice-corrige": {
     src: "/illustrations/practice-corrige.webp",
     alt: "Une page de la Summa de arithmetica de Luca Pacioli",
@@ -332,7 +346,7 @@ const PORTE_REMPLACE: Partial<Record<IllustrationNom, IllustrationNom>> = {
   "calculs-poulies": "calculs-abaque",
   "calculs-volant": "calculs-abaque",
   "practice-corrige": "practice-studiolo",
-  "exams-sceau": "practice-studiolo",
+  "exams-sceau": "practice-studiolo-arches",
   "qcm-machines": "qcm-bibliotheque",
 };
 

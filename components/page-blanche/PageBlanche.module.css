@@ -15,12 +15,77 @@
   font-weight: 600;
 }
 
+/* la feuille nue (2026-11-13) : un papier fixe, posé sur le fond classique, sans cadre autour ; ses
+   encres sont fixes aussi (la nuit, --ink devient clair : pas sur ce papier) */
 .feuille {
+  --papier: #fdfbf6;
+  --encre-f: #1c1712;
+  --vermillon: #c8401f;
   padding: 26px 30px 30px;
-  border: 1px solid var(--pencil-2);
-  border-radius: 6px;
-  background: var(--surface);
-  box-shadow: var(--shadow-1);
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), transparent 30%),
+    var(--papier);
+  color: var(--encre-f);
+  box-shadow:
+    0 0 0 1px rgba(28, 23, 18, 0.07),
+    0 1px 1px rgba(0, 0, 0, 0.06),
+    0 22px 30px -20px rgba(0, 0, 0, 0.45);
+}
+:global(html[data-theme="nuit"]) .feuille {
+  box-shadow: 0 0 0 1px rgba(241, 233, 212, 0.3);
+}
+/* la colonne de la feuille, au centre de la scène */
+.colonne {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+  min-width: 0;
+}
+/* le corrigé se découvre d'un coup : toutes les feuilles ensemble, une fois */
+.revele {
+  animation: pbRevele 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes pbRevele {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.995);
+    filter: blur(2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .revele {
+    animation: none;
+  }
+}
+/* une ligne notée « À revoir » : l'oubli passe au vermillon, avec le lien vers son calcul */
+.ligneCorrige[data-oubli] .nom,
+.ligneCorrige[data-oubli] .formule,
+.ligneCorrige[data-oubli] .texteReponse {
+  color: var(--vermillon);
+}
+.calcul {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--vermillon);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.calcul:hover {
+  color: var(--encre-f);
+}
+.ligneCorrige .calcul {
+  display: flex;
+  width: fit-content;
 }
 .titreCopie {
   margin: 0 0 16px;
@@ -50,7 +115,7 @@
   flex: 1;
   min-width: 40px;
   margin-bottom: 3px;
-  border-bottom: 1px solid var(--pencil-2);
+  border-bottom: 1px solid rgba(28, 23, 18, 0.22);
 }
 
 .ligneCorrige {
@@ -59,7 +124,7 @@
   justify-content: space-between;
   gap: 14px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(28, 23, 18, 0.1);
 }
 .ligneCorrige:last-child {
   border-bottom: 0;
@@ -81,7 +146,7 @@
 .note {
   margin: 4px 0 0;
   font-size: 12.5px;
-  color: var(--ink-2);
+  color: rgba(28, 23, 18, 0.66);
 }
 .choix {
   display: flex;
@@ -130,68 +195,6 @@
   background: var(--surface);
   box-shadow: var(--shadow-1);
 }
-/* « Tes copies », la colonne grise de la séance (Session.tsx, ListeCopies) : l'allure de la courte
-   liste commune (components/ui/Decors), en plus serré, sans limite de lignes */
-.copies {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.copieLigne {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  min-width: 0;
-  padding: 9px 13px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-  text-align: left;
-}
-button.copieLigne {
-  cursor: pointer;
-  transition: transform 0.18s ease;
-}
-button.copieLigne:hover {
-  transform: translateY(-2px);
-}
-button.copieLigne:focus-visible {
-  outline: 2px solid var(--pal-2, var(--ink));
-  outline-offset: 3px;
-}
-.copies li[data-ici] .copieLigne {
-  outline: 1.5px solid var(--pal-2, var(--ink));
-}
-.copieTitre {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13.5px;
-  font-weight: 600;
-}
-.copies li[data-rendue] .copieTitre {
-  color: var(--ink-2);
-}
-.copieEtat {
-  flex: none;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-2);
-}
-@media (prefers-reduced-motion: reduce) {
-  button.copieLigne {
-    transition: none;
-  }
-}
-
 @media (max-width: 767px) {
   .feuille {
     padding: 18px 16px 20px;
@@ -199,5 +202,206 @@ button.copieLigne:focus-visible {
   /* au-dessus de la barre d'onglets du téléphone */
   .barre {
     bottom: 92px;
+  }
+}
+
+/* « Tes copies » dans la barre collante des copies (Session.tsx, CasesCopies) : les copies du tour
+   en cases numérotées, la courante cerclée ; les rendues avant ce tour en une mention */
+.barreCopies {
+  justify-content: space-between;
+}
+.cases {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cases > li {
+  flex: none;
+}
+.case {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: transform 0.18s ease;
+}
+.caseNum {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-top: -6px;
+}
+.case .copiePastille {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+}
+@media (hover: hover) {
+  .case:hover {
+    transform: translateY(-2px);
+    color: var(--ink);
+  }
+}
+.case:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 2px;
+}
+/* la copie sur la feuille : cerclée à l'encre de la palette */
+.cases li[data-ici] .case {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--pal-2, var(--ink));
+  color: var(--ink);
+}
+.copiePastille {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-3);
+}
+.cases li[data-rendue] .copiePastille {
+  border-color: var(--pal-2, var(--ink-2));
+  background: var(--pal-2, var(--ink-2));
+}
+.casesRendues {
+  padding: 0 4px 0 6px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+/* la nuit, --pal-2 est sombre : éclairci sur le fond sombre (pastilles, cercle, focus) */
+:global(html[data-theme="nuit"]) .cases li[data-ici] .case {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+:global(html[data-theme="nuit"]) .cases li[data-rendue] .copiePastille {
+  border-color: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+  background: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+:global(html[data-theme="nuit"]) .case:focus-visible {
+  outline-color: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+
+/* le bilan : le score écrit sur la feuille (Dela), sa légende en Mono, le tampon « sans faute » */
+.score {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 34px 24px 30px;
+  text-align: center;
+  overflow: hidden;
+}
+.scoreChiffre {
+  margin: 0;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: clamp(44px, 7vw, 56px);
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--encre-f);
+}
+.scoreSur {
+  color: rgba(28, 23, 18, 0.38);
+}
+.scoreLegende {
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(28, 23, 18, 0.6);
+}
+.scoreFin {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(28, 23, 18, 0.7);
+}
+/* le tampon, comme celui de /revoir : Dela, double filet, de travers */
+.sansFaute {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  padding: 5px 11px 4px;
+  border: 2px solid #b4412f;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 2px #fdfbf6, inset 0 0 0 3.5px #b4412f;
+  color: #b4412f;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 17px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  transform: rotate(-8deg);
+  opacity: 0.88;
+  mix-blend-mode: multiply;
+}
+.actionBilan {
+  display: flex;
+  justify-content: center;
+}
+@media (max-width: 619px) {
+  .actionBilan > * {
+    width: 100%;
+    min-height: 48px;
+  }
+  .sansFaute {
+    position: static;
+    margin-top: 8px;
+  }
+}
+/* au pied de la feuille des oublis : UN lien vers les calculs de la matière */
+.calculPied {
+  margin-top: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case {
+    transition: none;
+  }
+}
+
+/* téléphone : un nom de formule long fait passer la ligne de réponse dessous */
+@media (max-width: 619px) {
+  .ligneVide {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    padding-top: 8px;
+  }
+  /* la ligne garde au moins 120 px ; s'il en reste moins après le nom, elle passe dessous */
+  .ligneVide::after {
+    flex: 1 1 120px;
+    min-width: 120px;
+    min-height: 22px;
+  }
+  .barreCopies {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .barreCopies > :last-child {
+    width: 100%;
+    min-height: 46px;
   }
 }

@@ -1,0 +1,219 @@
+/* La carte de l'Atelier (l'ouverture, l'Atelier en cours) : une carte papier ivoire du site posée
+   dans la colonne des séances, la notion et sa précision écrites dessus, l'action à l'encre ; les
+   autres points faibles attendent derrière, en pile (le langage de la pile d'À revoir). Couleurs
+   FIXES de jour comme de nuit ; la nuit, un liseré clair remplace l'ombre. */
+
+.colonne {
+  padding-top: 8px;
+}
+.pile,
+.fiche {
+  --ivoire: #f3ecdc;
+  --ivoire-2: #e6dbc2;
+  --encre: #1a120b;
+  --doux: rgba(26, 18, 11, 0.6);
+  --tampon: #b4412f;
+}
+.pile {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+.pile[data-derriere="1"] {
+  padding-bottom: 12px;
+}
+.pile[data-derriere="1"] .dos {
+  bottom: 12px;
+}
+.pile[data-derriere="2"] {
+  padding-bottom: 22px;
+}
+.pile[data-derriere="2"] .dos {
+  bottom: 22px;
+}
+/* le dos des cartes qui attendent : le même papier, décalé et penché */
+.dos {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 14px;
+  background: var(--ivoire-2);
+  box-shadow:
+    inset 0 -2px 0 rgba(26, 18, 11, 0.08),
+    0 1px 0 rgba(0, 0, 0, 0.14),
+    0 18px 26px -20px rgba(0, 0, 0, 0.45);
+}
+.dos[data-rang="1"] {
+  transform: translate(10px, 12px) rotate(1.4deg);
+}
+.dos[data-rang="2"] {
+  background: #ddd0b3;
+  transform: translate(18px, 22px) rotate(2.6deg);
+}
+.fiche {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  padding: 26px 22px 24px;
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, 0.6), transparent 60%),
+    var(--ivoire);
+  color: var(--encre);
+  box-shadow:
+    inset 0 -2px 0 var(--ivoire-2),
+    0 1px 0 rgba(0, 0, 0, 0.18),
+    0 26px 34px -22px rgba(0, 0, 0, 0.45);
+  transform: rotate(-0.4deg);
+  animation: atPose 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@media (min-width: 640px) {
+  .fiche {
+    padding: 32px 36px 30px;
+  }
+}
+/* la notion à gauche, sa précision en Dela à droite */
+.tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px 22px;
+}
+@media (max-width: 559px) {
+  .tete {
+    flex-direction: column;
+  }
+}
+.pct {
+  flex: none;
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+@media (max-width: 559px) {
+  .pct {
+    justify-items: start;
+  }
+}
+.pct b {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 72px;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--pal-1, var(--encre));
+}
+.pct b small {
+  margin-left: 4px;
+  font-size: 0.42em;
+}
+.pct > span {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--doux);
+}
+.mesure {
+  margin: -4px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(26, 18, 11, 0.12);
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--encre);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+/* sur le papier, les actions secondaires gardent l'encre du papier, de jour comme de nuit */
+.actions > :not(:global(.rl-encre)) {
+  background: transparent;
+  color: var(--encre);
+  border: 1px solid rgba(26, 18, 11, 0.3);
+  box-shadow: none;
+}
+.remplacer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.remplacer:hover {
+  border-color: rgba(26, 18, 11, 0.55) !important;
+}
+@media (max-width: 559px) {
+  .actions :global(.rl-encre) {
+    width: 100%;
+    min-height: 52px;
+    justify-content: center;
+  }
+}
+.fiche :global(.ink-link) {
+  color: var(--encre);
+}
+.etiquette {
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--doux);
+}
+.nom {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+  color: var(--encre);
+}
+@media (min-width: 640px) {
+  .nom {
+    font-size: 34px;
+  }
+}
+.repere {
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.55;
+  color: var(--doux);
+}
+@keyframes atPose {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotate(-1deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fiche {
+    animation: none;
+  }
+}
+:global(html[data-theme="nuit"]) .dos {
+  box-shadow: 0 0 0 1px rgba(243, 236, 220, 0.18);
+}
+:global(html[data-theme="nuit"]) .fiche {
+  box-shadow:
+    inset 0 -2px 0 var(--ivoire-2),
+    0 0 0 1px rgba(243, 236, 220, 0.3);
+}

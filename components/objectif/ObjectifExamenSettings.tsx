@@ -39,7 +39,8 @@ const APPROX = {
 // une saisie à peu près (« vers mi-novembre » → le 15, dateApproximative)
 // propose une date, posée dans le champ puis enregistrée comme les autres.
 
-export function ObjectifExamenSettings({ initial }: { initial: ObjectifInitial }) {
+/** `sansTexte` : sans les deux consignes (le texte d'introduction, « Sans objectif… ») : les réglages de Moi, posés à plat. */
+export function ObjectifExamenSettings({ initial, sansTexte = false }: { initial: ObjectifInitial; sansTexte?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const [date, setDate] = useState(initial.examen ?? "");
@@ -97,7 +98,7 @@ export function ObjectifExamenSettings({ initial }: { initial: ObjectifInitial }
           {jj && <span className="ml-auto rounded-[8px] border border-line-2 px-2 py-[2px] font-mono text-[12px] text-white">{jj}</span>}
           {jours !== null && jours < 0 && <span className="ml-auto rounded-[8px] border border-line-2 px-2 py-[2px] font-mono text-[12px] text-white">passée</span>}
         </h3>
-        <p className="mt-2 text-[13px] text-muted">{R.texte}</p>
+        {!sansTexte && <p className="mt-2 text-[13px] text-muted">{R.texte}</p>}
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -164,7 +165,9 @@ export function ObjectifExamenSettings({ initial }: { initial: ObjectifInitial }
           {totalOk
             ? R.apercu(deja, Math.max(0, n - deja), jours, plan?.quotidien ?? 0)
             : total.trim() === ""
-              ? initial.meta
+              ? sansTexte
+                ? null
+                : initial.meta
                 ? R.sansObjectif
                 : `${R.sansObjectif} On en recommande ${nombre(OBJECTIF_RECOMMANDE)} d'ici l'examen.`
               : `Entre ${nombre(OBJECTIF_MIN)} et ${nombre(OBJECTIF_MAX)}.`}

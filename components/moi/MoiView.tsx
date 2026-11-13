@@ -22,6 +22,8 @@ export function MoiView({
   tab,
   vueMarquees,
   now,
+  herosReglages = null,
+  ligneReglages = null,
 }: {
   d: MoiData;
   settings: React.ReactNode;
@@ -31,6 +33,10 @@ export function MoiView({
   /** Moi › Marquées : les questions ou les flashcards (absent : les questions, ou les flashcards s'il n'y a qu'elles) */
   vueMarquees?: "questions" | "flashcards";
   now?: number;
+  /** le chiffre-héros des réglages : les jours avant l'examen (calculés par la page) ; null : pas de date */
+  herosReglages?: { valeur: React.ReactNode; legende: React.ReactNode } | null;
+  /** la ligne d'état des réglages : l'objectif et les questions posées ; null : pas d'objectif chiffré */
+  ligneReglages?: string | null;
 }) {
   return (
     <>
@@ -41,12 +47,12 @@ export function MoiView({
         <Registre d={d} liste="marquees" vue={vueMarquees} now={now} />
       ) : tab === "pieces" ? (
         (pieces ?? (
-          <SousPage entete={<EnTeteSousPage retour={SOUS_MOI.retour} titre={SOUS_MOI.pieces.titre} illustration={{ nom: "moi-cabinet-curiosites" }} />}>
+          <SousPage entete={<EnTeteSousPage retour={SOUS_MOI.retour} titre={SOUS_MOI.pieces.titre} illustration={{ nom: "moi-cabinet-curiosites", porte: "44% 84%" }} />}>
             <p className="card-quiet m-0 p-6 text-[14px]">{SOUS_MOI.pieces.indisponible}</p>
           </SousPage>
         ))
       ) : (
-        <SousPage entete={<EnTeteSousPage retour={SOUS_MOI.retour} titre={REG.reglagesTitre} illustration={{ nom: "moi-cabinet", position: "50% 55%" }} />}>
+        <SousPage entete={<EnTeteSousPage retour={SOUS_MOI.retour} titre={REG.reglagesTitre} ligne={ligneReglages ?? undefined} illustration={{ nom: "moi-cabinet", position: "50% 55%", porte: "56% 76%" }} heros={herosReglages} />}>
           {settings}
         </SousPage>
       )}

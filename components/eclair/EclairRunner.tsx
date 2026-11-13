@@ -14,22 +14,40 @@ import { clock, duelTopicLabel } from "@/lib/duels";
 import { answerEclair, finishEclair, startEclair, type EclairFinish, type EclairQuestion } from "@/lib/eclair";
 import { ECLAIR, verdictCopie } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
-import { ChiffreSerie, DepartZone, type SerieDuJour } from "@/components/epreuves/DepartZone";
-import { CadreZones, ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import type { SerieDuJour } from "@/components/epreuves/DepartZone";
+import { Plaque, type CaseEclair } from "@/components/eclair/Plaque";
+import plaque from "@/components/eclair/Plaque.module.css";
+import { ActionContour, ActionEncre, ColonneSeance, EnTeteSousPage, Scene, SousPage } from "@/components/ui/SousPage";
 import { DEPART } from "@/lib/voice-epreuves";
-import { RETOUR_ENTRAINEMENT, SOUS_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
+import { RETOUR_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
+import { PLAQUE } from "@/lib/voice-entrainement-b";
+import { NBSP, nombre } from "@/lib/voice";
 
 // Une série éclair : 5 questions de cours, une à la fois, corrigée tout de
 // suite (on apprend en route), puis le bilan et « Encore 5 ». La série vit
 // côté serveur (eclair_start / eclair_answer / eclair_finish) : on la
 // retrouve en revenant, réponses et corrections comprises.
+// Direction « le lieu, puis l'objet » (2026-11-13) : le départ est la porte (chiffre-héros : les
+// séries du jour), puis la plaque d'ébène (en Dela : ma précision sur les 20 dernières, sinon le
+// numéro de la série ; les cinq cases) et « Lancer » à l'encre ; le bilan, la même plaque : le
+// score en Dela et son pourcentage, les cases remplies, le verdict en tampon, le temps, l'XP et le
+// combo en Mono, puis « Encore 5 » à l'encre. Le combo compte les bonnes réponses d'affilée pendant
+// la visite (d'une série à l'autre), en Mono dans la barre de la série.
 
 const LETTERS = ["A", "B", "C", "D", "E"];
 const letter = (i: number) => LETTERS[i] ?? String(i + 1);
 
 type Phase = "depart" | "loading" | "play" | "finishing" | "done" | "soon" | "error";
 
-export type EclairDemo = { questions: EclairQuestion[]; current?: number; result?: EclairFinish & { marks: TickMark[] }; /** aperçu de l'écran de départ */ depart?: boolean };
+export type EclairDemo = {
+  questions: EclairQuestion[];
+  current?: number;
+  result?: EclairFinish & { marks: TickMark[] };
+  /** aperçu de l'écran de départ */
+  depart?: boolean;
+  /** aperçu de la série en cours ou du bilan : le combo déjà lancé */
+  combo?: number;
+};
 
 export type EclairDepart = {
   /** mes séries : précision des 20 dernières (%), null sans série ou sans migration */
@@ -49,6 +67,8 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<(EclairFinish & { marks: TickMark[]; mult?: number }) | null>(demo?.result ?? null);
   const [done, setDone] = useState(todayDone);
+  /** les bonnes réponses d'affilée, d'une série à l'autre pendant la visite */
+  const [combo, setCombo] = useState(demo?.combo ?? 0);
   const finishingRef = useRef(false);
 
   const n = questions.length || 5;
@@ -124,6 +144,7 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
       setQuestions((prev) =>
         prev.map((x) => (x.position === q.position ? { ...x, selectedIndex: r.selectedIndex, correctIndex: r.correctIndex, explanation: r.explanation } : x)),
       );
+      setCombo((c) => (r.selectedIndex !== null && r.selectedIndex === r.correctIndex ? c + 1 : 0));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -175,29 +196,51 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
 
   // ---------------------------------------------------------------------------
 
-  // l'accueil, sur le modèle des sous-pages (2026-11-12) : l'en-tête commun, le départ à gauche,
-  // ta série d'encre dans la colonne grise ; la série lancée, plus d'en-tête : la barre de la série seule
+  // le départ : la porte, puis la plaque (le « 5 », les cinq cases) et « Lancer » à l'encre ; la série
+  // lancée, plus d'en-tête : la barre de la série seule
   if (phase === "depart") {
     const D = DEPART.eclair;
-    const resume = D.resume(done, depart?.recentPct ?? null);
+    const pct = depart?.recentPct ?? null;
+    const serie = depart?.serie ?? null;
+    // le chiffre-héros de la porte : les séries du jour (la précision est écrite sur la plaque)
+    const heros = done > 0 ? { valeur: nombre(done), legende: PLAQUE.heros(done) } : null;
     return (
-      <SousPage entete={<EnTeteSousPage retour={RETOUR_ENTRAINEMENT} titre={ECLAIR.nom} ligne={D.titre} illustration={{ nom: "eclair-depart", position: "center 55%" }} />}>
-        <CadreZones
-          gauche={{
-            titre: SOUS_ENTRAINEMENT.eclair.lancer,
-            contenu: (
-              <DepartZone
-                ligne={ECLAIR.serieN(done + 1)}
-                traits={<Ticks marks={Array.from({ length: 5 }, () => "todo" as TickMark)} label="5 traits à poser" height={30} />}
-                regles={D.promesses}
-                action={D.lancer}
-                onStart={() => void start()}
-                pied={resume || undefined}
+      <SousPage
+        entete={
+          <EnTeteSousPage
+            retour={RETOUR_ENTRAINEMENT}
+            titre={ECLAIR.nom}
+            ligne={PLAQUE.ligne}
+            illustration={{ nom: "eclair-depart", position: "center 55%" }}
+            heros={heros}
+            enjeu={serie && !serie.fait && serie.reste > 0 ? PLAQUE.enjeu(serie.reste) : null}
+          />
+        }
+      >
+        <Scene>
+          <div>
+            {pct !== null ? (
+              <Plaque
+                chiffre={`${nombre(pct)}${NBSP}%`}
+                legende={PLAQUE.recent}
+                cases={Array.from({ length: 5 }, () => "vide" as CaseEclair)}
+                pied={PLAQUE.promesse}
               />
-            ),
-          }}
-          droite={depart?.serie ? { titre: SOUS_ENTRAINEMENT.defi.serie, contenu: <ChiffreSerie serie={depart.serie} /> } : undefined}
-        />
+            ) : (
+              <Plaque
+                chiffre={`n°${NBSP}${nombre(done + 1)}`}
+                legende={PLAQUE.serie}
+                cases={Array.from({ length: 5 }, () => "vide" as CaseEclair)}
+                pied={PLAQUE.promesse}
+              />
+            )}
+            <div className={plaque.action}>
+              <ActionEncre onClick={() => void start()} autoFocus>
+                {D.lancer} <ArrowRight size={16} aria-hidden />
+              </ActionEncre>
+            </div>
+          </div>
+        </Scene>
       </SousPage>
     );
   }
@@ -233,7 +276,7 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
   if (phase === "done" && result) {
     return (
       <ColonneSeance>
-        <Bilan result={result} done={done} cinqAFaire={cinqAFaire} onEncore={() => void start()} />
+        <Bilan result={result} done={done} combo={combo} cinqAFaire={cinqAFaire} onEncore={() => void start()} />
         <CeremonieSansFaute score={result.score} total={result.total || result.marks.length} epreuve="Série éclair" cle={`eclair:${serieId ?? done}`} />
       </ColonneSeance>
     );
@@ -256,7 +299,13 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
               {justes}
               <span className="font-normal text-muted">/{n}</span>
             </div>
-            <div className="t-micro truncate">{ECLAIR.justesEnCours}</div>
+            {combo >= 2 ? (
+              <div className="t-micro truncate font-mono font-bold uppercase tracking-[0.1em] text-[color:var(--ink)]" aria-label={PLAQUE.comboAria(combo)}>
+                {PLAQUE.combo(combo)}
+              </div>
+            ) : (
+              <div className="t-micro truncate">{ECLAIR.justesEnCours}</div>
+            )}
           </div>
         </div>
       </header>
@@ -397,52 +446,47 @@ function Explication({ text }: { text: string }) {
   return <p className={"m-0 whitespace-pre-wrap " + cls}>{text}</p>;
 }
 
-/** Le bilan d'une série : le score, le temps, l'XP, et « Encore 5 ». */
-function Bilan({ result, done, cinqAFaire, onEncore }: { result: EclairFinish & { marks: TickMark[]; mult?: number }; done: number; cinqAFaire: boolean; onEncore: () => void }) {
+/** Le bilan d'une série : la plaque (le score en Dela et son pourcentage, les cases, le verdict en tampon ; le temps, l'XP et le combo en Mono), puis « Encore 5 » à l'encre. */
+function Bilan({
+  result,
+  done,
+  combo,
+  cinqAFaire,
+  onEncore,
+}: {
+  result: EclairFinish & { marks: TickMark[]; mult?: number };
+  done: number;
+  combo: number;
+  cinqAFaire: boolean;
+  onEncore: () => void;
+}) {
   const total = result.total || result.marks.length;
+  const cases: CaseEclair[] = result.marks.map((m) => (m === "ok" ? "ok" : m === "ko" || m === "none" ? "ko" : "vide"));
+  const mult = result.xpAwarded > 0 ? libelleMult(result.mult ?? 1) : null;
+  const verdict = verdictCopie(result.score, total);
+  const pied = [clock(result.seconds), `${PLAQUE.xp(result.xpAwarded)}${mult ? ` (${mult})` : ""}`, combo >= 2 ? PLAQUE.combo(combo) : null].filter(Boolean).join(" · ");
   return (
-    <div className="mx-auto grid w-full max-w-[820px] gap-4">
-      <section className="card-hero rl-in grid gap-5 p-6 md:p-8" aria-label={ECLAIR.rendue}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="t-micro m-0 flex items-center gap-1.5 font-semibold">
-              <Zap size={13} aria-hidden /> {ECLAIR.serieDuJour(done)}
-            </p>
-            <h2 className="t-h1 m-0 mt-1.5">{verdictCopie(result.score, total)}</h2>
-          </div>
-          <p className="m-0 shrink-0 text-right leading-none" aria-label={`${result.score} sur ${total}`}>
-            <span className="t-num text-[52px] sm:text-[60px] md:text-[76px]">{result.score}</span>
-            <span className="font-mono text-[15px] text-muted">/{total}</span>
-            <PctScore justes={result.score} total={total} sep={false} className="mt-1.5 block text-[13px]" />
-          </p>
-        </div>
-        <Ticks marks={result.marks} label="Ta série" />
-        <p className="t-small m-0 flex flex-wrap gap-x-3 gap-y-1 font-mono">
-          <span>{clock(result.seconds)}</span>
-          <span aria-hidden>·</span>
-          <span>{ECLAIR.xp(result.xpAwarded)}{result.xpAwarded > 0 && libelleMult(result.mult ?? 1) ? ` (${libelleMult(result.mult ?? 1)})` : ""}</span>
-        </p>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button type="button" className="btn btn-primary" onClick={onEncore} autoFocus>
-            <Zap size={16} aria-hidden /> {ECLAIR.encore}
-          </button>
-          <Link href="/entrainement" className="btn btn-secondary">
-            {ECLAIR.retour}
-          </Link>
-        </div>
-      </section>
-      {cinqAFaire && (
-        <Link href="/defi/cinq" className="rl-row group flex items-center gap-3 rounded-[14px] border border-line px-4 py-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-surface-2">
-            <Zap size={17} aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[14px] font-semibold">{ECLAIR.cinqAFaire}</span>
-            <span className="t-micro block">{ECLAIR.cinqAFaireSous}</span>
-          </span>
-          <ArrowRight size={15} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
-        </Link>
-      )}
+    <div className="mx-auto grid w-full max-w-[820px] grid-cols-[minmax(0,1fr)] gap-5" aria-label={ECLAIR.rendue}>
+      <Plaque
+        haut={ECLAIR.serieDuJour(done)}
+        chiffre={`${nombre(result.score)}/${nombre(total)}`}
+        legende={
+          <>
+            {PLAQUE.justes}
+            <PctScore justes={result.score} total={total} className={plaque.pct} />
+          </>
+        }
+        cases={cases}
+        pied={pied}
+        tampon={verdict.endsWith(".") ? verdict.slice(0, -1) : verdict}
+      />
+      <div className={plaque.action + " !mt-0"}>
+        <ActionEncre onClick={onEncore} autoFocus>
+          <Zap size={16} aria-hidden /> {ECLAIR.encore}
+        </ActionEncre>
+        <ActionContour href="/entrainement">{ECLAIR.retour}</ActionContour>
+        {cinqAFaire && <ActionContour href="/defi/cinq">{PLAQUE.cinq} →</ActionContour>}
+      </div>
     </div>
   );
 }

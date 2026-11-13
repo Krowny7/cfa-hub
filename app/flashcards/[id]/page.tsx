@@ -5,18 +5,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { FlashcardReview } from "@/components/FlashcardReview";
 import { FlashcardCardEditor } from "@/components/FlashcardCardEditor";
 import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
-import { DisclosureRow, groupBySubject, plural, splitTitle, subjectOfFolder, subjectOfTitle } from "@/components/ContentDetailHeader";
-import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
-import { ListeCourte } from "@/components/ui/Decors";
+import { DisclosureRow, splitTitle, subjectOfFolder, subjectOfTitle } from "@/components/ContentDetailHeader";
+import { EnTeteSousPage, Scene, SousPage } from "@/components/ui/SousPage";
+import { ChiffreVues } from "@/components/flashcards/GrilleCartes";
+import { sourcesVues } from "@/components/flashcards/vues";
 import { RETOUR } from "@/lib/voice-reviser";
-import { POSTE_CARTES } from "@/lib/voice-postes";
-import poste from "@/components/reviser/Postes.module.css";
+import { GRILLE_CARTES, POSTE_CARTES } from "@/lib/voice-postes";
+import pq from "@/components/flashcards/Paquet.module.css";
 import { fichePaquetFile, memoPaquetImage, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
 import { Memo } from "@/components/flashcards/Memo";
 import { RATIO_PAQUET, boitesMemo } from "@/lib/flashcards/memos";
 import { numeroPaquet, themePaquet } from "@/lib/flashcards/paquets";
 import { BOUCLE } from "@/lib/voice-z3c";
-import { cleSet, etatAffiche } from "@/lib/flashcards/progression";
+import { cleMatiere, cleSet, etatAffiche } from "@/lib/flashcards/progression";
 import { lireProgressions } from "@/lib/flashcards/progression-serveur";
 import { EtatPaquetVivant } from "@/components/flashcards/EtatPaquetVivant";
 import { getLocale } from "@/lib/i18n/server";
@@ -35,9 +36,6 @@ type SetRow = {
   library_folders?: Dossier | Dossier[];
 };
 type PageProps = { params: Promise<{ id: string }> };
-/** les paquets officiels publiés (même lecture que /flashcards/matiere/<clé>) */
-type PaquetRow = { id: string; title: string; visibility: string | null; library_folders?: Dossier | Dossier[] };
-const nomDuDossier = (f: PaquetRow["library_folders"]) => (Array.isArray(f) ? f[0] : f)?.name ?? null;
 
 export default async function FlashcardSetPage({ params }: PageProps) {
   const { id } = await params;
@@ -87,9 +85,9 @@ export default async function FlashcardSetPage({ params }: PageProps) {
     }
   }
   const subject = subjectOfFolder(nomDossier) ?? subjectOfTitle(set.title);
-  // la seule ligne de l'en-tête : repère du paquet, cartes (sans Public / Privé) ; la matière est
-  // déjà dans le retour
-  const ligneEntete = [parts.lead, plural(cards.length, "carte", "cartes")].filter(Boolean).join(" · ");
+  // la seule ligne de l'en-tête : le repère du paquet (« Set 1/4 ») ; le nombre de cartes est dans le
+  // chiffre-héros, la matière dans le retour
+  const ligneEntete = parts.lead;
 
   // Le one-pager de la matière (une page A4, bucket privé « fiches », URL
   // signée d'une heure) : proposé en fin de boucle, absent s'il n'est pas en ligne.
@@ -102,42 +100,33 @@ export default async function FlashcardSetPage({ params }: PageProps) {
       .createSignedUrl(fichier, 3600)
       .then((r) => (r.error ? null : (r.data?.signedUrl ?? null)))
       .catch(() => null);
-  // Les autres paquets officiels de la même matière (la colonne grise) : même lecture que la page
-  // de la matière, faite après la lecture du paquet par la RLS ; clé admin absente : pas de liste.
-  const lireAutres = async (): Promise<{ id: string; title: string }[]> => {
-    if (!set.is_official || !subject) return [];
-    try {
-      const { data } = await createAdminClient()
-        .from("flashcard_sets")
-        .select("id,title,visibility,library_folders(name)")
-        .eq("is_official", true)
-        .eq("official_published", true)
-        .limit(200);
-      const rows = (data ?? []) as unknown as PaquetRow[];
-      const groupe = groupBySubject(rows.map((s) => ({ id: s.id, title: s.title, folder: nomDuDossier(s.library_folders), visibility: s.visibility })), {}).find(
-        (g) => g.key === subject.key
-      );
-      return (groupe?.rows ?? []).filter((r) => r.kind === "set" && r.id !== id).map((r) => ({ id: r.id, title: r.title }));
-    } catch {
-      return [];
-    }
-  };
-
-  const [onePager, fiche, memo, autres] = await Promise.all([
+  const [onePager, fiche, memo, lignesMatiere] = await Promise.all([
     onePagerSlug ? signer(onePagerFile(onePagerSlug)) : Promise.resolve(null),
     onePagerSlug && numero ? signer(fichePaquetFile(onePagerSlug, numero)) : Promise.resolve(null),
     // le mémo en image, dans la colonne grise à la place de « Toutes les cartes »
     onePagerSlug && numero ? signer(memoPaquetImage(onePagerSlug, numero)) : Promise.resolve(null),
-    lireAutres(),
+    // la boucle de toute la matière, pour les cartes déjà vues du paquet (chiffre-héros)
+    subject && progressions ? lireProgressions(supabase, auth.user.id, [cleMatiere(subject.key)]) : Promise.resolve(null),
   ]);
 
-  // Modèle des sous-pages (2026-11-12) : l'en-tête commun (retour à la matière, le thème du paquet,
-  // une ligne et la pastille « Maîtrisé » ; aucun bouton), puis le cadre à zones : « Ta révision » à
-  // gauche ; dans la colonne grise, les autres paquets de la matière, puis le mémo du paquet (la zone
-  // de la carte à l'écran surlignée en jaune) ou, sans mémo, toutes les cartes repliées.
+  // Réviser A (2026-11-13) : le paquet est une option de la page de sa matière (la grille des cartes,
+  // un rang par paquet : son nom mène ici). La porte : retour à la matière, le thème du paquet, la
+  // pastille « Maîtrisé », le chiffre-héros des cartes vues ; puis UNE scène : la révision du paquet
+  // et, à sa droite dès 1100 px (collé en haut pendant le défilement), le mémo du paquet, dont la zone
+  // de la carte à l'écran est surlignée : on voit la carte et sa zone ensemble ; dessous en plus
+  // étroit. Sans mémo, toutes les cartes repliées sous la révision. Les autres paquets sont sur la
+  // grille de la matière (le retour).
   const retour = subject ? { href: `/flashcards/matiere/${subject.key}`, label: subject.name } : RETOUR.flashcards;
+  const ids = cards.map((c) => c.id);
   const avecMemo = !!(memo && onePagerSlug && numero);
-  const titreDroite = autres.length ? POSTE_CARTES.autres : avecMemo ? POSTE_CARTES.memo : POSTE_CARTES.paquet;
+  const lignesVues = new Map([...(progressions ?? new Map()), ...(lignesMatiere ?? new Map())]);
+  const src = sourcesVues({
+    lignes: progressions || lignesMatiere ? lignesVues : null,
+    cles: subject ? [cle, cleMatiere(subject.key)] : [cle],
+    ids,
+    paquets: [id],
+    joueur: auth.user.id,
+  });
   return (
     <SousPage
       entete={
@@ -151,56 +140,48 @@ export default async function FlashcardSetPage({ params }: PageProps) {
               {progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} seulementFini /> : null}
             </span>
           }
+          heros={cards.length ? { valeur: <ChiffreVues src={src} ids={ids} />, legende: GRILLE_CARTES.herosLegende(cards.length) } : null}
         />
       }
     >
-      <CadreZones
-        gauche={{
-          titre: POSTE_CARTES.revision,
-          contenu: (
-            <div className={poste.haut + " grid min-w-0"}>
-              <RecentFlashcardSetTracker id={id} title={set.title} />
-              <FlashcardReview
-                cards={cards}
-                setId={id}
-                traitsJour={traitsJour}
-                matiere={subject?.key}
-                matiereNom={subject?.name ?? null}
-                theme={themePaquet(set.title)}
-                onePager={onePager}
-                autresHref={subject ? `/flashcards/matiere/${subject.key}` : "/flashcards"}
-                compte={progressions ? { cle, ligne, lueA: Date.now() } : null}
-                joueur={auth.user.id}
+      <Scene>
+        <div className={pq.paquet} data-memo={avecMemo ? "1" : undefined}>
+          <div className={pq.revision}>
+            <RecentFlashcardSetTracker id={id} title={set.title} />
+            <FlashcardReview
+              cards={cards}
+              setId={id}
+              traitsJour={traitsJour}
+              matiere={subject?.key}
+              matiereNom={subject?.name ?? null}
+              theme={themePaquet(set.title)}
+              onePager={onePager}
+              autresHref={subject ? `/flashcards/matiere/${subject.key}` : "/flashcards"}
+              compte={progressions ? { cle, ligne, lueA: Date.now() } : null}
+              joueur={auth.user.id}
+            />
+          </div>
+          {memo && onePagerSlug && numero ? (
+            <aside className={pq.memo} aria-label={POSTE_CARTES.memo}>
+              <Memo
+                src={memo}
+                pdf={fiche}
+                titre={`${BOUCLE.memoPaquetTitre} · ${themePaquet(set.title)}`}
+                ratio={RATIO_PAQUET}
+                boites={boitesMemo(onePagerSlug, numero)}
+                positions={Object.fromEntries(cards.map((c, i) => [c.id, i + 1]))}
               />
+            </aside>
+          ) : (
+            // toutes les cartes, en lecture seule (paquets sans mémo), repliées
+            <div className="card divide-y divide-line overflow-hidden">
+              <DisclosureRow icon={<Layers size={18} aria-hidden />} title={t(locale, "flashcards.allCards")}>
+                <FlashcardCardEditor cards={cards} />
+              </DisclosureRow>
             </div>
-          ),
-        }}
-        droite={{
-          titre: titreDroite,
-          contenu: (
-            <>
-              {autres.length > 0 && <ListeCourte lignes={autres.map((a) => ({ cle: a.id, titre: themePaquet(a.title), href: `/flashcards/${a.id}` }))} />}
-              {memo && onePagerSlug && numero ? (
-                <Memo
-                  src={memo}
-                  pdf={fiche}
-                  titre={`${BOUCLE.memoPaquetTitre} · ${themePaquet(set.title)}`}
-                  ratio={RATIO_PAQUET}
-                  boites={boitesMemo(onePagerSlug, numero)}
-                  positions={Object.fromEntries(cards.map((c, i) => [c.id, i + 1]))}
-                />
-              ) : (
-                // toutes les cartes, en lecture seule (paquets sans mémo), repliées
-                <div className="card divide-y divide-line overflow-hidden">
-                  <DisclosureRow icon={<Layers size={18} aria-hidden />} title={t(locale, "flashcards.allCards")}>
-                    <FlashcardCardEditor cards={cards} />
-                  </DisclosureRow>
-                </div>
-              )}
-            </>
-          ),
-        }}
-      />
+          )}
+        </div>
+      </Scene>
     </SousPage>
   );
 }

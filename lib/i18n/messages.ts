@@ -294,7 +294,7 @@ export const MESSAGES = {
       usernameHint: "3–24 caractères : lettres, chiffres, underscore (_).",
       usernamePlaceholder: "ex: theo_cfa",
       avatarLabel: "Photo de profil",
-      avatarHint: "PNG/JPG/WebP. On stocke l'image sur Supabase Storage.",
+      avatarHint: "PNG, JPG ou WebP.",
       upload: "Uploader",
       update: "Mettre à jour",
       updated: "Mis à jour.",

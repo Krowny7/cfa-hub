@@ -11,7 +11,7 @@ import { RV, type KindListe } from "@/lib/voice-reviser";
 
 // Briques de mise en page des listes de Réviser (/fiches, /courses,
 // /flashcards) : les lignes du programme et leur index. L'en-tête et la
-// rangée héros sont ceux des sous-pages (ListeReviser, Heros).
+// rangée héros sont ceux des sous-pages (Heros).
 // Sans état ni requête : tout vient des props.
 
 export const subjectIndex = (key: string) => SUBJECTS.findIndex((s) => s.key === key) + 1;

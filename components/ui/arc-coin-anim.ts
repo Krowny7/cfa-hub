@@ -7,8 +7,17 @@
 // - de temps en temps, une courte branche part vers l'intérieur et s'éteint.
 // En pause hors écran et onglet caché. Mouvement réduit ou ?mouvement=off
 // (data-rl-motion="off") : une seule image, posée.
+// Forme « ligne » (ArcLigne, le face-à-face du duel, 2026-11-13) : le même
+// courant tiré d'un bord à l'autre de la toile, à mi-hauteur, plein au milieu,
+// effilé aux deux bouts ; la vague va d'un camp à l'autre, une fois dans
+// chaque sens. `surPapier` : sur le papier clair (thème jour), le cœur prend un
+// ton sombre et rien ne s'additionne ; le thème nuit revient à la lumière.
+
+export type FormeArc = "coin" | "ligne";
+export type OptionsArc = { forme?: FormeArc; surPapier?: boolean };
 
 type Geo = {
+  forme: FormeArc;
   w: number;
   h: number;
   /** arrondi de la carte */
@@ -19,7 +28,8 @@ type Geo = {
   droite: number;
   l: number;
 };
-type Branche = { s: number; ne: number; vie: number; long: number; angle: number; graine: number };
+/** cote : de quel côté du trait part la branche (la ligne en a deux, le coin un seul) */
+type Branche = { s: number; ne: number; vie: number; long: number; angle: number; graine: number; cote: number };
 /** ecart : un sommet tous les `ecart` px, reliés en ligne droite (les angles de l'éclair) */
 type Fil = { ampl: number; ecart: number; graine: number; force: number; epais: number };
 
@@ -36,9 +46,11 @@ const FILS: Fil[] = [
 const VAGUE = { periode: 4.2, course: 1.5, largeur: 38 };
 
 /** la présence de l'arc, choisie par Théo le 2026-11-06 : coin chargé, décharge qui parcourt le bord, trait épais */
-type ReglageArc = { long: number; gain: number; epais: number; halo: number; vague: number; retrait: number };
+export type ReglageArc = { long: number; gain: number; epais: number; halo: number; vague: number; retrait: number };
 const ARC: ReglageArc = { long: 1.25, gain: 1.45, epais: 2, halo: 1.9, vague: 2.1, retrait: RETRAIT };
 const FIL_3: Fil = { ampl: 5.4, ecart: 11, graine: 2, force: 0.42, epais: 0.5 };
+/** la ligne du duel : tirée sur 450 px de papier, il lui faut plus d'amplitude et un trait plus gras pour se lire en éclair */
+export const ARC_LIGNE: ReglageArc = { long: 1, gain: 4.2, epais: 3.4, halo: 2.4, vague: 2.1, retrait: 0 };
 
 // —— bruit de gradient 2D (espace le long de l'arc × temps), continu partout ——
 function hache(i: number, j: number): number {
@@ -67,15 +79,17 @@ const palier = (a: number, b: number, x: number) => {
   return k * k * (3 - 2 * k);
 };
 
-function geometrie(w: number, h: number, r: number, q: ReglageArc): Geo {
+function geometrie(w: number, h: number, r: number, q: ReglageArc, forme: FormeArc): Geo {
+  if (forme === "ligne") return { forme, w, h, r: 0, bas: w, quart: 0, droite: 0, l: w };
   const bas = Math.max(40, Math.min(w * 0.5 * q.long - r, 280 * q.long));
   const droite = Math.max(30, Math.min(h * 0.72 * q.long - r, 170 * q.long));
   const quart = (Math.PI / 2) * r;
-  return { w, h, r, bas, quart, droite, l: bas + quart + droite };
+  return { forme, w, h, r, bas, quart, droite, l: bas + quart + droite };
 }
 
 /** le point du bord à l'abscisse s, et la normale vers l'intérieur de la carte */
 function bord(g: Geo, s: number): [number, number, number, number] {
+  if (g.forme === "ligne") return [s, g.h / 2, 0, -1];
   if (s <= g.bas) return [g.w - g.r - (g.bas - s), g.h, 0, -1];
   if (s <= g.bas + g.quart) {
     const a = Math.PI / 2 - ((s - g.bas) / g.quart) * (Math.PI / 2);
@@ -88,6 +102,8 @@ function bord(g: Geo, s: number): [number, number, number, number] {
 
 /** 1 près du coin, 0 aux deux bouts ; `plein` règle jusqu'où il reste entier */
 function enveloppe(g: Geo, s: number, plein: number): number {
+  // la ligne reste pleine plus loin : ses bouts passent sous les bannières
+  if (g.forme === "ligne") return 1 - palier(0.5 + plein / 2, 1, Math.abs(s - g.l / 2) / (g.l / 2));
   const c = g.bas + g.quart / 2;
   const u = s < c ? (c - s) / c : (s - c) / (g.l - c);
   return 1 - palier(plein, 1, u);
@@ -126,9 +142,25 @@ function ruban(ctx: CanvasRenderingContext2D, xs: Float32Array, ys: Float32Array
   ctx.fill();
 }
 
-/** un tracé lumineux en trois couches : halo flou, cœur coloré, âme blanche */
-function lumiere(ctx: CanvasRenderingContext2D, c: [number, number, number], dpr: number, trace: (k: number) => void, epais: number) {
+/** un tracé lumineux en trois couches : halo flou, cœur coloré, âme blanche (sur papier : un cœur sombre) */
+function lumiere(ctx: CanvasRenderingContext2D, c: [number, number, number], dpr: number, trace: (k: number) => void, epais: number, papier = false) {
   const [r, v, b] = c;
+  if (papier) {
+    // sur le papier clair, la couleur se sature vers un bleu électrique (#1f6fd1) : la lueur et le cœur la portent,
+    // l'âme blanche reste chauffée à blanc au milieu (une lueur pâle seule disparaîtrait sur le papier)
+    const e = `${Math.round(r * 0.45 + 17)},${Math.round(v * 0.45 + 61)},${Math.round(b * 0.45 + 115)}`;
+    ctx.shadowColor = `rgba(${e},0.9)`;
+    ctx.shadowBlur = 12 * dpr;
+    ctx.fillStyle = `rgba(${e},0.5)`;
+    trace(3.2 * epais);
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = `rgba(${e},0.95)`;
+    trace(1.45 * epais);
+    ctx.fillStyle = "rgba(255,255,255,1)";
+    trace(0.6 * epais);
+    return;
+  }
   ctx.shadowColor = `rgba(${r},${v},${b},0.9)`;
   ctx.shadowBlur = 12 * dpr;
   ctx.fillStyle = `rgba(${r},${v},${b},0.6)`;
@@ -141,7 +173,7 @@ function lumiere(ctx: CanvasRenderingContext2D, c: [number, number, number], dpr
   trace(0.6 * epais);
 }
 
-function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number, c: [number, number, number], branches: Branche[] | null, q: ReglageArc) {
+function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number, c: [number, number, number], branches: Branche[] | null, q: ReglageArc, papier: boolean) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, g.w, g.h);
   ctx.save();
@@ -149,7 +181,7 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
   if (typeof ctx.roundRect === "function") ctx.roundRect(0, 0, g.w, g.h, g.r);
   else ctx.rect(0, 0, g.w, g.h);
   ctx.clip();
-  ctx.globalCompositeOperation = "lighter";
+  ctx.globalCompositeOperation = papier ? "source-over" : "lighter";
   ctx.globalAlpha = 0.9;
 
   const souffle = 0.84 + 0.16 * Math.sin(t * 1.7);
@@ -169,13 +201,28 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
     pic = Math.max(pic, vg);
   }
 
-  // la lueur posée sur le noir de la carte, au coin
+  // la lueur posée sur le noir de la carte, au coin (la ligne : une lueur allongée sur toute sa longueur)
   const [r, vv, b] = c;
-  const halo = ctx.createRadialGradient(g.w - g.r * 0.4, g.h - g.r * 0.4, 0, g.w - g.r * 0.4, g.h - g.r * 0.4, 110 * Math.sqrt(q.halo) * (1 + 0.5 * pic * (q.vague - 1)));
-  halo.addColorStop(0, `rgba(${r},${vv},${b},${((0.11 * souffle + 0.07 * pic * q.vague) * q.halo).toFixed(3)})`);
-  halo.addColorStop(1, `rgba(${r},${vv},${b},0)`);
-  ctx.fillStyle = halo;
-  ctx.fillRect(0, 0, g.w, g.h);
+  const fort = ((0.11 * souffle + 0.07 * pic * q.vague) * q.halo * (papier ? 1.6 : 1)).toFixed(3);
+  if (g.forme === "ligne") {
+    const ry = g.h / 2;
+    ctx.save();
+    ctx.translate(g.w / 2, g.h / 2);
+    ctx.scale(g.w / 2 / ry, 1);
+    const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+    halo.addColorStop(0, `rgba(${r},${vv},${b},${fort})`);
+    halo.addColorStop(1, `rgba(${r},${vv},${b},0)`);
+    ctx.fillStyle = halo;
+    ctx.fillRect(-ry, -ry, 2 * ry, 2 * ry);
+    ctx.restore();
+  } else {
+    const ray = 110 * Math.sqrt(q.halo) * (1 + 0.5 * pic * (q.vague - 1));
+    const halo = ctx.createRadialGradient(g.w - g.r * 0.4, g.h - g.r * 0.4, 0, g.w - g.r * 0.4, g.h - g.r * 0.4, ray);
+    halo.addColorStop(0, `rgba(${r},${vv},${b},${fort})`);
+    halo.addColorStop(1, `rgba(${r},${vv},${b},0)`);
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, g.w, g.h);
+  }
 
   const sommets = new Float32Array(Math.ceil(g.l / 6) + 2);
   const pointsFil = (f: Fil) => {
@@ -192,7 +239,8 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
       const j = Math.min(ns - 2, Math.floor(s / f.ecart));
       const k = s / f.ecart - j;
       const d = (sommets[j] + (sommets[j + 1] - sommets[j]) * k) * (0.45 + 0.55 * base[i]);
-      const off = Math.max(0.6, q.retrait + d);
+      // le coin ne s'écarte du bord que vers l'intérieur ; la ligne ondule des deux côtés
+      const off = g.forme === "ligne" ? d : Math.max(0.6, q.retrait + d);
       xs[i] = x + ax * off;
       ys[i] = y + ay * off;
       nx[i] = ax;
@@ -203,8 +251,11 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
   };
   for (const f of [...FILS, FIL_3]) {
     pointsFil(f);
-    lumiere(ctx, c, dpr, (k) => ruban(ctx, xs, ys, nx, ny, lg, k, n), f.epais * q.epais);
+    // sur papier, les fils fins restent en retrait du principal (trois cœurs sombres pèseraient)
+    ctx.globalAlpha = papier ? 0.9 * (0.3 + 0.7 * f.force) : 0.9;
+    lumiere(ctx, c, dpr, (k) => ruban(ctx, xs, ys, nx, ny, lg, k, n), f.epais * q.epais, papier);
   }
+  ctx.globalAlpha = 0.9;
 
   // les branches partent du fil principal
   if (branches?.length) {
@@ -219,7 +270,9 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
       const age = (t - br.ne) / br.vie;
       if (age < 0 || age >= 1) continue;
       const i0 = Math.round((br.s / g.l) * (n - 1));
-      const [, , ax, ay] = bord(g, br.s);
+      const [, , bx0, by0] = bord(g, br.s);
+      const ax = bx0 * br.cote;
+      const ay = by0 * br.cote;
       // vers l'intérieur, penchée le long du bord
       const tx = -ay;
       const ty = ax;
@@ -239,17 +292,20 @@ function dessiner(ctx: CanvasRenderingContext2D, g: Geo, dpr: number, t: number,
         bny[j] = dx;
         bl[j] = (1 - k) * vie * 0.75;
       }
-      lumiere(ctx, c, dpr, (kk) => ruban(ctx, bx, by, bnx, bny, bl, kk, m), 1);
+      lumiere(ctx, c, dpr, (kk) => ruban(ctx, bx, by, bnx, bny, bl, kk, m), 1, papier);
     }
   }
   ctx.restore();
 }
 
-/** Fait vivre l'arc du coin dans ce canvas ; renvoie de quoi l'arrêter. */
-export function animerArcCoin(toile: HTMLCanvasElement, couleur: string, q: ReglageArc = ARC): () => void {
+/** Fait vivre l'arc du coin (ou la ligne, `o.forme`) dans ce canvas ; renvoie de quoi l'arrêter. */
+export function animerArcCoin(toile: HTMLCanvasElement, couleur: string, q: ReglageArc = ARC, o: OptionsArc = {}): () => void {
   const ctx = toile.getContext("2d");
   if (!ctx || typeof window === "undefined") return () => {};
   const c = rgb(couleur);
+  const forme: FormeArc = o.forme ?? "coin";
+  // sur papier : le thème se lit à chaque image (jour / nuit basculent sans recharger)
+  const papier = () => !!o.surPapier && document.documentElement.dataset.theme !== "nuit";
   const reduit = window.matchMedia("(prefers-reduced-motion: reduce)");
   const immobile = () => reduit.matches || document.documentElement.dataset.rlMotion === "off";
   const branches: Branche[] = [];
@@ -275,7 +331,7 @@ export function animerArcCoin(toile: HTMLCanvasElement, couleur: string, q: Regl
     if (toile.width !== lw) toile.width = lw;
     if (toile.height !== lh) toile.height = lh;
     const r = parseFloat(getComputedStyle(toile.parentElement ?? toile).borderBottomRightRadius);
-    g = geometrie(w, h, Number.isFinite(r) ? r : 16, q);
+    g = geometrie(w, h, Number.isFinite(r) ? r : 16, q, forme);
   };
 
   const vivre = (t: number) => {
@@ -283,9 +339,10 @@ export function animerArcCoin(toile: HTMLCanvasElement, couleur: string, q: Regl
     for (let i = branches.length - 1; i >= 0; i--) if (t - branches[i].ne > branches[i].vie) branches.splice(i, 1);
     if (!prochaine || t - prochaine > 5) prochaine = t + 0.6;
     if (t >= prochaine) {
-      // une branche là où l'arc est plein, près du coin
-      const c0 = g.bas + g.quart / 2;
-      const s = Math.max(0, Math.min(g.l, c0 + (Math.random() - 0.5) * 1.3 * Math.min(g.bas, g.droite)));
+      // une branche là où l'arc est plein : près du coin, ou le long du milieu de la ligne
+      const c0 = g.forme === "ligne" ? g.l / 2 : g.bas + g.quart / 2;
+      const etendue = g.forme === "ligne" ? 0.7 * g.l : 1.3 * Math.min(g.bas, g.droite);
+      const s = Math.max(0, Math.min(g.l, c0 + (Math.random() - 0.5) * etendue));
       branches.push({
         s,
         ne: t,
@@ -293,13 +350,14 @@ export function animerArcCoin(toile: HTMLCanvasElement, couleur: string, q: Regl
         long: 9 + Math.random() * 11,
         angle: (Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.5),
         graine: Math.random() * 100,
+        cote: g.forme === "ligne" && Math.random() < 0.5 ? -1 : 1,
       });
       prochaine = t + 0.8 + Math.random() * 1.2;
     }
   };
 
   const image = (t: number, vivant: boolean) => {
-    if (g) dessiner(ctx, g, dpr, t, c, vivant ? branches : null, q);
+    if (g) dessiner(ctx, g, dpr, t, c, vivant ? branches : null, q, papier());
   };
   const boucle = (ms: number) => {
     raf = 0;

@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { OnePagersGrille } from "@/components/reviser/OnePagers";
+import { MurOnePagers } from "@/components/reviser/MurOnePagers";
 import { onePagerItems } from "@/components/reviser/shelves";
-import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { EnTeteSousPage, Scene, SousPage } from "@/components/ui/SousPage";
 import { OP, RETOUR } from "@/lib/voice-reviser";
+import { MUR } from "@/lib/voice-reviser-b";
 
 export const metadata = { title: "One-pagers · Ranked Lobby" };
 
@@ -13,6 +14,9 @@ export const metadata = { title: "One-pagers · Ranked Lobby" };
 // signée d'une heure, générée ici côté serveur avec la session du joueur — une seule requête pour
 // les 10. Un PDF absent du bucket laisse sa feuille en filigrane. Modèle des sous-pages
 // (2026-11-12) : l'en-tête (retour aux fiches), puis un cadre à une seule zone, les feuilles épinglées.
+// Direction « le lieu, puis l'objet » (2026-11-13) : plus de cadre ; le mur en grand sur la scène, un
+// filtre par matière au-dessus (MurOnePagers) ; pas de chiffre-héros : le nombre de PDF n'est pas un
+// état du joueur.
 export default async function OnePagersPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -28,9 +32,21 @@ export default async function OnePagersPage() {
     if (!x.error && x.path && x.signedUrl) urls.set(x.path, x.signedUrl);
   }
 
+  const avecUrl = items.map((it) => ({ ...it, url: urls.get(it.file) ?? null }));
   return (
-    <SousPage entete={<EnTeteSousPage retour={RETOUR.fiches} illustration={{ nom: "reviser-peche" }} titre={OP.titre} ligne={OP.desc} />}>
-      <CadreZones gauche={{ titre: OP.zoneTous, contenu: <OnePagersGrille items={items.map((it) => ({ ...it, url: urls.get(it.file) ?? null }))} /> }} />
+    <SousPage
+      entete={
+        <EnTeteSousPage
+          retour={RETOUR.fiches}
+          illustration={{ nom: "reviser-bibliotheque", position: "50% 30%" }}
+          titre={OP.titre}
+          ligne={MUR.ligne}
+        />
+      }
+    >
+      <Scene>
+        <MurOnePagers items={avecUrl} />
+      </Scene>
     </SousPage>
   );
 }

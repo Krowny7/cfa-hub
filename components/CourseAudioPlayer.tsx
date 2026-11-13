@@ -40,6 +40,7 @@ export function CourseAudioPlayer({
   duration: durationHint,
   startModule = null,
   matiere,
+  nu = false,
 }: {
   src: string;
   chapters: Chapter[];
@@ -53,6 +54,8 @@ export function CourseAudioPlayer({
   startModule?: number | null;
   /** la matière du cours (clé du programme) : le Codex compte les minutes écoutées */
   matiere?: string;
+  /** posé sur la platine ébène de /courses/<slug> : sans carte blanche, la liste des modules sous un filet */
+  nu?: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const listRef = useRef<HTMLOListElement>(null);
@@ -340,7 +343,7 @@ export function CourseAudioPlayer({
   return (
     <div className="flex flex-col gap-4">
       {/* @container : dans la colonne grise d'un cours (étroite), les commandes se resserrent */}
-      <div className="card-hero @container p-5 md:p-6">
+      <div className={nu ? "@container" : "card-hero @container p-5 md:p-6"}>
         <audio ref={audioRef} src={src} preload="metadata" />
 
         <p className="t-eyebrow">
@@ -431,7 +434,7 @@ export function CourseAudioPlayer({
         )}
       </div>
 
-      <div className="card p-1.5">
+      <div className={nu ? "border-t border-line pt-2" : "card p-1.5"}>
         <ol ref={listRef} className="relative lg:max-h-[calc(100vh-30rem)] lg:min-h-[180px] lg:overflow-y-auto">
           {chapters.map((ch, i) => {
             const on = i === activeIndex;

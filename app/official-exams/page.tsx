@@ -45,6 +45,8 @@ export default async function OfficialExamsPage({ searchParams }: { searchParams
   const counts = new Map<string, number>();
   // tes scores : ta meilleure copie sur chaque set (quiz_attempts, la lecture de lib/answer-stats)
   const scores: Record<string, ScoreSet> = {};
+  // ta dernière copie d'examen officiel (la ligne d'état : « la dernière il y a 3 j »)
+  let derniere = 0;
 
   if (folder) {
     const { data: setsData } = await supabase
@@ -66,11 +68,13 @@ export default async function OfficialExamsPage({ searchParams }: { searchParams
 
       const { data: copies } = await supabase
         .from("quiz_attempts")
-        .select("set_id,score,total")
+        .select("set_id,score,total,created_at")
         .eq("user_id", auth.user.id)
         .in("set_id", sets.map((s) => s.id))
         .limit(2000);
-      for (const c of (copies ?? []) as { set_id: string; score: number | null; total: number | null }[]) {
+      for (const c of (copies ?? []) as { set_id: string; score: number | null; total: number | null; created_at?: string | null }[]) {
+        const quand = c.created_at ? Date.parse(c.created_at) : NaN;
+        if (Number.isFinite(quand) && quand > derniere) derniere = quand;
         const total = Number(c.total) || 0;
         if (total <= 0) continue;
         const score = Number(c.score) || 0;
@@ -116,5 +120,7 @@ export default async function OfficialExamsPage({ searchParams }: { searchParams
 
   const examList = [...exams.values()].sort((a, b) => a.exam.localeCompare(b.exam));
 
-  return <OfficialExamsView exams={examList} scores={scores} choisie={choisie} />;
+  const joursDepuis = derniere > 0 ? Math.max(0, Math.floor((Date.now() - derniere) / 86_400_000)) : null;
+
+  return <OfficialExamsView exams={examList} scores={scores} choisie={choisie} joursDepuis={joursDepuis} />;
 }

@@ -12,7 +12,7 @@ import { usePresents } from "@/components/salles/presence";
 import { ReglagesLecture } from "@/components/salles/Reglages";
 import { Stage, TetePanneau } from "@/components/salles/Stage";
 import { EnTeteSousPage } from "@/components/ui/SousPage";
-import { RETOUR_SALLES } from "@/lib/voice-affronter-sous";
+import { RETOUR_SALLES, SOUS_AFFRONTER } from "@/lib/voice-affronter-sous";
 import { estChronoGlobal } from "@/lib/salles/examen";
 import type { EtatSalle, SalleParams } from "@/lib/salles/types";
 import { CONFIRMATION, REGLAGES, RUNNER_SALLE, SALLES } from "@/lib/voice-salles";
@@ -86,8 +86,12 @@ export function SalonView({
       <EnTeteSousPage
         retour={RETOUR_SALLES}
         titre={salle.nom}
-        ligne={salle.description ?? undefined}
-        illustration={{ nom: "salles-entree", position: "50% 55%" }}
+        // le moment (lot 4 du 2026-11-13) : avant la partie, ou la dernière terminée ; la description d'abord
+        ligne={salle.description ?? (session && session.statut === "terminee" ? SOUS_AFFRONTER.salles.apresPartie : SOUS_AFFRONTER.salles.avantPartie)}
+        illustration={{ nom: "salles-entree", position: "50% 82%" }}
+        voile="fort"
+        // seulement quand la présence a répondu : avant, nbIci compterait ceux qui ont rejoint un jour
+        heros={presents !== null ? { valeur: nbIci, legende: SOUS_AFFRONTER.salles.presents(nbIci) } : null}
       />
     )}
     <Stage salon={partie ? "partie" : "attente"} encre={!!partie && !enJeuGlobal}>
@@ -115,9 +119,13 @@ export function SalonView({
               {salle.publique ? <Globe size={14} aria-hidden /> : <Lock size={14} aria-hidden />}
               {salle.publique ? SALLES.salleOuverte : SALLES.sallePrivee}
             </span>
-            <span className={s.etiquette}>
-              <b>{fmtInt(nbIci)}</b> {nbIci > 1 ? "joueurs" : "joueur"}
-            </span>
+            {/* au salon, les présents sont le chiffre-héros de l'en-tête ; pendant une partie (plus
+                d'en-tête de page), ils restent ici */}
+            {partie && (
+              <span className={s.etiquette}>
+                <b>{fmtInt(nbIci)}</b> {nbIci > 1 ? "joueurs" : "joueur"}
+              </span>
+            )}
             <span className={s.etiquette}>
               {SALLES.adminLe} <b>{nomAdmin}</b>
             </span>

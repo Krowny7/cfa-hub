@@ -134,7 +134,8 @@ export function ActivitesListe({ activites, aujourdhui, hier, libelles }: { acti
         <section className="card-quiet flex flex-wrap items-center justify-between gap-x-6 gap-y-3 p-5 md:p-6" aria-label={nomSelection}>
           <div className="grid min-w-0 flex-1 basis-[260px] gap-1">
             <p className="t-h3 m-0">{k > 0 ? RETEST.titre(k) : V.bilan(sel.liste.length, sel.ok, sel.n)}</p>
-            <p className="t-small m-0">{k > 0 ? `${nomSelection} · ${V.bilan(sel.liste.length, sel.ok, sel.n)}` : V.sansRature}</p>
+            {/* sans filtre, le nombre de séances est déjà le chiffre-héros de la porte : seulement les justes */}
+            <p className="t-small m-0">{k > 0 ? `${nomSelection} · ${jour === null && !src ? V.justes(sel.ok, sel.n) : V.bilan(sel.liste.length, sel.ok, sel.n)}` : V.sansRature}</p>
           </div>
           {k > 0 && (
             <div className="flex flex-wrap items-center gap-2">

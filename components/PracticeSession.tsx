@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Check, ChevronDown, Trophy } from "lucide-react";
+import { ArrowRight, ChevronDown, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { multDuJour, texteGain, xpAvecSerie } from "@/lib/serie-encre";
 import { friendlyError } from "@/lib/errors";
@@ -12,12 +12,14 @@ import { TOPICS, TOPIC_LABELS } from "@/lib/practiceTopics";
 import { ChoixNotions, type InfoChoix } from "@/components/notions/ChoixNotions";
 import { CHOIX_VIDE, choixVide, type ChoixNotionsValeur } from "@/lib/notions-choix";
 import { NOTIONS_CHOIX } from "@/lib/voice-notions";
-import { lireLienPractice, matieresServies, repartir, tirerSeance } from "@/lib/practice-lien";
+import { lireLienPractice, matieresServies, melanger, repartir, tirerSeance } from "@/lib/practice-lien";
 import { nomPalier, palierCiblee, type TropheeGagne } from "@/lib/trophees";
 import { AnnonceTrophee } from "@/components/trophees/AnnonceTrophee";
-import { Mini } from "@/components/outils/Gabarit";
-import { ActionEncre, CadreAnnexe, CadreZones, ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
-import { ListeCourte } from "@/components/ui/Decors";
+import { ActionEncre, ColonneSeance, EnTeteSousPage, Scene, SousPage } from "@/components/ui/SousPage";
+import { CompteLancer, Lancement, Niveaux, NotePlanche, Onglets, Planche, Reglage, Reglages, TetePlanche, Touches, type LigneNiveau } from "@/components/session/Selection";
+import { dejaVu } from "@/components/session/premiere-visite";
+import { codeMatiere } from "@/components/entrainement/pieces";
+import { NBSP } from "@/lib/voice";
 import { STUDIOLO } from "@/lib/voice-outils";
 import { RETOUR_ENTRAINEMENT, SOUS_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
 import {
@@ -31,7 +33,6 @@ import {
   ReadyCard,
   ReviewSection,
   RunnerBar,
-  Seg,
   TopicBreakdown,
 } from "@/components/session/parts";
 import { PASS_THRESHOLD, fmtMinutes, pctOf, subjectName, topicsSummary, type ReviewQuestion } from "@/components/session/review";
@@ -86,10 +87,38 @@ export type PracticeDemo = {
   historyReviews?: Record<string, ReviewQuestion[]>;
   expandedHistoryId?: string;
   tab?: "history" | "progress";
+  /** la taille choisie (null : le format) ; le mode examen */
+  taille?: number | null;
+  examen?: boolean;
 };
 
 const MIN_PER_QUESTION_MINUTES = 135 / 90; // même ratio que l'examen officiel (135min/90Q)
-const WEAK_BELOW = 50;
+/** les tailles de séance proposées par la barre de réglages (le nombre de questions) ; « f180 » : l'examen complet, aux poids officiels */
+const TAILLES = ["15", "30", "45", "90"] as const;
+/**
+ * Ce que la base peut servir par matière sur le chemin « une taille » : chaque matière y est tirée
+ * avec p_format 180, et generate_practice_session la limite alors à round(poids × 1,8) questions
+ * (DER 12, QM, ECO et CI 14, ALT 15…). Le compte affiché sur Lancer en tient compte.
+ */
+const DISPO: Record<string, number> = Object.fromEntries(TOPICS.map((t) => [t.key, Math.round(t.weight * 1.8)]));
+/** sans mesure, les trois matières les plus lourdes à l'examen sont cochées à l'arrivée (Lancer toujours actif) */
+const LOURDES = ["ethics", "fsa", "fixed_income"];
+const somme = (parts: Record<string, number>) => Object.values(parts).reduce((a, b) => a + b, 0);
+const TAILLES_NOTIONS = ["10", "20", "30", "45", "60"] as const;
+
+/** Les matières conseillées : les trois plus faibles parmi celles qui sont mesurées. */
+function plusFaibles(mastery: Record<string, number | null>, n = 3): string[] {
+  return TOPICS.filter((t) => typeof mastery[t.key] === "number")
+    .sort((a, b) => (mastery[a.key] as number) - (mastery[b.key] as number))
+    .slice(0, n)
+    .map((t) => t.key);
+}
+
+/** L'ordre du programme d'une matière (sans mélange, la séance les donne l'une après l'autre). */
+const rangMatiere = (cle: string) => {
+  const i = TOPICS.findIndex((t) => t.key === cle);
+  return i < 0 ? TOPICS.length : i;
+};
 
 const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 
@@ -118,16 +147,23 @@ export function PracticeSession({
   // ?similaires=<ratures> : la séance se prépare tout de suite, sur des questions voisines
   const [similaires] = useState(() => lireSimilaires(searchParams.get("similaires")));
   const [retest, setRetest] = useState<CibleRetest[] | null>(null);
+  // les conseillées : les trois matières les plus faibles (cochées et entourées au départ)
+  const [conseillees] = useState(() => plusFaibles(mastery));
   const [selected, setSelected] = useState<Set<string>>(() => {
     if (demo?.selected) return new Set(demo.selected);
     if (lien.matieres) return new Set(lien.matieres);
-    // sans thème demandé, la session conseillée : les matières mesurées sous 50 %
-    return new Set(TOPICS.filter((t) => typeof mastery[t.key] === "number" && (mastery[t.key] as number) < WEAK_BELOW).map((t) => t.key));
+    if (conseillees.length > 0) return new Set(conseillees);
+    // un joueur neuf : les dix au mode examen, sinon les trois plus lourdes à l'examen
+    return new Set(searchParams.get("mode") === "examen" ? TOPICS.map((t) => t.key) : LOURDES);
   });
+  // ?mode=examen : aux poids de l'examen, sans pause (/exam et /session gardent leur propre examen sur tes QCM)
+  const [examen, setExamen] = useState(() => demo?.examen ?? searchParams.get("mode") === "examen");
+  // le mélange des matières dans la séance (activé par défaut : l'entrelacement aide à retenir)
+  const [melange, setMelange] = useState(true);
   // ?format=180 (lien d'une quête du Codex : certaines matières n'atteignent 15 questions qu'en format complet)
   const [format, setFormat] = useState<90 | 180>(demo?.format ?? lien.format ?? 90);
   // ?n= : la taille demandée par le lien ; choisir un format la rend au format
-  const [taille, setTaille] = useState<number | null>(demo ? null : lien.taille);
+  const [taille, setTaille] = useState<number | null>(demo ? (demo.taille === undefined ? 30 : demo.taille) : lien.taille ?? (lien.format ? null : 30));
   // les matières de la séance tirée (celles qui ont reçu des questions) : la copie, le trophée
   const [tirees, setTirees] = useState<string[]>(demo?.selected ?? []);
   // le choix par notion : au lieu des matières, des notions et des concepts, à parts égales
@@ -210,14 +246,23 @@ export function PracticeSession({
     });
   }
 
-  const previewCount = parNotions ? Math.min(tailleNotions, infoChoix.total) : taille ??
-    [...selected].reduce((sum, key) => {
-      const w = TOPICS.find((t) => t.key === key)?.weight ?? 0;
-      return sum + Math.round((w / 100) * format);
-    }, 0);
+  // la capacité réelle de la sélection sur le chemin « une taille » (DISPO) : le compte de Lancer ne promet rien de plus
+  const capacite = [...selected].reduce((n, k) => n + (DISPO[k] ?? 0), 0);
+  const partsTaille = taille !== null ? repartir(taille, [...selected], { poids: lien.poids || examen, dispo: DISPO }) : null;
+  const previewCount = parNotions
+    ? Math.min(tailleNotions, infoChoix.total)
+    : partsTaille
+      ? somme(partsTaille)
+      : [...selected].reduce((sum, key) => {
+          const w = TOPICS.find((t) => t.key === key)?.weight ?? 0;
+          return sum + Math.round((w / 100) * format);
+        }, 0);
   const previewMinutes = Math.max(5, Math.round(previewCount * MIN_PER_QUESTION_MINUTES));
   // les matières qui recevront des questions (une petite séance aux poids officiels peut en laisser une de côté)
-  const previewMatieres = parNotions ? infoChoix.topics.length : taille !== null ? matieresServies(repartir(taille, [...selected], { poids: lien.poids })).length : selected.size;
+  const previewMatieres = parNotions ? infoChoix.topics.length : partsTaille ? matieresServies(partsTaille).length : selected.size;
+  // l'arrivée (cercles tracés) ne se joue qu'à la première visite de la session
+  const [calme, setCalme] = useState(false);
+  useEffect(() => setCalme(dejaVu("practice")), []);
 
   const pret = parNotions ? !choixVide(choix) : selected.size > 0;
 
@@ -232,7 +277,9 @@ export function PracticeSession({
         setError("Aucune question disponible pour cette sélection.");
         return;
       }
-      const qs = lus.map(({ topic: _topic, ...q }) => q);
+      // mélangées, ou rangées matière par matière (tri stable : l'ordre de chacune est gardé)
+      const ranges = melange ? melanger(lus) : [...lus].sort((a, b) => rangMatiere(a.topic) - rangMatiere(b.topic));
+      const qs = ranges.map(({ topic: _topic, ...q }, i) => ({ ...q, position: i }));
       setQuestions(qs);
       setAnswers(qs.map(() => null));
       setTirees([...new Set(lus.map((q) => q.topic))]);
@@ -286,14 +333,19 @@ export function PracticeSession({
         });
         if (rpcError) throw new Error(rpcError.message);
         qs = (data ?? []) as ActiveQuestion[];
+        if (melange) qs = melanger(qs).map((q, i) => ({ ...q, position: i }));
       } else {
         // une taille demandée : chaque matière tirée à part, au format complet
         // (sa plus grande réserve), puis la part de chacune, mêlées
         const lus = await Promise.all(cles.map((t) => supabase.rpc("generate_practice_session", { p_topics: [t], p_format: 180 })));
         const rate = lus.find((r) => r.error);
         if (rate?.error) throw new Error(rate.error.message);
-        const tirage = tirerSeance(Object.fromEntries(cles.map((t, i) => [t, (lus[i].data ?? []) as ActiveQuestion[]])), n, cles, { poids: lien.poids });
-        qs = tirage.questions.map((q, i) => ({ ...q, position: i }));
+        const parMatiere = Object.fromEntries(cles.map((t, i) => [t, (lus[i].data ?? []) as ActiveQuestion[]]));
+        const tirage = tirerSeance(parMatiere, n, cles, { poids: lien.poids || examen });
+        // sans mélange : les matières l'une après l'autre, dans l'ordre du programme
+        const matiereDe = new Map(cles.flatMap((t) => parMatiere[t].map((q) => [q.id, t] as const)));
+        const ordre = melange ? tirage.questions : [...tirage.questions].sort((a, b) => rangMatiere(matiereDe.get(a.id) ?? "") - rangMatiere(matiereDe.get(b.id) ?? ""));
+        qs = ordre.map((q, i) => ({ ...q, position: i }));
         servies = tirage.matieres;
       }
       if (qs.length === 0) {
@@ -420,18 +472,15 @@ export function PracticeSession({
   // « En français » : la question d'Ethics traduite (avant les retours anticipés : c'est un hook)
   const fr = useEnFrancais(tirees.includes("ethics"), questions, questions[idx]);
 
-  // ── COMPOSER LA SESSION ──
+  // ── COMPOSER LA SESSION : la sélection façon choix de niveau ──
   if (phase === "builder") {
-    const measured = TOPICS.filter((t) => mastery[t.key] !== null && mastery[t.key] !== undefined);
-    const weak = measured.filter((t) => (mastery[t.key] as number) < WEAK_BELOW).map((t) => t.key);
+    const P = SOUS_ENTRAINEMENT.practice;
     // le palier visé : celui d'une copie parfaite, donc le plafond de sa taille
     const palier = palierCiblee(previewCount, previewCount, previewMatieres) ?? 1;
-    const history = showAllHistory ? pastSessions : pastSessions.slice(0, 6);
     const canChart = pastSessions.length >= 2;
-    // les matières faibles d'abord (ordre fixe : une case cochée ne fait pas sauter la liste)
-    const rangees = [...TOPICS].sort((a, b) => Number(weak.includes(b.key)) - Number(weak.includes(a.key)));
+    const history = showAllHistory ? pastSessions : pastSessions.slice(0, 3);
 
-    // ?go=1 : la séance se prépare ; le constructeur attend (il revient si elle échoue)
+    // ?go=1 : la séance se prépare ; la sélection attend (elle revient si la préparation échoue)
     if (enRoute) {
       return (
         <ColonneSeance className="py-2 md:py-8">
@@ -442,236 +491,224 @@ export function PracticeSession({
       );
     }
 
-    // l'essentiel : le composeur (le nombre de questions, le format, le lancement ; les matières ou les notions)
-    const composeur = (
-      <div className="grid min-w-0 gap-x-8 gap-y-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <p className="t-h1 m-0 flex items-baseline gap-3" aria-live="polite">
-              <span>{previewCount}</span>
-              <span className="text-[0.5em] font-semibold">{previewCount > 1 ? "questions" : "question"}</span>
-            </p>
-            <p className="t-micro m-0 inline-flex items-center gap-1.5">
-              {pret ? (
-                <>
-                  <Trophy size={13} aria-hidden /> {fmtMinutes(previewMinutes)} · trophée {nomPalier(palier).toLowerCase()} à 70 % ou plus
-                </>
-              ) : (
-                parNotions ? NOTIONS_CHOIX.rienChoisi : STUDIOLO.choisir
-              )}
-            </p>
-          </div>
-          {parNotions ? (
-            <div className="flex flex-col gap-2">
-              <Seg
-                label={NOTIONS_CHOIX.taille}
-                value={String(tailleNotions) as "10" | "20" | "30" | "45" | "60"}
-                onChange={(v) => setTailleNotions(Number(v))}
-                options={[
-                  { key: "10", label: "10" },
-                  { key: "20", label: "20" },
-                  { key: "30", label: "30" },
-                  { key: "45", label: "45" },
-                  { key: "60", label: "60" },
-                ]}
-              />
-              {pret && (
-                <p className="t-small m-0">
-                  {NOTIONS_CHOIX.resume(choix.notions.length, choix.concepts.length)} · {NOTIONS_CHOIX.dispo(infoChoix.total)}
-                </p>
-              )}
-            </div>
-          ) : taille !== null ? (
-            <p className="t-small m-0 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span>
-                Séance de {taille} questions{selected.size > 1 ? (lien.poids ? ", mêlées aux poids officiels de l'examen" : ", à parts égales entre tes matières") : ""}.
-              </span>
-              <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setTaille(null)}>
-                Choisir un format
-              </button>
-            </p>
-          ) : (
-            <Seg
-              label="Format"
-              value={String(format) as "90" | "180"}
-              onChange={(v) => setFormat(Number(v) as 90 | 180)}
-              options={[
-                { key: "90", label: "Demi-examen · 90" },
-                { key: "180", label: "Complet · 180" },
-              ]}
-            />
-          )}
-          <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
-            <ActionEncre disabled={!pret || busy} onClick={() => void (parNotions ? genererNotions() : generate())}>
-              {busy ? "Préparation…" : "Générer la session"} {!busy && <ArrowRight size={16} aria-hidden />}
-            </ActionEncre>
-            {parNotions && pret && (
-              <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => { setChoix(CHOIX_VIDE); setInfoChoix({ topics: [], total: 0 }); }}>
-                {NOTIONS_CHOIX.effacer}
-              </button>
-            )}
-            {!parNotions && selected.size > 0 && selected.size < TOPICS.length && (
-              <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setSelected(new Set())}>
-                Effacer
-              </button>
-            )}
-          </div>
-          {error && (
-            <p role="alert" className="m-0 text-sm text-pen">
-              {error}
-            </p>
-          )}
-        </div>
-        <div className="flex min-w-0 flex-col gap-3">
-          <Seg
-            label={NOTIONS_CHOIX.parNotion}
-            value={parNotions ? "notion" : "matiere"}
-            onChange={(v) => setParNotions(v === "notion")}
-            options={[
-              { key: "matiere", label: NOTIONS_CHOIX.parMatiere },
-              { key: "notion", label: NOTIONS_CHOIX.parNotion },
-            ]}
-          />
-          {parNotions ? (
-            <ChoixNotions source="practice" valeur={choix} onChange={(v, info) => { setChoix(v); setInfoChoix(info); }} />
-          ) : (
-            <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none content-start gap-0.5 p-0" aria-label="Tes matières">
-              {rangees.map((t) => {
-                const on = selected.has(t.key);
-                const m = mastery[t.key];
-                return (
-                  <li key={t.key}>
-                    <button
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => toggleTopic(t.key)}
-                      className={"rl-row flex min-h-[40px] w-full items-center gap-3 rounded-[10px] px-2.5 py-1.5 text-left " + (on ? "bg-surface-2" : "")}
-                    >
-                      <span aria-hidden className={"grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[5px] " + (on ? "bg-white text-black" : "shadow-[inset_0_0_0_1.5px_var(--line-2)]")}>
-                        {on && <Check size={12} strokeWidth={3} />}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-semibold">{subjectName(t.key)}</span>
-                        <span className="t-micro block">{String(t.weight).replace(".", ",")} % de l&apos;examen</span>
-                      </span>
-                      <span className="t-micro shrink-0 tabular-nums">{m !== null && m !== undefined ? `${m} %` : "—"}</span>
-                      {m !== null && m !== undefined ? <Mini pct={m} rouge={m < WEAK_BELOW} /> : <span className="w-14 shrink-0" />}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      </div>
-    );
+    // la porte : la dernière copie en chiffre-héros ; la ligne d'état compte les copies et les ors
+    // (la plus fragile reste à la planche, entourée : rien de répété entre la porte et l'objet)
+    const derniere = pastSessions[0];
+    const heros = derniere && derniere.total > 0 ? { valeur: `${pctOf(derniere.score, derniere.total)}${NBSP}%`, legende: P.heros } : null;
+    const ors = pastSessions.filter((x) => palierCiblee(x.score, x.total, x.topics.length, x.completed_at) === 3).length;
+    const ligne = P.etat(pastSessions.length, ors);
 
-    // la colonne grise : les dernières séances, chacune avec son score (cerclée : un trophée)
-    const dernieres = pastSessions.slice(0, 5).map((s) => {
-      const pct = pctOf(s.score, s.total);
-      return { cle: s.id, titre: topicsSummary(s.topics, 2) || EPREUVE.practice, detail: `${pct} %`, marque: pct >= PASS_THRESHOLD };
+    const lignes: LigneNiveau[] = TOPICS.map((t, i) => {
+      const m = mastery[t.key];
+      const pct = typeof m === "number" ? m : null;
+      const conseil = conseillees.includes(t.key);
+      const nom = subjectName(t.key);
+      return { cle: t.key, numero: String(i + 1).padStart(2, "0"), nom, poids: P.poids(String(t.weight).replace(".", ",")), pct, conseil, on: selected.has(t.key), lecture: P.lecture(nom, pct, conseil) };
     });
+
+    const basculerExamen = (suivant: boolean) => {
+      if (suivant === examen) return;
+      setExamen(suivant);
+      try {
+        const u = new URL(window.location.href);
+        if (suivant) u.searchParams.set("mode", "examen");
+        else u.searchParams.delete("mode");
+        window.history.replaceState(null, "", u.pathname + u.search + u.hash);
+      } catch {
+        // l'adresse ne suit pas : le mode change quand même
+      }
+    };
+
+    // « f180 » : l'examen complet aux poids officiels (le chemin « format », un seul appel) ; « format » : le format d'un lien du Codex
+    const tailleCle = taille === null ? (format === 180 ? "f180" : "format") : String(taille);
+    const optionsTaille = [
+      ...(lien.format !== null && lien.format !== 180 ? [{ key: "format", label: String(format) }] : []),
+      ...TAILLES.map((k) => ({ key: k as string, label: k, disabled: Number(k) > capacite && selected.size > 0, titre: Number(k) > capacite && selected.size > 0 ? P.tropGrand(capacite) : undefined })),
+      { key: "f180", label: "180" },
+    ];
+    const choisirTaille = (k: string) => {
+      if (k === "f180") {
+        setTaille(null);
+        setFormat(180);
+      } else if (k === "format") {
+        setTaille(null);
+        setFormat(lien.format ?? 90);
+      } else {
+        setTaille(Number(k));
+        setFormat(lien.format === 180 ? 90 : lien.format ?? 90);
+      }
+    };
+
+    const matieresNote = parNotions ? NOTIONS_CHOIX.resume(choix.notions.length, choix.concepts.length) : [...selected].sort((a, b) => rangMatiere(a) - rangMatiere(b)).map((k) => codeMatiere(k, subjectName(k))).join(" · ");
+    const note = examen && !parNotions ? P.noteExamen(matieresNote, fmtMinutes(previewMinutes)) : P.note(matieresNote, fmtMinutes(previewMinutes), nomPalier(palier).toLowerCase());
+
+    const pied = (
+      <>
+        <Reglages>
+          <Reglage nom={P.questions}>
+            {parNotions ? (
+              <Touches label={NOTIONS_CHOIX.taille} value={String(tailleNotions)} options={TAILLES_NOTIONS.map((k) => ({ key: k as string, label: k }))} onChange={(k) => setTailleNotions(Number(k))} />
+            ) : (
+              <Touches label={P.questions} value={tailleCle} options={optionsTaille} onChange={choisirTaille} />
+            )}
+          </Reglage>
+          <Reglage nom={P.melange} aide={P.melangeAide}>
+            <Touches
+              label={P.melange}
+              value={melange ? "oui" : "non"}
+              options={[
+                { key: "oui", label: P.melangeOui },
+                { key: "non", label: P.melangeNon },
+              ]}
+              onChange={(k) => setMelange(k === "oui")}
+            />
+          </Reglage>
+          <Reglage nom={P.examen} aide={P.examenAide}>
+            <Touches
+              label={P.examen}
+              value={examen ? "oui" : "non"}
+              options={[
+                { key: "oui", label: P.examenOui },
+                { key: "non", label: P.examenNon },
+              ]}
+              onChange={(k) => basculerExamen(k === "oui")}
+            />
+          </Reglage>
+        </Reglages>
+        <Lancement>
+          <ActionEncre disabled={!pret || busy} onClick={() => void (parNotions ? genererNotions() : generate())}>
+            {busy ? (
+              "Préparation…"
+            ) : (
+              <>
+                {P.lancer}
+                <CompteLancer n={previewCount} />
+                <ArrowRight size={19} aria-hidden />
+              </>
+            )}
+          </ActionEncre>
+          <NotePlanche alerte={!!error}>{error ?? (pret ? note : parNotions ? NOTIONS_CHOIX.rienChoisi : STUDIOLO.choisir)}</NotePlanche>
+        </Lancement>
+      </>
+    );
 
     return (
       <SousPage
         entete={
-          <EnTeteSousPage
-            retour={RETOUR_ENTRAINEMENT}
-            titre={SOUS_ENTRAINEMENT.practice.titre}
-            ligne={STUDIOLO.ligne}
-            illustration={{ nom: "practice-studiolo", position: "50% 60%" }}
-          />
+          <EnTeteSousPage retour={RETOUR_ENTRAINEMENT} titre={P.titre} ligne={ligne} heros={heros} illustration={{ nom: "practice-studiolo-porte", position: "50% 50%" }} />
         }
       >
-        <CadreZones
-          gauche={{ titre: SOUS_ENTRAINEMENT.practice.composer, contenu: composeur }}
-          droite={dernieres.length > 0 ? { titre: SOUS_ENTRAINEMENT.practice.dernieres, contenu: <ListeCourte lignes={dernieres} /> } : undefined}
-        />
+        <Planche
+          clair={parNotions}
+          calme={calme}
+          tete={
+            <>
+              <TetePlanche titre={P.matieres} compte={parNotions ? (pret ? NOTIONS_CHOIX.resume(choix.notions.length, choix.concepts.length) : null) : `${selected.size}/${TOPICS.length}`} />
+              <div className="flex items-center gap-3">
+                {parNotions && pret && (
+                  <button type="button" className="ink-link min-h-[40px] text-[13px] font-semibold" onClick={() => { setChoix(CHOIX_VIDE); setInfoChoix({ topics: [], total: 0 }); }}>
+                    {NOTIONS_CHOIX.effacer}
+                  </button>
+                )}
+                <Onglets
+                  label={NOTIONS_CHOIX.parNotion}
+                  value={parNotions ? "notion" : "matiere"}
+                  onChange={(v) => setParNotions(v === "notion")}
+                  options={[
+                    { key: "matiere", label: P.parMatiere },
+                    { key: "notion", label: P.parNotion },
+                  ]}
+                />
+              </div>
+            </>
+          }
+          pied={pied}
+        >
+          {parNotions ? (
+            <ChoixNotions source="practice" valeur={choix} onChange={(v, info) => { setChoix(v); setInfoChoix(info); }} />
+          ) : (
+            <Niveaux lignes={lignes} onBascule={toggleTopic} label={P.matieres} poidsVifs={examen} />
+          )}
+        </Planche>
 
-        {/* l'annexe indispensable : les copies passées et leur correction (on ne les relit nulle part ailleurs) */}
+        {/* l'annexe indispensable : les copies passées et leur correction (on ne les relit nulle part ailleurs) ; trois lignes, la suite à la demande, sans bande noire */}
         {pastSessions.length > 0 && (
-          <CadreAnnexe titre={SOUS_ENTRAINEMENT.practice.copies} id="historique">
-            {canChart && (
-              <Seg
-                label="Affichage"
-                value={historyTab}
-                onChange={setHistoryTab}
-                className="justify-self-start"
-                options={[
-                  { key: "history", label: "Historique" },
-                  { key: "progress", label: "Progression" },
-                ]}
-              />
-            )}
-
+          <Scene etiquette={P.copies}>
+            <div id="historique" className="min-w-0 scroll-mt-24">
             {historyTab === "progress" && canChart ? (
               <PracticeProgressChart pastSessions={pastSessions} topicLabels={TOPIC_LABELS} />
             ) : (
-              <div className="overflow-hidden rounded-[14px] border border-line">
-                <ul className="m-0 list-none divide-y divide-line p-0">
-                  {history.map((s) => {
-                    const pct = pctOf(s.score, s.total);
-                    const passed = pct >= PASS_THRESHOLD;
-                    const palierS = nomPalier(palierCiblee(s.score, s.total, s.topics.length, s.completed_at) ?? 1).toLowerCase();
-                    const expanded = expandedHistoryId === s.id;
-                    const rev = historyReviews[s.id];
-                    return (
-                      <li key={s.id}>
-                        <button
-                          type="button"
-                          aria-expanded={expanded}
-                          onClick={() => void toggleHistoryReview(s.id)}
-                          className="rl-row flex w-full items-center gap-3.5 px-4 py-3.5 text-left md:px-5"
-                        >
-                          <span
-                            className={"grid h-9 w-9 shrink-0 place-items-center rounded-[11px] " + (passed ? "bg-white text-black" : "bg-surface-2 text-muted")}
-                            title={passed ? `Trophée ${palierS}` : "Sous 70 %"}
-                          >
-                            <Trophy size={16} aria-hidden strokeWidth={passed ? 2.2 : 1.6} />
+              <ul className="m-0 min-w-0 list-none divide-y divide-line p-0">
+                {history.map((s, rang) => {
+                  const pct = pctOf(s.score, s.total);
+                  const passed = pct >= PASS_THRESHOLD;
+                  const palierS = nomPalier(palierCiblee(s.score, s.total, s.topics.length, s.completed_at) ?? 1).toLowerCase();
+                  const expanded = expandedHistoryId === s.id;
+                  const rev = historyReviews[s.id];
+                  // la première ligne : son pourcentage est déjà le chiffre-héros de la porte
+                  const tete = rang === 0 && heros !== null;
+                  return (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        aria-expanded={expanded}
+                        aria-label={tete ? `${topicsSummary(s.topics, 2)}, ${pct}${NBSP}%` : undefined}
+                        onClick={() => void toggleHistoryReview(s.id)}
+                        className="rl-row flex min-h-[52px] w-full items-center gap-3.5 rounded-[10px] px-2 py-2.5 text-left"
+                      >
+                        <Trophy size={16} aria-hidden strokeWidth={passed ? 2.4 : 1.5} className={"shrink-0 " + (passed ? "" : "text-muted opacity-50")} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[14.5px] font-semibold">{topicsSummary(s.topics, 2)}</span>
+                          <span className="t-micro block">
+                            {dayLabel(s.completed_at)} · {s.total} questions
+                            {s.duration_seconds ? ` · ${fmtMinutes(Math.max(1, Math.round(s.duration_seconds / 60)))}` : ""}
+                            {passed ? ` · trophée ${palierS}` : ""}
                           </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[14.5px] font-semibold">{topicsSummary(s.topics, 2)}</span>
-                            <span className="t-micro mt-0.5 block">
-                              {dayLabel(s.completed_at)} · {s.total} questions
-                              {s.duration_seconds ? ` · ${fmtMinutes(Math.max(1, Math.round(s.duration_seconds / 60)))}` : ""}
-                              {passed ? ` · trophée ${palierS}` : ""}
-                            </span>
+                        </span>
+                        {tete ? (
+                          <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{P.derniere}</span>
+                        ) : (
+                          <span className={"shrink-0 font-mono text-[15px] font-semibold tabular-nums " + (pct < 50 ? "text-pen" : "")}>
+                            {pct}
+                            {NBSP}%
                           </span>
-                          <span className="shrink-0 text-right">
-                            <span className={"block text-[15px] font-semibold tabular-nums " + (pct < 50 ? "text-pen" : "")}>{pct} %</span>
-                            <span className="t-micro block tabular-nums">
-                              {s.score}/{s.total}
-                            </span>
-                          </span>
-                          <ChevronDown size={16} aria-hidden className={"shrink-0 text-muted transition-transform " + (expanded ? "rotate-180" : "")} />
-                        </button>
-                        {expanded && (
-                          <div className="border-t border-line bg-surface-2/30 px-4 py-4 md:px-5">
-                            {loadingHistoryId === s.id && <p className="t-small m-0">Chargement de la correction…</p>}
-                            {historyErrors[s.id] && <p className="t-small m-0">{historyErrors[s.id]}</p>}
-                            {rev && (
-                              <ReviewSection
-                                review={rev}
-                                compact
-                                action={<CopyForAi review={rev} score={s.score} total={s.total} kind="practice" size="sm" onError={setError} />}
-                              />
-                            )}
-                          </div>
                         )}
-                      </li>
-                    );
-                  })}
-                </ul>
-                {pastSessions.length > history.length && (
-                  <div className="border-t border-line px-4 py-3 md:px-5">
-                    <button type="button" className="text-[13px] font-semibold text-muted transition-colors hover:text-white" onClick={() => setShowAllHistory(true)}>
-                      {pastSessions.length - history.length > 1 ? `Voir les ${pastSessions.length - history.length} autres` : "Voir la dernière"}
-                    </button>
-                  </div>
-                )}
-              </div>
+                        <ChevronDown size={16} aria-hidden className={"shrink-0 text-muted transition-transform " + (expanded ? "rotate-180" : "")} />
+                      </button>
+                      {expanded && (
+                        <div className="px-2 pb-4 pt-1">
+                          {loadingHistoryId === s.id && <p className="t-small m-0">Chargement de la correction…</p>}
+                          {historyErrors[s.id] && <p className="t-small m-0">{historyErrors[s.id]}</p>}
+                          {rev && (
+                            <ReviewSection
+                              review={rev}
+                              compact
+                              action={<CopyForAi review={rev} score={s.score} total={s.total} kind="practice" size="sm" onError={setError} />}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             )}
-          </CadreAnnexe>
+            {(pastSessions.length > 3 || canChart) && (
+              <p className="m-0 flex flex-wrap gap-x-5 gap-y-1">
+                {historyTab === "history" && pastSessions.length > 3 && (
+                  <button type="button" className="min-h-[40px] text-[13px] font-semibold text-muted transition-colors hover:text-[var(--ink)]" onClick={() => setShowAllHistory((v) => !v)}>
+                    {showAllHistory ? P.replier : P.autres(pastSessions.length - 3)}
+                  </button>
+                )}
+                {canChart && (
+                  <button type="button" className="min-h-[40px] text-[13px] font-semibold text-muted transition-colors hover:text-[var(--ink)]" onClick={() => setHistoryTab((v) => (v === "history" ? "progress" : "history"))}>
+                    {historyTab === "history" ? P.progression : P.historique}
+                  </button>
+                )}
+              </p>
+            )}
+            </div>
+          </Scene>
         )}
       </SousPage>
     );
@@ -691,7 +728,7 @@ export function PracticeSession({
             ...(retest ? [RETEST.regle] : []),
             "Pas de correction pendant la session : tout arrive à la fin, avec les explications.",
             "Tu peux revenir sur une question et changer ta réponse jusqu'à la fin.",
-            "Pause possible : le chrono s'arrête et la question se cache.",
+            examen ? SOUS_ENTRAINEMENT.practice.examenAide : "Pause possible : le chrono s'arrête et la question se cache.",
           ]}
           onCancel={backToBuilder}
           cancelLabel={retest ? RETEST.annuler : "Changer les matières"}
@@ -782,7 +819,7 @@ export function PracticeSession({
         actions={
           <>
             {fr.bouton}
-            <PauseToggle paused={paused} onToggle={() => setPaused((v) => !v)} />
+            {!examen && <PauseToggle paused={paused} onToggle={() => setPaused((v) => !v)} />}
             <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={askEnd}>
               {busy ? "Envoi…" : "Terminer"}
             </button>

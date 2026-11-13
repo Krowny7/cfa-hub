@@ -2,10 +2,9 @@ import { PageHead, SectionHead, EloDelta } from "@/components/session/ui";
 import { fmtMinutes, pctOf } from "@/components/session/review";
 import { Avatar } from "@/components/classement/Avatar";
 import { Icone } from "@/components/adn/icons";
-import { Carrousel } from "@/components/ui/Carrousel";
-import { ListeCourte, type Ligne } from "@/components/ui/Decors";
-import type { Piece } from "@/components/ui/Presentoir";
-import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import type { Ligne } from "@/components/ui/Decors";
+import { EnTeteSousPage, Etiquette, SousPage } from "@/components/ui/SousPage";
+import { RangeePacks, type Pack } from "@/components/MockExamPacks";
 import { CLASSEMENT_EXAMEN, DETAIL, LISTE } from "@/lib/voice-z3b";
 import { RETOUR_AFFRONTER, SOUS_AFFRONTER } from "@/lib/voice-affronter-sous";
 
@@ -55,39 +54,80 @@ function moisCourt(d: Date) {
   return d.toLocaleDateString("fr-FR", { month: "short", timeZone: TZ }).replace(".", "").toUpperCase();
 }
 
+/** Le pack d'un examen (components/MockExamPacks) : son état à l'instant `now`, ta copie en pourcentage. */
+export function packDe(e: MockExam, now: number, score: number | null): Pack {
+  const w = examWindow(e, now);
+  const fini = e.status === "closed" || w.over;
+  const base = { id: e.id, titre: e.title, mois: moisCourt(new Date(e.scheduled_at)), format: E.format(e.question_count, e.duration_minutes), score };
+  if (e.status === "draft") return { ...base, genre: "preparation", etat: E.preparation };
+  if (score !== null) return { ...base, genre: "rendu", etat: fini ? E.termine : `${E.ouvert} · ${E.jusquau(dayMonth(w.end))}` };
+  if (fini) return { ...base, genre: "fini", etat: E.manque };
+  if (w.open) return { ...base, genre: "ouvert", etat: `${E.ouvert} · ${E.jusquau(dayMonth(w.end))}` };
+  return { ...base, genre: "scelle", etat: w.hoursToStart <= 24 ? E.dansHeures(Math.max(1, w.hoursToStart)) : E.dansJours(w.daysToStart) };
+}
+
 /**
- * La liste des examens blancs, sur le modèle des sous-pages validé par Théo (2026-11-12) : l'en-tête
- * commun (retour à S'affronter, la peinture de la Grande Salle), puis le cadre à zones. À gauche, les
- * examens en carrousel de sceaux, ouvert sur le prochain (les passés juste avant lui dans l'anneau) ;
- * un clic sur le sceau de devant ouvre l'examen (inscription, copie, classement). Dans la colonne
- * grise, le classement général, court. Le panneau d'administration vient dessous (admin seulement).
+ * La liste des examens blancs (direction « le lieu, puis l'objet », lot 4 du 2026-11-13) : la porte (la
+ * Grande Salle ; en chiffre-héros les packs encore scellés, sinon tes copies rendues ; en enjeu le
+ * prochain examen quand il approche ou qu'il est ouvert), puis la vitrine : un pack scellé par examen,
+ * posés sur une même ligne de sol, le prochain avancé et entouré ; dessous, l'action à l'encre qui
+ * l'ouvre (inscription, passage, copie). Le classement général n'y est plus (il est sur /classement).
+ * Le panneau d'administration vient dessous (admin seulement).
  */
 export function MockExamListView({
   exams,
   eloEnabled,
   admin,
-  classement = [],
+  scores = {},
+  now,
+  inscrits = [],
 }: {
   exams: MockExam[];
   eloEnabled: boolean;
-  /** panneau d'administration (rendu sous le cadre) */
+  /** panneau d'administration (rendu sous la vitrine) */
   admin?: React.ReactNode;
-  /** le classement général (ELO), court : les premiers, et ta ligne si tu es plus bas */
+  /** tes copies rendues : le pourcentage par examen */
+  scores?: Record<string, number>;
+  /** l'instant de la lecture (la page le pose une fois, côté serveur) */
+  now: number;
+  /** les examens où tu es inscrit (ta ligne d'état) */
+  inscrits?: string[];
+  /** ancien : le classement général (n'est plus affiché) */
   classement?: Ligne[];
 }) {
   // à venir : par date croissante, le plus proche en premier ; passés : du plus ancien au plus récent
   const upcoming = exams.filter((e) => e.status !== "closed").sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
   const past = exams.filter((e) => e.status === "closed").sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
   const ordre = [...past, ...upcoming];
-  // l'anneau s'ouvre sur le prochain examen ; sans examen à venir, sur le dernier passé
-  const depart = upcoming.length > 0 ? past.length : Math.max(0, ordre.length - 1);
-  const pieces: Piece[] = ordre.map((e, i) => ({
-    cle: e.id,
-    href: `/mock-exams/${e.id}`,
-    numero: String(i + 1).padStart(2, "0"),
-    code: moisCourt(new Date(e.scheduled_at)),
-    titre: e.title,
-  }));
+  const packs = ordre.map((e) => packDe(e, now, scores[e.id] ?? null));
+  // le prochain : le premier examen à venir qui n'est ni fini ni en préparation, sinon le dernier
+  const prochain = packs.find((p) => p.genre === "scelle" || p.genre === "ouvert") ?? packs.find((p) => p.genre === "rendu" && p.etat !== E.termine) ?? packs[packs.length - 1] ?? null;
+  const rendues = packs.filter((p) => p.score !== null);
+  const exProchain = prochain ? ordre.find((e) => e.id === prochain.id) : null;
+  const w = exProchain ? examWindow(exProchain, now) : null;
+  const aVenir = prochain && (prochain.genre === "scelle" || prochain.genre === "ouvert") ? prochain : null;
+  // la ligne : l'état du joueur (inscrit ou non au prochain, ses copies rendues), jamais la date ni
+  // le format (écrits sur le pack)
+  const ligne =
+    [
+      aVenir ? (inscrits.includes(aVenir.id) ? E.inscritA(aVenir.titre) : E.pasInscritA(aVenir.titre)) : null,
+      rendues.length > 0 ? E.copiesRendues(rendues.length) : aVenir ? null : E.aucuneCopie,
+    ]
+      .filter(Boolean)
+      .join(" · ") || null;
+  // le chiffre-héros : l'enjeu du joueur. Le prochain scellé : J-n (ou n h la veille), légendé de son
+  // nom ; sinon ta dernière copie rendue.
+  const derniere = [...rendues].reverse()[0] ?? null;
+  const heros =
+    aVenir && aVenir.genre === "scelle" && w
+      ? { valeur: w.hoursToStart <= 24 ? `${Math.max(1, w.hoursToStart)} h` : `J-${w.daysToStart}`, legende: aVenir.titre }
+      : derniere
+        ? { valeur: `${derniere.score} %`, legende: E.taDerniere }
+        : null;
+  // l'enjeu, seulement s'il est vrai et nouveau : le prochain est ouvert et se ferme sous 48 h
+  const heuresAvantFin = w ? Math.ceil((w.end.getTime() - now) / 3_600_000) : null;
+  const enjeu = aVenir && aVenir.genre === "ouvert" && heuresAvantFin !== null && heuresAvantFin <= 48 ? E.enjeuFerme(Math.max(1, heuresAvantFin)) : null;
+  const action = prochain ? { href: `/mock-exams/${prochain.id}`, label: prochain.genre === "rendu" ? E.revoirCopie(prochain.titre) : E.ouvrirExamen(prochain.titre) } : null;
 
   return (
     <SousPage
@@ -95,18 +135,14 @@ export function MockExamListView({
         <EnTeteSousPage
           retour={RETOUR_AFFRONTER}
           titre={E.titre}
-          ligne={eloEnabled ? LISTE.sousClasse : LISTE.sous}
-          illustration={{ nom: "mock-grande-salle", position: "center 40%" }}
+          ligne={ligne}
+          illustration={{ nom: "mock-grande-salle", position: "50% 88%" }}
+          heros={heros}
+          enjeu={enjeu}
         />
       }
     >
-      <CadreZones
-        gauche={{
-          titre: E.prochain,
-          contenu: pieces.length > 0 ? <Carrousel forme="sceau" pieces={pieces} action={E.ouvrir} depart={depart} /> : <p className="t-small m-0">{E.vide}</p>,
-        }}
-        droite={{ titre: E.classement, contenu: <ListeCourte lignes={classement} vide={E.classementVide} /> }}
-      />
+      {packs.length > 0 ? <RangeePacks packs={packs} conseil={prochain?.id ?? null} action={action} /> : <p className="t-body m-0 text-muted">{E.vide}</p>}
       {admin}
     </SousPage>
   );
@@ -205,9 +241,13 @@ export type LeaderRow = {
 export function MockExamLeaderboard({ rows, meId, eloDeltas }: { rows: LeaderRow[]; meId: string; eloDeltas: Record<string, number> }) {
   if (rows.length === 0) return null;
   return (
-    <section className="rl-section" aria-label={CLASSEMENT_EXAMEN.titre}>
-      <SectionHead title={CLASSEMENT_EXAMEN.titre} meta={CLASSEMENT_EXAMEN.participants(rows.length)} />
-      <ol className="card m-0 list-none divide-y divide-line overflow-hidden p-0">
+    <section className="grid gap-2.5" aria-label={CLASSEMENT_EXAMEN.titre}>
+      {/* lot 4 du 2026-11-13 : l'étiquette Mono et des filets, plus de carte ni de bande de titre */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <Etiquette as="h2">{CLASSEMENT_EXAMEN.titre}</Etiquette>
+        <span className="font-mono text-[12px] font-bold uppercase tracking-[0.12em] text-muted">{CLASSEMENT_EXAMEN.participants(rows.length)}</span>
+      </div>
+      <ol className="m-0 list-none divide-y divide-line border-y border-line p-0">
         {rows.map((r, rank) => {
           const pct = pctOf(r.score, r.total);
           const isMe = r.userId === meId;
@@ -233,8 +273,8 @@ export function MockExamLeaderboard({ rows, meId, eloDeltas }: { rows: LeaderRow
                 {mins && <span className="t-micro block">{fmtMinutes(mins)}</span>}
               </span>
               {delta !== undefined && <EloDelta delta={delta} size="sm" />}
-              <span className="w-[64px] shrink-0 text-right">
-                <span className={"block text-[15px] font-semibold tabular-nums " + (pct < 50 ? "text-pen" : "")}>{pct} %</span>
+              <span className="w-[72px] shrink-0 text-right">
+                <span className={"block font-brand text-[22px] leading-none tabular-nums " + (pct < 50 ? "text-pen" : "")}>{pct} %</span>
                 <span className="t-micro block tabular-nums">
                   {r.score}/{r.total}
                 </span>

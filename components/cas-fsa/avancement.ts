@@ -82,3 +82,17 @@ export function useCasBoucles(cas: { id: string; etapes: string[] }[]): number {
     () => 0,
   );
 }
+
+/**
+ * Les questions terminées de chaque cas, relues du navigateur, dans l'ordre des cas ; des zéros au
+ * rendu serveur et à l'hydratation. L'instantané est une chaîne (« 3,0,12 ») : stable d'un appel à
+ * l'autre tant que rien ne change.
+ */
+export function useFaites(cas: { id: string; etapes: string[] }[]): number[] {
+  const brut = useSyncExternalStore(
+    abonner,
+    () => cas.map((c) => c.etapes.filter((e) => lire(c.id).etapes[e]).length).join(","),
+    () => cas.map(() => 0).join(","),
+  );
+  return brut ? brut.split(",").map(Number) : [];
+}

@@ -26,7 +26,7 @@ import s from "./Aujourdhui.module.css";
 // compte neuf n'a qu'une étape. `fil` faux : pas de séance (le jour J et le
 // lendemain, on a posé le pinceau). `demo` : aperçus, aucune action serveur.
 
-export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { vue: VueCodex; fil?: boolean; demo?: boolean; onQuete: (l: Ligne) => void; onVue?: (v: VueCodex) => void }) {
+export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue, hrefPalier }: { vue: VueCodex; fil?: boolean; demo?: boolean; onQuete: (l: Ligne) => void; onVue?: (v: VueCodex) => void; hrefPalier?: string }) {
   const seance = fil && vue.seance?.blocs.length ? vue.seance : null;
   const gains = useMemo(() => (seance ? gainsSeance(seance.avant, vue) : []), [seance, vue]);
   const aRecuperer = vue.aRecuperer.length > 0;
@@ -38,7 +38,10 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
   const [recupere, setRecupere] = useState(false);
 
   // pas de séance (jour J, lendemain, aucune étape) : pas de colonne vide à gauche
-  const filContenu = neuf ? <FilNeuf plein={!aRecuperer} /> : seance ? <Fil seance={seance} vue={vue} gains={gains} plein={!aRecuperer} demo={demo} /> : null;
+  // le prochain palier (la plaque, à l'encre) mène déjà où mène la première étape : le bouton du fil passe en contour
+  // (il garde « Commencer », qui lance la séance), pour ne pas faire deux actions principales
+  const memeBut = !!hrefPalier && seance?.blocs[0]?.destination?.href === hrefPalier;
+  const filContenu = neuf ? <FilNeuf plein={!aRecuperer} /> : seance ? <Fil seance={seance} vue={vue} gains={gains} plein={!aRecuperer && !memeBut} demo={demo} /> : null;
 
   return (
     <div className={filContenu ? s.grille : `${s.grille} ${s.sansFil}`}>

@@ -1,0 +1,546 @@
+/* /practice « la sélection » (components/session/Selection.tsx) : la planche d'ébène biseautée,
+   ses dix lignes façon choix de niveau, sa barre de réglages. Couleurs fixes de jour comme de nuit ;
+   la nuit, un liseré clair remplace l'ombre. Le cercle conseillé prend l'encre claire de la palette. */
+
+.planche {
+  --dos: #1a120b;
+  --dos-haut: #23180f;
+  --ivoire: #f1e9d4;
+  --ivoire-2: rgba(241, 233, 212, 0.62);
+  --ivoire-3: rgba(241, 233, 212, 0.38);
+  --filet: rgba(241, 233, 212, 0.1);
+  --or: rgba(214, 161, 63, 0.34);
+  --cercle: var(--pal-4, #9cc9dc);
+  position: relative;
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(241, 233, 212, 0.07), transparent 60%),
+    linear-gradient(180deg, var(--dos-haut), var(--dos));
+  color: var(--ivoire);
+  box-shadow:
+    inset 0 1px 0 rgba(241, 233, 212, 0.12),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+    0 2px 0 #0d0905,
+    0 34px 60px -34px rgba(0, 0, 0, 0.55),
+    0 12px 24px -16px rgba(0, 0, 0, 0.35);
+  padding: 26px 34px 0;
+  min-width: 0;
+}
+/* le liseré d'or sobre, en retrait du bord : le biseau */
+.planche::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 13px;
+  border: 1px solid var(--or);
+  pointer-events: none;
+}
+:global(html[data-theme="nuit"]) .planche {
+  box-shadow:
+    inset 0 1px 0 rgba(241, 233, 212, 0.12),
+    0 0 0 1px rgba(241, 233, 212, 0.16),
+    0 34px 60px -34px rgba(0, 0, 0, 0.8);
+}
+/* les notions : la planche s'efface, le choix par notion garde le papier du site */
+.planche[data-clair] {
+  background: var(--surface, #fff);
+  color: inherit;
+  box-shadow: 0 0 0 1px var(--line, rgba(0, 0, 0, 0.08)), 0 24px 50px -34px rgba(0, 0, 0, 0.3);
+}
+.planche[data-clair]::before {
+  display: none;
+}
+
+.tete {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 4px 0 14px;
+}
+.titre {
+  margin: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ivoire-2);
+}
+.planche[data-clair] .titre {
+  color: var(--muted, #666);
+}
+.compte {
+  color: var(--ivoire);
+  letter-spacing: 0.08em;
+}
+.planche[data-clair] .compte {
+  color: inherit;
+}
+
+.onglets {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(241, 233, 212, 0.07);
+  box-shadow: inset 0 0 0 1px var(--filet);
+}
+.planche[data-clair] .onglets {
+  background: var(--surface-2, #f2f2f2);
+  box-shadow: none;
+}
+.onglet {
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ivoire-2);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.planche[data-clair] .onglet {
+  color: var(--muted, #666);
+}
+.onglet[aria-selected="true"] {
+  background: var(--ivoire);
+  color: var(--dos);
+}
+.planche[data-clair] .onglet[aria-selected="true"] {
+  background: #1a120b;
+  color: #f1e9d4;
+}
+:global(html[data-theme="nuit"]) .planche[data-clair] .onglet[aria-selected="true"] {
+  background: #f1e9d4;
+  color: #1a120b;
+}
+.onglet:focus-visible,
+.niveau:focus-visible,
+.touche:focus-visible {
+  outline: 2px solid var(--cercle);
+  outline-offset: 2px;
+}
+
+.corps {
+  position: relative;
+  min-width: 0;
+}
+.planche[data-clair] .corps {
+  padding-bottom: 6px;
+}
+
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ——— les dix lignes ——— */
+.niveaux {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 40px;
+}
+@media (min-width: 960px) {
+  .niveaux {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-template-rows: repeat(5, auto);
+  }
+}
+.niveaux li {
+  min-width: 0;
+  border-bottom: 1px dashed var(--filet);
+}
+@media (min-width: 960px) {
+  .niveaux li:nth-child(5n) {
+    border-bottom: 0;
+  }
+}
+@media (max-width: 959px) {
+  .niveaux li:last-child {
+    border-bottom: 0;
+  }
+}
+.niveau {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto 120px;
+  align-items: center;
+  column-gap: 14px;
+  width: calc(100% + 24px);
+  min-height: 66px;
+  padding: 10px 12px 10px 16px;
+  margin: 0 -12px;
+  border-radius: 10px;
+  text-align: left;
+  color: var(--ivoire-2);
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+@media (hover: hover) {
+  .niveau:hover {
+    background: rgba(241, 233, 212, 0.045);
+    color: var(--ivoire);
+  }
+}
+/* la ligne choisie s'allume : fond ivoire léger, filet à gauche, nom en ivoire plein */
+.niveau[data-on] {
+  color: var(--ivoire);
+  background: rgba(241, 233, 212, 0.08);
+  box-shadow: inset 3px 0 0 var(--ivoire);
+}
+.num {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ivoire-3);
+  font-variant-numeric: tabular-nums;
+}
+.niveau[data-on] .num {
+  color: var(--ivoire-2);
+}
+.nom {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.niveau[data-on] .nom {
+  font-weight: 750;
+}
+.poids {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ivoire-3);
+  white-space: nowrap;
+  transition: color 0.18s ease;
+}
+/* le mode examen : les poids comptent, ils passent en ivoire plein */
+.niveaux[data-poids] .poids {
+  color: var(--ivoire);
+}
+/* la précision, puis sa jauge graduée dessous (120 px) */
+.mesure {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+  min-width: 0;
+}
+.pct {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 0 4px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.pct small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ivoire-3);
+}
+.pct[data-vide] {
+  color: var(--ivoire-3);
+}
+.jauge {
+  position: relative;
+  display: block;
+  width: 120px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(241, 233, 212, 0.1);
+}
+.jauge i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--ivoire-2);
+}
+.niveau[data-on] .jauge i {
+  background: var(--ivoire);
+}
+.jauge[data-tenu] i {
+  background: var(--cercle);
+}
+/* le repère « tenu » à 80 % */
+.jauge b {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 1.5px;
+  margin-left: -0.75px;
+  background: var(--ivoire);
+  opacity: 0.55;
+}
+/* le cercle de craie du tableau (components/ui/craie), deux passages décalés, à l'encre de la palette */
+.cercle {
+  position: absolute;
+  left: -22px;
+  top: -13px;
+  width: calc(100% + 40px);
+  height: calc(100% + 26px);
+  overflow: visible;
+  fill: none;
+  stroke: var(--cercle);
+  stroke-width: 2.4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(156, 201, 220, 0.3));
+}
+.cercle use {
+  stroke-dasharray: 900;
+  stroke-dashoffset: 0;
+}
+.cercle .repasse {
+  stroke-width: 1.3px;
+  opacity: 0.55;
+  transform: translate(2px, 1.5px) rotate(-1.2deg);
+  transform-origin: 50% 50%;
+}
+/* le tracé à l'arrivée ; coupé quand la page a déjà été vue dans la session (data-calme) */
+.cercle use {
+  animation: trace 0.8s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  animation-delay: calc(0.25s + var(--i, 0) * 0.05s);
+}
+.cercle .repasse {
+  animation-delay: calc(0.5s + var(--i, 0) * 0.05s);
+}
+.planche[data-calme] .cercle use {
+  animation: none;
+}
+@keyframes trace {
+  from {
+    stroke-dashoffset: 900;
+  }
+}
+
+/* ——— le pied : les réglages, puis le grand Lancer centré ——— */
+.pied {
+  position: relative;
+  margin: 20px -34px 0;
+  padding: 22px 34px 30px;
+  border-top: 1px solid var(--filet);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.06));
+  border-radius: 0 0 20px 20px;
+  display: grid;
+  justify-items: center;
+  gap: 24px;
+}
+.planche[data-clair] .pied {
+  background: transparent;
+  border-top-color: var(--line, rgba(0, 0, 0, 0.08));
+}
+.reglages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: end;
+  gap: 18px 44px;
+}
+.reglage {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  min-width: 0;
+}
+.reglageNom {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ivoire-3);
+}
+.planche[data-clair] .reglageNom {
+  color: var(--muted, #666);
+}
+.touches {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 0 1px var(--filet);
+}
+.touche {
+  min-width: 46px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ivoire-2);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+@media (hover: hover) {
+  .touche:not(:disabled):hover {
+    color: var(--ivoire);
+    background: rgba(241, 233, 212, 0.06);
+  }
+}
+.touche[aria-checked="true"] {
+  background: var(--ivoire);
+  color: var(--dos);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+.touche:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.planche[data-clair] .touches {
+  background: var(--surface-2, #f2f2f2);
+  box-shadow: none;
+}
+.planche[data-clair] .touche {
+  color: var(--muted, #666);
+}
+.planche[data-clair] .touche[aria-checked="true"] {
+  background: #1a120b;
+  color: #f1e9d4;
+}
+:global(html[data-theme="nuit"]) .planche[data-clair] .touche[aria-checked="true"] {
+  background: #f1e9d4;
+  color: #1a120b;
+}
+
+/* l'action, centrée sous les réglages : 56 px de haut, au moins 300 de large, le compte en Dela */
+.lancement {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.lancement > :first-child {
+  min-width: 300px;
+  min-height: 56px;
+  padding: 0 30px;
+  border-radius: 14px;
+  gap: 12px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.compteLancer {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.note {
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--ivoire-2);
+  text-align: center;
+}
+.note[role="alert"] {
+  color: #f0a08a;
+}
+.planche[data-clair] .note {
+  color: var(--muted, #666);
+}
+.planche[data-clair] .note[role="alert"] {
+  color: var(--pen, #b3261e);
+}
+
+/* téléphone : une colonne, de gros boutons, rien ne déborde */
+@media (max-width: 640px) {
+  .planche {
+    padding: 18px 18px 0;
+    border-radius: 16px;
+  }
+  .planche::before {
+    inset: 6px;
+    border-radius: 11px;
+  }
+  .niveau {
+    grid-template-columns: minmax(0, 1fr) 84px;
+    min-height: 60px;
+    column-gap: 10px;
+    padding-left: 14px;
+  }
+  .num,
+  .poids {
+    display: none;
+  }
+  .jauge {
+    width: 84px;
+  }
+  .nom {
+    font-size: 15.5px;
+  }
+  .pied {
+    margin: 14px -18px 0;
+    padding: 18px 18px 22px;
+    gap: 18px;
+    border-radius: 0 0 16px 16px;
+    justify-items: stretch;
+  }
+  .reglages {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .reglage {
+    justify-items: stretch;
+  }
+  .touches {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+  .touche {
+    min-width: 0;
+    min-height: 46px;
+    padding: 0 6px;
+  }
+  .lancement {
+    justify-items: stretch;
+  }
+  .lancement > :first-child {
+    width: 100%;
+    min-width: 0;
+  }
+  .cercle {
+    left: -8px;
+    width: calc(100% + 16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cercle use {
+    animation: none;
+  }
+  .niveau,
+  .touche,
+  .poids {
+    transition: none;
+  }
+}

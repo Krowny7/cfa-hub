@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { SessionPageBlanche } from "@/components/page-blanche/Session";
+import { liensCalculs } from "@/components/page-blanche/liens-calculs";
 import { matiereDe } from "@/lib/formules";
 import { topicLabel } from "@/lib/practiceTopics";
 import { createClient } from "@/lib/supabase/server";
@@ -7,7 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata = { title: "La page blanche · Ranked Lobby" };
 
 // Une matière de la page blanche : seule sa partie du catalogue part au navigateur.
-// La page (en-tête commun, colonne de la séance) est rendue par SessionPageBlanche ; le
+// Le calcul de chaque formule (lien sous un oubli) est trouvé ici : le catalogue des calculs reste
+// sur le serveur. La page (porte, feuille nue) est rendue par SessionPageBlanche ; le
 // retour dit déjà « La page blanche », le titre ne dit que la matière.
 export default async function PageBlancheMatiere({ params }: { params: Promise<{ matiere: string }> }) {
   const { matiere } = await params;
@@ -29,6 +31,7 @@ export default async function PageBlancheMatiere({ params }: { params: Promise<{
       copies={m.copies}
       maitrisees={lignes.filter((r) => r.maitrisee).map((r) => r.formule as string)}
       tourDepart={tour}
+      liens={liensCalculs(matiere, m.copies)}
     />
   );
 }

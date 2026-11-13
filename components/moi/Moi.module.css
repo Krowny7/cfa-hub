@@ -82,3 +82,173 @@
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
+
+/* la plus rare, sous son filet du dossier (2026-11-13) : la vignette à gauche, le nom en grand à droite */
+@media (min-width: 640px) {
+  .rare {
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: center;
+    gap: 28px;
+    max-width: 720px;
+    padding: 18px 26px 18px 18px;
+  }
+  .rare .rareNom {
+    font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+    font-weight: 400;
+    font-size: 26px;
+    line-height: 1.1;
+  }
+}
+
+/* ——— Mes pièces (gabarit Dossier, 2026-11-13) : la plus rare posée sur le vrai objet, les rayons à plat ——— */
+.rareObjet {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 640px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.rareObjet:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+.rareEntete {
+  display: block;
+  pointer-events: none;
+}
+.plaqueTitre {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  padding: 26px 28px;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 220, 0.06), transparent 40%),
+    #1a120b;
+}
+.plaqueTitre .plaqueTitreTexte {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-align: center;
+  color: #f3ead7;
+}
+:global(html[data-theme="nuit"]) .plaqueTitre {
+  outline: 1px solid rgba(243, 234, 215, 0.22);
+}
+.rareLegende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+.rareNomCourt {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.pastille {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+}
+.rayon {
+  padding-bottom: 6px;
+}
+.posee {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+/* la ligne de sol, et l'ombre de contact sous l'objet */
+.poseeObjet {
+  position: relative;
+  display: block;
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
+  transition: transform 160ms ease;
+}
+.poseeObjet::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -1px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(26, 18, 11, 0.28), transparent);
+  pointer-events: none;
+}
+.posee:hover .poseeObjet {
+  transform: translateY(-2px);
+}
+.posee:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+.poseeNom {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.poseePortee {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pal-3, var(--ink));
+}
+:global(html[data-theme="nuit"]) .poseePortee {
+  color: color-mix(in oklab, var(--pal-3) 60%, white);
+}
+.titreRayon :global(*) {
+  color: #f3ead7 !important;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+}
+.titreRayon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 76px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: #1a120b;
+  color: #f3ead7;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .poseeObjet {
+    transition: none;
+  }
+}

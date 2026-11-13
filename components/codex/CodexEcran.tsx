@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { devoileLite } from "@/lib/codex/devoile-lite";
 import type { LigneQuete, VueActe, VueCodex, VueContrat } from "@/lib/codex/vue";
-import { CODEX } from "@/lib/voice-codex";
+import { CODEX, PALIER } from "@/lib/voice-codex";
+import { nombre } from "@/lib/voice";
+import { ProchainPalier, ensuiteDe } from "@/components/codex/ProchainPalier";
 import { codexChangerContrat, codexOuvrirProgramme, codexToutMontrer } from "@/lib/codex/actions";
-import { TEXTES_TOUT, aRecupererDe, avanceeActe, plusDetail, retrouver } from "@/lib/codex/tout";
+import { aRecupererDe, avanceeActe, plusDetail, retrouver } from "@/lib/codex/tout";
 import { DetailQuete } from "@/components/codex/DetailQuete";
 import { Aujourdhui } from "@/components/codex/Aujourdhui";
 import { ToutLeCodex } from "@/components/codex/ToutLeCodex";
@@ -17,37 +19,32 @@ import { PoseLePinceau } from "@/components/codex/PoseLePinceau";
 import { FilRouge } from "@/components/codex/FilRouge";
 import { Verdict } from "@/components/codex/Verdict";
 import { QUETE_VEILLE, pinceauPose } from "@/lib/codex/calendrier";
-import { ArbreCodex, Chemin, CodexTel, SegmentsTel, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
-import { quetesDeLaCarte, segmentDe, type VueSegment } from "@/lib/codex/carte";
+import { ArbreCodex, Chemin, CodexTel, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
+import { quetesDeLaCarte, segmentDe } from "@/lib/codex/carte";
 import { Feuille } from "@/components/ui/Feuille";
 import { EnTeteSousPage } from "@/components/ui/SousPage";
+import { Repli } from "@/components/moi/Dossier";
 import { SOUS_MOI } from "@/lib/voice-moi";
 import { annoncerDevoile } from "@/components/codex/annoncer";
 import e from "./Encre.module.css";
 import c from "./CodexEcran.module.css";
 import j from "./Aujourdhui.module.css";
 
-// L'écran du Codex (/codex), Codex simplifié (§3.3, §3.4) : l'en-tête commun
-// des sous-pages (retour à Moi, d'où l'on entre au Codex ; titre « Codex » ;
-// la peinture du lieu), puis deux segments, sur téléphone comme sur
-// ordinateur, gardés dans l'URL (?vue=) :
-//   Aujourd'hui    « À récupérer », le fil (la séance du jour en étapes, un
-//                  seul bouton plein) et les replis d'une ligne (Quêtes du
-//                  jour, Fait aujourd'hui, Préparation, l'acte, Ta semaine) :
-//                  components/codex/Aujourdhui.tsx, deux colonnes sur ordinateur ;
-//   Tout le Codex  quatre replis (Parcours, Matières, Objectifs longs,
-//                  Exploits), « Ta semaine » et « Voir la carte » ;
-//                  maître-détail sur ordinateur : components/codex/ToutLeCodex.tsx.
-// « Voir la carte » (?vue=carte) : la carte sur toute la largeur (l'arbre sur
-// ordinateur, les chemins sur téléphone), « ← Tout le Codex » pour revenir.
-// Un ancien segment (?vue=parcours, matieres…) mène à « Tout le Codex ».
-// Le calendrier (V3 §7.1, `vue.moment`) : en veillée, les sept tampons et
-// « On ne commence plus rien. » ; la malle (J-3 à J-1) avant le fil ; le
-// jour J, « Bonne chance. » seule ; le lendemain, « Pose le pinceau. », sans
-// séance ; après l'examen, le fil rouge passe en tête de « Tout le Codex ».
+// L'écran du Codex (/codex), direction du 2026-11-13 (« l'arbre seul, le prochain palier en grand ») :
+// la porte des sous-pages (retour à Moi ; la phase et « n à récupérer » en ligne d'état ; le chiffre-
+// héros : les quêtes faites sur le total), puis le prochain palier en grand (ProchainPalier : la plaque
+// ébène, la récompense posée comme un objet, « Y aller » à l'encre, les quêtes qui suivent grisées),
+// puis l'arbre seul (ArbreCodex sur ordinateur, les chemins sur téléphone). Dessous, deux replis :
+//   Aujourd'hui    « À récupérer », le fil (la séance du jour en étapes) et les replis d'une ligne
+//                  (components/codex/Aujourdhui.tsx) ; ouvert d'office s'il y a quelque chose à récupérer ;
+//   Tout le Codex  Parcours, Matières, Objectifs longs, Exploits, « Ta semaine » (ToutLeCodex.tsx) ;
+//                  « Voir la carte » y ramène à l'arbre.
+// ?vue=tout (et les anciens segments) ouvre « Tout le Codex » ; ?vue=carte n'ouvre rien de plus.
+// Le calendrier (V3 §7.1, `vue.moment`) passe avant le palier : en veillée, les sept tampons et « On ne
+// commence plus rien. » ; la malle (J-3 à J-1) ; le jour J, « Bonne chance. » seule ; le lendemain,
+// « Pose le pinceau. », sans séance. Ces jours-là, pas de prochain palier.
 // Un clic sur une quête ouvre son détail ; sur un acte, la feuille de l'acte.
-// `quete` (?quete=…, « Chercher une quête » de la palette) : la carte
-// s'ouvre et vient à elle ; son détail s'ouvre sur téléphone.
+// `quete` (?quete=…, « Chercher une quête » de la palette) : l'arbre vient à elle ; son détail s'ouvre sur téléphone.
 // `demo` : aperçus (aucune action serveur).
 
 type Props = { vue: VueCodex; demo?: boolean; segment?: string; quete?: string };
@@ -76,19 +73,6 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
   }, []);
   const ouvrirActe = useCallback((a: VueActe) => setActe(a), []);
   const fermer = useCallback(() => setOuverte(null), []);
-  // une quête cherchée (?quete=) se montre sur la carte
-  const [segment, setSegment] = useState<VueSegment>(() => (quete ? "carte" : segmentDe(segmentUrl)));
-  const choisirSegment = (s: VueSegment) => {
-    setSegment(s);
-    try {
-      const u = new URL(window.location.href);
-      if (s === "aujourdhui") u.searchParams.delete("vue");
-      else u.searchParams.set("vue", s);
-      window.history.replaceState(window.history.state, "", u);
-    } catch {
-      // l'URL reste telle quelle
-    }
-  };
   // la quête cherchée : sur téléphone, son détail s'ouvre (sur ordinateur, la carte vient à elle), une fois par quête demandée
   const queteVue = useRef<string | null>(null);
   useEffect(() => {
@@ -167,12 +151,33 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
     );
   }
 
+  // le prochain palier : pas les jours où le Codex dit « On ne commence plus rien » (veillée, malle) ni
+  // après avoir posé le pinceau (V3 §7)
+  const plaque = !!vue.prochaine && moment !== "veillee" && moment !== "malle" && !pinceauPose(moment);
+  const nRecuperer = vue.aRecuperer.length;
+  const allerALArbre = () => document.getElementById("codex-arbre")?.scrollIntoView({ behavior: "smooth", block: "start" });
+
   return (
     <div className={`rl-wide rl-page ${e.carnet} ${c.page}`}>
-      <EnTeteSousPage retour={SOUS_MOI.retour} titre={CODEX.nom} illustration={{ nom: "reviser-carnets", position: "50% 45%" }} />
-      <div className={c.segments}>
-        <SegmentsTel segment={segment === "carte" ? "tout" : segment} onChoisir={choisirSegment} />
-      </div>
+      <EnTeteSousPage
+        retour={SOUS_MOI.retour}
+        titre={CODEX.nom}
+        ligne={PALIER.ligne(vue.phaseNom, nRecuperer)}
+        illustration={{ nom: "reviser-carnets", position: "50% 45%" }}
+        heros={vue.stats.total > 0 ? { valeur: `${nombre(vue.stats.faites)}/${nombre(vue.stats.total)}`, legende: PALIER.heros } : null}
+      />
+
+      {/* le calendrier (V3 §7.1) passe avant tout : la veillée, la malle, le lendemain, le verdict */}
+      {moment === "veillee" && vue.tampons && <Veillee tampons={vue.tampons} />}
+      {moment === "veillee" && <p className={e.replique}>{PALIER.plusRien}</p>}
+      {moment === "malle" && vue.malle && <Malle coches={vue.malle.coches} veille={veille} demo={demo} plein={!(avecSeance && vue.seance?.blocs.length) && !nRecuperer} onVue={setVue} />}
+      {moment === "lendemain" && vue.recap && <PoseLePinceau recap={vue.recap} />}
+      {vue.rythme?.verdict && <Verdict verdict={vue.rythme.verdict} demo={demo} onVue={setVue} />}
+
+      {/* le prochain palier, en grand : la seule action à l'encre de la page */}
+      {plaque && vue.prochaine && (
+        <ProchainPalier ligne={vue.prochaine.ligne} pourquoi={vue.prochaine.pourquoi} ensuite={ensuiteDe(vue, vue.prochaine.ligne.id)} sobre={vue.sobre} onQuete={ouvrir} />
+      )}
 
       {message && (
         <p role="status" className="card-quiet t-small p-3">
@@ -180,21 +185,26 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
         </p>
       )}
 
-      {/* la visite de Léonard s'y pose quand la préparation n'est pas montrée (cible « cap » sinon) */}
-      <div id="codex-segment" role="tabpanel" aria-labelledby={"codex-seg-" + segment} className={c.page} data-leonard="prochaine">
-        {segment === "aujourdhui" ? (
-          <>
-            {moment === "veillee" && vue.tampons && <Veillee tampons={vue.tampons} />}
-            {moment === "veillee" && <p className={e.replique}>On ne commence plus rien.</p>}
-            {/* un seul bouton plein : celui du fil ou « Tout récupérer » s'ils sont là */}
-            {moment === "malle" && vue.malle && <Malle coches={vue.malle.coches} veille={veille} demo={demo} plein={!(avecSeance && vue.seance?.blocs.length) && !vue.aRecuperer.length} onVue={setVue} />}
-            {moment === "lendemain" && vue.recap && <PoseLePinceau recap={vue.recap} />}
-            {/* dès le lendemain de l'examen : le verdict (V3 §10.5) */}
-            {vue.rythme?.verdict && <Verdict verdict={vue.rythme.verdict} demo={demo} onVue={setVue} />}
-            <Aujourdhui vue={vue} fil={avecSeance} demo={demo} onQuete={ouvrir} onVue={setVue} />
-          </>
-        ) : segment === "tout" ? (
-          <>
+      {/* l'arbre seul (sur téléphone, les chemins), directement sous le palier */}
+      <div id="codex-arbre" className="scroll-mt-24">
+        <div className={c.surOrdi} data-leonard="trame">
+          <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} allume={allumees} cible={quete} />
+        </div>
+        <div className={c.surTel}>
+          <CodexTel vue={vue} montre={montre} onQuete={ouvrir} />
+        </div>
+      </div>
+
+      {/* le reste derrière deux replis : « Aujourd'hui » (Récupérer, la séance du jour) et « Tout le Codex » */}
+      <div className={c.replis} data-leonard={plaque ? undefined : "prochaine"}>
+        <Repli id="aujourdhui" titre={PALIER.aujourdhui} compte={nRecuperer ? PALIER.aRecuperer(nRecuperer) : undefined} ouvert={nRecuperer > 0 || (!plaque && segmentDe(segmentUrl) === "aujourdhui" && !!segmentUrl)}>
+          <div className={c.page}>
+            {/* un seul bouton plein : celui du fil ou « Tout récupérer » s'ils sont là ; masqué s'il mène où mène déjà le palier */}
+            <Aujourdhui vue={vue} fil={avecSeance} demo={demo} onQuete={ouvrir} onVue={setVue} hrefPalier={plaque ? vue.prochaine?.ligne.destination?.href : undefined} />
+          </div>
+        </Repli>
+        <Repli id="tout" titre={PALIER.tout} ouvert={segmentDe(segmentUrl) === "tout"}>
+          <div className={c.page}>
             {/* après l'examen, le fil rouge continue : il passe en tête (V3 §7.1) */}
             {moment === "apres" && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={ouvrir} />}
             {d !== "tout" && (
@@ -214,23 +224,9 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
                 )}
               </section>
             )}
-            <ToutLeCodex vue={vue} montre={montre} demo={demo} filRouge={moment !== "apres"} onQuete={ouvrir} onVue={setVue} onCarte={() => choisirSegment("carte")} detail={(l) => detail(l, "panneau")} />
-          </>
-        ) : (
-          <>
-            <p className="m-0">
-              <button type="button" className={j.lien} onClick={() => choisirSegment("tout")}>
-                <ArrowLeft size={15} aria-hidden className="inline align-[-2px]" /> {TEXTES_TOUT.retourCarte}
-              </button>
-            </p>
-            <div className={c.surOrdi} data-leonard="trame">
-              <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} allume={allumees} cible={quete} />
-            </div>
-            <div className={c.surTel}>
-              <CodexTel vue={vue} montre={montre} onQuete={ouvrir} />
-            </div>
-          </>
-        )}
+            <ToutLeCodex vue={vue} montre={montre} demo={demo} filRouge={moment !== "apres"} onQuete={ouvrir} onVue={setVue} onCarte={allerALArbre} detail={(l) => detail(l, "panneau")} />
+          </div>
+        </Repli>
       </div>
 
       <Feuille ouvert={!!acte} onFermer={() => setActe(null)} titre={acte ? etiquetteActe(acte.acte) : "Acte"}>

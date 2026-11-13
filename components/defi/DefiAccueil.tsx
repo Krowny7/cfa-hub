@@ -1,23 +1,34 @@
 "use client";
 
-import { DefiResult } from "@/components/defi/DefiResult";
-import { DefiHistory, Ticks } from "@/components/defi/parts";
-import { ChiffreSerie, DepartZone, type SerieDuJour } from "@/components/epreuves/DepartZone";
-import { ListeCourte, type Ligne } from "@/components/ui/Decors";
-import { CadreAnnexe, CadreZones, EnTeteSousPage, SousPage, type Zone } from "@/components/ui/SousPage";
-import { dailyPhase, dayLabel, timeLeftLabel, type DailyBoard, type DailyHistoryEntry, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
+import { useMemo } from "react";
+import { ArrowRight } from "lucide-react";
+import { CeremonieSansFaute } from "@/components/adn/CeremonieSansFaute";
+import { GoutteVerdict } from "@/components/adn/GoutteVerdict";
+import { SignalLeonard } from "@/components/leonard/SignalLeonard";
+import { CeremonieSceaux } from "@/components/profil/CeremonieSceaux";
+import { SceauDefi } from "@/components/defi/SceauDefi";
+import { DefiCalendrier, Entoure, PodiumDuJour, joursAffilee, resteAvant } from "@/components/defi/DefiCalendrier";
+import type { SerieDuJour } from "@/components/epreuves/DepartZone";
+import { ActionEncre, EnTeteSousPage, Scene, SousPage } from "@/components/ui/SousPage";
+import { dailyPhase, dayHref, reviewHref, type DailyBoard, type DailyHistoryEntry, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
+import { nombre, pctScore } from "@/lib/voice";
 import { DEPART } from "@/lib/voice-epreuves";
-import { RETOUR_ENTRAINEMENT, SOUS_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
-import { rangOrdinal, voixDefi } from "@/lib/voice-z2c";
+import { CALENDRIER as C } from "@/lib/voice-entrainement-b";
+import { RETOUR_ENTRAINEMENT } from "@/lib/voice-entrainement-sous";
+import { rangOrdinal, verdictCopie, voixDefi } from "@/lib/voice-z2c";
+import css from "./DefiCalendrier.module.css";
 
-// L'accueil des deux défis du jour (/defi : les 30 ; /defi/cinq : les 5), sur le modèle des
-// sous-pages validé par Théo (2026-11-12) : l'en-tête commun (retour à S'entraîner, la peinture du
-// lieu à droite), puis le cadre à zones : le défi du jour à gauche (le départ, ou ta copie rendue),
-// et dans la colonne grise le classement du jour (les 30), une seule fois, ou ta série d'encre (les
-// 5). Dessous, la seule annexe : les jours passés (on n'y revoit ses copies que là). La copie en
-// cours, elle, reste plein écran (DefiRunner, sans en-tête).
-
-const S = SOUS_ENTRAINEMENT.defi;
+// L'accueil des deux défis du jour (/defi : les 30 ; /defi/cinq : les 5), direction « le lieu, puis
+// l'objet » (2026-11-13) : la porte (la peinture de la carte des 30 du jour, le chiffre-héros vrai :
+// les jours d'affilée, ou la série d'encre des 5), puis UN objet, le calendrier du mois
+// (DefiCalendrier) : la feuille du jour avec la date entourée, « SE FIGE DANS n H », l'état et la
+// seule action à l'encre (commencer, ou revoir sa copie), le podium du jour ; à côté, le mois, chaque
+// jour passé avec son score et le tampon TENU d'un sans-faute (un clic ouvre ce jour : la copie et
+// son classement). Plus de bande noire ni de colonne grise. La copie rendue, le sceau du jour se
+// tamponne sur la feuille (SceauDefi, une fois) et la case du jour mène au jour (la copie, le temps,
+// l'écart au premier). Une seule étiquette rouge : « SE FIGE DANS n H », sur la feuille ; la série
+// d'encre des 5 est dans la légende du chiffre-héros. La copie en cours, elle, reste plein écran
+// (DefiRunner, sans en-tête).
 
 type Props = {
   info: DailyInfo;
@@ -25,23 +36,12 @@ type Props = {
   history: DailyHistoryEntry[];
   review: DailyReviewItem[];
   nowIso: string;
-  /** la série d'encre (les 5 du jour) ; null : illisible, la colonne grise ne s'affiche pas */
+  /** la série d'encre (les 5 du jour) ; null : illisible, le chiffre-héros prend les jours d'affilée */
   serie: SerieDuJour | null;
   onStart: () => void;
 };
 
-/** Le classement du jour en courte liste : les premiers, et ma ligne si je suis plus bas. */
-function lignesClassement(board: DailyBoard | null, n: number): Ligne[] {
-  const rows = board?.rows ?? [];
-  const me = board?.me ?? null;
-  const tete = me && !rows.slice(0, 5).some((r) => r.isMe) ? [...rows.slice(0, 4), me] : rows.slice(0, 5);
-  return tete.map((r) => ({
-    cle: r.userId,
-    titre: `${rangOrdinal(r.rank)} · ${r.isMe ? S.toi : r.username ?? "Joueur"}`,
-    detail: `${r.score}/${r.total || n}`,
-    marque: r.isMe,
-  }));
-}
+const heureFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
 
 export function DefiAccueil({ info, board, history, review, nowIso, serie, onStart }: Props) {
   const DEFI = voixDefi(info.format);
@@ -49,50 +49,125 @@ export function DefiAccueil({ info, board, history, review, nowIso, serie, onSta
   const cinq = info.format === "cinq";
   const n = info.questionCount;
   const minutes = Math.round(info.timeLimitSeconds / 60);
-  const left = timeLeftLabel(info.closesAt, nowIso);
+  const me = info.me;
+  const fait = phase === "done" && !!me;
+  const total = me?.total ?? n;
+  const score = me?.score ?? review.filter((r) => r.isCorrect).length;
+  const erreurs = review.length > 0 ? review.filter((r) => !r.isCorrect).length : Math.max(0, total - score);
+  const sansFaute = fait && total > 0 && score === total;
+  const reste = info.isToday ? resteAvant(info.closesAt, nowIso) : null;
 
-  const essentiel =
-    phase === "done" ? (
-      <DefiResult info={info} review={review} board={board} />
-    ) : phase === "todo" ? (
-      <DepartZone
-        ligne={info.players > 0 ? DEFI.rendues(info.players, info.topScore, n) : DEFI.format(n, minutes)}
-        traits={<Ticks marks={Array.from({ length: n }, () => "todo" as const)} label={DEFI.aTracer(n)} />}
-        regles={DEFI.rules(n, minutes)}
-        action={cinq ? DEPART.cinq.lancer : DEFI.commencer}
-        onStart={onStart}
-        pied={DEFI.ouvert(left)}
-      />
-    ) : (
-      <div className="grid gap-2">
-        <p className="m-0 text-[20px] font-bold leading-tight">{DEFI.aucunTitre}</p>
-        <p className="t-body m-0 max-w-[480px] text-muted">{DEFI.unavailable}</p>
+  const parJour = useMemo(() => new Map(history.map((e) => [e.day, e])), [history]);
+  const affilee = joursAffilee(info.today, parJour, fait);
+  const heros =
+    cinq && serie
+      ? serie.jours > 0
+        ? { valeur: nombre(serie.jours), legende: C.encre(serie.jours, serie.fait ? 0 : serie.reste) }
+        : null
+      : affilee > 0
+        ? { valeur: nombre(affilee), legende: C.affilee(affilee) }
+        : null;
+
+  const jj = Number(info.day.slice(8, 10));
+  const lundi0 = (new Date(info.day + "T12:00:00Z").getUTCDay() + 6) % 7;
+  const joueurs = Math.max(board?.players ?? info.players, fait ? 1 : 0);
+
+  const feuille = (idCercle: string) => (
+    <div className={css.feuille} aria-label={C.aujourdhui}>
+      {fait && (
+        <GoutteVerdict
+          cle={`defi:${info.format}:${info.day}`}
+          rendueA={me?.finishedAt ?? null}
+          mot={verdictCopie(score, total)}
+          score={`${score}/${total}`}
+          detail={pctScore(score, total) ?? undefined}
+          fond="#f3ecdc"
+        />
+      )}
+      <p className={css.feuilleHaut}>
+        <span>{fait && me?.finishedAt ? C.rendueA(heureFmt.format(new Date(me.finishedAt))) : C.aujourdhui}</span>
+        <span>{C.jourLong(lundi0)}</span>
+      </p>
+      <div className={css.dateLigne}>
+        <p className={css.date}>
+          <b>{jj}</b>
+          <Entoure id={idCercle} />
+        </p>
+        {fait && <SceauDefi day={info.day} taille={72} angle={-6} className={css.sceau} />}
       </div>
-    );
+      {reste && phase !== "unavailable" && !fait && (
+        <p className={css.enjeu}>
+          <i aria-hidden />
+          {C.seFige(reste)}
+        </p>
+      )}
 
-  const droite: Zone | undefined = cinq
-    ? serie
-      ? { titre: S.serie, contenu: <ChiffreSerie serie={serie} /> }
-      : undefined
-    : info.exists
-      ? { titre: S.classement, contenu: <ListeCourte lignes={lignesClassement(board, n)} vide={DEFI.boardEmpty} /> }
-      : undefined;
+      {fait ? (
+        <>
+          <p className={css.etiquette}>{C.taCopie}</p>
+          <p className={css.copie}>
+            <b>
+              {nombre(score)}
+              <i>/{nombre(total)}</i>
+            </b>
+            {me && me.rank !== null && <span>{C.rang(rangOrdinal(me.rank), joueurs)}</span>}
+            {sansFaute && <span className={css.tenuGrand}>{C.sansFaute}</span>}
+          </p>
+          <div className={css.action}>
+            <ActionEncre href={reviewHref(info.day, undefined, info.format)}>
+              {C.revoir}
+              {erreurs > 0 ? ` · ${C.ratures(erreurs)}` : ""} <ArrowRight size={16} aria-hidden />
+            </ActionEncre>
+          </div>
+        </>
+      ) : phase === "todo" ? (
+        <>
+          <p className={css.etat}>{C.copies(info.players, info.topScore, n)}</p>
+          <div className={css.action}>
+            <ActionEncre onClick={onStart} autoFocus>
+              {cinq ? DEPART.cinq.lancer : DEFI.commencer} <ArrowRight size={16} aria-hidden />
+            </ActionEncre>
+          </div>
+        </>
+      ) : (
+        <p className={css.texte}>
+          <b>{DEFI.aucunTitre}</b>
+          {DEFI.unavailable}
+        </p>
+      )}
+      {info.exists && <PodiumDuJour board={board} n={n} lien={fait ? dayHref(info.day, info.format) : null} />}
+    </div>
+  );
 
   return (
-    <SousPage
-      entete={
-        <EnTeteSousPage
-          retour={RETOUR_ENTRAINEMENT}
-          titre={info.isToday ? DEFI.title : DEFI.titleDay(dayLabel(info.day, "day", info.today))}
-          ligne={DEFI.kicker(dayLabel(info.day, "long", info.today))}
-          illustration={cinq ? { nom: "cinq-depart", position: "18% 22%" } : { nom: "defi-pupitre", position: "85% 40%" }}
-        />
-      }
-    >
-      <CadreZones gauche={{ titre: S.jour, contenu: essentiel }} droite={droite} />
-      <CadreAnnexe titre={S.joursPasses}>
-        <DefiHistory entries={history} today={info.today} nowIso={nowIso} visible={cinq ? 3 : 6} format={info.format} entete={false} />
-      </CadreAnnexe>
-    </SousPage>
+    <>
+      {fait && info.isToday && (
+        <>
+          <SignalLeonard
+            evt={score / Math.max(total, 1) >= 0.7 ? "defi-reussi" : "defi-rate"}
+            vars={{ score: `${score}/${total}`, pct: `${Math.round((score / Math.max(total, 1)) * 100)} %` }}
+            cle={"defi:" + info.day}
+            delai={1800}
+          />
+          <CeremonieSansFaute score={score} total={total} epreuve={cinq ? "Les 5 du jour" : "Défi du jour"} cle={`defi:${info.format}:${info.day}`} rendueA={me?.finishedAt ?? null} />
+        </>
+      )}
+      <SousPage
+        entete={
+          <EnTeteSousPage
+            retour={RETOUR_ENTRAINEMENT}
+            titre={DEFI.title}
+            ligne={C.ligne(n, minutes, cinq)}
+            illustration={{ nom: "accueil-trente-du-jour", position: "50% 44%" }}
+            heros={heros}
+          />
+        }
+      >
+        <Scene>
+          <DefiCalendrier today={info.today} histoire={history} aujourdhui={{ score: fait ? score : null, total }} format={info.format} nowIso={nowIso} feuille={feuille} />
+        </Scene>
+        {fait && info.isToday && <CeremonieSceaux className="!max-w-none" />}
+      </SousPage>
+    </>
   );
 }

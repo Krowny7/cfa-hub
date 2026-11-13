@@ -14,6 +14,46 @@ export const SOUS_ENTRAINEMENT = {
     composer: "Compose ta séance",
     dernieres: "Tes dernières séances",
     copies: "Tes copies",
+    /** la sélection façon choix de niveau (2026-11-13) : l'étiquette de la scène, ses réglages, le lancement */
+    matieres: "Tes matières",
+    parMatiere: "Matières",
+    parNotion: "Notions",
+    questions: "Questions",
+    melange: "Mélange",
+    examen: "Mode examen",
+    /** ce que fait le mode examen (l'infobulle de l'interrupteur) */
+    examenAide: "Aux poids de l'examen, sans pause : comme le jour J.",
+    melangeAide: "Les matières mêlées dans la séance, plutôt qu'une à la suite de l'autre.",
+    lancer: "Lancer",
+    /** la première ligne des copies : son pourcentage est déjà le chiffre-héros */
+    derniere: "la dernière",
+    /** le chiffre-héros : la dernière copie */
+    heros: "dernière copie",
+    /** la ligne d'état de la porte : les copies rendues et les trophées d'or (la plus fragile reste à la planche) */
+    etat: (copies: number, ors: number) =>
+      copies === 0
+        ? "Aucune copie rendue pour l'instant : la première mesure tes matières."
+        : `${pluriel(copies, "copie rendue", "copies rendues")}${ors > 0 ? ` · ${pluriel(ors, "trophée or", "trophées or")}` : ""}`,
+    poids: (w: string) => `${w}${NBSP}%`,
+    /** les touches à deux valeurs de la barre de réglages */
+    melangeOui: "Mêlées",
+    melangeNon: "À la suite",
+    examenOui: "Oui",
+    examenNon: "Non",
+    /** une taille au-delà de ce que la base peut servir pour ces matières (l'infobulle de la touche grisée) */
+    tropGrand: (n: number) => `Ces matières ne donnent que ${pluriel(n, "question", "questions")} : ajoutes-en une.`,
+    /** la ligne Mono sous Lancer : les matières, la durée, le trophée visé */
+    note: (matieres: string, minutes: string, palier: string) => `${matieres} — ${minutes} — trophée ${palier}`,
+    /** le mode examen allumé : la note sous Lancer */
+    noteExamen: (matieres: string, minutes: string) => `${matieres} — ${minutes} — aux poids de l'examen · sans pause`,
+    /** la ligne lue d'une matière (lecteur d'écran) */
+    lecture: (nom: string, pct: number | null, conseil: boolean) =>
+      `${nom}, ${pct === null ? "pas encore mesurée" : `${nombre(pct)}${NBSP}%`}${conseil ? ", conseillée" : ""}`,
+    /** l'annexe des copies : trois lignes, puis la suite à la demande */
+    autres: (n: number) => (n > 1 ? `Voir les ${nombre(n)} autres` : "Voir la dernière"),
+    replier: "Replier",
+    progression: "Progression",
+    historique: "Copies",
   },
   qcm: {
     titre: "QCM par thème",
@@ -25,6 +65,30 @@ export const SOUS_ENTRAINEMENT = {
     legendeTotal: (total: number) => `questions réussies sur ${nombre(total)}`,
     communaute: "Communauté",
     lesQcm: (matiere: string) => `Les QCM · ${matiere}`,
+    /** l'éventail (2026-11-13) : la main des 10 matières, la carte tirée */
+    main: "Ta main",
+    heros: "réussies",
+    /** la ligne d'état de la porte */
+    etat: (entames: number, sets: number) =>
+      entames === 0 ? `${pluriel(sets, "QCM", "QCM")} à ouvrir · l'XP se gagne à ta première bonne réponse` : `${pluriel(entames, "QCM entamé", "QCM entamés")} sur ${nombre(sets)} · l'XP se gagne à ta première bonne réponse`,
+    vide: "Ses QCM arrivent bientôt.",
+    /** sur la carte tirée : réussies sur le total de la matière */
+    carteReussies: (fait: number, total: number) => `${nombre(fait)}/${nombre(total)} réussies`,
+    /** une pastille (infobulle et lecture) */
+    pastille: (titre: string, fait: number, total: number | null) => `${titre} · ${nombre(fait)}/${total === null ? "?" : nombre(total)}`,
+    reprendreAction: "Reprendre",
+    ouvrirAction: "Ouvrir",
+    drills: "Quiz des fiches",
+    /** la ligne qui regroupe les quiz des fiches d'une matière */
+    fiches: "Fiches",
+    /** une fiche dans la rangée de petits carrés (lecture) */
+    fiche: (n: number, fait: number, total: number | null) => `Fiche ${nombre(n)} · ${nombre(fait)}/${total === null ? "?" : nombre(total)}`,
+    /** la carte qui porte le QCM en cours (lecture) */
+    enCours: "le QCM en cours",
+    /** les séances chronométrées sur tes QCM (l'ancien /session, toujours là) */
+    chrono: "Chrono 15 min",
+    examenQcm: "Examen sur tes QCM",
+    tirer: (matiere: string) => `Tirer la carte ${matiere}`,
   },
   calculs: {
     ouvrir: "Ouvrir une matière",
@@ -73,6 +137,21 @@ export const SOUS_ENTRAINEMENT = {
     scores: "Tes scores",
     pasEncore: "—",
     complete: (n: number) => `Passer la session complète · ${pluriel(n, "question", "questions")}`,
+    /** les packs scellés (2026-11-13) */
+    heros: (n: number) => (n > 1 ? "scellés" : "scellé"),
+    packs: "Tes packs",
+    scelle: "Scellé",
+    /** la ligne d'état de la porte */
+    etat: (sessions: number, ouvertes: number, jours: number | null) =>
+      `${pluriel(sessions, "session", "sessions")} · ${ouvertes === 0 ? "aucune ouverte" : pluriel(ouvertes, "ouverte", "ouvertes")}${jours === null ? "" : jours <= 0 ? " · la dernière aujourd'hui" : jours === 1 ? " · la dernière hier" : ` · la dernière il y a ${nombre(jours)}${NBSP}j`}`,
+    nQuestions: (n: number) => pluriel(n, "question", "questions"),
+    /** une tuile de matière sous le pack ouvert */
+    tuileQ: (n: number) => `${nombre(n)}${NBSP}Q`,
+    variantes: "Variantes",
+    /** sur une tuile de matière : le lien de ses variantes, en Mono */
+    variantesCourt: "VAR",
+    /** la lecture d'un pack (lecteur d'écran) */
+    lecture: (nom: string, n: number, pct: number | null) => `${nom}, ${pluriel(n, "question", "questions")}, ${pct === null ? "scellé" : `meilleure copie ${nombre(pct)}${NBSP}%`}`,
   },
   cas: {
     choisir: "Choisis ton dossier",

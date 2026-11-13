@@ -1,0 +1,335 @@
+/* La grille des cartes (components/flashcards/GrilleCartes.tsx) : les cartes posées sur le fond
+   classique, un rang par paquet. Les matières gardent leurs couleurs fixes de jour comme de nuit
+   (papier #fbf8f2, dos ébène #1a120b, filet miel) ; la nuit, un liseré clair remplace l'ombre. */
+
+.grille {
+  --papier: #fbf8f2;
+  --dos: #1a120b;
+  --miel: #d6a13f;
+  --encre-carte: #1c1712;
+  display: grid;
+  gap: 26px;
+  min-width: 0;
+}
+.rang {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.rangTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  min-width: 0;
+}
+.rangNom {
+  position: relative;
+  min-width: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+a.rangNom:hover {
+  color: var(--pal-2, var(--ink));
+}
+/* le paquet où reprendre : son nom entouré à l'encre de la palette (le signe « conseillé » du site) */
+.entoure {
+  position: absolute;
+  inset: -10px -14px -9px -17px;
+  width: calc(100% + 31px);
+  height: calc(100% + 19px);
+  overflow: visible;
+  fill: none;
+  stroke: var(--pal-2, var(--ink));
+  stroke-width: 2.2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+a.rangNom[data-conseil] {
+  color: var(--ink);
+  margin-left: 15px;
+}
+a.rangNom:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.rangCompte {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+.rangFiche {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.rangFiche:hover {
+  color: var(--ink);
+}
+
+.cartes {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 620px) {
+  .cartes {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+@media (min-width: 980px) {
+  .cartes {
+    grid-template-columns: repeat(15, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+.case {
+  min-width: 0;
+  animation: grPose 380ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 12ms);
+}
+@keyframes grPose {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* une carte : le dos ébène biseauté (double filet miel), ou l'endroit en papier */
+.carte {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 5 / 7;
+  border-radius: 8px;
+  background:
+    radial-gradient(130% 70% at 16% 0%, rgba(255, 255, 255, 0.08), transparent 58%),
+    var(--dos);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 0 rgba(0, 0, 0, 0.35),
+    0 8px 12px -8px rgba(0, 0, 0, 0.55);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms ease;
+  cursor: pointer;
+}
+.carte[data-fixe] {
+  cursor: default;
+}
+.carte:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 3px;
+}
+.carte:not([data-vue])::before,
+.carte:not([data-vue])::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid color-mix(in srgb, var(--miel) 42%, transparent);
+  border-radius: 5px;
+  pointer-events: none;
+}
+.carte:not([data-vue])::after {
+  inset: 7px;
+  border-color: color-mix(in srgb, var(--miel) 15%, transparent);
+  border-radius: 3px;
+}
+.motif {
+  width: 26%;
+  aspect-ratio: 1;
+  transform: rotate(45deg);
+  border: 1px solid color-mix(in srgb, var(--miel) 55%, transparent);
+}
+.carte[data-vue] {
+  background: var(--papier);
+  color: var(--encre-carte);
+  box-shadow:
+    inset 0 0 0 1px rgba(28, 23, 18, 0.1),
+    0 1px 0 rgba(0, 0, 0, 0.08),
+    0 8px 12px -9px rgba(0, 0, 0, 0.4);
+}
+.num {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(28, 23, 18, 0.42);
+}
+/* le terme de la carte, écrit dessus (anglais), trois lignes au plus */
+.terme {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  max-width: 100%;
+  padding: 0 5px;
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.22;
+  text-align: center;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  color: var(--encre-carte);
+}
+@media (min-width: 1200px) {
+  .terme {
+    font-size: 11px;
+  }
+}
+@media (max-width: 619px) {
+  .terme {
+    padding: 0 3px;
+    font-size: 10px;
+  }
+}
+/* le langage d'état du site : pastille entourée = vue, pleine = maîtrisée */
+.pastille {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  border: 1.5px solid var(--pal-2, #1c1712);
+}
+.carte[data-tenue] .pastille {
+  background: var(--pal-2, #1c1712);
+}
+@media (hover: hover) {
+  .carte:not([data-fixe]):hover {
+    transform: translateY(-3px) rotate(-1deg);
+    box-shadow:
+      inset 0 0 0 1px rgba(28, 23, 18, 0.1),
+      0 14px 18px -10px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.legende span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.legende i {
+  display: inline-block;
+}
+.lVue,
+.lTenue {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--pal-2, var(--ink-2));
+}
+.lTenue {
+  background: var(--pal-2, var(--ink-2));
+}
+.lDos {
+  width: 9px;
+  height: 12px;
+  border-radius: 2px;
+  background: #1a120b;
+  box-shadow: inset 0 0 0 1px rgba(214, 161, 63, 0.5);
+}
+
+/* la nuit : un liseré clair remplace l'ombre */
+:global(html[data-theme="nuit"]) .carte {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 0 1px rgba(241, 233, 212, 0.28);
+}
+/* la nuit, --pal-2 est sombre : éclairci sur le fond sombre (légende, survol, focus, cercle) */
+:global(html[data-theme="nuit"]) .lVue,
+:global(html[data-theme="nuit"]) .lTenue {
+  border-color: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+:global(html[data-theme="nuit"]) .lTenue {
+  background: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+:global(html[data-theme="nuit"]) a.rangNom:hover {
+  color: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+:global(html[data-theme="nuit"]) a.rangNom:focus-visible,
+:global(html[data-theme="nuit"]) .carte:focus-visible {
+  outline-color: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+:global(html[data-theme="nuit"]) .entoure {
+  stroke: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+:global(html[data-theme="nuit"]) .carte[data-vue] {
+  box-shadow: 0 0 0 1px rgba(241, 233, 212, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case {
+    animation: none;
+  }
+  .carte {
+    transition: none;
+  }
+}
+
+/* sous la grille : l'action à l'encre, les options à contour, puis la légende */
+.pied {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  padding-top: 6px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+@media (max-width: 619px) {
+  .actions {
+    display: grid;
+    width: 100%;
+  }
+  .actions > * {
+    min-height: 46px;
+  }
+}
+/* téléphone : l'action passe au-dessus de la grille (60 cartes font douze rangées) */
+@media (max-width: 619px) {
+  .pied {
+    order: -1;
+    padding: 0 0 4px;
+  }
+}

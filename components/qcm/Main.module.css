@@ -1,0 +1,551 @@
+/* /qcm « la main » (components/qcm/Main.tsx) : l'éventail des matières en cartes papier, chacune avec
+   son état sur la tranche visible (réussites, encoches), la carte levée sortie de la main avec ses QCM
+   en lignes et l'action posée sous elle. Le papier et l'encre des cartes sont des couleurs fixes, de
+   jour comme de nuit (--noir devient clair la nuit) ; la nuit, un liseré clair remplace l'ombre. */
+
+.table {
+  --papier: #f5efe1;
+  --papier-2: #ece4d0;
+  --encre: #1a120b;
+  --encre-2: rgba(26, 18, 11, 0.62);
+  --encre-3: rgba(26, 18, 11, 0.32);
+  /* une carte de la main, et la carte levée */
+  --l: 196px;
+  --h: 276px;
+  --lh: 196px;
+  --hh: 276px;
+  --pas: clamp(52px, 4.6vw, 60px);
+  --ecart: 52px;
+  --cercle: var(--pal-2, #1a120b);
+  display: grid;
+  justify-items: center;
+  gap: 30px;
+  padding: 34px 0 8px;
+  min-width: 0;
+}
+@media (min-width: 1200px) {
+  .table {
+    --lh: 260px;
+    --hh: 364px;
+  }
+}
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ——— la main ——— */
+.main {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: calc((var(--n) - 1) * var(--pas) + var(--lh) + var(--l) - var(--pas) + var(--ecart));
+  max-width: 100%;
+  height: calc(var(--hh) + 40px);
+}
+.table[data-action] .main {
+  height: calc(var(--hh) + 40px + 78px);
+}
+.place {
+  position: absolute;
+  /* les cartes de la main s'alignent sur le bas de la carte levée */
+  top: calc(26px + var(--hh) - var(--h));
+  left: calc(var(--i) * var(--pas));
+  width: var(--l);
+  height: var(--h);
+  transform-origin: 50% 140%;
+  transform: rotate(calc(var(--k) * 1.8deg)) translateY(calc(var(--k) * var(--k) * 1.2px));
+  transition: transform 0.32s cubic-bezier(0.3, 0.7, 0.2, 1), left 0.32s cubic-bezier(0.3, 0.7, 0.2, 1);
+  z-index: var(--i);
+}
+.place[data-droite] {
+  left: calc(var(--i) * var(--pas) + var(--lh) - var(--pas) + var(--ecart));
+}
+/* la première carte à droite de la levée tourne autour de son coin gauche : son index reste lisible */
+.place[data-voisine] {
+  transform-origin: 0% 140%;
+}
+.place[data-haut] {
+  top: 26px;
+  width: var(--lh);
+  height: var(--hh);
+  transform: translateY(-24px);
+  z-index: 30;
+}
+.carte {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 80% at 30% 0%, rgba(255, 255, 255, 0.55), transparent 60%),
+    linear-gradient(180deg, var(--papier), var(--papier-2));
+  color: var(--encre);
+  text-align: left;
+  box-shadow:
+    inset 0 0 0 1px rgba(26, 18, 11, 0.12),
+    inset 0 0 0 7px var(--papier),
+    inset 0 0 0 8px rgba(26, 18, 11, 0.1),
+    -6px 10px 22px -12px rgba(0, 0, 0, 0.4),
+    0 1px 1px rgba(0, 0, 0, 0.12);
+  animation: donne 0.42s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i) * 40ms);
+  cursor: pointer;
+}
+/* la donne ne se joue qu'à la première visite de la session */
+.table[data-calme] .carte {
+  animation: none;
+}
+@keyframes donne {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+.place[data-haut] .carte {
+  cursor: default;
+  box-shadow:
+    inset 0 0 0 1px rgba(26, 18, 11, 0.14),
+    inset 0 0 0 7px var(--papier),
+    inset 0 0 0 8px rgba(26, 18, 11, 0.14),
+    0 34px 56px -24px rgba(0, 0, 0, 0.55),
+    0 2px 2px rgba(0, 0, 0, 0.12);
+}
+/* une matière sans réussite pâlit */
+.place[data-vide]:not([data-haut]) .carte {
+  opacity: 0.55;
+}
+@media (hover: hover) {
+  .place:not([data-haut]):hover {
+    transform: rotate(calc(var(--k) * 1.8deg)) translateY(calc(var(--k) * var(--k) * 1.2px - 14px));
+  }
+  .place[data-vide]:not([data-haut]):hover .carte {
+    opacity: 0.85;
+  }
+}
+.carte:focus-visible {
+  outline: 2px solid var(--cercle);
+  outline-offset: 3px;
+}
+.carte:active {
+  translate: 0 2px;
+}
+:global(html[data-theme="nuit"]) .carte {
+  box-shadow:
+    inset 0 0 0 1px rgba(26, 18, 11, 0.12),
+    inset 0 0 0 7px var(--papier),
+    inset 0 0 0 8px rgba(26, 18, 11, 0.1),
+    0 0 0 1px rgba(241, 233, 212, 0.22),
+    -6px 10px 22px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* la tranche visible : le code, le numéro, les réussites */
+.coin {
+  position: absolute;
+  top: 16px;
+  left: 14px;
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  line-height: 1;
+}
+.coin b,
+.coinBas b {
+  position: relative;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+}
+.coin span {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--encre-3);
+}
+.etatCarte {
+  margin-top: 6px;
+  font-style: normal;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--encre-2);
+}
+.place[data-haut] .etatCarte {
+  display: none;
+}
+/* le QCM en cours : le cercle de craie autour du code, à l'encre de la palette */
+.courant {
+  position: absolute;
+  left: -9px;
+  top: -8px;
+  width: calc(100% + 18px);
+  height: calc(100% + 16px);
+  overflow: visible;
+  fill: none;
+  stroke: var(--cercle);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+/* les encoches, une par QCM, le long de la tranche (pleine : fini ; contour : entamé) */
+.encoches {
+  position: absolute;
+  left: 15px;
+  bottom: 18px;
+  display: grid;
+  gap: 4px;
+  width: 18px;
+}
+.encoches i {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--encre-3);
+}
+.encoches i[data-etat="cercle"] {
+  box-shadow: inset 0 0 0 1.3px var(--encre);
+}
+.encoches i[data-etat="plein"] {
+  background: var(--encre);
+  box-shadow: none;
+}
+.place[data-haut] .encoches {
+  display: none;
+}
+.coinBas {
+  position: absolute;
+  right: 15px;
+  bottom: 16px;
+  transform: rotate(180deg);
+  line-height: 1;
+}
+/* la grande lettre fantôme : seulement sur la dernière carte (coupée sous les autres, ce n'était que du bruit) */
+.dos {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 54px;
+  color: rgba(26, 18, 11, 0.07);
+  pointer-events: none;
+}
+.place:not(:last-child) .dos,
+.place[data-haut] .dos {
+  display: none;
+}
+
+/* le visage de la carte levée, par-dessus la carte (ses liens) ; jamais hors de la carte */
+.surCarte {
+  position: absolute;
+  inset: 54px 16px 40px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+@media (min-width: 1200px) {
+  .surCarte {
+    inset: 58px 20px 44px;
+  }
+}
+.visage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  color: var(--encre);
+}
+.nom {
+  flex: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+.reussies {
+  flex: none;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--encre-2);
+  font-variant-numeric: tabular-nums;
+}
+/* les QCM en lignes : l'état, le thème, les réussies ; la liste défile dans la carte si elle est longue */
+.lignes {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 2px -6px 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  align-content: start;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--encre-3) transparent;
+  border-top: 1px solid rgba(26, 18, 11, 0.1);
+}
+.ligne {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border-bottom: 1px dashed rgba(26, 18, 11, 0.1);
+  color: var(--encre-2);
+  transition: background-color 0.15s ease;
+}
+.ligne[data-etat="cercle"],
+.ligne[data-etat="plein"] {
+  color: var(--encre);
+}
+@media (hover: hover) {
+  .ligne:hover {
+    background: rgba(26, 18, 11, 0.06);
+    color: var(--encre);
+  }
+}
+.ligne:focus-visible,
+.carre:focus-visible {
+  outline: 2px solid var(--cercle);
+  outline-offset: 1px;
+}
+.point {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--encre-3);
+}
+.ligne[data-etat="cercle"] .point {
+  box-shadow: inset 0 0 0 1.6px var(--encre);
+}
+.ligne[data-etat="plein"] .point {
+  background: var(--encre);
+  box-shadow: none;
+}
+.theme {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+.score {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--encre-2);
+}
+/* les quiz des fiches : une ligne, puis une rangée de petits carrés numérotés */
+.fiches {
+  display: grid;
+  gap: 6px;
+  padding: 6px 6px 4px;
+}
+.fichesTete {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.carres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.carre {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--encre-2);
+  box-shadow: inset 0 0 0 1px var(--encre-3);
+  transition: transform 0.15s ease;
+}
+.carre[data-etat="cercle"] {
+  color: var(--encre);
+  box-shadow: inset 0 0 0 1.6px var(--encre);
+}
+.carre[data-etat="plein"] {
+  background: var(--encre);
+  color: var(--papier);
+  box-shadow: none;
+}
+@media (hover: hover) {
+  .carre:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* l'action, posée sous la carte levée (ordinateur) */
+.actionCarte {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -74px;
+  z-index: 2;
+  display: grid;
+}
+.actionCarte > a,
+.actionCarte > button {
+  min-height: 50px;
+  border-radius: 14px;
+  font-size: 15px;
+}
+
+/* sur téléphone seulement : la carte levée sous la main, et l'action dessous */
+.tiree,
+.action {
+  display: none;
+}
+
+/* ——— téléphone et petites largeurs : la main rangée en petites cartes, la carte levée dessous ——— */
+@media (max-width: 1023px) {
+  .table {
+    padding-top: 12px;
+    gap: 18px;
+    justify-items: stretch;
+  }
+  .main,
+  .table[data-action] .main {
+    width: 100%;
+    height: auto;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .place,
+  .place[data-droite],
+  .place[data-haut] {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+    aspect-ratio: 0.74;
+    transform: none;
+    transition: none;
+  }
+  .carte {
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(26, 18, 11, 0.14), 0 6px 12px -8px rgba(0, 0, 0, 0.4);
+  }
+  .coin {
+    inset: 0;
+    place-content: center;
+    justify-items: center;
+  }
+  .coin b {
+    font-size: 15px;
+  }
+  .coin > span {
+    display: none;
+  }
+  .etatCarte {
+    margin-top: 4px;
+  }
+  .coinBas,
+  .dos,
+  .surCarte,
+  .actionCarte,
+  .encoches {
+    display: none;
+  }
+  .place[data-haut] .carte {
+    background: var(--encre);
+    color: var(--papier);
+    box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.5);
+  }
+  .place[data-haut] .coin span {
+    color: rgba(245, 239, 225, 0.6);
+  }
+  :global(html[data-theme="nuit"]) .place[data-haut] .carte {
+    box-shadow: 0 0 0 1px rgba(241, 233, 212, 0.3);
+  }
+  .tiree {
+    display: grid;
+    gap: 6px;
+    padding: 20px 20px 22px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--papier), var(--papier-2));
+    box-shadow:
+      inset 0 0 0 1px rgba(26, 18, 11, 0.12),
+      inset 0 0 0 7px var(--papier),
+      inset 0 0 0 8px rgba(26, 18, 11, 0.1),
+      0 20px 34px -22px rgba(0, 0, 0, 0.45);
+  }
+  :global(html[data-theme="nuit"]) .tiree {
+    box-shadow:
+      inset 0 0 0 1px rgba(26, 18, 11, 0.12),
+      0 0 0 1px rgba(241, 233, 212, 0.22);
+  }
+  .tireeCode {
+    margin: 0;
+    font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--encre);
+  }
+  .tiree .nom {
+    -webkit-line-clamp: 3;
+  }
+  .tiree .lignes {
+    overflow: visible;
+  }
+  .ligne {
+    min-height: 44px;
+  }
+  .theme {
+    font-size: 14px;
+  }
+  .carre {
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+  }
+  .carres {
+    gap: 6px;
+  }
+  .action {
+    display: grid;
+  }
+  .action > * {
+    width: 100%;
+    min-height: 50px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carte {
+    animation: none;
+  }
+  .place,
+  .carre,
+  .ligne {
+    transition: none;
+  }
+}

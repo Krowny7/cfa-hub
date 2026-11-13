@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import { FriseCopie } from "@/components/MockExamFrise";
 import { friendlyError } from "@/lib/errors";
 import {
   ChoiceButton,
@@ -258,6 +259,8 @@ export function MockExamRunner({
             </a>
           }
         >
+          {/* la frise de la copie : une case par question, un clic l'ouvre (lot 4 du 2026-11-13) */}
+          <FriseCopie review={review} />
           <TopicBreakdown review={review} />
           {copie ? (
             <DebriefCopie copie={copie} review={review} demo={Boolean(demo)}>

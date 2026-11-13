@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, BookOpen, Check, ChevronDown, ChevronUp, CloudOff, ExternalLink, Lock, Play, RotateCcw, Shuffle, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, CloudOff, ExternalLink, Play, RotateCcw, Shuffle, Trash2 } from "lucide-react";
 import { CopyButton, FicheQuizRunner, type CarnetFiche, type RunItem } from "@/components/FicheQuizRunner";
 import { Icone } from "@/components/adn/icons";
 import { Batons } from "@/components/adn/Batons";
@@ -14,9 +14,9 @@ import { clearRun, loadRun, restoreRun, saveRun, type RestoredRun } from "@/lib/
 import { anneau as voixAnneau, ligneAnneauSession, RATURE, VIDE } from "@/lib/voice";
 import { CARNET, FICHE, QUIZ, aReprendre, dateCourte, jourParis, lundiParis, memeJour, rateeFois, reprendreRatures } from "@/lib/voice-z4";
 import { RETOUR } from "@/lib/voice-reviser";
-import { POSTE_FICHE } from "@/lib/voice-postes";
-import { CadreZones, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
-import poste from "@/components/reviser/Postes.module.css";
+import { ActionContour, ActionEncre, EnTeteSousPage, Etiquette, Scene, SousPage } from "@/components/ui/SousPage";
+import { SEANCE_FICHE } from "@/lib/voice-reviser-b";
+import l from "@/components/reviser/Lecture.module.css";
 import {
   buildErrorPoolExport,
   computePageProgress,
@@ -379,6 +379,10 @@ export function FicheWorkspace({
     { key: "mixed", label: "Bilan" },
   ];
 
+  // les pages faites (chaque question a reçu une réponse) : le chiffre-héros de la porte, la même mesure que les carnets de /fiches
+  const pagesFaites = progress.filter((p) => p.total > 0 && p.unseen === 0).length;
+  const pagesEntamees = progress.filter((p) => p.total > 0 && p.unseen > 0 && p.unseen < p.total).length;
+  const erreurs = progress.reduce((a, p) => a + p.weak, 0);
   const activePage = selectedPage ? byPage.get(selectedPage) : undefined;
   const activeProgress = selectedPage ? progressByPage.get(selectedPage) : undefined;
   const activeTheme = pageTheme(activePage?.title);
@@ -387,14 +391,27 @@ export function FicheWorkspace({
     <SousPage
       entete={
         <EnTeteSousPage
-          illustration={{ nom: "reviser-carnets" }}
+          illustration={{ nom: "reviser-bibliotheque", position: "50% 52%" }}
           retour={{ href: backHref, label: backLabel }}
           titre={title}
-          ligne={description}
+          ligne={
+            logLoading || totalPages <= 0 ? (
+              <i style={{ fontStyle: "normal", opacity: 0 }}>{description}</i>
+            ) : (
+              SEANCE_FICHE.ligne(pagesFaites, totalPages, pagesEntamees, erreurs)
+            )
+          }
+          heros={
+            logLoading || totalPages <= 0
+              ? null
+              : pagesFaites > 0
+                ? { valeur: pagesFaites, legende: SEANCE_FICHE.herosLegende(totalPages) }
+                : { valeur: totalPages, legende: SEANCE_FICHE.herosLegendeNeuf }
+          }
         />
       }
     >
-      <div className="grid gap-4">
+      <Scene>
         {/* Bascule Cours / Entraînement — téléphone seulement : le cadre ne montre alors qu'une zone (Postes.module.css) */}
         <SegTabs
           label="Affichage"
@@ -408,25 +425,20 @@ export function FicheWorkspace({
           ]}
         />
 
-        <CadreZones
-          gauche={{
-            titre: POSTE_FICHE.cours,
-            contenu: (
+        <div className={l.lecture} data-large="1">
           <section
             aria-label="Cours"
-            className={`${poste.haut} min-w-0 ${mobileView === "course" ? "" : `hidden min-[980px]:block ${poste.coursMasque}`}`}
+            className={`min-w-0 ${mobileView === "course" ? "" : "hidden min-[980px]:block"}`}
           >
             {!pdfSrc ? (
-              <div className="card-quiet px-6 py-12 text-center">
-                <BookOpen size={20} className="mx-auto text-muted" aria-hidden />
-                <p className="t-small mt-3">Impossible de charger la fiche pour le moment. Réessaie dans un instant.</p>
+              <div className={l.document}>
+                <p className={l.vide}>Impossible de charger la fiche pour le moment. Réessaie dans un instant.</p>
               </div>
             ) : (
-              <div className="card overflow-hidden">
-                <div className={"flex items-center gap-2 py-2 pl-4 pr-2 " + (pdfOpen ? "border-b border-line" : "")}>
-                  <BookOpen size={15} className="shrink-0 text-muted" aria-hidden />
+              <div className={l.document} data-ferme={pdfOpen ? undefined : "1"}>
+                <div className={l.barreDoc}>
                   {/* sans page choisie : « La fiche en PDF » (le nom de la matière est déjà le titre), le détail en infobulle */}
-                  <p className="min-w-0 flex-1 truncate text-[13px] font-semibold" title={pdfLabel}>
+                  <p title={pdfLabel}>
                     {selectedPage ? `Synthèse · page ${selectedPage}` : FICHE.lePdf}
                   </p>
                   <button
@@ -464,27 +476,28 @@ export function FicheWorkspace({
               </div>
             )}
           </section>
-            ),
-          }}
-          droite={{
-            titre: POSTE_FICHE.quiz,
-            contenu: (
           <section
             aria-label="Entraînement"
-            className={`${poste.quiz} min-w-0 flex-col gap-5 ${mobileView === "train" ? "flex" : `hidden min-[980px]:flex ${poste.quizMasque}`}`}
+            className={`min-w-0 flex-col gap-5 ${mobileView === "train" ? "flex" : "hidden min-[980px]:flex"}`}
           >
-            <SegTabs
-              label="Entraînement"
-              className="w-full"
-              equal
-              value={tab}
-              onChange={(t) => {
-                changeTab(t);
-                setRun(null);
-                setNotice(null);
-              }}
-              items={tabs}
-            />
+            <div className={l.onglets} role="group" aria-label={SEANCE_FICHE.onglets}>
+              {tabs.map((it) => (
+                <button
+                  key={it.key}
+                  type="button"
+                  className={l.onglet}
+                  aria-pressed={tab === it.key}
+                  onClick={() => {
+                    changeTab(it.key);
+                    setRun(null);
+                    setNotice(null);
+                  }}
+                >
+                  {it.label}
+                  {!!it.badge && <b>{it.badge}</b>}
+                </button>
+              ))}
+            </div>
 
             {storage === "device" && (
               <div className="card-quiet flex gap-3 px-4 py-3.5" role="note">
@@ -517,10 +530,10 @@ export function FicheWorkspace({
                   <button type="button" className="btn btn-ghost btn-sm text-muted" onClick={discardSavedRun}>
                     Abandonner
                   </button>
-                  <button type="button" className="btn btn-primary" onClick={resumeRun}>
+                  <ActionContour onClick={resumeRun}>
                     <Play size={14} aria-hidden />
                     {savedRun.done.length >= savedRun.items.length ? QUIZ.voirCopie : QUIZ.reprendre}
-                  </button>
+                  </ActionContour>
                 </div>
               </div>
             )}
@@ -555,35 +568,60 @@ export function FicheWorkspace({
               />
             ) : tab === "quiz" ? (
               <div className="flex flex-col gap-6">
+                <div className="grid gap-3">
+                  <Etiquette as="h2">{SEANCE_FICHE.pages}</Etiquette>
+                  <ul className={l.cases}>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      const set = byPage.get(page);
+                      const p = progressByPage.get(page);
+                      const theme = pageTheme(set?.title);
+                      // pleine : chaque question de la page a reçu une réponse ; entourée : entamée
+                      const etat = !set ? null : p && p.total > 0 && p.unseen === 0 ? "faite" : p && p.unseen < p.total ? "entamee" : null;
+                      const texte = !set ? SEANCE_FICHE.bientot : etat === "faite" ? SEANCE_FICHE.faite : etat === "entamee" ? SEANCE_FICHE.entamee : SEANCE_FICHE.neuve;
+                      return (
+                        <li key={page}>
+                          <button
+                            type="button"
+                            disabled={!set}
+                            onClick={() => selectPage(page)}
+                            aria-pressed={selectedPage === page}
+                            className={l.case + " rl-presse"}
+                            data-etat={etat ?? undefined}
+                            title={SEANCE_FICHE.case(page, theme, texte, p?.weak ?? 0)}
+                            aria-label={SEANCE_FICHE.case(page, theme, texte, p?.weak ?? 0)}
+                          >
+                            {page}
+                            {p && p.weak > 0 && (
+                              <span className={l.rature} aria-hidden>
+                                {p.weak}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
                 {activePage && activeProgress && (
-                  <div className="card-hero p-6 md:p-7">
-                    {/* l'avancement de la page : la barre et sa légende (plus de compteur en double) */}
-                    <p className="t-eyebrow">Page {activePage.page}</p>
-                    <h2 className="t-h2 mt-2">{activeTheme ?? `Page ${activePage.page}`}</h2>
-                    <StackBar
-                      className="mt-5"
-                      mastered={activeProgress.mastered}
-                      weak={activeProgress.weak}
-                      total={activeProgress.total}
-                    />
-                    <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-muted">
-                      <li className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-white" aria-hidden />
-                        {activeProgress.mastered} {FICHE.maitrisees(activeProgress.mastered)}
+                  <div className={l.page}>
+                    {/* la page choisie, écrite sous les cases : son thème, son avancement en filet de 2 px */}
+                    <p className={l.pageKicker}>Page {activePage.page}</p>
+                    <h2 className={l.pageTitre}>{activeTheme ?? `Page ${activePage.page}`}</h2>
+                    <div className={l.filetPage} aria-hidden>
+                      <i style={{ width: `${(activeProgress.mastered / Math.max(1, activeProgress.total)) * 100}%` }} />
+                      <i style={{ width: `${(activeProgress.weak / Math.max(1, activeProgress.total)) * 100}%` }} />
+                    </div>
+                    <ul className={l.legendePage}>
+                      <li>
+                        <b>{activeProgress.mastered}</b> {FICHE.maitrisees(activeProgress.mastered)}
                       </li>
-                      <li className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-pen" aria-hidden />
-                        {aReprendre(activeProgress.weak)}
-                      </li>
-                      <li className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full ring-1 ring-inset ring-line-2" aria-hidden />
-                        {activeProgress.unseen} {FICHE.jamaisVues(activeProgress.unseen)}
+                      <li>{activeProgress.weak > 0 ? <b>{aReprendre(activeProgress.weak)}</b> : aReprendre(0)}</li>
+                      <li>
+                        <b>{activeProgress.unseen}</b> {FICHE.jamaisVues(activeProgress.unseen)}
                       </li>
                     </ul>
-                    <div className="mt-6 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        className={`btn btn-lg ${savedRun ? "btn-secondary" : "btn-primary"}`}
+                    <div className={l.actions}>
+                      <ActionEncre
                         onClick={() =>
                           startRun(
                             activePage.questions.map((q) => ({ q, page: activePage.page })),
@@ -592,10 +630,10 @@ export function FicheWorkspace({
                           )
                         }
                       >
-                        Lancer le quiz
-                        <span className="font-normal opacity-70">· {activePage.questions.length} questions</span>
-                        <ArrowRight size={16} aria-hidden />
-                      </button>
+                        {SEANCE_FICHE.lancer}
+                        <span style={{ fontWeight: 500, opacity: 0.75 }}>· {SEANCE_FICHE.questions(activePage.questions.length)}</span>
+                        <span aria-hidden>→</span>
+                      </ActionEncre>
                       {pdfSrc && (
                         <button type="button" className="btn btn-secondary btn-lg min-[980px]:hidden" onClick={() => setMobileView("course")}>
                           Voir la synthèse
@@ -605,59 +643,6 @@ export function FicheWorkspace({
                   </div>
                 )}
 
-                <div>
-                  <h2 className="t-eyebrow mb-3">Toutes les pages</h2>
-                  <div className="@container">
-                    <div className="grid grid-cols-2 gap-2 @sm:grid-cols-3 @xl:grid-cols-4">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                        const set = byPage.get(page);
-                        const p = progressByPage.get(page);
-                        const isActive = selectedPage === page;
-                        const theme = pageTheme(set?.title);
-                        const allMastered = !!p && p.attempts > 0 && p.unseen === 0 && p.weak === 0;
-                        return (
-                          <button
-                            key={page}
-                            type="button"
-                            disabled={!set}
-                            onClick={() => selectPage(page)}
-                            aria-pressed={isActive}
-                            title={theme ? `Page ${page} — ${theme}` : `Page ${page}`}
-                            className={`flex min-h-[96px] flex-col rounded-[14px] p-3 text-left transition-[background-color,box-shadow] duration-200 ${
-                              !set
-                                ? "card-quiet cursor-not-allowed opacity-50"
-                                : isActive
-                                  ? "bg-surface shadow-[var(--shadow-1)] ring-[1.5px] ring-white"
-                                  : "card-quiet"
-                            }`}
-                          >
-                            <span className="flex items-center justify-between gap-2 font-mono text-[11.5px] font-semibold text-muted">
-                              P{page}
-                              {!set ? (
-                                <Lock size={12} aria-label="Bientôt" />
-                              ) : p && p.weak > 0 ? (
-                                <span className="inline-flex items-center gap-1 text-pen" aria-label={aReprendre(p.weak)}>
-                                  <span className="h-1.5 w-1.5 rounded-full bg-pen" aria-hidden />
-                                  {p.weak}
-                                </span>
-                              ) : allMastered ? (
-                                <Check size={13} strokeWidth={2.6} className="text-white" aria-label="Page maîtrisée" />
-                              ) : null}
-                            </span>
-                            <span className="mt-1.5 line-clamp-2 text-[13px] font-semibold leading-snug tracking-[-0.006em] text-white">
-                              {set ? theme ?? `Page ${page}` : "Bientôt"}
-                            </span>
-                            {set && p && (
-                              <span className="mt-auto block pt-3">
-                                <StackBar thin mastered={p.mastered} weak={p.weak} total={p.total} />
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
               </div>
             ) : tab === "errors" ? (
               logLoading ? (
@@ -673,7 +658,7 @@ export function FicheWorkspace({
                       {ratures.total > 0 && <HistoireRatures semaine={ratures.semaine} total={ratures.total} className="mt-6 justify-center" />}
                     </div>
                   ) : (
-                    <div className="card-hero p-6 md:p-7">
+                    <div className={l.page}>
                       {/* le compteur du carnet : rayé et réécrit quand des ratures sont reprises aujourd'hui */}
                       <CompteurBarre
                         avant={poolItems.length + ratures.duJour.size}
@@ -685,10 +670,10 @@ export function FicheWorkspace({
                       <p className="t-micro mt-3">{poolItems.length > 0 ? QUIZ.regle : VIDE.ratures}</p>
                       {poolItems.length > 0 && (
                         <div className="mt-6 flex flex-wrap gap-2">
-                          <button type="button" className="btn btn-primary btn-lg" onClick={startErrors}>
+                          <ActionEncre onClick={startErrors}>
                             <RotateCcw size={16} aria-hidden />
                             {reprendreRatures(poolItems.length)}
-                          </button>
+                          </ActionEncre>
                           <CopyButton copied={copied} onClick={copyPoolForAi} className="btn-lg">
                             Copier pour l&apos;IA
                           </CopyButton>
@@ -775,19 +760,16 @@ export function FicheWorkspace({
                 </div>
               )
             ) : (
-              <div className="card-hero p-6 md:p-7">
-                <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-surface-2" aria-hidden>
-                  <Shuffle size={19} />
-                </span>
-                <h2 className="t-h2 mt-5">Bilan aléatoire</h2>
+              <div className={l.page}>
+                <h2 className={l.pageTitre}>Bilan aléatoire</h2>
                 <p className="t-small mt-2 max-w-[460px]">
                   {MIXED_SIZE} questions tirées au hasard parmi toutes les pages de la fiche : pour vérifier que tu retiens
                   vraiment, sans connaître l&apos;ordre ni la page.
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <button type="button" className="btn btn-primary btn-lg" disabled={allItems.length === 0} onClick={startMixed}>
+                  <ActionEncre disabled={allItems.length === 0} onClick={startMixed}>
                     <Shuffle size={16} aria-hidden /> Lancer un bilan aléatoire
-                  </button>
+                  </ActionEncre>
                   <span className="t-micro">
                     {allItems.length} questions disponibles sur {drillSets.length} pages
                   </span>
@@ -811,10 +793,8 @@ export function FicheWorkspace({
               </div>
             )}
           </section>
-            ),
-          }}
-        />
-      </div>
+        </div>
+      </Scene>
     </SousPage>
   );
 }
@@ -866,37 +846,6 @@ function LigneRayee({
     <Rature rayee={rayee} className={className}>
       {children}
     </Rature>
-  );
-}
-
-/** Barre empilée : maîtrisées (encre) puis à reprendre (rouge correcteur) sur le total. */
-function StackBar({
-  mastered,
-  weak,
-  total,
-  thin = false,
-  className = "",
-}: {
-  mastered: number;
-  weak: number;
-  total: number;
-  thin?: boolean;
-  className?: string;
-}) {
-  const t = Math.max(total, 1);
-  return (
-    <div
-      className={`flex overflow-hidden rounded-full bg-[color-mix(in_oklab,var(--ink)_9%,transparent)] ${thin ? "h-1" : "h-1.5"} ${className}`}
-      role="img"
-      aria-label={`${mastered} maîtrisées et ${weak} à reprendre sur ${total}`}
-    >
-      <span className="h-full bg-white transition-[width] duration-700" style={{ width: `${(mastered / t) * 100}%` }} />
-      {/* en mode discret, le rouge devient de l'encre : on l'éclaircit pour garder la distinction */}
-      <span
-        className="h-full bg-pen transition-[width] duration-700 [html[data-discreet='1']_&]:opacity-40"
-        style={{ width: `${(weak / t) * 100}%` }}
-      />
-    </div>
   );
 }
 

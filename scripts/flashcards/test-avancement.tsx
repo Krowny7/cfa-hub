@@ -1,6 +1,6 @@
 // L'avancement des flashcards dans l'index du programme (lib/flashcards/
 // avancement.ts, components/reviser/AvanceFlashcards.tsx, Pastilles.tsx,
-// Briques.tsx, ListeReviser.tsx) : cartes déjà vues et statut d'une boucle,
+// Briques.tsx) : cartes déjà vues et statut d'une boucle,
 // groupes de la page → suivi par matière (clés à lire, comptes manquants,
 // matières vides écartées), fusion compte + appareil (boucle plus récente,
 // boucle d'un autre compte, boucle recommencée, répétition espacée, boucle
@@ -30,7 +30,6 @@ import {
 import { AvanceFlashcards } from "@/components/reviser/AvanceFlashcards";
 import { LegendeAvance } from "@/components/reviser/Pastilles";
 import { IndexProgramme, shelfRows } from "@/components/reviser/Briques";
-import { ListeReviser } from "@/components/reviser/ListeReviser";
 import { SUBJECTS, type SubjectAvailability } from "@/components/reviser/catalog";
 
 (globalThis as { React?: typeof React }).React = React;
@@ -218,20 +217,8 @@ const subjects: SubjectAvailability[] = SUBJECTS.map((s) => ({
   check("les matières sans suivi gardent leur ligne d'avant, la matière à venir aussi", avec2.includes("4 paquets · 60 cartes") && avec2.includes(">à venir<"));
   check("la maîtrise (barre, %) reste en place", avec2.includes("62 %") && avec2.includes('role="progressbar"'));
 
-  // Depuis le modèle des sous-pages (2026-11-12), la liste est un carrousel des 10 matières :
-  // la pièce de devant ouvre /flashcards/matiere/<clé> ; plus de légende ni de pastille sur la liste.
-  const page = (kind: "cartes" | "fiche", a?: typeof avances) => renderToStaticMarkup(<ListeReviser kind={kind} subjects={subjects} avances={a} />);
-  const cartesAvec = page("cartes", avances);
-  check(
-    "la page : le carrousel des 10 matières, chacune vers sa révision ; ni légende ni pastille, même avec des données",
-    compte(cartesAvec, /role="option"/g) === 10 && cartesAvec.includes('href="/flashcards/matiere/ethics"') && !cartesAvec.includes("Une pastille par paquet") && !cartesAvec.includes("rounded-full") && !cartesAvec.includes("vues"),
-  );
-  const cartesSans = page("cartes");
-  check("la page sans donnée : le même rendu qu'avec données, la matière sans paquet en filigrane", cartesSans === cartesAvec && /id="carte-derivatives"[^>]*data-indispo="1"/.test(cartesSans));
-  const vide = page("cartes", { joueur: JOUEUR, matieres: {} });
-  check("aucune matière suivie : comme sans donnée", vide === cartesSans);
-  const fiches = page("fiche", avances);
-  check("les fiches et les cours ne montrent jamais d'avancement de cartes", !fiches.includes("Une pastille par paquet") && !fiches.includes("vues"));
+  // ListeReviser (le carrousel des matières) a disparu avec les sous-pages du 2026-11-13 : /flashcards
+  // pose TableCartes, /fiches et /courses leurs rangées ; leur rendu se vérifie sur la page.
 }
 
 // ---------------------------------------------------------------------------
@@ -243,8 +230,9 @@ console.log("\n# Fichiers");
   check("aucun chemin du bac à sable ni antislash dans les fichiers neufs", neufs.every((f) => !/Temp[\\/]|scratchpad|AppData|[A-Za-z]:\\/.test(lire(f))));
   check("l'îlot client est bien « use client » ; la lib et les pastilles sont neutres", lire(neufs[1]).startsWith('"use client"') && !lire(neufs[0]).includes("use client") && !lire(neufs[2]).includes("use client"));
   const page = lire("app/flashcards/page.tsx");
-  // Depuis dd90bd8, la page ne lit plus que les matières disponibles : plus de lecture des boucles.
-  check("la page ne lit que les matières disponibles, ni boucles ni avancement passé à la liste", !page.includes("lireProgressions(") && !page.includes("avances=") && page.includes("loadSubjectsSafe("));
+  // Depuis Réviser A (2026-11-13), la page lit les boucles du compte : le chiffre-héros (seulement
+  // avec au moins une carte vue), la carte de devant (la matière en cours) et la table des cartes.
+  check("la page lit les boucles du compte et les passe à la table des cartes", page.includes("lireProgressions(") && page.includes("avances={avances}") && page.includes("<TableCartes") && page.includes("vuesCompte > 0"));
 }
 
 console.log(ko === 0 ? "\nTout est vert." : `\n${ko} échec(s).`);

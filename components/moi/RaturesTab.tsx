@@ -369,7 +369,7 @@ export function RaturesTab({
   return (
     <section className={"min-w-0 " + (sansResume ? "flex flex-col" : "card grid overflow-hidden lg:grid-cols-12")} aria-label="Mes ratures">
       {/* le compte, la règle, les sources */}
-      <div className={"flex min-w-0 flex-col gap-4 " + (sansResume ? "pb-4" : "p-6 md:p-7 lg:col-span-4 lg:border-r lg:border-line")}>
+      <div className={"flex min-w-0 " + (sansResume ? "flex-col gap-3 pb-5" : "flex-col gap-4 p-6 md:p-7 lg:col-span-4 lg:border-r lg:border-line")}>
         {!sansResume && <CardLabel icon={<Icone nom="erreurs" size={15} className="text-pen" />}>{CARNET.titre}</CardLabel>}
         {!sansResume && <div>
           <span className="sr-only">
@@ -397,6 +397,10 @@ export function RaturesTab({
               .join(" · ")}
           </p>
         )}
+        {sansResume ? (
+          <>
+            {/* une rangée de commandes : en cours / anciennes, « Mettre au propre », ranger, « Sans calcul » au bout */}
+            <div className="flex w-full flex-wrap items-center gap-3 lg:flex-nowrap">
         {/* les deux temps du carnet : en cours, anciennes (rayées) */}
         <div className="grid grid-cols-2 gap-1 rounded-[12px] bg-surface-2 p-1" role="tablist" aria-label="Ratures en cours ou anciennes">
           {[false, true].map((anc) => (
@@ -408,7 +412,98 @@ export function RaturesTab({
               className={"min-h-[44px] rounded-[9px] px-3 py-2 text-[13.5px] font-semibold transition-colors " + (vue.retirees === anc ? "bg-surface text-white shadow-[var(--shadow-1)]" : "text-muted hover:text-white")}
               onClick={() => (listeNotions ? void versNotions(anc) : choisir({ source: null, retirees: anc, notion: groupe ? vue.notion : null }))}
             >
-              {anc ? CARNET.anciennes : CARNET.enCours} · {nombre(anc ? compte.retirees : compte.total)}
+              {anc ? CARNET.anciennes : CARNET.enCours}
+              {(anc || !sansResume) && <> · {nombre(anc ? compte.retirees : compte.total)}</>}
+            </button>
+          ))}
+        </div>
+        {/* « Mettre au propre » (ou « Rejouer » dans les anciennes), sur le tri affiché */}
+        {aRepasser > 0 && (
+          <div className={sansResume ? "flex shrink-0" : "grid gap-1.5"}>
+            <button type="button" className={"btn w-fit " + (anciennes || sansResume ? "btn-secondary" : "btn-primary")} onClick={() => setPropre(true)} disabled={propre} aria-pressed={propre}>
+              {anciennes ? <RotateCcw size={16} aria-hidden /> : <PenLine size={16} aria-hidden />} {anciennes ? CARNET.rejouer : CARNET.propre}
+              {(anciennes || !sansResume) && <> · {nombre(aRepasser)}</>}
+            </button>
+            {!sansResume && <p className="t-micro m-0">{anciennes ? CARNET.rejouerSous : CARNET.propreSous}</p>}
+            {/* tout le carnet en cours : celles qui sèchent encore ne seront pas proposées aujourd'hui */}
+            {!sansResume && !anciennes && !liste.vue.source && notionOuverte === null && encre && encre.sechent > 0 && <p className="t-micro m-0">{CARNET.sechentSous(encre.sechent)}</p>}
+          </div>
+        )}
+        {/* ranger par source (les filtres) ou par notion (la liste à droite) */}
+        {notions && (
+          <div data-leonard="carnet-notions" className="grid grid-cols-2 gap-1 rounded-[12px] border border-line p-1" role="tablist" aria-label={CARNET.ranger}>
+            {[false, true].map((g) => (
+              <button
+                key={String(g)}
+                type="button"
+                role="tab"
+                aria-selected={groupe === g}
+                className={"min-h-[44px] rounded-[9px] px-3 py-1.5 text-[13px] font-semibold transition-colors " + (groupe === g ? "bg-surface-2 text-white" : "text-muted hover:text-white")}
+                onClick={() => ranger(g)}
+              >
+                {g ? CARNET.parNotion : CARNET.parSource}
+              </button>
+            ))}
+          </div>
+        )}
+        {/* « Sans calcul » : pour le téléphone, la liste, les comptes et les mises au propre sans les questions à calculer */}
+        {boutonCalcul && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={actifCalcul}
+            onClick={basculerCalcul}
+            title={sansResume ? (actifCalcul ? (masquees === null ? CARNET.chargement : masquees > 0 ? CARNET.calculMasquees(masquees) : CARNET.sansCalculAucune) : CARNET.sansCalculSous) : undefined}
+            className={
+              sansResume
+                ? "flex min-h-[44px] shrink-0 items-center gap-2.5 rounded-full border px-3.5 text-left text-[13.5px] font-semibold transition-colors lg:ml-auto " + (actifCalcul ? "border-line-2 bg-surface-2" : "border-line hover:bg-surface-2")
+                : "flex min-h-[52px] w-full items-center gap-3 rounded-[12px] border px-3 py-2 text-left transition-colors " + (actifCalcul ? "border-line-2 bg-surface-2" : "border-line hover:bg-surface-2")
+            }
+          >
+            {!sansResume && <Icone nom="sansCalcul" size={24} appui={actifCalcul ? 1.15 : 1} className={actifCalcul ? "text-white" : "text-muted"} />}
+            {sansResume ? (
+              <span>{CARNET.sansCalcul}</span>
+            ) : (
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-semibold">{CARNET.sansCalcul}</span>
+                <span className="t-micro block">
+                  {actifCalcul ? (masquees === null ? CARNET.chargement : masquees > 0 ? CARNET.calculMasquees(masquees) : CARNET.sansCalculAucune) : CARNET.sansCalculSous}
+                </span>
+              </span>
+            )}
+            <span aria-hidden className={"switch" + (actifCalcul ? " is-on" : "")} />
+          </button>
+        )}
+            </div>
+            {/* une rangée de filtres */}
+        {!groupe && (
+          <div className={sansResume ? "-mx-1 flex flex-wrap gap-2 px-1 md:flex-nowrap md:overflow-x-auto md:pb-1 [&>button]:shrink-0" : "flex flex-wrap gap-2"} role="group" aria-label="Filtrer par source">
+            <button type="button" className={"chip max-md:min-h-[44px] " + (vue.source === null ? "chip-active" : "")} aria-pressed={vue.source === null} onClick={() => choisir({ source: null, retirees: vue.retirees, notion: null })}>
+              {CARNET.toutes} · {nombre(vue.retirees ? compte.retirees : compte.total)}
+            </button>
+            {sources.map(([k, nom]) => (
+              <button key={k} type="button" className={"chip max-md:min-h-[44px] " + (vue.source === k ? "chip-active" : "")} aria-pressed={vue.source === k} onClick={() => choisir({ source: k, retirees: vue.retirees, notion: null })}>
+                {nom} · {nombre(compte.sources[k] ?? 0)}
+              </button>
+            ))}
+          </div>
+        )}
+          </>
+        ) : (
+          <>
+        {/* les deux temps du carnet : en cours, anciennes (rayées) */}
+        <div className="grid grid-cols-2 gap-1 rounded-[12px] bg-surface-2 p-1" role="tablist" aria-label="Ratures en cours ou anciennes">
+          {[false, true].map((anc) => (
+            <button
+              key={String(anc)}
+              type="button"
+              role="tab"
+              aria-selected={vue.retirees === anc}
+              className={"min-h-[44px] rounded-[9px] px-3 py-2 text-[13.5px] font-semibold transition-colors " + (vue.retirees === anc ? "bg-surface text-white shadow-[var(--shadow-1)]" : "text-muted hover:text-white")}
+              onClick={() => (listeNotions ? void versNotions(anc) : choisir({ source: null, retirees: anc, notion: groupe ? vue.notion : null }))}
+            >
+              {anc ? CARNET.anciennes : CARNET.enCours}
+              {(anc || !sansResume) && <> · {nombre(anc ? compte.retirees : compte.total)}</>}
             </button>
           ))}
         </div>
@@ -419,27 +514,37 @@ export function RaturesTab({
             role="switch"
             aria-checked={actifCalcul}
             onClick={basculerCalcul}
-            className={"flex min-h-[52px] w-full items-center gap-3 rounded-[12px] border px-3 py-2 text-left transition-colors " + (actifCalcul ? "border-line-2 bg-surface-2" : "border-line hover:bg-surface-2")}
+            title={sansResume ? (actifCalcul ? (masquees === null ? CARNET.chargement : masquees > 0 ? CARNET.calculMasquees(masquees) : CARNET.sansCalculAucune) : CARNET.sansCalculSous) : undefined}
+            className={
+              sansResume
+                ? "flex min-h-[44px] shrink-0 items-center gap-2.5 rounded-full border px-3.5 text-left text-[13.5px] font-semibold transition-colors lg:ml-auto " + (actifCalcul ? "border-line-2 bg-surface-2" : "border-line hover:bg-surface-2")
+                : "flex min-h-[52px] w-full items-center gap-3 rounded-[12px] border px-3 py-2 text-left transition-colors " + (actifCalcul ? "border-line-2 bg-surface-2" : "border-line hover:bg-surface-2")
+            }
           >
-            <Icone nom="sansCalcul" size={24} appui={actifCalcul ? 1.15 : 1} className={actifCalcul ? "text-white" : "text-muted"} />
-            <span className="min-w-0 flex-1">
-              <span className="block text-[14px] font-semibold">{CARNET.sansCalcul}</span>
-              <span className="t-micro block">
-                {actifCalcul ? (masquees === null ? CARNET.chargement : masquees > 0 ? CARNET.calculMasquees(masquees) : CARNET.sansCalculAucune) : CARNET.sansCalculSous}
+            {!sansResume && <Icone nom="sansCalcul" size={24} appui={actifCalcul ? 1.15 : 1} className={actifCalcul ? "text-white" : "text-muted"} />}
+            {sansResume ? (
+              <span>{CARNET.sansCalcul}</span>
+            ) : (
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-semibold">{CARNET.sansCalcul}</span>
+                <span className="t-micro block">
+                  {actifCalcul ? (masquees === null ? CARNET.chargement : masquees > 0 ? CARNET.calculMasquees(masquees) : CARNET.sansCalculAucune) : CARNET.sansCalculSous}
+                </span>
               </span>
-            </span>
+            )}
             <span aria-hidden className={"switch" + (actifCalcul ? " is-on" : "")} />
           </button>
         )}
         {/* « Mettre au propre » (ou « Rejouer » dans les anciennes), sur le tri affiché */}
         {aRepasser > 0 && (
-          <div className="grid gap-1.5">
-            <button type="button" className={"btn w-fit " + (anciennes ? "btn-secondary" : "btn-primary")} onClick={() => setPropre(true)} disabled={propre} aria-pressed={propre}>
-              {anciennes ? <RotateCcw size={16} aria-hidden /> : <PenLine size={16} aria-hidden />} {anciennes ? CARNET.rejouer : CARNET.propre} · {nombre(aRepasser)}
+          <div className={sansResume ? "flex shrink-0" : "grid gap-1.5"}>
+            <button type="button" className={"btn w-fit " + (anciennes || sansResume ? "btn-secondary" : "btn-primary")} onClick={() => setPropre(true)} disabled={propre} aria-pressed={propre}>
+              {anciennes ? <RotateCcw size={16} aria-hidden /> : <PenLine size={16} aria-hidden />} {anciennes ? CARNET.rejouer : CARNET.propre}
+              {(anciennes || !sansResume) && <> · {nombre(aRepasser)}</>}
             </button>
-            <p className="t-micro m-0">{anciennes ? CARNET.rejouerSous : CARNET.propreSous}</p>
+            {!sansResume && <p className="t-micro m-0">{anciennes ? CARNET.rejouerSous : CARNET.propreSous}</p>}
             {/* tout le carnet en cours : celles qui sèchent encore ne seront pas proposées aujourd'hui */}
-            {!anciennes && !liste.vue.source && notionOuverte === null && encre && encre.sechent > 0 && <p className="t-micro m-0">{CARNET.sechentSous(encre.sechent)}</p>}
+            {!sansResume && !anciennes && !liste.vue.source && notionOuverte === null && encre && encre.sechent > 0 && <p className="t-micro m-0">{CARNET.sechentSous(encre.sechent)}</p>}
           </div>
         )}
         {/* ranger par source (les filtres) ou par notion (la liste à droite) */}
@@ -460,7 +565,7 @@ export function RaturesTab({
           </div>
         )}
         {!groupe && (
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par source">
+          <div className={sansResume ? "-mx-1 flex flex-wrap gap-2 px-1 md:flex-nowrap md:overflow-x-auto md:pb-1 [&>button]:shrink-0" : "flex flex-wrap gap-2"} role="group" aria-label="Filtrer par source">
             <button type="button" className={"chip max-md:min-h-[44px] " + (vue.source === null ? "chip-active" : "")} aria-pressed={vue.source === null} onClick={() => choisir({ source: null, retirees: vue.retirees, notion: null })}>
               {CARNET.toutes} · {nombre(vue.retirees ? compte.retirees : compte.total)}
             </button>
@@ -470,6 +575,8 @@ export function RaturesTab({
               </button>
             ))}
           </div>
+        )}
+          </>
         )}
         {!sansResume && <details className="group">
           <summary className="t-micro inline-flex cursor-pointer list-none items-center gap-1 font-semibold hover:text-white [&::-webkit-details-marker]:hidden">

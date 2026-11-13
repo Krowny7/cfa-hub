@@ -1,0 +1,152 @@
+/* La frise de la copie d'un examen blanc : une case par question (lot 4 du 2026-11-13). */
+.frise {
+  display: grid;
+  gap: 10px;
+}
+.tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+}
+.compte {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.bloc {
+  display: grid;
+  gap: 6px;
+}
+.sousEtiquette {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.cases {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cases li {
+  position: relative;
+}
+/* la graduation : un filet plus haut toutes les dix questions */
+.cases li[data-dizaine]::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  right: -3px;
+  bottom: -5px;
+  width: 1.5px;
+  border-radius: 1px;
+  background: var(--ink-3);
+  pointer-events: none;
+}
+.case {
+  display: grid;
+  place-items: end center;
+  width: 100%;
+  height: 36px;
+  padding: 0 0 4px;
+  border: 0;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 34%, transparent);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: transform 140ms ease;
+}
+.case span {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.case[data-juste="0"] {
+  background: var(--pen);
+  box-shadow: none;
+  color: #fff;
+}
+.case[data-juste="0"] span {
+  font-size: 11px;
+}
+.case[data-juste="vide"] {
+  background: transparent;
+  box-shadow: none;
+  outline: 1.5px dashed var(--ink-3);
+  outline-offset: -1.5px;
+  color: var(--ink-2);
+}
+.case[aria-pressed="true"] {
+  outline: 2px solid var(--pal-1, var(--ink));
+  outline-offset: 2px;
+  transform: translateY(-3px);
+}
+.case:focus-visible {
+  outline: 2px solid var(--pal-1, var(--ink));
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .case:hover {
+    transform: translateY(-3px);
+  }
+}
+.ouverte {
+  position: relative;
+  animation: ouvre 200ms ease both;
+}
+.fermer {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+}
+@keyframes ouvre {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+:global(html[data-theme="nuit"]) .case[aria-pressed="true"],
+:global(html[data-theme="nuit"]) .case:focus-visible {
+  outline-color: var(--pal-2, #f1e9d4);
+}
+/* téléphone : de gros boutons */
+@media (max-width: 760px) {
+  .cases {
+    grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+  }
+  .case {
+    height: 40px;
+  }
+  .case span {
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .case,
+  .ouverte {
+    transition: none;
+    animation: none;
+  }
+}

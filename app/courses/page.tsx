@@ -1,19 +1,16 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ListeReviser } from "@/components/reviser/ListeReviser";
-import { loadSubjectsSafe } from "@/components/reviser/load";
-import { PlatineReprise } from "@/components/reviser/PlatineReprise";
-import { RV } from "@/lib/voice-reviser";
+import { VueCours } from "@/components/reviser/VueCours";
 
-// Cours complets : un deck PDF + un audio narré par matière, décrits dans lib/courses.ts (bucket
-// privé "courses") ; celles qui n'y sont pas encore apparaissent en filigrane. Modèle des sous-pages
-// (2026-11-12) : l'en-tête (« Le pupitre »), puis le cadre à zones : les cours en livrets sur le
-// carrousel à gauche, et dans la colonne grise la platine qui reprend le dernier cours écouté.
+export const metadata = { title: "Cours complets · Ranked Lobby" };
+
+// Cours complets : un deck PDF + un audio narré par matière, décrits dans lib/courses.ts (bucket privé
+// "courses"). Direction « le lieu, puis l'objet » (2026-11-13) : les livrets debout, la platine qui
+// reprend le dernier cours écouté, et le rayon des vidéos de révision (/videos redirige ici, le
+// lecteur reste sur /videos?v=…). L'écoute est gardée sur l'appareil : components/reviser/EtagereCours.
 export default async function CoursesPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
-
-  const subjects = await loadSubjectsSafe(supabase, auth.user.id);
-  return <ListeReviser kind="cours" subjects={subjects} droite={{ titre: RV.coursReprise, contenu: <PlatineReprise /> }} />;
+  return <VueCours />;
 }

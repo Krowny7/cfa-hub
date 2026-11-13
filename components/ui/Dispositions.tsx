@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createContext, useContext, useId } from "react";
 import type { Piece } from "@/components/ui/Presentoir";
 import { NBSP } from "@/lib/voice";
+import { CERCLE_CRAIE } from "@/components/ui/craie";
 import s from "./Dispositions.module.css";
 
 // Le tableau noir des calculs (direction « le lieu, puis l'objet », validée par Théo le 2026-11-13) :
@@ -133,7 +134,7 @@ export function Tableau({
       <div className={s.tableau}>
         <svg width="0" height="0" className={s.defs} aria-hidden>
           <defs>
-            <path id={`${id}-cercle`} vectorEffect="non-scaling-stroke" d="M26 8C74 3 172 3 222 7c12 1 15 9 15 22 0 14-4 22-17 24-52 5-150 6-198 2C10 54 4 46 4 31 4 17 9 10 26 7 62 3 112 4 152 5" />
+            <path id={`${id}-cercle`} vectorEffect="non-scaling-stroke" d={CERCLE_CRAIE} />
             <path id={`${id}-trait`} vectorEffect="non-scaling-stroke" d="M3 7C40 4 92 3 140 5c38 1 70 3 95 1" />
             <path id={`${id}-fleche`} vectorEffect="non-scaling-stroke" d="M4 9c40-3 96-4 150-3 30 0 52 1 72 0M212 2c6 3 12 5 16 7-5 2-10 4-15 8" />
           </defs>

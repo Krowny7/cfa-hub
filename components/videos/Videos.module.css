@@ -8,10 +8,43 @@
 }
 
 /* ——— la zone de gauche : les onglets des vidéos, le lecteur ——— */
+/* le lecteur, sur un fond ébène FIXE (direction « le lieu, puis l'objet ») : les jetons du thème y sont
+   redéfinis, onglets, commandes et frise s'écrivent clair sur sombre, de jour comme de nuit */
 .lecteur {
+  --ink: #efe3c8;
+  --ink-2: rgba(239, 227, 200, 0.66);
+  --ink-3: rgba(239, 227, 200, 0.46);
+  --paper: #1a120b;
+  --line: rgba(239, 227, 200, 0.13);
+  --line-2: rgba(239, 227, 200, 0.22);
+  --surface: #241910;
+  --surface-2: rgba(255, 240, 210, 0.07);
+  --control: rgba(255, 240, 210, 0.06);
+  --well: rgba(239, 227, 200, 0.14);
+  --color-white: #efe3c8;
+  --color-black: #1a120b;
+  --color-muted: rgba(239, 227, 200, 0.62);
+  --color-line: rgba(239, 227, 200, 0.13);
+  --color-line-2: rgba(239, 227, 200, 0.22);
+  --color-surface-2: rgba(255, 240, 210, 0.07);
+  --piste: rgba(239, 227, 200, 0.12);
   display: flex;
   flex-direction: column;
   min-width: 0;
+  padding: 16px 16px 18px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 240, 210, 0.06), transparent 40%),
+    #1a120b;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
+    0 22px 34px -22px rgba(0, 0, 0, 0.6);
+  color: #efe3c8;
+}
+:global(html[data-theme="nuit"]) .lecteur {
+  box-shadow:
+    0 0 0 1px rgba(239, 227, 200, 0.2),
+    inset 1px 1px 0 rgba(255, 236, 200, 0.12);
 }
 
 /* trois petits onglets, juste au-dessus du lecteur */
@@ -197,14 +230,15 @@ a.onglet:focus-visible {
   padding: 0;
   list-style: none;
 }
+/* sur ordinateur, le programme (colonne collée en haut) défile seul, à la hauteur de l'écran */
 @media (min-width: 980px) {
-  .page div:has(> .programme) {
-    position: relative;
-  }
-  .page div:has(> .programme) > .programme {
-    position: absolute;
-    inset: 22px 10px 22px 18px;
+  .programme {
+    max-height: calc(100vh - 160px);
     padding-right: 8px;
+    padding-top: 12px;
+    scroll-padding-top: 12px;
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 16px);
+    mask-image: linear-gradient(180deg, transparent, #000 16px);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;

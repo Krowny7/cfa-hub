@@ -27,6 +27,8 @@ export type Piece = {
   image?: string | null;
   /** sous la légende (ex. l'avancement des flashcards) */
   pied?: React.ReactNode;
+  /** Carrousel : une courte mention en Mono écrite SUR la pièce de devant (« 38/60 vues ») ; ajout du 2026-11-13 */
+  marque?: React.ReactNode;
   aria?: string;
 };
 

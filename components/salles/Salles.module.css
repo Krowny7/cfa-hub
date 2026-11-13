@@ -1474,3 +1474,46 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+
+/* /salles (lot 4 du 2026-11-13) : sous la rangée des portes, rejoindre avec un code et créer sa salle,
+   côte à côte sous une étiquette Mono chacun (une colonne sur téléphone) */
+.rejoindreCreer {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) auto;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px 32px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+/* « Créer une salle » replié : le bouton à droite ; ouvert, le formulaire prend toute la ligne */
+.creerReplie {
+  display: grid;
+  justify-items: end;
+  gap: 16px;
+}
+.creerReplie[data-ouvert] {
+  grid-column: 1 / -1;
+  justify-items: stretch;
+}
+.creerReplie[data-ouvert] > :first-child {
+  justify-self: end;
+}
+@media (max-width: 760px) {
+  .rejoindreCreer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .creerReplie {
+    justify-items: stretch;
+  }
+}
+/* la nuit, le choix Privée / Publique sélectionné : une couleur fixe sombre et un liseré clair
+   (--sl-metal suit --noir, qui devient clair) */
+:global(html[data-theme="nuit"]) .puce[aria-checked="true"] {
+  border-color: rgba(241, 233, 212, 0.55);
+  background: #1a120b;
+  color: #f3ebdb;
+}
+:global(html[data-theme="nuit"]) .puce[aria-checked="true"] span {
+  color: rgba(243, 235, 219, 0.78);
+}
