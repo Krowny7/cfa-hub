@@ -1,99 +1,134 @@
 /* /courses (Théo, 2026-11-13) : la bibliothèque à deux étages, chaque livre sort du rayon et pivote en
-   3D au survol (comme chez Stripe Press : la tranche, puis la couverture qui se découvre) ; à côté, la
-   grande platine qui joue l'audio sur place, la matière choisie dessous. Les matières (ébène, or, crème)
-   ont des couleurs FIXES : elles restent les mêmes la nuit, avec un liseré clair à la place de l'ombre. */
+   3D au survol (la tranche, puis le plat qui se découvre, comme chez Stripe Press) ; à côté, la platine
+   qui joue l'audio sur place, la matière choisie dessous. Le soir même, Théo : « améliore grandement la
+   qualité du rendu 3D des livres, et fais en sorte que la bibliothèque prenne plus de place que la
+   platine » : chaque livre est un vrai volume (dos arrondi en cuir grainé, nervures en relief, titre doré
+   à la feuille, plats à filet doré, tête des pages), d'épaisseur et de hauteur variées, vu dans la
+   perspective commune de son étage (on voit le volume des livres au repos) ; le livre sort, PUIS pivote.
+   Les matières (ébène, cuir, or, papier) ont des couleurs FIXES : les mêmes la nuit, avec un liseré clair. */
 
 .salle {
   --ebene: #1a120b;
   --ebene-2: #2a1d13;
   --or: #c9a45c;
   --creme: #efe3c8;
-  --ep: 84px; /* l'épaisseur d'un livre (sa tranche) */
-  --h: 252px; /* sa hauteur */
-  --cv: 176px; /* la largeur de sa couverture */
+  --ep: clamp(78px, 8vw, 114px); /* l'épaisseur moyenne d'un livre (son dos) */
+  --h: clamp(236px, 23vw, 330px); /* sa hauteur moyenne */
+  --cv: clamp(168px, 15vw, 216px); /* sa profondeur : la largeur de ses plats */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .93 0 0 0 0 .82 .22 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   align-items: center;
-  gap: 34px 52px;
+  gap: 34px 40px;
   width: 100%;
   min-width: 0;
 }
+/* la bibliothèque prend la plus grande part (environ 60 %), la platine le reste */
 @media (min-width: 1040px) {
   .salle {
-    grid-template-columns: auto minmax(0, 540px);
-    justify-content: center;
+    grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr);
+  }
+  .bibliotheque {
+    justify-self: stretch;
   }
 }
 
-/* ——— la bibliothèque : un meuble d'ébène, deux étages ——— */
+/* ——— la bibliothèque : un meuble d'ébène, deux étages, éclairé d'en haut ——— */
 .bibliotheque {
   position: relative;
   display: grid;
-  padding: 0 14px;
-  border: 12px solid #24180f;
-  border-radius: 10px;
+  padding: 0 22px;
+  border: 14px solid #24180f;
+  border-radius: 12px;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 228, 180, 0.07), transparent 60%),
-    linear-gradient(180deg, #0d0805, #150e08 55%, #0d0805);
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255, 214, 150, 0.13), transparent 72%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.014) 0 2px, transparent 2px 11px),
+    linear-gradient(180deg, #0c0704, #160e08 50%, #0c0704);
   box-shadow:
-    inset 0 0 34px rgba(0, 0, 0, 0.85),
-    0 0 0 1px rgba(201, 164, 92, 0.2),
-    0 26px 44px -26px rgba(0, 0, 0, 0.65);
+    inset 0 0 0 1px rgba(201, 164, 92, 0.14),
+    inset 0 0 46px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(201, 164, 92, 0.24),
+    0 30px 50px -28px rgba(0, 0, 0, 0.7);
 }
+/* la moulure du haut du meuble, qui prend la lumière */
+.bibliotheque::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  right: -14px;
+  top: -14px;
+  height: 5px;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(180deg, rgba(232, 200, 140, 0.4), transparent);
+  pointer-events: none;
+}
+
+/* un étage : sa propre perspective, commune à ses cinq livres (le haut se voit d'au-dessus, en bas) */
 .etage {
   position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
-  padding: 26px 4px 14px;
+  padding: 32px 4px 16px;
   list-style: none;
+  perspective: 1500px;
+  perspective-origin: 50% 12%;
+  transform-style: preserve-3d;
+}
+.etage + .etage {
+  perspective-origin: 50% -30%;
 }
 /* l'ombre que l'étage du dessus pose au fond du rayon */
 .etage::before {
   content: "";
   position: absolute;
-  left: -14px;
-  right: -14px;
+  left: -22px;
+  right: -22px;
   top: 0;
-  height: 26px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent);
+  height: 34px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.62), transparent);
   pointer-events: none;
 }
 /* la planche : les livres sont posés dessus */
 .etage::after {
   content: "";
   position: absolute;
-  left: -14px;
-  right: -14px;
+  left: -22px;
+  right: -22px;
   bottom: 0;
-  height: 14px;
-  background: linear-gradient(180deg, #4a3420 0, #2e2014 22%, #1f150d 70%, #170f09);
+  height: 16px;
+  background: linear-gradient(180deg, #5a3f26 0, #3a2817 18%, #24180f 70%, #1a110a);
   box-shadow:
-    inset 0 1px 0 rgba(255, 220, 170, 0.22),
-    0 7px 10px -5px rgba(0, 0, 0, 0.75);
-  z-index: 2;
+    inset 0 1px 0 rgba(255, 220, 170, 0.3),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.4),
+    0 8px 12px -6px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
 }
 
 .place {
   position: relative;
-  flex: 0 0 var(--ep);
-  height: var(--h);
-  perspective: 700px;
-  perspective-origin: 50% 35%;
-  z-index: 1;
+  flex: 0 0 calc(var(--ep) * var(--k, 1));
+  height: calc(var(--h) * var(--j, 1));
+  transform-style: preserve-3d;
 }
-/* le livre qui rentre reste devant pendant son retour (0,5 s), puis repasse dans le rang */
-.place {
-  transition: z-index 0.5s linear;
+/* l'ombre de contact du livre sur la planche (elle reste quand il sort) */
+.place::after {
+  content: "";
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  bottom: -4px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.7), transparent);
+  pointer-events: none;
 }
-.place:hover,
-.place:focus-within {
-  z-index: 5;
-  transition: none;
-}
+
+/* le livre : un volume (dos, plat, contre-plat, tête), qui sort du rayon PUIS pivote ; au retour,
+   il se redresse d'abord, puis rentre */
 .livre {
   position: absolute;
   inset: 0;
@@ -103,111 +138,136 @@
   outline: none;
   transform-style: preserve-3d;
   transform-origin: 50% 100%;
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition:
+    translate 0.34s cubic-bezier(0.4, 0, 0.2, 1) 0.14s,
+    rotate 0.36s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.36s cubic-bezier(0.4, 0, 0.2, 1);
 }
-/* le livre sort du rayon, puis se tourne : la couverture se découvre */
+.livre[data-ton="1"] {
+  --fond: #13201f;
+}
+.livre[data-ton="2"] {
+  --fond: #2a1512;
+}
 @media (hover: hover) and (pointer: fine) {
   .place:hover .livre {
-    transform: translateY(-6px) translateZ(64px) rotateY(-34deg);
+    translate: 0 -12px 150px;
+    rotate: y -32deg;
+    transform: rotateX(-5deg);
+    transition:
+      translate 0.38s cubic-bezier(0.2, 0.8, 0.2, 1),
+      rotate 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s,
+      transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s;
   }
 }
 .livre:focus-visible {
-  transform: translateY(-6px) translateZ(64px) rotateY(-34deg);
+  translate: 0 -12px 150px;
+  rotate: y -32deg;
+  transform: rotateX(-5deg);
 }
 .livre:focus-visible .tranche {
   outline: 2px solid var(--or);
   outline-offset: 3px;
 }
 
-/* la tranche : ce qu'on voit au rayon */
+/* les quatre faces visibles ; chacune ne se voit que de face */
 .tranche,
-.couverture {
+.plat,
+.contrePlat,
+.tete {
   position: absolute;
-  top: 0;
-  height: 100%;
-  overflow: hidden;
   backface-visibility: hidden;
-  background:
-    linear-gradient(180deg, rgba(255, 240, 210, 0.07), transparent 30%),
-    var(--fond, var(--ebene));
 }
-/* (sélecteurs « purs » : un module CSS exige une classe locale dans chaque sélecteur) */
-.tranche[data-ton="1"],
-.couverture[data-ton="1"] {
-  --fond: #13201f;
-}
-.tranche[data-ton="2"],
-.couverture[data-ton="2"] {
-  --fond: #241311;
-}
+
+/* le dos : cuir grainé, arrondi par la lumière (sombre aux bords, un reflet au tiers) */
 .tranche {
-  left: 0;
-  width: 100%;
-  border-radius: 2px 3px 3px 2px;
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
-    inset -1px -1px 0 rgba(0, 0, 0, 0.5),
-    inset 7px 0 10px -6px rgba(0, 0, 0, 0.55);
+  inset: 0;
+  overflow: hidden;
+  border-radius: 3px 3px 2px 2px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0, rgba(0, 0, 0, 0.16) 9%, rgba(255, 232, 190, 0.14) 30%, rgba(255, 232, 190, 0.05) 46%, rgba(0, 0, 0, 0.1) 72%, rgba(0, 0, 0, 0.58) 100%),
+    linear-gradient(180deg, rgba(255, 226, 180, 0.09), transparent 20%, transparent 78%, rgba(0, 0, 0, 0.34)),
+    var(--grain),
+    var(--fond, var(--ebene));
+  background-size:
+    auto,
+    auto,
+    140px 140px,
+    auto;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 200, 0.16);
 }
-/* les nervures du dos, en or sobre */
+/* deux nervures en relief, bordées d'un filet doré */
 .tranche::before,
 .tranche::after {
   content: "";
   position: absolute;
-  left: 8%;
-  right: 8%;
-  height: 1px;
-  background: rgba(201, 164, 92, 0.4);
+  left: 0;
+  right: 0;
+  height: 9px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(255, 226, 170, 0.18) 35%, rgba(255, 226, 170, 0.06) 62%, rgba(0, 0, 0, 0.48));
+  box-shadow:
+    0 -1px 0 rgba(201, 164, 92, 0.6),
+    0 1px 0 rgba(201, 164, 92, 0.6);
 }
 .tranche::before {
-  top: 21%;
+  top: 20%;
 }
 .tranche::after {
   bottom: 15%;
 }
+/* la pièce de titre : le code, sur un carré de cuir plus sombre au filet d'or */
 .code {
   position: absolute;
-  top: 6%;
-  left: 0;
-  right: 0;
+  top: 5.5%;
+  left: 15%;
+  right: 15%;
   display: grid;
   justify-items: center;
-  gap: 3px;
+  gap: 2px;
+  padding: 5px 0 4px;
+  border: 1px solid rgba(201, 164, 92, 0.6);
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.3);
   font-family: var(--font-geist-mono, ui-monospace), monospace;
   font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  color: rgba(201, 164, 92, 0.9);
+  letter-spacing: 0.12em;
+  color: #e4c47f;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75);
 }
 .code small {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 600;
   letter-spacing: 0.06em;
-  color: rgba(239, 227, 200, 0.62);
+  color: rgba(239, 227, 200, 0.68);
 }
-/* le titre en or sobre, écrit de bas en haut comme sur un dos de livre (aucun mot coupé) */
+/* le titre doré à la feuille, écrit de bas en haut comme sur un dos de livre (aucun mot coupé) */
 .titre {
   position: absolute;
-  top: 25%;
-  bottom: 19%;
+  top: 25.5%;
+  bottom: 20%;
   left: 50%;
   margin: 0;
   writing-mode: vertical-rl;
   transform: translateX(-50%) rotate(180deg);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-  color: var(--or);
-  overflow: hidden;
+  font-size: clamp(12.5px, 1.04vw, 15px);
+  font-weight: 650;
+  line-height: 1.18;
+  letter-spacing: 0.02em;
   text-align: center;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f4dc9e, #c79a4b 42%, #f0d290 64%, #a97b36);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.7));
 }
 /* une encoche par module le long du bord, dorée une fois écouté */
 .encoches {
   position: absolute;
-  top: 24%;
-  bottom: 18%;
-  left: 5px;
+  top: 25%;
+  bottom: 19%;
+  left: 7px;
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
@@ -216,17 +276,17 @@
 .encoches i {
   height: 2px;
   border-radius: 1px;
-  background: rgba(239, 227, 200, 0.16);
+  background: rgba(239, 227, 200, 0.18);
 }
 .encoches i[data-fait] {
   background: var(--or);
-  box-shadow: 0 0 4px rgba(201, 164, 92, 0.5);
+  box-shadow: 0 0 4px rgba(201, 164, 92, 0.55);
 }
 .compte {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 5%;
+  bottom: 4.5%;
   margin: 0;
   text-align: center;
   font-family: var(--font-geist-mono, ui-monospace), monospace;
@@ -234,34 +294,92 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--creme);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75);
+}
+/* un reflet passe sur le dos quand le livre sort */
+.eclat {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 240, 210, 0.2) 50%, transparent 70%);
+  translate: -70% 0;
+  transition:
+    opacity 0.3s ease,
+    translate 0.8s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .place:hover .eclat {
+    opacity: 1;
+    translate: 70% 0;
+  }
 }
 
-/* la couverture : rangée de profil dans le rayon, elle se découvre quand le livre pivote */
-.couverture {
+/* le plat (à droite du dos) : rangé de profil, il se découvre quand le livre pivote */
+.plat {
+  top: 0;
   left: 100%;
   width: var(--cv);
+  height: 100%;
   display: grid;
   align-content: space-between;
-  padding: 18px 16px 16px;
+  padding: 24px 20px 20px 26px;
   border-radius: 0 4px 4px 0;
   transform-origin: 0 50%;
   transform: rotateY(90deg);
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
-    inset 10px 0 14px -8px rgba(0, 0, 0, 0.6);
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.12) 5%, transparent 8%, rgba(0, 0, 0, 0.3) 9.5%, transparent 12%),
+    linear-gradient(155deg, rgba(255, 230, 190, 0.11), transparent 45%, rgba(0, 0, 0, 0.25)),
+    var(--grain),
+    var(--fond, var(--ebene));
+  background-size:
+    auto,
+    auto,
+    140px 140px,
+    auto;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 200, 0.14);
+}
+/* le filet doré, poussé à froid dans le cuir */
+.plat::before {
+  content: "";
+  position: absolute;
+  inset: 11px 11px 11px 18px;
+  border: 1px solid rgba(201, 164, 92, 0.55);
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+/* vu de profil au repos, le texte du plat ne ferait que des traits : il paraît quand le livre sort */
+.plat > * {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .place:hover .plat > * {
+    opacity: 1;
+    transition: opacity 0.3s ease 0.25s;
+  }
+}
+.livre:focus-visible .plat > * {
+  opacity: 1;
 }
 .couvCode {
   font-family: var(--font-brand), "Dela Gothic One", sans-serif;
-  font-size: 34px;
+  font-size: 42px;
   line-height: 1;
-  color: var(--or);
+  background: linear-gradient(180deg, #f4dc9e, #c79a4b 55%, #e8c67f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
 }
 .couvTitre {
-  font-size: 15px;
+  font-size: 15.5px;
   font-weight: 600;
   line-height: 1.25;
   text-wrap: balance;
   color: var(--creme);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
 }
 .couvPied {
   display: grid;
@@ -271,12 +389,44 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(239, 227, 200, 0.6);
+  color: rgba(239, 227, 200, 0.68);
 }
 .couvPied::before {
   content: "";
   height: 1px;
-  background: rgba(201, 164, 92, 0.45);
+  background: rgba(201, 164, 92, 0.5);
+}
+
+/* le contre-plat (à gauche du dos) : visible de biais sur les livres à droite de l'étage */
+.contrePlat {
+  top: 0;
+  left: calc(-1 * var(--cv));
+  width: var(--cv);
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+  transform-origin: 100% 50%;
+  transform: rotateY(-90deg);
+  background:
+    linear-gradient(270deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.12) 5%, transparent 8%),
+    var(--grain),
+    var(--fond, var(--ebene));
+  background-size:
+    auto,
+    140px 140px,
+    auto;
+}
+
+/* la tête : les pages, crème, en retrait des plats */
+.tete {
+  left: 3px;
+  right: 3px;
+  top: calc(-1 * var(--cv));
+  height: var(--cv);
+  transform-origin: 50% 100%;
+  transform: rotateX(90deg);
+  background:
+    linear-gradient(180deg, rgba(60, 40, 20, 0.35), transparent 14%, transparent 86%, rgba(60, 40, 20, 0.3)),
+    repeating-linear-gradient(90deg, #f1e8d3 0 1px, #dccfb0 1px 2px);
 }
 
 /* pas encore de cours : la place reste, grisée */
@@ -299,7 +449,6 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   pointer-events: none;
-  z-index: 4;
   transition: opacity 0.25s ease;
 }
 :global(html[data-theme="nuit"]) .entoure {
@@ -320,7 +469,7 @@
   display: grid;
   gap: 18px;
   width: 100%;
-  max-width: 540px;
+  max-width: 480px;
   padding: 22px 22px 20px;
   border-radius: 16px;
   background:
@@ -725,15 +874,15 @@
   .salle {
     --ep: 54px;
     --h: 196px;
-    --cv: 128px;
+    --cv: 120px;
   }
   .bibliotheque {
     padding: 0 8px;
     border-width: 9px;
   }
   .etage {
-    gap: 6px;
-    padding-top: 20px;
+    gap: 5px;
+    padding-top: 22px;
   }
   .etage::before,
   .etage::after {
@@ -741,7 +890,11 @@
     right: -8px;
   }
   .code {
-    font-size: 9px;
+    left: 9%;
+    right: 9%;
+    padding: 3px 0;
+    font-size: 8.5px;
+    letter-spacing: 0.06em;
   }
   .code small {
     display: none;
@@ -750,14 +903,18 @@
     font-size: 10.5px;
   }
   .compte {
-    font-size: 9.5px;
+    font-size: 9px;
   }
   .encoches {
-    left: 3px;
+    left: 4px;
     width: 3px;
   }
-  .couverture {
-    padding: 12px 10px;
+  .tranche::before,
+  .tranche::after {
+    height: 6px;
+  }
+  .plat {
+    padding: 14px 10px 12px 14px;
   }
   .couvCode {
     font-size: 24px;
@@ -785,6 +942,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .livre,
+  .eclat,
   .bras,
   .icone,
   .entoure,

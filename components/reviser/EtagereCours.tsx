@@ -79,6 +79,10 @@ export function LigneCours({ apercu }: { apercu?: EcouteCours | null }) {
 
 /** Les deux tons des reliures, en plus de l'ébène (le même livre garde toujours le sien). */
 const TON = (i: number) => (i % 3 === 1 ? "1" : i % 3 === 2 ? "2" : undefined);
+/** l'épaisseur et la hauteur de chaque livre, autour de la moyenne : une vraie rangée n'est jamais au cordeau */
+const EPAISSEUR = [1.04, 0.92, 1, 0.95, 1.08, 0.97, 1.06, 0.93, 1, 0.96];
+const HAUTEUR = [1, 0.95, 0.98, 0.93, 1, 0.97, 1, 0.94, 0.98, 0.96];
+const gabarit = (i: number) => ({ ["--k" as string]: EPAISSEUR[i] ?? 1, ["--j" as string]: HAUTEUR[i] ?? 1 });
 /** les deux étages : cinq matières chacun, dans l'ordre du programme */
 const ETAGES = [SUBJECTS.slice(0, 5), SUBJECTS.slice(5)];
 
@@ -99,9 +103,9 @@ export function EtagereCours({ apercu, sources = {} }: { apercu?: EcouteCours | 
               const c = COURS_PROGRAMME.find((x) => x.slug === m.course) ?? null;
               if (!c)
                 return (
-                  <li key={m.key} className={b.place} data-indispo="1">
-                    <span className={b.livre} title={m.name}>
-                      <span className={b.tranche} data-ton={TON(i)}>
+                  <li key={m.key} className={b.place} style={gabarit(i)} data-indispo="1">
+                    <span className={b.livre} title={m.name} data-ton={TON(i)}>
+                      <span className={b.tranche}>
                         <span className={b.code}>
                           {m.code}
                           <small>{ETAGERE.bientot}</small>
@@ -114,9 +118,9 @@ export function EtagereCours({ apercu, sources = {} }: { apercu?: EcouteCours | 
               const av = avancement(c, e ?? SANS_ECOUTE);
               const conseil = lu && carte?.slug === c.slug;
               return (
-                <li key={m.key} className={b.place} data-conseil={conseil ? "1" : undefined}>
-                  <Link href={`/courses/${c.slug}`} className={b.livre} aria-label={ETAGERE.livretAria(c.title, av.modules, c.chapters.length, conseil)} title={c.title}>
-                    <span className={b.tranche} data-ton={TON(i)}>
+                <li key={m.key} className={b.place} style={gabarit(i)} data-conseil={conseil ? "1" : undefined}>
+                  <Link href={`/courses/${c.slug}`} className={b.livre} data-ton={TON(i)} aria-label={ETAGERE.livretAria(c.title, av.modules, c.chapters.length, conseil)} title={c.title}>
+                    <span className={b.tranche}>
                       <span className={b.encoches + " " + cache} aria-hidden>
                         {c.chapters.map((_, n) => (
                           <i key={n} data-fait={n < av.modules ? "1" : undefined} />
@@ -130,14 +134,18 @@ export function EtagereCours({ apercu, sources = {} }: { apercu?: EcouteCours | 
                       <span className={b.compte + " " + cache}>
                         {av.modules}/{c.chapters.length}
                       </span>
+                      <span className={b.eclat} aria-hidden />
                     </span>
-                    <span className={b.couverture} data-ton={TON(i)} aria-hidden>
+                    {/* le volume : le plat (il se découvre quand le livre pivote), le contre-plat, la tête des pages */}
+                    <span className={b.plat} aria-hidden>
                       <span className={b.couvCode}>{m.code}</span>
                       <span className={b.couvTitre}>{c.title}</span>
                       <span className={b.couvPied}>
                         {ETAGERE.modules(c.chapters.length)} · {ETAGERE.minutes(c.minutes)}
                       </span>
                     </span>
+                    <span className={b.contrePlat} aria-hidden />
+                    <span className={b.tete} aria-hidden />
                   </Link>
                   {conseil && (
                     <svg className={b.entoure} viewBox="0 0 120 160" preserveAspectRatio="none" aria-hidden>
