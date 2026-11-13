@@ -248,13 +248,3 @@ export async function chargerReviser(supabase: SupabaseClient, admin: SupabaseCl
   ]);
   return { fiches, flashcards, ratures, marquees, pointsFaibles };
 }
-
-/** Le registre seul (page de l'Atelier). */
-export async function chargerRegistre(supabase: SupabaseClient, admin: SupabaseClient | null, userId: string, now = Date.now()): Promise<Pick<DonneesReviser, "ratures" | "marquees" | "pointsFaibles">> {
-  const [ratures, marquees, pointsFaibles] = await Promise.all([
-    ou(lireRatures(supabase), null),
-    ou(lireMarquees(supabase, admin, userId), null),
-    ou(lirePointsFaibles(supabase, admin, userId, now), null),
-  ]);
-  return { ratures, marquees, pointsFaibles };
-}

@@ -10,7 +10,7 @@ import { Sceau, libelleSceau } from "@/components/codex/Sceau";
 import { LigneQuete as Ligne } from "@/components/codex/LigneQuete";
 import { FeuillesNotions, PastilleMatiere } from "@/components/codex/PastilleMatiere";
 import { Feuille } from "@/components/ui/Feuille";
-import { FILTRES, SEGMENTS_TEL, chercher, garde, glypheEtape, matieresFaibles, niveauDe, pastilleDe, quetesDeLaCarte, seche, taillesCachees, type FiltreCarte, type SegmentTel } from "@/lib/codex/carte";
+import { FILTRES, chercher, garde, glypheEtape, matieresFaibles, niveauDe, pastilleDe, quetesDeLaCarte, seche, taillesCachees, type FiltreCarte } from "@/lib/codex/carte";
 import { avanceeActe, exploitsTout, libelleEtat, texteExploit } from "@/lib/codex/tout";
 import e from "./Encre.module.css";
 import c from "./Carte.module.css";
@@ -819,40 +819,8 @@ export function Chemin({ quetes, ici, onQuete, nom }: { quetes: LigneQuete[]; ic
 }
 
 /* ================================================================== */
-/* Les deux segments (Codex simplifié, §3.3) et le téléphone           */
+/* Le téléphone                                                        */
 /* ================================================================== */
-
-/** La barre des deux segments, en tête de /codex, sur téléphone comme sur ordinateur (onglets : flèches, Début, Fin). */
-export function SegmentsTel({ segment, onChoisir }: { segment: SegmentTel; onChoisir: (s: SegmentTel) => void }) {
-  const clavier = (ev: React.KeyboardEvent) => {
-    const i = SEGMENTS_TEL.findIndex((s) => s.cle === segment);
-    const n = SEGMENTS_TEL.length;
-    const j = ev.key === "ArrowRight" ? (i + 1) % n : ev.key === "ArrowLeft" ? (i - 1 + n) % n : ev.key === "Home" ? 0 : ev.key === "End" ? n - 1 : -1;
-    if (j < 0) return;
-    ev.preventDefault();
-    onChoisir(SEGMENTS_TEL[j].cle);
-    document.getElementById("codex-seg-" + SEGMENTS_TEL[j].cle)?.focus();
-  };
-  return (
-    <div className={c.segments} role="tablist" aria-label="Le Codex" onKeyDown={clavier}>
-      {SEGMENTS_TEL.map((s) => (
-        <button
-          key={s.cle}
-          type="button"
-          role="tab"
-          id={"codex-seg-" + s.cle}
-          aria-selected={segment === s.cle}
-          aria-controls="codex-segment"
-          tabIndex={segment === s.cle ? 0 : -1}
-          className={c.segment}
-          onClick={() => onChoisir(s.cle)}
-        >
-          {s.libelle}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /**
  * La carte sur téléphone (« Voir la carte », ?vue=carte) : le parcours (le

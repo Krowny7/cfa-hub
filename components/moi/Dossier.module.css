@@ -155,9 +155,6 @@
   min-width: 0;
   max-width: 760px;
 }
-.corpsLarge {
-  max-width: none;
-}
 
 /* « CARNET PROPRE » : le tampon du carnet vidé (comme « tout est à jour » sur /revoir) */
 .tampon {

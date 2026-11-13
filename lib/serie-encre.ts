@@ -40,6 +40,9 @@ export type SerieEncre = {
   seuil: number;
 };
 
+/** La série d'encre réduite à ce que montrent les départs des épreuves (les 5 du jour, l'éclair), lue par la page. */
+export type SerieDuJour = { jours: number; fait: boolean; reste: number };
+
 /** Le palier d'une série (de la veille). */
 export function palierDe(serie: number): Palier {
   return serie >= 7 ? 2 : serie >= 3 ? 1.5 : 1;

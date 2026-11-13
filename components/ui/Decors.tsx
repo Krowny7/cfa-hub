@@ -1,26 +1,11 @@
 import Link from "next/link";
 import s from "./Decors.module.css";
 
-// Les petits décors de la colonne grise du cadre à zones (CadreZones) : un chiffre, une courte liste,
-// et, depuis 2026-11-13, plus de mini mur ni de platine (le mur et la platine vivent dans les rayons de Réviser B). Sans texte superflu ; un décor cliquable mène quelque part.
+// Les petits décors de la colonne grise du cadre à zones (CadreZones). Sans texte superflu ; un décor
+// cliquable mène quelque part. Le mini mur et la platine en sont partis le 2026-11-13, styles compris :
+// ils vivent dans les rayons de Réviser B.
+// Le grand chiffre (Chiffre) en est parti aussi : la porte des sous-pages porte le chiffre-héros.
 // Composants serveur (sans état).
-
-/** Un seul chiffre, en grand, et sa légende. */
-export function Chiffre({ valeur, legende, href }: { valeur: React.ReactNode; legende: React.ReactNode; href?: string }) {
-  const corps = (
-    <>
-      <b className={s.valeur}>{valeur}</b>
-      <span className={s.legende}>{legende}</span>
-    </>
-  );
-  return href ? (
-    <Link href={href} className={s.chiffre + " " + s.cliquable}>
-      {corps}
-    </Link>
-  ) : (
-    <div className={s.chiffre}>{corps}</div>
-  );
-}
 
 export type Ligne = { cle: string; titre: React.ReactNode; detail?: React.ReactNode; href?: string; marque?: boolean };
 

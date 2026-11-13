@@ -166,6 +166,18 @@
 .fiche :global(.ink-link) {
   color: var(--encre);
 }
+/* la nuit, le trait au pinceau (--underline) devient clair : invisible sur l'ivoire, un soulignement sombre le remplace */
+:global(html[data-theme="nuit"]) .fiche :global(.ink-link) {
+  background: none;
+  text-decoration: underline;
+  text-decoration-color: rgba(26, 18, 11, 0.45);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+/* une alerte sur l'ivoire : le rouge du tampon, fixe (--pen passe au corail la nuit) */
+.alerte {
+  color: var(--tampon);
+}
 .etiquette {
   margin: 0;
   font-family: var(--font-geist-mono, ui-monospace), monospace;

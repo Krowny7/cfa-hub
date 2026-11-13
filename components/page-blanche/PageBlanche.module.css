@@ -9,12 +9,6 @@
   color: var(--ink-2);
 }
 
-.bilan {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
 /* la feuille nue (2026-11-13) : un papier fixe, posé sur le fond classique, sans cadre autour ; ses
    encres sont fixes aussi (la nuit, --ink devient clair : pas sur ce papier) */
 .feuille {

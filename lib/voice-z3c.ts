@@ -154,7 +154,6 @@ export const BOUCLE = {
   fichePaquetAide: "Les notions de ce paquet sur une page A5, dans un nouvel onglet",
   /** les mémos affichés sous la révision (« Mémo » : la fiche tirée des flashcards ; le « one-pager » reste la grande fiche) */
   memoPaquetTitre: "Le mémo du paquet",
-  memoCartesTitre: (n: number) => `Le mémo des ${nombre(n)} cartes`,
   memoAide: "Les notions des cartes, sur une page.",
   memoSurligne: "En jaune : la carte à l'écran.",
   memoPdf: "Ouvrir en PDF",
@@ -213,8 +212,6 @@ export const ETAT_PAQUET = {
 
 // La révision de toute une matière (/flashcards/matiere/<clé>).
 export const MATIERE_CARTES = {
-  /** le début de la ligne de l'en-tête */
-  toute: "Toute la matière",
   appelTitre: "Réviser toute la matière",
   appelCompte: (n: number) => cartes(n),
   appelLigne: (paquets: number) =>

@@ -76,8 +76,6 @@ export const PLAQUE = {
   heros: (n: number) => (n > 1 ? "séries aujourd'hui" : "série aujourd'hui"),
   /** l'enjeu vrai : la série d'encre n'est pas encore tenue aujourd'hui */
   enjeu: (reste: number) => `Série d'encre · encore ${pluriel(reste, "question", "questions")}`,
-  /** le haut de la plaque */
-  serieN: (n: number) => `Série n°${NBSP}${nombre(n)}`,
   /** au départ : la précision récente, à côté du chiffre en Dela ; sans elle, le numéro de la série */
   recent: "sur tes 20 dernières",
   serie: "série du jour",
@@ -117,7 +115,4 @@ export const ATELIER_B = {
   seuil: (pct: number) => `tenu · ${nombre(pct)}${NBSP}%`,
   /** « 2 justes sur 5 · encore 2 pour tenir », comme sur l'ardoise */
   justes: (ok: number, n: number, manque: number) => `${pluriel(ok, "juste", "justes")} sur ${nombre(n)}${manque > 0 ? ` · encore ${nombre(manque)} pour tenir` : ""}`,
-  ratures: (n: number) => pluriel(n, "rature en cours", "ratures en cours"),
-  /** les autres notions, derrière */
-  autres: (n: number) => `${pluriel(n, "autre point faible", "autres points faibles")} derrière`,
 };

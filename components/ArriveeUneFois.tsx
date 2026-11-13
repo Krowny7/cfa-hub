@@ -5,21 +5,15 @@ import { useEffect, useState } from "react";
 // L'arrivée une fois par session (principe 7) : la rangée se pose au premier affichage ; au retour sur
 // la page (navigation dans le site), elle est déjà en place. Le rendu serveur et l'hydratation posent
 // toujours l'arrivée (même attribut des deux côtés : pas d'erreur #418) ; une page rouverte par le
-// site, elle, la saute. Le drapeau vit dans le module (et dans sessionStorage pour les autres onglets
-// du même site, lu dans un effet).
-let dejaPose = false;
-const CLE = "rl-arrivee-rangees";
+// site, elle, la saute. Un drapeau par page (`cle`) : la rangée de /mock-exams et celle de /salles
+// arrivent chacune à leur première visite. Le drapeau vit dans le module.
+const poses = new Set<string>();
 
-export function ArriveeUneFois({ className, children }: { className?: string; children: React.ReactNode }) {
-  const [arrivee] = useState(() => !dejaPose);
+export function ArriveeUneFois({ cle, className, children }: { cle: string; className?: string; children: React.ReactNode }) {
+  const [arrivee] = useState(() => !poses.has(cle));
   useEffect(() => {
-    dejaPose = true;
-    try {
-      window.sessionStorage.setItem(CLE, "1");
-    } catch {
-      /* stockage indisponible : l'arrivée se rejouera au prochain chargement complet */
-    }
-  }, []);
+    poses.add(cle);
+  }, [cle]);
   return (
     <div className={className} data-arrivee={arrivee ? "1" : undefined}>
       {children}

@@ -148,12 +148,14 @@ export function SessionPageBlanche({
     );
   };
 
-  /** Le lien vers le calcul d'une formule oubliée : seulement s'il est le sien (table relue). */
-  const lienCalcul = (f: Formule) => {
+  /** Le lien vers le calcul d'une formule oubliée : seulement s'il est le sien (table relue).
+   *  Pendant le corrigé, il s'ouvre dans un nouvel onglet : les notes du tour ne vivent que
+   *  dans l'état et ne sont écrites qu'à « valider » ; quitter la page les perdrait. */
+  const lienCalcul = (f: Formule, nouvelOnglet = false) => {
     const l = liens[f.id];
     if (!l) return null;
     return (
-      <Link href={l.href} className={s.calcul}>
+      <Link href={l.href} className={s.calcul} {...(nouvelOnglet ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
         {FEUILLES_PB.calcul(l.nom)} <span aria-hidden>→</span>
       </Link>
     );
@@ -280,7 +282,7 @@ export function SessionPageBlanche({
                     </span>{" "}
                     <Reponse f={f} />
                     {f.note && <p className={s.note}>{f.note}</p>}
-                    {notes[f.id] === false && lienCalcul(f)}
+                    {notes[f.id] === false && lienCalcul(f, true)}
                   </div>
                   <div className={s.choix}>
                     <button type="button" className={s.rouge} aria-pressed={notes[f.id] === false} aria-label={`${f.nom} : ${PB.aRevoir}`} title={PB.aRevoir} onClick={() => setNotes((n) => ({ ...n, [f.id]: false }))}>

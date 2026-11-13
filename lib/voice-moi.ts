@@ -421,7 +421,6 @@ export const DOSSIER = {
     compte: "Ton compte",
     apparence: "Apparence",
     repos: "Repos de la série",
-    sons: "Sons",
     confidentialite: "Confidentialité",
     groupes: "Groupes",
     sortie: "Sortie",

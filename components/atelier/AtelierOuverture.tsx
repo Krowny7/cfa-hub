@@ -66,7 +66,7 @@ export function AtelierOuverture({
       <p className={fiche.mesure}>{[mesure, p ? V.detailNotion(p.enCours, p.calcul) : null].filter(Boolean).join(" · ")}</p>
 
       {message && (
-        <p role="alert" className="t-small m-0 text-pen">
+        <p role="alert" className={"t-small m-0 " + fiche.alerte}>
           {message}
         </p>
       )}

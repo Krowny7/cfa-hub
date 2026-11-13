@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { dayHref, reviewLeftLabel, type DailyBoard, type DailyHistoryEntry, type FormatDefi } from "@/lib/daily";
+import { HISTORIQUE_MAX, dayHref, reviewLeftLabel, type DailyBoard, type DailyHistoryEntry, type FormatDefi } from "@/lib/daily";
 import { nombre } from "@/lib/voice";
 import { CALENDRIER as C } from "@/lib/voice-entrainement-b";
 import { rangOrdinal } from "@/lib/voice-z2c";
@@ -70,17 +70,27 @@ export function casesFenetre(
   return { cases, debut, fin: decaleJours(debut, semaines * 7 - 1) };
 }
 
-/** Les jours d'affilée avec une copie rendue, jusqu'à aujourd'hui (s'il est rendu) ou jusqu'à hier. */
-export function joursAffilee(today: string, histoire: Map<string, DailyHistoryEntry>, renduAujourdhui: boolean): number {
+/** Vrai si l'historique reçu a la longueur du plafond de la base : des jours plus anciens existent peut-être. */
+export const historiqueTronque = (histoire: { length: number }) => histoire.length >= HISTORIQUE_MAX;
+
+/**
+ * Les jours d'affilée avec une copie rendue, jusqu'à aujourd'hui (s'il est rendu) ou jusqu'à hier.
+ * `borne` : la série atteint le plus vieux jour d'un historique tronqué (elle continue peut-être au-delà).
+ */
+export function joursAffilee(today: string, histoire: Map<string, DailyHistoryEntry>, renduAujourdhui: boolean, tronque = false): { jours: number; borne: boolean } {
+  let premier = today;
+  for (const k of histoire.keys()) if (k < premier) premier = k;
   let n = renduAujourdhui ? 1 : 0;
   const d = new Date(today + MIDI);
   for (let k = 0; k < 400; k++) {
     d.setUTCDate(d.getUTCDate() - 1);
-    const e = histoire.get(d.toISOString().slice(0, 10));
+    const cle = d.toISOString().slice(0, 10);
+    if (tronque && cle < premier) return { jours: n, borne: n > 0 };
+    const e = histoire.get(cle);
     if (!e?.finishedAt) break;
     n += 1;
   }
-  return n;
+  return { jours: n, borne: false };
 }
 
 /** L'enjeu vrai : le temps avant minuit (closesAt), « 5 h », « 25 min » ; null une fois passé. */
@@ -180,7 +190,9 @@ export function DefiCalendrier({
   const { cases, debut, fin } = casesFenetre(today, SEMAINES, recul, parJour, aujourdhui, nowIso);
   const anneeAuj = Number(today.slice(0, 4));
   const titre = C.titreFenetre(debut, fin, anneeAuj);
-  const aPrecedent = premier < debut;
+  // historique tronqué : seules s'ouvrent les fenêtres entièrement chargées (un jour joué mais non
+  // chargé ne doit pas passer pour un jour sans défi)
+  const aPrecedent = historiqueTronque(histoire) ? premier <= decaleJours(debut, -SEMAINES * 7) : premier < debut;
   const idCercle = "cal-cercle-" + useId().replace(/[^a-zA-Z0-9]/g, "");
 
   return (

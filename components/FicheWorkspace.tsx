@@ -412,7 +412,7 @@ export function FicheWorkspace({
       }
     >
       <Scene>
-        {/* Bascule Cours / Entraînement — téléphone seulement : le cadre ne montre alors qu'une zone (Postes.module.css) */}
+        {/* Bascule Cours / Entraînement — téléphone seulement : le cadre ne montre alors qu'une zone (classes hidden min-[980px]) */}
         <SegTabs
           label="Affichage"
           className="w-full min-[980px]:hidden"

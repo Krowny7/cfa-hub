@@ -1,29 +1,12 @@
-/* Les postes de travail de Réviser (fiche, cours complet, flashcards, page blanche) sur le cadre à
-   zones commun (CadreZones, components/ui/SousPage) : deux réglages locaux, sans toucher au cadre
-   commun. Ils visent la zone qui porte l'élément (:has), pas ses classes ; sans :has, le cadre
-   reste tel quel (zone centrée, deux zones empilées au téléphone). */
+/* Les postes de travail de Réviser sur le cadre à zones commun (CadreZones, components/ui/SousPage) :
+   un réglage local, sans toucher au cadre commun (aujourd'hui lu par la page d'une matière des
+   flashcards, poste.haut). Il vise la zone qui porte l'élément (:has), pas ses classes ; sans :has,
+   le cadre reste tel quel (zone centrée). La bascule Cours / Entraînement d'une fiche au téléphone
+   passe par les classes hidden min-[980px] de FicheWorkspace, plus par ce module. */
 
 /* une zone du cadre centre son contenu en hauteur ; sur un poste de travail, ce qu'on lit ou révise
    (le PDF, le deck, la révision, la feuille) se cale en haut, à côté d'une colonne grise plus
    longue, et ne bouge pas quand elle change de hauteur */
 div:has(> .haut) {
   align-content: start;
-}
-
-/* téléphone : la bascule Cours / Entraînement d'une fiche ne montre qu'une des deux zones */
-@media (max-width: 979.98px) {
-  /* sur l'entraînement : la bande des titres et la zone du cours s'effacent, la colonne grise
-     (avec son propre titre) remonte en haut du cadre */
-  div:has(> .coursMasque),
-  div:has(+ div > .coursMasque) {
-    display: none;
-  }
-  section:has(.coursMasque) div:has(> .quiz) {
-    margin-top: calc(-1 * var(--pad-t, 18px));
-    border-radius: 24px;
-  }
-  /* sur le cours : la colonne grise s'efface */
-  div:has(> .quizMasque) {
-    display: none;
-  }
 }

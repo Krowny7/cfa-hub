@@ -15,9 +15,12 @@ export function SouvenirPacks({ scores }: { scores: Record<string, number> }) {
   const gagnes = useGagnes("rl-packs-scores", scores, true);
   const cles = Object.keys(gagnes).join("|");
 
+  // la première réponse gardée dans une ref : le double effet du mode strict ne relit pas la page « vue »
+  const vuRef = useRef<boolean | null>(null);
   useLayoutEffect(() => {
+    if (vuRef.current === null) vuRef.current = dejaVu("official-exams");
     const rayon = ref.current?.parentElement?.querySelector<HTMLElement>('ul[data-rayon="packs"]');
-    if (rayon && dejaVu("official-exams")) rayon.dataset.calme = "1";
+    if (rayon && vuRef.current) rayon.dataset.calme = "1";
   }, []);
 
   useLayoutEffect(() => {

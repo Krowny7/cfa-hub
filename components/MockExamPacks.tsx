@@ -88,7 +88,7 @@ export function PackExamen({ p, grand = false, i = 0 }: { p: Pack; grand?: boole
 export function RangeePacks({ packs, conseil, action }: { packs: Pack[]; conseil: string | null; action?: { href: string; label: string } | null }) {
   return (
     <section className={s.vitrine} aria-label={E.rangee}>
-      <ArriveeUneFois className={s.arrivee}>
+      <ArriveeUneFois cle="mock-exams" className={s.arrivee}>
         <ul className={s.rangee} id="rl-rangee-packs">
           {packs.map((p, i) => (
             <li key={p.id} className={s.place} data-conseil={conseil === p.id ? "1" : undefined}>

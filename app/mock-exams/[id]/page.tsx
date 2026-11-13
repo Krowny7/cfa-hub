@@ -254,7 +254,8 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
   const monPct = myResult ? pctOf(myResult.score, myResult.total) : null;
   const heuresAvantFin = Math.ceil((windowEnd.getTime() - now.getTime()) / 3_600_000);
   const maPlace = leaderRows.findIndex((r) => r.userId === auth.user!.id);
-  const jourOuverture = windowStart.toLocaleDateString("fr-FR", { weekday: "long", timeZone: "Europe/Paris" });
+  // le jour et la date : « lundi » seul se lirait comme le lundi qui vient
+  const jourOuverture = windowStart.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
   const ligne =
     exam.status === "draft"
       ? null
@@ -269,6 +270,8 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
               ? E.inscritOuvert
               : E.inscritOuverture(jourOuverture)
             : E.pasInscrit;
+  // l'enjeu ELO, dit en clair tant qu'il compte encore (le title de l'inscription ne se lit pas au toucher)
+  const ligneTete = [ligne, eloEnabled && exam.status === "open" && !alreadyDone && !windowClosed ? DETAIL.classe : null].filter(Boolean).join(" · ") || null;
   const meilleure = leaderRows.length > 0 ? Math.max(...leaderRows.map((r) => pctOf(r.score, r.total))) : null;
   const heros =
     monPct !== null
@@ -283,7 +286,7 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
     <EnTeteSousPage
       retour={RETOUR_EXAMENS}
       titre={exam.title}
-      ligne={ligne}
+      ligne={ligneTete}
       illustration={{ nom: "mock-grande-salle", position: "center 40%" }}
       heros={heros}
       enjeu={enjeu}
@@ -369,8 +372,9 @@ export default async function MockExamDetailPage({ params, searchParams }: PageP
     // Examen pas encore publié (le pack dit « en préparation »)
     texteEtat = DETAIL.pasOuvertTexte;
   } else if (isRegistered && !alreadyDone && !withinWindow && !windowClosed) {
-    // Inscrit, la fenêtre n'a pas commencé (la ligne dit le jour d'ouverture) : la désinscription
+    // Inscrit, la fenêtre n'a pas commencé (la ligne dit le jour d'ouverture) : la fenêtre en entier, la désinscription
     titreEtat = DETAIL.bientotTitre;
+    texteEtat = DETAIL.bientotTexte(jourOuverture, dayMonth(windowEnd));
     suite = inscriptionOuverte ? inscription : null;
   } else if (inscriptionOuverte) {
     // Pas encore inscrit, la fenêtre court encore : ta place à réserver

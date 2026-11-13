@@ -34,8 +34,6 @@ export const CARNETS = {
   pagesCourt: "pages",
   /** le tampon d'un carnet fini */
   tenu: "Tenu",
-  /** sur la tranche : « 3/5 » */
-  tranche: (faites: number, pages: number) => `${faites}/${pages}`,
   aria: (nom: string, faites: number, pages: number, conseil: boolean) =>
     `${nom} : ${faites} page${s(faites)} faite${s(faites)} sur ${pages}${conseil ? ", conseillée" : ""}`,
   bientot: "Bientôt",
@@ -43,7 +41,6 @@ export const CARNETS = {
   reprendre: (nom: string) => `Reprendre ${nom}`,
   mur: "One-pagers",
   murAide: "Les 10 one-pagers : une page A4 par matière",
-  murPied: "10 pages A4",
 } as const;
 
 /** L'arrivée des rayons ne se joue qu'une fois par session (sessionStorage). */
@@ -51,7 +48,6 @@ export const CLE_VU_RAYONS = "rl_vu_rayons";
 
 /** /fiches/one-pagers : le mur en grand et son filtre. */
 export const MUR = {
-  etiquette: "Le mur",
   filtre: "Filtrer par matière",
   toutes: "Toutes",
   ligne: "10 matières · une page A4 chacune",
@@ -79,20 +75,20 @@ export const ETAGERE = {
   livretAria: (titre: string, faits: number, total: number, conseil: boolean) =>
     `${titre} : ${faits} module${s(faits)} écouté${s(faits)} sur ${total}${conseil ? ", à reprendre" : ""}`,
   bientot: "Bientôt",
+  /** la bibliothèque à deux étages (chaque livre ouvre son cours : le deck et l'audio) */
+  bibliotheque: "La bibliothèque des cours",
+  /** la platine : elle joue l'audio sur place, la matière se choisit dessous */
   platine: "La platine",
-  platineAide: (titre: string, reprise: boolean) => (reprise ? `Reprendre l'écoute : ${titre}` : `Écouter : ${titre}`),
-  reprendre: (titre: string) => `Reprendre ${titre}`,
-  commencer: (titre: string) => `Écouter ${titre}`,
-  module: (n: number) => `module ${n}`,
-  videos: "Vidéos de révision",
-  video: (n: number) => `Vidéo ${n}`,
-  videoAria: (n: number, titre: string, etat: string) => `Vidéo ${n}, ${titre} : ${etat}`,
-  enPreparation: "En préparation",
-  /** /videos?v=… : le chiffre-héros (ce qu'il reste à voir, ou la durée si elle n'est pas commencée) */
-  videoHerosReste: "restantes",
-  videoHerosNeuve: "à voir",
-  videoHerosVue: "vue en entier",
-  videoHerosVueValeur: "100 %",
+  matieres: "Le disque sur la platine",
+  ecouter: (titre: string) => `Écouter ${titre}`,
+  reprendreA: (titre: string, temps: string) => `Reprendre ${titre} à ${temps}`,
+  pause: (titre: string) => `Mettre ${titre} en pause`,
+  moduleDe: (n: number, total: number) => `Module ${n}/${total}`,
+  position: "Position dans le cours",
+  reculer: "Reculer de 15 secondes",
+  avancer: "Avancer de 15 secondes",
+  vitesse: (r: string) => `Vitesse de lecture : ${r}. Changer`,
+  sansAudio: "L'audio ne répond pas : ouvre le cours",
 } as const;
 
 /** /courses/<slug> : le deck et l'audio. */
@@ -132,6 +128,4 @@ export const SEANCE_FICHE = {
   entamee: "entamée",
   neuve: "pas commencée",
   bientot: "bientôt",
-  cours: "La synthèse",
-  quiz: "Le quiz",
 } as const;

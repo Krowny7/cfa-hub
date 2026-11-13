@@ -95,8 +95,6 @@ export const REJOUER = {
 /** La liste des examens blancs. */
 export const LISTE = {
   titre: "Examens blancs",
-  sousClasse: "Chronométrés, au format de l'examen. À la clôture, ton ELO bouge selon ta place face aux autres.",
-  sous: "Chronométrés, au format de l'examen, avec un classement entre participants.",
   videTitre: "Aucun examen blanc au calendrier.",
   videTexte: "Le prochain s'affichera ici, avec ses inscriptions.",
   ensuite: "Ensuite",
@@ -125,12 +123,9 @@ export const DETAIL = {
   classe: "classé (ELO)",
   termine: "Terminé",
   ouvertureDans: (heures: number, jours: number) => `Ouverture dans ${heures < 24 ? `${heures} h` : `${jours} j`}`,
-  pasOuvertTitre: "Pas encore ouvert",
   pasOuvertTexte: "Cet examen n'est pas encore ouvert aux inscriptions.",
   bientotTitre: "Bientôt ton tour",
   bientotTexte: (debut: string, fin: string) => `Ta copie t'attend du ${debut} au ${fin}.`,
-  finiTitre: "Fenêtre terminée",
-  finiTexte: (fin: string) => `La fenêtre pour rendre ta copie s'est fermée le ${fin}.`,
 } as const;
 
 /** Le classement d'un examen blanc. */

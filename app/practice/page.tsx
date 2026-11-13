@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PracticeSession } from "@/components/PracticeSession";
 import { getTopicMastery } from "@/lib/mastery";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
+import { palierCiblee } from "@/lib/trophees";
 
 type PastSession = {
   id: string;
@@ -20,13 +21,18 @@ export default async function PracticePage() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
 
-  const [{ data }, topics, traitsJour] = await Promise.all([
+  const [{ data }, toutes, topics, traitsJour] = await Promise.all([
     supabase
       .from("practice_session_results")
       .select("id,topics,format,question_count,score,total,duration_seconds,completed_at")
       .eq("user_id", auth.user.id)
       .order("completed_at", { ascending: false })
       .limit(20),
+    // toutes les copies (sans plafond) : la ligne d'état de la porte les compte, avec leurs trophées d'or
+    supabase
+      .from("practice_session_results")
+      .select("score,total,topics,completed_at", { count: "exact" })
+      .eq("user_id", auth.user.id),
     // maîtrise par matière (repli : tout à null si la table manque)
     getTopicMastery(supabase, auth.user.id).catch(() => []),
     // traits du jour (même lecture que la barre du haut, mise en cache) : l'anneau sous la copie
@@ -35,7 +41,15 @@ export default async function PracticePage() {
 
   const pastSessions = (data ?? []) as PastSession[];
   const mastery = Object.fromEntries(topics.map((t) => [t.key, t.pct]));
+  // lecture ratée : pas de bilan, PracticeSession compte alors sur les 20 dernières
+  const rendues = toutes.error ? null : ((toutes.data ?? []) as Pick<PastSession, "score" | "total" | "topics" | "completed_at">[]);
+  const bilan = rendues
+    ? {
+        copies: toutes.count ?? rendues.length,
+        ors: rendues.filter((x) => palierCiblee(x.score, x.total, (x.topics ?? []).length, x.completed_at) === 3).length,
+      }
+    : undefined;
 
   // L'en-tête vit dans PracticeSession : il disparaît pendant l'épreuve.
-  return <PracticeSession pastSessions={pastSessions} mastery={mastery} traitsJour={traitsJour} />;
+  return <PracticeSession pastSessions={pastSessions} bilan={bilan} mastery={mastery} traitsJour={traitsJour} />;
 }

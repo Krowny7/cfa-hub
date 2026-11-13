@@ -20,7 +20,6 @@ export const TEXTES_TOUT = {
   trouves: (n: number) => `Trouvés (${n})`,
   semaine: "Ta semaine",
   carte: "Voir la carte",
-  retourCarte: "Tout le Codex",
   but: (b: string) => `But : ${b}`,
   autresFaites: (n: number) => (n === 1 ? "et 1 autre faite" : `et ${n} autres faites`),
   matieresFinies: (n: number) => (n === 1 ? "et 1 matière menée au bout" : `et ${n} matières menées au bout`),

@@ -181,8 +181,8 @@ export function MockExamRunner({
           <ReadyCard
             eyebrow={AVANT_EXAMEN.surTitreMock}
             title={AVANT_EXAMEN.titre}
-            // le format est déjà dans la ligne de l'en-tête commun
-            meta={entete ? undefined : `${questions.length} questions · ${fmtMinutes(durationMinutes)}`}
+            // le format, toujours : la ligne de l'en-tête commun dit l'état du joueur, plus le format
+            meta={`${questions.length} questions · ${fmtMinutes(durationMinutes)}`}
             rules={[...AVANT_EXAMEN.reglesMock]}
             onStart={start}
             startLabel={AVANT_EXAMEN.commencer}

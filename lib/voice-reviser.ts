@@ -105,7 +105,6 @@ export const RV = {
   faiblesAction: "Voir mes points faibles",
 
   // listes
-  ouvrirFiche: "Ouvrir la fiche",
   // la carte « ta suite » des listes (la seule recommandation de la page)
   taSuite: "Ta suite",
   ficheReprendre: (nom: string) => `Reprendre par ${nom}`,
@@ -116,16 +115,8 @@ export const RV = {
   coursLigneNeuve: (modules: number, minutes: number) => `${modules} modules, ${minutes} min.`,
   coursEcouter: "Écouter le cours",
   /** le carrousel des flashcards */
-  cartesTitre: "Choisis ta matière",
   cartesAide: "fais tourner les paquets",
   cartesOuvrir: "Voir ses paquets",
-  /** le carrousel des fiches (/fiches) et celui des cours (/courses) */
-  fichesChoisir: "Choisis ta fiche",
-  coursChoisir: "Choisis ton cours",
-  coursOuvrirUn: "Ouvrir le cours",
-  /** /courses, la colonne grise : la platine du dernier cours écouté */
-  coursReprise: "Reprends l'écoute",
-  coursPlatine: (titre: string, reprise: boolean) => (reprise ? `Reprendre l'écoute : ${titre}` : `Écouter ${titre}`),
   // flashcards : les cartes déjà vues de chaque matière, une pastille par paquet
   avanceVues: (vues: number, total: number) => `${vues}/${total} vues`,
   avanceAide: (nom: string, vues: number, total: number, maitrises: number, enCours: number, neufs: number) =>
@@ -148,15 +139,9 @@ export const RV = {
 /** Les one-pagers : la page /fiches/one-pagers, son accès depuis /fiches et le lien des pages de fiche. */
 export const OP = {
   titre: "One-pagers",
-  desc: "Chaque matière tient sur une page A4 : l'essentiel, les formules et les pièges d'examen. À relire la veille, ou à imprimer.",
   grille: "Les 10 matières",
   ouvrir: (matiere: string) => `Ouvrir le one-pager ${matiere} (PDF, nouvel onglet)`,
   indisponible: "PDF bientôt en ligne",
-  /** le titre de l'unique zone de /fiches/one-pagers */
-  zoneTous: "Les 10 one-pagers",
-  /** /fiches, la colonne grise : le mini mur qui mène aux one-pagers */
-  zone: "Les one-pagers",
-  murAide: "Ouvrir les one-pagers : une page A4 par matière",
   accesAide: "une page A4 par matière",
   accesTitre: "Toute une matière sur une page",
   accesLigne: "L'essentiel, les formules et les pièges d'examen des 10 matières, à relire la veille.",
@@ -172,7 +157,6 @@ export const COURS = {
   lire: "Lire le cours",
   deck: "Le deck",
   ouvrir: "Ouvrir",
-  ouvrirSuite: " dans un nouvel onglet",
   ouvrirAide: "Ouvrir dans un nouvel onglet",
   iframe: (titre: string) => `${titre} — Cours complet`,
   indisponible: "Impossible de charger le cours pour le moment. Réessaie dans un instant.",
@@ -190,22 +174,10 @@ export const RETOUR = {
 
 export type KindListe = "fiche" | "cours" | "cartes";
 
-/** Le « lieu » de chaque liste : nom (légende de la peinture), l'illustration et son cadrage, le titre et la ligne de l'en-tête. */
-export const LIEUX: Record<KindListe, { nom: string; illustration: IllustrationNom; position: string; titre: string; desc: string }> = {
-  fiche: {
-    nom: "Les carnets",
-    illustration: "reviser-carnets",
-    position: "50% 45%",
-    titre: "Fiches de révision",
-    desc: "Une synthèse par thème, puis son quiz corrigé. Tes erreurs restent de côté jusqu'à ce que tu les réussisses.",
-  },
-  cours: {
-    nom: "Le pupitre",
-    illustration: "reviser-pupitre",
-    position: "50% 55%",
-    titre: "Cours complets",
-    desc: "Le cours intégral par matière, à lire ou à écouter : environ une heure, découpée par module.",
-  },
+/** Le « lieu » de la liste des flashcards (/flashcards) : nom (légende de la peinture), l'illustration et
+ *  son cadrage, le titre et la ligne de l'en-tête. /fiches et /courses ont leur propre voix
+ *  (CARNETS, ETAGERE de lib/voice-reviser-b.ts). */
+export const LIEUX: Record<"cartes", { nom: string; illustration: IllustrationNom; position: string; titre: string; desc: string }> = {
   cartes: {
     nom: "Le casier",
     illustration: "reviser-casier",

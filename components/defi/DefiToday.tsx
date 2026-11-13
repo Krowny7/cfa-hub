@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DefiRunner } from "@/components/defi/DefiRunner";
 import { DefiAccueil } from "@/components/defi/DefiAccueil";
 import { ColonneSeance } from "@/components/ui/SousPage";
-import type { SerieDuJour } from "@/components/epreuves/DepartZone";
+import type { SerieDuJour } from "@/lib/serie-encre";
 import { dailyPhase, type DailyBoard, type DailyHistoryEntry, type DailyInfo, type DailyQuestion, type DailyReviewItem } from "@/lib/daily";
 
 type Props = {

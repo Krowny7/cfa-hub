@@ -15,9 +15,8 @@ import portfolioManagement from "./memos/portfolio-management.json";
 // (attributs data-carte) par l'outil de cfa-work/onepagers. Le mémo les
 // surligne pour la carte à l'écran (components/flashcards/Memo).
 
-/** largeur / hauteur des images : mémo d'un paquet (A5), mémo de toutes les cartes (A4) */
+/** largeur / hauteur des images du mémo d'un paquet (A5) */
 export const RATIO_PAQUET = 1260 / 1785;
-export const RATIO_CARTES = 1428 / 2021;
 
 type Zones = Record<string, Record<string, number[][]>>;
 const ZONES: Record<string, Zones> = {

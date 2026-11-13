@@ -374,6 +374,9 @@ export async function getDailyReview(supabase: SupabaseClient, day: string, form
   }
 }
 
+/** Le plafond de daily_history (least(p_limit, 120)) : un historique de cette longueur est peut-être tronqué. */
+export const HISTORIQUE_MAX = 120;
+
 /** Les derniers défis (aujourd'hui compris), du plus récent au plus ancien. */
 export async function getDailyHistory(supabase: SupabaseClient, limit = 30, format: FormatDefi = "trente"): Promise<DailyHistoryEntry[]> {
   try {

@@ -36,7 +36,6 @@ export function anneesDe(exercice: string): { n: string; n1: string } {
 export const CAS = {
   titre: "Cas pratiques",
   kicker: "S'entraîner",
-  sous: "De vrais états financiers, et des questions pour y appliquer le programme, avec ou sans tuto.",
   /** la carte de la page S'entraîner */
   carteTexte: "De vrais états financiers, lus question par question.",
   retour: "Tous les cas",

@@ -1508,12 +1508,13 @@
   }
 }
 /* la nuit, le choix Privée / Publique sélectionné : une couleur fixe sombre et un liseré clair
-   (--sl-metal suit --noir, qui devient clair) */
-:global(html[data-theme="nuit"]) .puce[aria-checked="true"] {
+   (--sl-metal suit --noir, qui devient clair) ; limité au formulaire replié de /salles : les choix
+   des Réglages du salon gardent la pastille claire de la règle de base */
+:global(html[data-theme="nuit"]) .creerReplie .puce[aria-checked="true"] {
   border-color: rgba(241, 233, 212, 0.55);
   background: #1a120b;
   color: #f3ebdb;
 }
-:global(html[data-theme="nuit"]) .puce[aria-checked="true"] span {
+:global(html[data-theme="nuit"]) .creerReplie .puce[aria-checked="true"] span {
   color: rgba(243, 235, 219, 0.78);
 }

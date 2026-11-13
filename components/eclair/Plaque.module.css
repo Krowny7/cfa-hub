@@ -256,9 +256,3 @@
     justify-content: center;
   }
 }
-.note {
-  margin: 10px 0 0;
-  text-align: center;
-  font-size: 13px;
-  color: var(--pen);
-}

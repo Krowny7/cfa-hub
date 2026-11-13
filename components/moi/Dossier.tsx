@@ -56,11 +56,26 @@ export function Releve({ items }: { items: CaseReleve[] }) {
 
 /**
  * Un repli : la ligne sous son filet (étiquette, compte, « + »), le détail derrière. `id` : l'ancre
- * (un lien « …#sons » l'ouvre tout seul, OuvrirParAncre).
+ * (un lien « …#sons » l'ouvre tout seul, OuvrirParAncre). `leonard` : le repère de la visite guidée
+ * (data-leonard), posé sur le repli lui-même, dont la ligne reste visible quand il est fermé.
  */
-export function Repli({ titre, compte, id, ouvert = false, children }: { titre: React.ReactNode; compte?: React.ReactNode; id?: string; ouvert?: boolean; children: React.ReactNode }) {
+export function Repli({
+  titre,
+  compte,
+  id,
+  ouvert = false,
+  leonard,
+  children,
+}: {
+  titre: React.ReactNode;
+  compte?: React.ReactNode;
+  id?: string;
+  ouvert?: boolean;
+  leonard?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <details id={id} className={s.repli} open={ouvert || undefined}>
+    <details id={id} className={s.repli} open={ouvert || undefined} data-leonard={leonard}>
       <summary className={s.repliTete}>
         <span className={s.repliTitre}>{titre}</span>
         {compte !== undefined && compte !== null && <span className={s.repliCompte}>{compte}</span>}

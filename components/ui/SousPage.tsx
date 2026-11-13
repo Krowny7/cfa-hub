@@ -286,20 +286,6 @@ export function CadrePrincipal({
 }
 
 /**
- * Le cadre annexe (choix de Théo, 2026-11-12) : sous le cadre principal, le même cadre classique,
- * sa bande noire de titre en haut (blanche la nuit), puis son contenu. Pour ce qui complète
- * l'essentiel de la page (les paquets d'une matière…).
- */
-export function CadreAnnexe({ titre, children, id }: { titre: React.ReactNode; children: React.ReactNode; id?: string }) {
-  return (
-    <section id={id} className={s.annexe} aria-label={typeof titre === "string" ? titre : undefined}>
-      <h2 className={s.annexeBande}>{titre}</h2>
-      <div className={s.annexeCorps}>{children}</div>
-    </section>
-  );
-}
-
-/**
  * Le cadre à zones (le modèle des sous-pages validé par Théo sur les flashcards, 2026-11-12) : en
  * haut, la bande noire des titres sur toute la largeur (blanche la nuit) ; dessous, l'essentiel à
  * gauche (plus large) et, s'il y en a une, la colonne grise à droite, du haut en bas du cadre (le

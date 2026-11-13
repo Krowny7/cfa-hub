@@ -179,14 +179,10 @@ export function quetesDeLaCarte(vue: Pick<VueCodex, "trame" | "branches" | "long
 }
 
 // ── Les deux segments de /codex (Codex simplifié, §3.3) ──────────────
+// Depuis le 2026-11-13, deux replis sous l'arbre (PALIER.aujourdhui, PALIER.tout) ; le segment gardé dans
+// l'URL (?vue=) dit lequel s'ouvre.
 
 export type SegmentTel = "aujourdhui" | "tout";
-
-/** Les deux segments en tête de /codex, sur téléphone comme sur ordinateur ; le segment est gardé dans l'URL (?vue=). */
-export const SEGMENTS_TEL: { cle: SegmentTel; libelle: string }[] = [
-  { cle: "aujourdhui", libelle: "Aujourd'hui" },
-  { cle: "tout", libelle: "Tout le Codex" },
-];
 
 /** Ce que /codex montre : un des deux segments, ou la carte en plein écran (« Voir la carte », ?vue=carte). */
 export type VueSegment = SegmentTel | "carte";

@@ -1,164 +1,522 @@
-/* Page Vidéos résumé (components/videos/VideosView), dans le cadre à zones des sous-pages. Couleurs par les jetons
-   du site : le thème nuit suit seul. Seul l'écran du lecteur garde un fond sombre fixe (une vidéo se regarde sur
-   du noir, de jour comme de nuit). */
+/* Page Vidéos (components/videos/VideosView) : la télé cathodique et ses trois chaînes, le guide des programmes et
+   le programme de la vidéo. La télé (meuble d'ébène laqué, filet d'or, écran bombé) a des couleurs FIXES, de jour
+   comme de nuit (un liseré clair la nuit) ; le guide et le programme, posés sur le papier, suivent les jetons du thème. */
 
 .page {
-  /* la piste de la frise : visible sur le papier comme sur la colonne grise, de jour comme de nuit */
   --piste: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
-/* ——— la zone de gauche : les onglets des vidéos, le lecteur ——— */
-/* le lecteur, sur un fond ébène FIXE (direction « le lieu, puis l'objet ») : les jetons du thème y sont
-   redéfinis, onglets, commandes et frise s'écrivent clair sur sombre, de jour comme de nuit */
-.lecteur {
-  --ink: #efe3c8;
-  --ink-2: rgba(239, 227, 200, 0.66);
-  --ink-3: rgba(239, 227, 200, 0.46);
-  --paper: #1a120b;
-  --line: rgba(239, 227, 200, 0.13);
-  --line-2: rgba(239, 227, 200, 0.22);
-  --surface: #241910;
-  --surface-2: rgba(255, 240, 210, 0.07);
-  --control: rgba(255, 240, 210, 0.06);
-  --well: rgba(239, 227, 200, 0.14);
-  --color-white: #efe3c8;
-  --color-black: #1a120b;
-  --color-muted: rgba(239, 227, 200, 0.62);
-  --color-line: rgba(239, 227, 200, 0.13);
-  --color-line-2: rgba(239, 227, 200, 0.22);
-  --color-surface-2: rgba(255, 240, 210, 0.07);
-  --piste: rgba(239, 227, 200, 0.12);
-  display: flex;
-  flex-direction: column;
+/* ——— la mise en place : la télé, et à droite (dessous au téléphone) le guide puis le programme ——— */
+.salon {
+  display: grid;
+  gap: 30px;
   min-width: 0;
-  padding: 16px 16px 18px;
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 240, 210, 0.06), transparent 40%),
-    #1a120b;
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
-    0 22px 34px -22px rgba(0, 0, 0, 0.6);
-  color: #efe3c8;
 }
-:global(html[data-theme="nuit"]) .lecteur {
+@media (min-width: 980px) {
+  .salon {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 370px);
+    align-items: start;
+    gap: 40px;
+  }
+}
+
+/* ——————————————————————— la télé ——————————————————————— */
+.poste {
+  /* les couleurs de la télé, fixes */
+  --ebene: #1a120b;
+  --or: #c9a45c;
+  --or-clair: #e9c77f;
+  --creme: #efe3c8;
+  --creme-2: rgba(239, 227, 200, 0.64);
+  position: relative;
+  min-width: 0;
+  padding-top: 4px;
+}
+/* l'ombre du poste sur le sol, sous les pieds */
+.poste::after {
+  content: "";
+  display: block;
+  width: 82%;
+  height: 20px;
+  margin: -10px auto 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.24), transparent);
+  filter: blur(2px);
+  pointer-events: none;
+}
+:global(html[data-theme="nuit"]) .poste::after {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.7), transparent);
+}
+
+/* le meuble : l'ébène laqué, la lumière d'en haut, un filet d'or incrusté à quelques millimètres du bord */
+.meuble {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "ecran" "panneau" "frise";
+  gap: 14px;
+  padding: 14px 14px 12px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 240, 210, 0.075), transparent 26%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.2), transparent 7%, transparent 93%, rgba(0, 0, 0, 0.24)),
+    var(--ebene);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 236, 200, 0.14),
+    inset -1px -2px 0 rgba(0, 0, 0, 0.55),
+    0 28px 44px -26px rgba(0, 0, 0, 0.62),
+    0 8px 14px -8px rgba(0, 0, 0, 0.32);
+  color: var(--creme);
+}
+.meuble::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(201, 164, 92, 0.24);
+  border-radius: 17px;
+  pointer-events: none;
+}
+@media (min-width: 640px) {
+  .meuble {
+    grid-template-columns: minmax(0, 1fr) 148px;
+    grid-template-areas: "ecran panneau" "frise panneau";
+    gap: 14px 22px;
+    padding: 24px 24px 18px;
+    border-radius: 28px;
+  }
+  .meuble::before {
+    inset: 9px;
+    border-radius: 20px;
+  }
+}
+:global(html[data-theme="nuit"]) .meuble {
   box-shadow:
     0 0 0 1px rgba(239, 227, 200, 0.2),
-    inset 1px 1px 0 rgba(255, 236, 200, 0.12);
+    inset 1px 1px 0 rgba(255, 236, 200, 0.14),
+    inset -1px -2px 0 rgba(0, 0, 0, 0.55),
+    0 28px 44px -26px rgba(0, 0, 0, 0.85);
 }
 
-/* trois petits onglets, juste au-dessus du lecteur */
-.onglets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
+/* le masque autour du tube : un creux sombre, cerclé d'une bague d'or */
+.masque {
+  grid-area: ecran;
+  position: relative;
+  min-width: 0;
+  padding: 8px;
+  border-radius: 20px / 24px;
+  background: linear-gradient(180deg, #0b0705, #130d09 55%, #0a0604);
+  box-shadow:
+    0 0 0 1px rgba(201, 164, 92, 0.46),
+    0 0 0 4px #20160e,
+    0 0 0 5px rgba(201, 164, 92, 0.12),
+    inset 0 3px 9px rgba(0, 0, 0, 0.9),
+    inset 0 -1px 0 rgba(255, 236, 200, 0.07);
 }
-.onglet {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0 14px;
-  border: 1px solid var(--line-2);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink-2);
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-a.onglet:hover {
-  border-color: var(--ink);
-  color: var(--ink);
-}
-a.onglet:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-}
-/* l'onglet de la vidéo en cours : plein (noir sur papier, blanc la nuit) */
-.onglet[data-actif] {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--surface);
-}
-.onglet[data-avenir] {
-  border-style: dashed;
-  background: transparent;
-  color: var(--ink-3);
+@media (min-width: 640px) {
+  .masque {
+    padding: 13px;
+    border-radius: 28px / 34px;
+  }
 }
 
-.ecran {
-  border-radius: 18px;
+/* le verre bombé : la vidéo dessous, puis (sans capter le clic) le reflet, les lignes de balayage, la vignette */
+.verre {
+  position: relative;
+  isolation: isolate;
   overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px / 18px;
   background: #0d0b09;
-  box-shadow: var(--shadow-2);
 }
-.ecran video {
+@media (min-width: 640px) {
+  .verre {
+    border-radius: 18px / 24px;
+  }
+}
+.verre video {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 100%;
   background: #0d0b09;
 }
-.indispo {
+.vitre {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    /* le reflet du verre bombé : une tache douce en haut à gauche, et l'arc de lumière qui suit la courbe */
+    radial-gradient(70% 58% at 24% 8%, rgba(255, 255, 255, 0.1), transparent 64%),
+    radial-gradient(150% 120% at 50% 112%, transparent 74%, rgba(255, 255, 255, 0.045) 79%, transparent 84%),
+    linear-gradient(168deg, rgba(255, 255, 255, 0.035), transparent 34%),
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px),
+    radial-gradient(130% 125% at 50% 44%, transparent 58%, rgba(0, 0, 0, 0.48) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 26px 3px rgba(0, 0, 0, 0.55);
+}
+/* l'incrustation de la chaîne, en haut à gauche, à l'arrivée (puis elle s'efface) */
+.incruste {
+  position: absolute;
+  z-index: 1;
+  top: 7%;
+  left: 5%;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--creme);
+  text-shadow:
+    0 0 8px rgba(239, 227, 200, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  animation: incruste 3.8s ease forwards;
+}
+@keyframes incruste {
+  0%,
+  74% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* l'écran s'allume une fois, à l'arrivée (et à chaque changement de vidéo ou de chaîne) ; il s'éteint le temps de
+   passer à la dernière vidéo lancée */
+.noir {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  background: #0a0806;
+  opacity: 0;
+  pointer-events: none;
+  animation: allumage 0.6s ease 0.1s backwards;
+}
+@keyframes allumage {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.verre[data-zappe] .noir {
+  opacity: 1;
+  animation: none;
+  transition: opacity 0.15s ease;
+}
+
+/* la neige d'une chaîne vide (ou d'une vidéo qui ne se charge pas) : fixe, grise, et son carton */
+.neige {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
-  aspect-ratio: 16 / 9;
-  padding: 24px;
+  padding: 6%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.25 -0.42'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")
+      0 0 / 170px 170px,
+    radial-gradient(90% 85% at 50% 42%, #34302a, #14110e 78%);
+}
+.carton {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  max-width: 28em;
+  margin: 0;
+  padding: 11px 16px 12px;
+  border-radius: 6px;
+  background: rgba(12, 9, 7, 0.86);
+  box-shadow:
+    0 0 0 1px rgba(201, 164, 92, 0.32),
+    0 10px 24px -8px rgba(0, 0, 0, 0.7);
   text-align: center;
-  font-size: 14px;
-  color: #e8e2d8;
+}
+.carton b {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--or-clair);
+}
+.carton span {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--creme);
+  text-wrap: balance;
+}
+@media (min-width: 640px) {
+  .carton {
+    padding: 14px 22px 15px;
+  }
+  .carton span {
+    font-size: 15px;
+  }
 }
 
-.infos {
+/* le panneau du meuble : le compteur, les touches des chaînes, les boutons ronds, la grille du haut-parleur.
+   Au téléphone, sous l'écran : les touches sur une ligne, puis le compteur et les boutons. */
+.panneau {
+  grid-area: panneau;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "touches touches" "cadran boutons";
+  align-items: center;
+  gap: 12px 14px;
+  min-width: 0;
+  padding: 2px 2px 0;
+}
+@media (min-width: 640px) {
+  .panneau {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas: "cadran" "touches" "boutons" "grille";
+    align-items: stretch;
+    gap: 16px;
+    padding: 0;
+  }
+}
+
+/* le compteur de la vidéo entière (la partie et sa durée dessous), en chiffres d'or sur fond noir */
+.cadran {
+  grid-area: cadran;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 12px 9px;
+  border-radius: 8px;
+  background: #0b0805;
+  box-shadow:
+    inset 0 1px 4px rgba(0, 0, 0, 0.9),
+    inset 0 0 0 1px rgba(201, 164, 92, 0.2),
+    0 1px 0 rgba(255, 236, 200, 0.06);
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-variant-numeric: tabular-nums;
+}
+.cadran b {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  color: var(--or-clair);
+  text-shadow: 0 0 10px rgba(233, 199, 127, 0.35);
+}
+.cadran span {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(233, 199, 127, 0.55);
+}
+
+/* les touches des chaînes : enfoncée et sa lampe allumée pour la chaîne à l'écran */
+.touches {
+  grid-area: touches;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 640px) {
+  .touches {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.touche {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 9px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #2f2217, #1e150e);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 200, 0.14),
+    0 0 0 1px rgba(0, 0, 0, 0.55),
+    0 3px 0 #0a0604,
+    0 6px 10px -5px rgba(0, 0, 0, 0.7);
+  color: var(--creme-2);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    color 0.15s ease;
+}
+@media (min-width: 640px) {
+  .touche {
+    gap: 10px;
+    min-height: 42px;
+    padding: 0 12px;
+  }
+}
+.touche b {
+  font-family: var(--font-brand), "Dela Gothic One", sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--or);
+}
+.touche span {
+  overflow: hidden;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lampe {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3a2b1e;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+@media (hover: hover) and (pointer: fine) {
+  .touche:hover {
+    color: var(--creme);
+  }
+}
+.touche:active,
+.touche[aria-current] {
+  transform: translateY(2px);
+  background: linear-gradient(180deg, #1b130c, #261a11);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(201, 164, 92, 0.42),
+    0 1px 0 #0a0604;
+}
+.touche[aria-current] {
+  color: var(--creme);
+}
+.touche[aria-current] .lampe {
+  background: var(--or-clair);
+  box-shadow: 0 0 7px 1px rgba(233, 199, 127, 0.7);
+}
+.touche:focus-visible,
+.rond:focus-visible,
+.segment:focus-visible {
+  outline: 2px solid var(--or-clair);
+  outline-offset: 3px;
+}
+
+/* les trois boutons ronds : partie précédente, vitesse, partie suivante */
+.boutons {
+  grid-area: boutons;
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px 20px;
-  margin-top: 14px;
+  gap: 10px;
+  padding: 0 3px 3px;
 }
-/* la part vue et ce qu'il reste : dite une seule fois */
-.etat {
-  margin: 0;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
+.rond {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, #3e2d1e, #1a120b 62%, #110b07);
+  box-shadow:
+    0 0 0 1px rgba(201, 164, 92, 0.5),
+    0 0 0 3px #110b07,
+    inset 0 1px 0 rgba(255, 236, 200, 0.2),
+    0 4px 0 #070403,
+    0 7px 12px -5px rgba(0, 0, 0, 0.75);
+  color: var(--creme);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
 }
-.commandes {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+@media (min-width: 640px) {
+  .rond {
+    width: 40px;
+    height: 40px;
+  }
+}
+.rond:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 0 0 1px rgba(201, 164, 92, 0.5),
+    0 0 0 3px #110b07,
+    inset 0 1px 3px rgba(0, 0, 0, 0.6),
+    0 1px 0 #070403;
+}
+.rond:disabled {
+  opacity: 0.38;
+  cursor: default;
 }
 .vitesse {
-  min-width: 64px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--or-clair);
   font-variant-numeric: tabular-nums;
 }
 
-/* la frise : l'heure entière, une case par partie, rangées par matière */
+/* la grille du haut-parleur, percée de petits trous (ordinateur) */
+.grille {
+  grid-area: grille;
+  display: none;
+  min-height: 56px;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle, #060403 1.3px, transparent 1.9px) 2px 2px / 7px 7px,
+    linear-gradient(180deg, #2a1d13, #1c130c);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(201, 164, 92, 0.16),
+    0 1px 0 rgba(255, 236, 200, 0.06);
+}
+@media (min-width: 640px) {
+  .grille {
+    display: block;
+  }
+}
+
+/* la frise, sous l'écran : la vidéo entière, une case par partie, rangées par matière */
 .frise {
+  --piste: rgba(239, 227, 200, 0.13);
+  grid-area: frise;
   display: flex;
+  align-items: flex-end;
   gap: 8px;
-  margin-top: 18px;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 4px;
 }
 .friseGroupe {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex-basis: 0;
   min-width: 0;
 }
 .friseMatiere {
   overflow: hidden;
-  font-size: 11.5px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--ink-2);
-  white-space: nowrap;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--creme-2);
 }
 .friseParties {
   display: flex;
@@ -174,53 +532,238 @@ a.onglet:focus-visible {
   background: transparent;
   cursor: pointer;
 }
-/* la piste */
+/* la piste (l'or : ce qui est déjà vu) */
 .segment::after {
   content: "";
   position: absolute;
-  inset: 6px 0;
+  inset: 8px 0;
   border-radius: 3px;
   background:
-    linear-gradient(to right, var(--ink-3) calc(var(--vu, 0) * 100%), transparent 0),
+    linear-gradient(to right, rgba(201, 164, 92, 0.62) calc(var(--vu, 0) * 100%), transparent 0),
     var(--piste);
 }
 .segment[data-actif]::after {
   background:
-    linear-gradient(to right, var(--ink) calc(var(--tete, 0) * 100%), transparent 0),
-    linear-gradient(to right, var(--ink-3) calc(var(--vu, 0) * 100%), transparent 0),
-    color-mix(in srgb, var(--ink) 20%, transparent);
+    linear-gradient(to right, var(--or-clair) calc(var(--tete, 0) * 100%), transparent 0),
+    linear-gradient(to right, rgba(201, 164, 92, 0.62) calc(var(--vu, 0) * 100%), transparent 0),
+    rgba(239, 227, 200, 0.22);
 }
 /* la tête de lecture */
 .segment[data-actif]::before {
   content: "";
   position: absolute;
   z-index: 1;
-  top: 2px;
-  bottom: 2px;
+  top: 4px;
+  bottom: 4px;
   left: calc(var(--tete, 0) * 100%);
   width: 3px;
   border-radius: 2px;
-  background: var(--ink);
+  background: var(--creme);
   transform: translateX(-50%);
 }
-.segment:hover::after {
-  box-shadow: 0 0 0 1.5px var(--line-2);
+@media (hover: hover) and (pointer: fine) {
+  .segment:hover::after {
+    box-shadow: 0 0 0 1.5px rgba(239, 227, 200, 0.3);
+  }
 }
-.segment:focus-visible {
+.friseVide {
+  flex: 1;
+  height: 2px;
+  margin-bottom: 10px;
+  background: repeating-linear-gradient(90deg, rgba(239, 227, 200, 0.16) 0 6px, transparent 6px 12px);
+}
+
+/* les pieds du meuble, fuselés, bagués d'or */
+.pieds {
+  display: flex;
+  justify-content: space-between;
+  height: 16px;
+  padding: 0 13%;
+}
+.pieds i {
+  position: relative;
+  width: 18px;
+  height: 16px;
+  background: linear-gradient(90deg, #0c0805, #2e2117 45%, #0c0805);
+  clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+}
+.pieds i::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--or);
+}
+
+/* —————————— sous la télé, le guide des programmes ; à droite, le programme (sur le papier) —————————— */
+.gauche {
+  display: grid;
+  gap: 30px;
+  align-content: start;
+  min-width: 0;
+}
+.zone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+/* sur ordinateur, le programme reste à l'écran et défile seul */
+@media (min-width: 980px) {
+  .colonne {
+    position: sticky;
+    top: 84px;
+    max-height: calc(100vh - 104px);
+  }
+}
+
+.guide {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* au téléphone, une émission par ligne (le numéro à gauche) ; dès 640 px, des fiches côte à côte */
+.emission {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  grid-template-areas: "num corps antenne";
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 11px 14px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  color: var(--ink);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  a.emission:hover {
+    border-color: var(--line-2);
+    background: var(--surface);
+  }
+}
+a.emission:focus-visible {
   outline: 2px solid var(--ink);
-  outline-offset: 1px;
-  border-radius: 4px;
+  outline-offset: 2px;
 }
-
-.reprise {
-  margin-top: 10px;
-  font-size: 12.5px;
+.emission[data-actif] {
+  border-color: color-mix(in srgb, var(--ink) 34%, transparent);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.emission[data-avenir] {
+  opacity: 0.5;
+}
+@media (min-width: 640px) {
+  .guide {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+  }
+  .emission {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "num antenne" "corps corps";
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px 16px 16px;
+  }
+}
+.emNum {
+  grid-area: num;
+  font-family: var(--font-brand), "Dela Gothic One", sans-serif;
+  font-size: 26px;
+  line-height: 1;
+  text-align: center;
+  color: var(--ink-3);
+}
+@media (min-width: 640px) {
+  .emNum {
+    font-size: 30px;
+    text-align: left;
+  }
+}
+.emission[data-actif] .emNum {
+  color: var(--ink);
+}
+.emCorps {
+  grid-area: corps;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.emTitre {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+.emMeta {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.emBarre {
+  position: relative;
+  flex: 0 0 auto;
+  height: 2px;
+  margin-top: auto;
+  overflow: hidden;
+  border-radius: 1px;
+  background: var(--piste);
+}
+.emBarre i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--part, 0) * 1%);
+  background: var(--ink-2);
+  transition: width 0.3s ease;
+}
+.emission[data-actif] .emBarre i {
+  background: var(--ink);
+}
+.antenne {
+  grid-area: antenne;
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  gap: 6px;
+  margin-top: 2px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.antenne::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.guideVide {
+  margin: 0;
+  padding: 22px 16px;
+  border: 1px dashed var(--line-2);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--ink-3);
 }
 
-/* ——— la colonne grise : le programme ———
-   Sur ordinateur, la liste prend la hauteur de la zone de gauche et défile seule (sans bouger la page) : elle
-   est posée en absolu dans la colonne, qui devient son repère. */
+/* le programme : les parties de la vidéo rangées par matière, la partie en cours ouverte sur ses chapitres */
 .programme {
   position: relative;
   display: flex;
@@ -230,15 +773,15 @@ a.onglet:focus-visible {
   padding: 0;
   list-style: none;
 }
-/* sur ordinateur, le programme (colonne collée en haut) défile seul, à la hauteur de l'écran */
 @media (min-width: 980px) {
   .programme {
-    max-height: calc(100vh - 160px);
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-top: 10px;
     padding-right: 8px;
-    padding-top: 12px;
     scroll-padding-top: 12px;
-    -webkit-mask-image: linear-gradient(180deg, transparent, #000 16px);
-    mask-image: linear-gradient(180deg, transparent, #000 16px);
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 14px, #000 calc(100% - 18px), transparent);
+    mask-image: linear-gradient(180deg, transparent, #000 14px, #000 calc(100% - 18px), transparent);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
@@ -277,7 +820,6 @@ a.onglet:focus-visible {
   color: var(--ink-2);
   background: transparent;
 }
-/* sur la colonne grise : le papier du cadre au survol et pour la partie en cours */
 .ligne:hover {
   background: var(--surface);
   color: var(--ink);
@@ -286,6 +828,7 @@ a.onglet:focus-visible {
   background: var(--surface);
   color: var(--ink);
   font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 .num {
   display: grid;
@@ -293,8 +836,8 @@ a.onglet:focus-visible {
   flex: 0 0 auto;
   width: 26px;
   height: 26px;
-  border-radius: 999px;
   border: 1px solid var(--line-2);
+  border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   color: var(--ink-2);
@@ -356,13 +899,19 @@ a.onglet:focus-visible {
   color: var(--ink);
 }
 
-.vide {
-  padding: 48px 24px;
-  border-radius: 18px;
-  border: 1px dashed var(--line-2);
-  text-align: center;
-  color: var(--ink-3);
-}
-.vide svg {
-  margin-inline: auto;
+/* sans mouvement : l'écran s'allume d'un coup, l'incrustation ne s'affiche pas sur une vidéo */
+@media (prefers-reduced-motion: reduce) {
+  .noir {
+    animation: none;
+  }
+  .verre[data-zappe] .noir,
+  .touche,
+  .rond,
+  .emBarre i {
+    transition: none;
+  }
+  .incruste {
+    animation: none;
+    opacity: 0;
+  }
 }

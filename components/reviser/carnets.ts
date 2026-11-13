@@ -58,8 +58,9 @@ export function carnetsDe(sets: SetLu[], vues: ReadonlyMap<string, number> | nul
 
 /**
  * Les pages de quiz des fiches (drills officiels publiés seulement, comme la carte de Réviser) et les
- * questions vues par le joueur. Les sets se lisent avec le client admin s'il existe ; toute erreur :
- * null (la page montre les carnets sans chiffre).
+ * questions vues par le joueur. Les sets se lisent avec le client admin s'il existe ; toute erreur,
+ * avancement illisible compris (comme lireFiches) : null (la page montre les carnets sans chiffre,
+ * plutôt que des zéros pris pour le vrai état du joueur).
  */
 export async function lireCarnets(supabase: SupabaseClient, admin: SupabaseClient | null, userId: string): Promise<Carnets | null> {
   try {
@@ -73,7 +74,7 @@ export async function lireCarnets(supabase: SupabaseClient, admin: SupabaseClien
         .limit(1000),
       vuesParSet(supabase, userId),
     ]);
-    if (sets.error || !Array.isArray(sets.data)) return null;
+    if (sets.error || !Array.isArray(sets.data) || !vues) return null;
     const lus = (sets.data as { id: string; title: string; quiz_questions: { count: number }[] | null }[]).map((s) => ({
       id: String(s.id),
       title: s.title,

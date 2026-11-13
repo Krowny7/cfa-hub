@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { lireSerieEncre } from "@/lib/serie-encre";
 import {
   FORMATS,
+  HISTORIQUE_MAX,
   dailyPhase,
   dayLabel,
   getDaily,
@@ -48,7 +49,8 @@ export async function pageDuJour(format: FormatDefi) {
       ? [null, [], [] as DailyReviewItem[]]
       : await Promise.all([
           getDailyBoard(supabase, info.day, 50, format),
-          getDailyHistory(supabase, 45, format),
+          // tout ce que la base rend : la série d'affilée et les fenêtres du calendrier
+          getDailyHistory(supabase, HISTORIQUE_MAX, format),
           phase === "done" ? getDailyReview(supabase, info.day, format) : Promise.resolve([] as DailyReviewItem[]),
         ]);
 

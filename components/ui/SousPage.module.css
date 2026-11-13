@@ -410,41 +410,6 @@
 /* les ambiances gardent le fond classique (choix de Théo : « pas de fond vert ou quoi ») ;
    ce sont les objets posés dessus qui disent le lieu (Presentoir `forme`). */
 
-/* ——— le cadre annexe : le même cadre, sa bande noire de titre (blanche la nuit) ——— */
-.annexe {
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--surface);
-  box-shadow: var(--shadow-1);
-  scroll-margin-top: 96px;
-}
-.annexeBande {
-  margin: 0;
-  padding: 14px 18px;
-  background: var(--ink);
-  color: var(--paper);
-  font-size: clamp(20px, 2vw, 26px);
-  font-weight: 760;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-}
-.annexeCorps {
-  display: grid;
-  gap: 22px;
-  min-width: 0;
-  padding: 18px 18px 26px;
-}
-@media (min-width: 820px) {
-  .annexeBande {
-    padding: 16px 30px;
-  }
-  .annexeCorps {
-    padding: 24px 30px 32px;
-  }
-}
-
 /* ——— le cadre à zones : bande noire des titres, l'essentiel à gauche, la colonne grise à droite ——— */
 .zones {
   display: grid;

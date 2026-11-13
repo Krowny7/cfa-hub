@@ -1,103 +1,14 @@
 /* Mesures des sous-pages de Moi : en CSS simple, les classes arbitraires nouvelles
    n'étant pas toujours générées en dev. */
 
-/* Mes pièces : « La plus rare », en grand, dans la colonne grise du cadre à zones ; le liseré
-   du haut prend la couleur de sa rareté (posée en ligne) */
-.rare {
-  display: grid;
-  gap: 14px;
-  width: 100%;
-  padding: 16px 16px 18px;
-  border-radius: 18px;
-  border-top: 4px solid var(--line-2);
-  background: var(--surface);
-  color: var(--ink);
-  text-align: left;
-  transition: transform 0.18s ease;
-}
-.rare:hover {
-  transform: translateY(-2px);
-}
-.rare:focus-visible {
-  outline: 2px solid var(--pal-2, var(--ink));
-  outline-offset: 3px;
-}
-.rareVignette {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 160px;
-}
+/* Mes pièces : une pièce pas encore à soi, en silhouette ; le folio de la plus rare */
 .silhouette {
   opacity: 0.35;
   filter: grayscale(1);
 }
-.rareBanniere {
-  width: 100%;
-  height: 160px;
-  border-radius: 14px;
-}
-.rareTitre {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 160px;
-  padding: 0 14px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  text-align: center;
-}
-.rareTitre .rareTitreTexte {
-  font-size: 18px;
-  color: var(--ink);
-}
-.rareOrnement {
-  display: block;
-  width: 96px;
-  height: 144px;
-  padding: 5px;
-  border: 1px solid var(--ink);
-  border-radius: 4px;
-}
-.rareOrnement > span {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: 1px solid var(--line-2);
-  border-radius: 2px;
-}
 .rareFolio {
   display: block;
   width: 150px;
-}
-.rareTexte {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-.rareNom {
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-
-/* la plus rare, sous son filet du dossier (2026-11-13) : la vignette à gauche, le nom en grand à droite */
-@media (min-width: 640px) {
-  .rare {
-    grid-template-columns: 300px minmax(0, 1fr);
-    align-items: center;
-    gap: 28px;
-    max-width: 720px;
-    padding: 18px 26px 18px 18px;
-  }
-  .rare .rareNom {
-    font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
-    font-weight: 400;
-    font-size: 26px;
-    line-height: 1.1;
-  }
 }
 
 /* ——— Mes pièces (gabarit Dossier, 2026-11-13) : la plus rare posée sur le vrai objet, les rayons à plat ——— */

@@ -3,34 +3,35 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SUBJECTS } from "@/components/reviser/catalog";
-import { COURS_PROGRAMME, carteCours, mmss } from "@/components/reviser/parcours";
-import { RangeeDefilante } from "@/components/reviser/RangeeDefilante";
-import { ActionEncre, Etiquette } from "@/components/ui/SousPage";
-import { DisqueTournant } from "@/components/ui/DisqueTournant";
+import { COURS_PROGRAMME, carteCours } from "@/components/reviser/parcours";
+import { PlatineEcoute, SIGNAL_ECOUTE } from "@/components/reviser/PlatineEcoute";
 import { lireEcoute, SANS_ECOUTE, type EcouteCours } from "@/lib/course-ecoute";
-import { dureeVideo, type VideoResume } from "@/lib/videos";
-import { VIDEOS_TXT, dureeTexte } from "@/lib/voice-videos";
 import { ETAGERE } from "@/lib/voice-reviser-b";
 import type { Course } from "@/lib/courses";
-import s from "./Rayons.module.css";
+import b from "./Bibliotheque.module.css";
 
-// L'objet-héros de /courses (direction « le lieu, puis l'objet », 2026-11-13) : les dix cours en
-// livrets sombres debout comme chez Stripe Press (titre or sobre, une encoche par module sur le dos,
-// dorée une fois le module écouté), le livret à reprendre avancé et entouré ; la platine au bout de
-// la rangée (son disque accélère au survol et ralentit sans retour sec : DisqueTournant) ; l'action
-// à l'encre ; puis le rayon des vidéos de révision (/videos?v=… : le lecteur), avec « Vue à X % ·
-// encore N min ». L'écoute et les vidéos vues sont gardées sur l'appareil (localStorage) : lues
-// après le montage seulement. Tant qu'elles ne sont pas lues (rendu serveur, hydratation), tout ce
-// qui en dépend (platine, action, encoches, « n/19 », chiffre-héros et sa légende) garde sa place
-// mais reste invisible : jamais un état par défaut qui basculerait ensuite (ni un bouton qui
-// ouvrirait le mauvais cours pendant l'hydratation).
+// L'objet-héros de /courses. Direction « le lieu, puis l'objet » (2026-11-13), puis les retours de Théo
+// le soir même : « les livres sur deux étages ; quand on reste dessus avec la souris, qu'il sorte de la
+// bibliothèque et se tourne légèrement, en 3D ; que le vinyle prenne plus de place, mais ne serve qu'à
+// lancer directement les audios (on sélectionne en dessous la matière) » ; et plus de vidéos ici (elles
+// ont leur page, /videos). Donc : la bibliothèque d'ébène à deux étages de cinq livres (la tranche : code,
+// titre en or, une encoche par module, dorée une fois écoutée ; la couverture se découvre quand le livre
+// pivote), le livre à reprendre entouré ; chaque livre ouvre son cours (le deck et l'audio). À côté, la
+// grande platine (components/reviser/PlatineEcoute) qui joue l'audio sur place.
+// L'écoute est gardée sur l'appareil (localStorage) : lue après le montage seulement, et relue à chaque
+// signal de la platine. Tant qu'elle n'est pas lue (rendu serveur, hydratation), tout ce qui en dépend
+// (encoches, « n/19 », cercle, disque, chiffre-héros) garde sa place mais reste invisible.
 
 const SLUGS = COURS_PROGRAMME.map((c) => c.slug);
-/** l'écoute de l'appareil, après le montage (null : pas encore lue) */
+/** l'écoute de l'appareil, après le montage, relue quand la platine change quelque chose (null : pas encore lue) */
 function useEcoute(apercu?: EcouteCours | null): EcouteCours | null {
   const [e, setE] = useState<EcouteCours | null>(apercu ?? null);
   useEffect(() => {
-    if (apercu === undefined) setE(lireEcoute(SLUGS));
+    if (apercu !== undefined) return;
+    const lire = () => setE(lireEcoute(SLUGS));
+    lire();
+    window.addEventListener(SIGNAL_ECOUTE, lire);
+    return () => window.removeEventListener(SIGNAL_ECOUTE, lire);
   }, [apercu]);
   return e;
 }
@@ -76,174 +77,81 @@ export function LigneCours({ apercu }: { apercu?: EcouteCours | null }) {
   return <>{ETAGERE.ligne(COURS_PROGRAMME.length, av.filter((a) => !a.fini && a.position > 5).length, av.filter((a) => a.fini).length)}</>;
 }
 
-/** Les deux tons des couvertures, en plus de l'ébène (le même livret garde toujours le sien). */
+/** Les deux tons des reliures, en plus de l'ébène (le même livre garde toujours le sien). */
 const TON = (i: number) => (i % 3 === 1 ? "1" : i % 3 === 2 ? "2" : undefined);
+/** les deux étages : cinq matières chacun, dans l'ordre du programme */
+const ETAGES = [SUBJECTS.slice(0, 5), SUBJECTS.slice(5)];
 
-export function EtagereCours({ apercu, videos }: { apercu?: EcouteCours | null; videos: VideoResume[] }) {
+export function EtagereCours({ apercu, sources = {} }: { apercu?: EcouteCours | null; sources?: Record<string, string | null> }) {
   const e = useEcoute(apercu);
   const lu = e !== null;
   const carte = carteCours(e ?? SANS_ECOUTE);
   /** invisible (place gardée) tant que l'appareil n'est pas lu, puis révélé en fondu */
-  const cache = lu ? s.revele : s.attente;
+  const cache = lu ? b.revele : b.attente;
+  const parts = Object.fromEntries(COURS_PROGRAMME.map((c) => [c.slug, avancement(c, e ?? SANS_ECOUTE).position / (c.minutes * 60)]));
   return (
-    <div className={s.rayon}>
-      <RangeeDefilante className={s.rangee} label={ETAGERE.etiquette} cle={lu ? (carte?.slug ?? null) : null}>
-        {SUBJECTS.map((m, i) => {
-          const c = COURS_PROGRAMME.find((x) => x.slug === m.course) ?? null;
-          if (!c)
-            return (
-              <li key={m.key} className={s.place} style={{ ["--i" as string]: i }} data-indispo="1">
-                <span className={s.lien}>
-                  <span className={s.objet + " " + s.livret} data-ton={TON(i)}>
-                    <p className={s.livretHaut}>
-                      <b>{m.code}</b>
-                    </p>
-                    <p className={s.livretTitre}>{m.name}</p>
-                    <p className={s.livretBas}>{ETAGERE.bientot}</p>
-                  </span>
-                </span>
-              </li>
-            );
-          const av = avancement(c, e ?? SANS_ECOUTE);
-          const conseil = !!e && carte?.slug === c.slug;
-          return (
-            <li key={m.key} className={s.place} style={{ ["--i" as string]: i }} data-conseil={conseil ? "1" : undefined}>
-              <Link href={`/courses/${c.slug}`} className={s.lien + " rl-presse"} aria-label={ETAGERE.livretAria(c.title, av.modules, c.chapters.length, conseil)} title={c.title}>
-                <span className={s.objet + " " + s.livret} data-ton={TON(i)}>
-                  <span className={s.dos + " " + cache} aria-hidden>
-                    {c.chapters.map((_, k) => (
-                      <i key={k} data-fait={k < av.modules ? "1" : undefined} />
-                    ))}
-                  </span>
-                  <p className={s.livretHaut}>
-                    <b>{m.code}</b>
-                    <span>{ETAGERE.minutes(c.minutes)}</span>
-                  </p>
-                  <p className={s.livretTitre}>{c.title}</p>
-                  <span className={s.filet} aria-hidden />
-                  <p className={s.livretBas + " " + cache}>
-                    <b>
-                      {av.modules}/{c.chapters.length}
-                    </b>
-                  </p>
-                  <span className={s.reflet} aria-hidden />
-                </span>
-                {conseil && (
-                  <svg className={s.entoure} viewBox="0 0 120 160" preserveAspectRatio="none" aria-hidden>
-                    <use href="#rl-cercle-main" />
-                  </svg>
-                )}
-              </Link>
-            </li>
-          );
-        })}
-        {carte && (
-          <li className={s.place + " " + s.placePlatine + " " + cache} style={{ ["--i" as string]: SUBJECTS.length }} aria-hidden={lu ? undefined : true}>
-            <Link href={carte.href} tabIndex={lu ? undefined : -1} className={s.lien + " rl-presse"} aria-label={ETAGERE.platineAide(carte.titre, carte.mode === "reprise")} title={ETAGERE.platineAide(carte.titre, carte.mode === "reprise")}>
-              <span className={s.objet + " " + s.platine}>
-                <span className={s.plateau}>
-                  <DisqueTournant className={s.disque} hote="lien">
-                    <span className={s.label}>
-                      <span>{SUBJECTS.find((x) => x.course === carte.slug)?.code}</span>
+    <div className={b.salle}>
+      <div className={b.bibliotheque} role="group" aria-label={ETAGERE.bibliotheque}>
+        {ETAGES.map((rang, k) => (
+          <ul key={k} className={b.etage}>
+            {rang.map((m, j) => {
+              const i = k * 5 + j;
+              const c = COURS_PROGRAMME.find((x) => x.slug === m.course) ?? null;
+              if (!c)
+                return (
+                  <li key={m.key} className={b.place} data-indispo="1">
+                    <span className={b.livre} title={m.name}>
+                      <span className={b.tranche} data-ton={TON(i)}>
+                        <span className={b.code}>
+                          {m.code}
+                          <small>{ETAGERE.bientot}</small>
+                        </span>
+                        <span className={b.titre}>{m.name}</span>
+                      </span>
                     </span>
-                  </DisqueTournant>
-                </span>
-                <span className={s.bras} aria-hidden />
-                <span className={s.platineBas}>
-                  <b>{carte.titre}</b>
-                  <span>
-                    {mmss(carte.position)} / {mmss(carte.total)}
-                  </span>
-                  <span className={s.barre} style={{ ["--part" as string]: carte.part }} aria-hidden>
-                    <i />
-                  </span>
-                </span>
-              </span>
-            </Link>
-          </li>
-        )}
-      </RangeeDefilante>
+                  </li>
+                );
+              const av = avancement(c, e ?? SANS_ECOUTE);
+              const conseil = lu && carte?.slug === c.slug;
+              return (
+                <li key={m.key} className={b.place} data-conseil={conseil ? "1" : undefined}>
+                  <Link href={`/courses/${c.slug}`} className={b.livre} aria-label={ETAGERE.livretAria(c.title, av.modules, c.chapters.length, conseil)} title={c.title}>
+                    <span className={b.tranche} data-ton={TON(i)}>
+                      <span className={b.encoches + " " + cache} aria-hidden>
+                        {c.chapters.map((_, n) => (
+                          <i key={n} data-fait={n < av.modules ? "1" : undefined} />
+                        ))}
+                      </span>
+                      <span className={b.code}>
+                        {m.code}
+                        <small>{ETAGERE.minutes(c.minutes)}</small>
+                      </span>
+                      <span className={b.titre}>{c.title}</span>
+                      <span className={b.compte + " " + cache}>
+                        {av.modules}/{c.chapters.length}
+                      </span>
+                    </span>
+                    <span className={b.couverture} data-ton={TON(i)} aria-hidden>
+                      <span className={b.couvCode}>{m.code}</span>
+                      <span className={b.couvTitre}>{c.title}</span>
+                      <span className={b.couvPied}>
+                        {ETAGERE.modules(c.chapters.length)} · {ETAGERE.minutes(c.minutes)}
+                      </span>
+                    </span>
+                  </Link>
+                  {conseil && (
+                    <svg className={b.entoure} viewBox="0 0 120 160" preserveAspectRatio="none" aria-hidden>
+                      <use href="#rl-cercle-main" />
+                    </svg>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ))}
+      </div>
 
-      {carte && (
-        <div className={s.action + " " + cache} aria-hidden={lu ? undefined : true} inert={!lu}>
-          <ActionEncre href={carte.href}>
-            {carte.mode === "reprise" ? ETAGERE.reprendre(carte.titre) : ETAGERE.commencer(carte.titre)}
-            {carte.module && <span className={s.compteAction}>{ETAGERE.module(carte.module.n)}</span>}
-            <span aria-hidden>→</span>
-          </ActionEncre>
-        </div>
-      )}
-
-      <RayonVideos videos={videos} />
+      <PlatineEcoute sources={sources} depart={lu ? (carte?.slug ?? null) : null} pret={lu} parts={parts} positions={e?.positions} />
     </div>
-  );
-}
-
-// ——— le rayon des vidéos (ce que /videos montrait : la part vue et ce qu'il en reste) ———
-
-/** La part vue d'une vidéo, lue comme le lecteur la garde (components/videos/VideosView : rl_video_<slug>). */
-function partVue(v: VideoResume): number {
-  try {
-    const x = JSON.parse(localStorage.getItem(`rl_video_${v.slug}`) ?? "null") as { vu?: unknown[] } | null;
-    if (!x || !Array.isArray(x.vu)) return 0;
-    const total = dureeVideo(v);
-    if (!total) return 0;
-    const vus = v.parties.reduce((a, p, k) => a + Math.min(Number(x.vu?.[k]) || 0, p.secondes), 0);
-    return Math.min(100, Math.round((vus / total) * 100));
-  } catch {
-    return 0;
-  }
-}
-
-function RayonVideos({ videos }: { videos: VideoResume[] }) {
-  const [vues, setVues] = useState<Record<string, number> | null>(null);
-  useEffect(() => {
-    setVues(Object.fromEntries(videos.map((v) => [v.slug, partVue(v)])));
-  }, [videos]);
-  if (!videos.length) return null;
-  return (
-    <section id="videos" className={s.rayonVideos} aria-label={ETAGERE.videos}>
-      <Etiquette as="h2">{ETAGERE.videos}</Etiquette>
-      <ul className={s.videos}>
-        {videos.map((v) => {
-          const enLigne = v.etat === "en-ligne" && v.parties.length > 0;
-          const pct = vues?.[v.slug] ?? 0;
-          const duree = dureeVideo(v);
-          const etat = !enLigne
-            ? ETAGERE.enPreparation
-            : pct <= 0
-              ? `${VIDEOS_TXT.pasCommencee} · ${dureeTexte(duree)}`
-              : pct < 100
-                ? `${VIDEOS_TXT.vue(pct)} · ${VIDEOS_TXT.reste(dureeTexte(duree * (1 - pct / 100)))}`
-                : VIDEOS_TXT.vue(pct);
-          const corps = (
-            <span className={s.objet + " " + s.video} data-avenir={enLigne ? undefined : "1"}>
-              <span className={s.videoNum}>{v.numero}</span>
-              <span className={s.videoCorps}>
-                <p className={s.videoTitre}>{v.titre}</p>
-                <p className={s.videoEtat} data-vue={pct > 0 ? "1" : undefined} style={{ opacity: vues || !enLigne ? 1 : 0 }}>
-                  {etat}
-                </p>
-                <span className={s.videoBarre} style={{ ["--part" as string]: pct }} aria-hidden>
-                  <i />
-                </span>
-              </span>
-              <span className={s.reflet} aria-hidden />
-            </span>
-          );
-          return (
-            <li key={v.slug} className={s.placeVideo}>
-              {enLigne ? (
-                <Link href={`/videos?v=${v.slug}`} className={s.lien + " rl-presse"} aria-label={ETAGERE.videoAria(v.numero, v.titre, etat)}>
-                  {corps}
-                </Link>
-              ) : (
-                <span className={s.lien}>{corps}</span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </section>
   );
 }

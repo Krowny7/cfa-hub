@@ -3,8 +3,8 @@ import { ArrowLeft } from "lucide-react";
 
 // Gabarit des pages-outils de S'entraîner. Depuis le modèle des sous-pages (2026-11-12 :
 // components/ui/SousPage, CadreZones), il n'en reste que la page et son en-tête court (la
-// session ciblée des calculs, components/calculs/CalcSessionView) et la mini-jauge des
-// listes. Sans état ni hook : utilisable côté serveur comme côté client.
+// session ciblée des calculs, components/calculs/CalcSessionView). Sans état ni hook : utilisable
+// côté serveur comme côté client.
 
 export type Action = { href: string; label: string };
 
@@ -48,14 +48,5 @@ export function EnTete({
       </div>
       {droite}
     </header>
-  );
-}
-
-/** Une mini-jauge d'encre (au stylo rouge si `rouge`). */
-export function Mini({ pct, rouge = false }: { pct: number; rouge?: boolean }) {
-  return (
-    <span className={"ink-bar w-14 shrink-0" + (rouge ? " is-pen" : "")} aria-hidden>
-      <span style={{ width: `${Math.max(4, Math.min(100, pct))}%` }} />
-    </span>
   );
 }

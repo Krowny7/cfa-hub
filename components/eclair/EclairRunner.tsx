@@ -1,6 +1,6 @@
 "use client";
 
-import { libelleMult, multDuJour } from "@/lib/serie-encre";
+import { libelleMult, multDuJour, type SerieDuJour } from "@/lib/serie-encre";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, X, Zap } from "lucide-react";
@@ -14,7 +14,6 @@ import { clock, duelTopicLabel } from "@/lib/duels";
 import { answerEclair, finishEclair, startEclair, type EclairFinish, type EclairQuestion } from "@/lib/eclair";
 import { ECLAIR, verdictCopie } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
-import type { SerieDuJour } from "@/components/epreuves/DepartZone";
 import { Plaque, type CaseEclair } from "@/components/eclair/Plaque";
 import plaque from "@/components/eclair/Plaque.module.css";
 import { ActionContour, ActionEncre, ColonneSeance, EnTeteSousPage, Scene, SousPage } from "@/components/ui/SousPage";

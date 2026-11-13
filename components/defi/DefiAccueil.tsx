@@ -7,8 +7,8 @@ import { GoutteVerdict } from "@/components/adn/GoutteVerdict";
 import { SignalLeonard } from "@/components/leonard/SignalLeonard";
 import { CeremonieSceaux } from "@/components/profil/CeremonieSceaux";
 import { SceauDefi } from "@/components/defi/SceauDefi";
-import { DefiCalendrier, Entoure, PodiumDuJour, joursAffilee, resteAvant } from "@/components/defi/DefiCalendrier";
-import type { SerieDuJour } from "@/components/epreuves/DepartZone";
+import { DefiCalendrier, Entoure, PodiumDuJour, historiqueTronque, joursAffilee, resteAvant } from "@/components/defi/DefiCalendrier";
+import type { SerieDuJour } from "@/lib/serie-encre";
 import { ActionEncre, EnTeteSousPage, Scene, SousPage } from "@/components/ui/SousPage";
 import { dailyPhase, dayHref, reviewHref, type DailyBoard, type DailyHistoryEntry, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
 import { nombre, pctScore } from "@/lib/voice";
@@ -58,14 +58,15 @@ export function DefiAccueil({ info, board, history, review, nowIso, serie, onSta
   const reste = info.isToday ? resteAvant(info.closesAt, nowIso) : null;
 
   const parJour = useMemo(() => new Map(history.map((e) => [e.day, e])), [history]);
-  const affilee = joursAffilee(info.today, parJour, fait);
+  // l'historique tronqué au plafond de la base : une série qui en touche le bout s'écrit « 120+ »
+  const { jours: affilee, borne } = joursAffilee(info.today, parJour, fait, historiqueTronque(history));
   const heros =
     cinq && serie
       ? serie.jours > 0
         ? { valeur: nombre(serie.jours), legende: C.encre(serie.jours, serie.fait ? 0 : serie.reste) }
         : null
       : affilee > 0
-        ? { valeur: nombre(affilee), legende: C.affilee(affilee) }
+        ? { valeur: `${nombre(affilee)}${borne ? "+" : ""}`, legende: C.affilee(affilee) }
         : null;
 
   const jj = Number(info.day.slice(8, 10));

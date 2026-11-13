@@ -18,7 +18,7 @@ import { DEVOILE_DE_L_ESPACE, ID_DEVOILE, devoileLite } from "@/lib/codex/devoil
 import { estDevoile, marqueurDe, nouveautesDe } from "@/lib/codex/moteur";
 import { bilanDe } from "@/lib/codex/bilan";
 import { existsSync, readFileSync } from "node:fs";
-import { premierMotMaison } from "@/lib/voice-codex";
+import { PALIER, premierMotMaison } from "@/lib/voice-codex";
 import { VERSION_PANNEAU, panneauAcquitte, panneauDe } from "@/lib/codex/panneau";
 import { BUDGETS, CAPACITES_VIDE, COLONNES_JOUEUR, COLONNES_V3, budgetParDefaut, ecarter, questionsDes7Jours, reglageDe } from "@/lib/codex/reglage";
 import { capacitesDe } from "@/lib/codex/moteur";
@@ -35,7 +35,7 @@ import { contenuDuProgramme } from "@/lib/codex/catalogue";
 import { TEXTES_CAP, aideMatiereCap, capDe, enTeteCap, fraicheurDe, fuites, gainPreparation, ligneFuites, ligneMatiereCap, maitriseDuCodex, pctCap, preparationDe, titreFuites, zoneDe, type MaitriseMatiere } from "@/lib/codex/cap";
 import * as MAITRISE_UNIQUE from "@/lib/maitrise";
 import * as CAP from "@/lib/codex/cap";
-import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
+import { ECHELLES, FILTRES, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
 import { manqueDe } from "@/lib/codex/vue";
 import { matiereCoince } from "@/lib/codex/seance";
 import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
@@ -404,8 +404,8 @@ console.log("\n# la carte en trois niveaux (V3 §10.1)");
     autres.manque.join(" | ") === "D'abord : « La grande revue » | Clore l'acte III | S'ouvre à J-7 | S'ouvre après l'examen" && autres.allume.join() === "trame:a4:x,acte:acte3", autres.manque.join(" | "));
   check("sans date d'examen : la fenêtre le dit", manqueDe({ prerequis: [{ k: "joursAvantExamen", max: 7 }] }, r, contenu, { apres: false, joursAvant: null }).manque[0] === "S'ouvre à J-7, une fois ta date d'examen posée");
 
-  // deux segments, sur téléphone comme sur ordinateur, gardés dans l'URL (Codex simplifié, §3.3)
-  check("deux segments : Aujourd'hui · Tout le Codex", SEGMENTS_TEL.map((s) => s.libelle).join(" · ") === "Aujourd'hui · Tout le Codex");
+  // deux replis sous l'arbre (les deux segments du Codex simplifié, §3.3), le segment gardé dans l'URL
+  check("deux replis : Aujourd'hui · Tout le Codex", [PALIER.aujourdhui, PALIER.tout].join(" · ") === "Aujourd'hui · Tout le Codex");
   check("le segment lu dans ?vue= ; inconnu ou absent : Aujourd'hui", segmentDe("tout") === "tout" && segmentDe("xyz") === "aujourdhui" && segmentDe(undefined) === "aujourdhui" && segmentDe("") === "aujourdhui");
   check("les anciens segments (liens profonds) mènent à « Tout le Codex »", ["parcours", "matieres", "chantiers", "exploits"].every((v) => segmentDe(v) === "tout"));
   check("?vue=carte : la carte en plein écran", segmentDe("carte") === "carte");

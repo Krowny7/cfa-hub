@@ -172,26 +172,6 @@
   color: #f3ead7;
   white-space: nowrap;
 }
-.aller {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 46px;
-  padding: 0 20px;
-  border-radius: 999px;
-  border: 1.5px solid rgba(243, 234, 215, 0.85);
-  color: #f3ead7;
-  font-weight: 700;
-  font-size: 15px;
-  transition: background-color 0.16s ease;
-}
-.aller:hover {
-  background: rgba(243, 234, 215, 0.1);
-}
-.aller:focus-visible {
-  outline: 2px solid #f3ead7;
-  outline-offset: 3px;
-}
 .duree {
   font-family: var(--font-geist-mono, ui-monospace), monospace;
   font-size: 12.5px;
@@ -272,10 +252,5 @@
   .liste {
     flex-direction: column;
     gap: 2px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .aller {
-    transition: none;
   }
 }

@@ -9,7 +9,7 @@
 // réexporte sous ce nom pour ne rien casser), plus les phrases des écrans du
 // défi (copie, classement, jours passés, revue, tuile).
 
-import { IA, LEXIQUE, NBSP, SIGNATURE, nombre, pct, pluriel, precision, ratures, scorePct, traits, verdictSession } from "@/lib/voice";
+import { IA, LEXIQUE, NBSP, SIGNATURE, nombre, pct, pluriel, precision, ratures, scorePct, verdictSession } from "@/lib/voice";
 
 /** « 6 ratures », « page propre » (une copie rendue) */
 export function raturesOuPropre(n: number) {
@@ -41,7 +41,6 @@ export const DEFI = {
   missed: "Pas de trait ce jour-là.",
   missedText: "Une copie se trace le jour même. Le classement, lui, reste ouvert.",
   closed: "Ce défi est clos : celui d'aujourd'hui t'attend.",
-  historyEmpty: "Ton historique commence aujourd'hui.",
   soonTitle: "Le défi du jour arrive bientôt.",
   soonText: "Chaque jour, les mêmes 30 questions pour tout le monde, une seule copie, et le classement du jour.",
   unavailable: "Le défi du jour n'est pas disponible pour le moment. Réessaie dans un instant.",
@@ -56,13 +55,6 @@ export const DEFI = {
   jourSansTitre: "Pas de défi ce jour-là",
   jourSansTexte: "Personne n'a ouvert le défi ce jour-là : ses questions n'ont jamais été tirées.",
   aujourdhui: "Le défi d'aujourd'hui",
-  /** à faire : sur-titre et ouverture */
-  rendues: (n: number, meilleur: number | null, total: number) =>
-    `${pluriel(n, "copie rendue", "copies rendues")}${meilleur !== null ? ` · meilleur ${scorePct(meilleur, total)}` : ""}`,
-  format: (questions: number, minutes: number) => `${questions} questions · ${minutes} min`,
-  /** les coches au crayon, avant de commencer : « 30 traits à tracer » */
-  aTracer: (n: number) => `${traits(n)} à tracer`,
-  ouvert: (reste: string | null) => (reste ? `Ouvert jusqu'à minuit · ${reste}` : "Ouvert jusqu'à minuit"),
   /** l'écart à la tête, quand on est seul ou devant */
   alone: (today: boolean) => (today ? "Seul en lice pour l'instant : le classement se remplit jusqu'à minuit." : "Seul en lice ce jour-là."),
   ahead: (today: boolean) => (today ? "En tête. Tiens ta place jusqu'à minuit." : "En tête ce jour-là."),
@@ -70,12 +62,6 @@ export const DEFI = {
   ecartPoints: (n: number) => `encore${NBSP}${nombre(n)}`,
   ecartTemps: (t: string) => `${t} d'écart`,
   premiere: "1re place",
-  /** règles, avant de commencer : [en gras, la suite] */
-  rules: (questions: number, minutes: number): [string, string][] => [
-    [`${questions} questions`, ", les mêmes et dans le même ordre pour tout le monde."],
-    [`${minutes} min, une seule copie`, " : le chrono ne s'arrête plus, même si tu fermes la page."],
-    ["Réponses définitives", " ; tu peux passer et revenir. La correction s'ouvre dès ta copie rendue."],
-  ],
   confirmHandIn: (blanches: number) =>
     blanches > 0
       ? `Rendre ta copie maintenant ? ${blanches > 1 ? `${blanches} questions sans réponse compteront comme ratures` : "1 question sans réponse comptera comme rature"}. Tu n'auras pas d'autre copie aujourd'hui.`
@@ -117,17 +103,8 @@ export const DEFI = {
   toi: "toi",
   /** étiquette de ma réponse dans la revue */
   toiEtiquette: "Toi",
-  /** jours passés */
-  joursPasses: "Jours passés",
-  aRevoir: (n: number, jours: number) => `${pluriel(n, "copie à revoir", "copies à revoir")} · ${jours} jours`,
-  seRevoit: (jours: number) => `chaque copie se revoit ici ${jours} jours`,
-  pasDeCopie: (n: number) => `pas de copie · ${joueurs(n)}`,
-  copieEnCours: "copie en cours",
+  /** le meilleur score du jour (la tuile) */
   meilleur: (score: number, total: number) => `meilleur ${scorePct(score, total)}`,
-  revue: (reste: string) => `revue ${reste}`,
-  revoirCourt: "Revoir",
-  reprendreCourt: "Reprendre",
-  voirPlus: (n: number) => `Voir plus · ${pluriel(n, "jour", "jours")}`,
   /** revue */
   reviewEmpty: "La correction s'ouvre dès que tu as rendu ta copie. Si c'est déjà le cas, recharge la page dans un instant.",
   correctionIndispo: "Correction indisponible",
@@ -189,12 +166,6 @@ export const DEFI_CINQ = {
   soonText: "Chaque jour, 5 questions de cours, sans calcul : deux minutes, dans le bus ou en attendant le café.",
   aujourdhui: "Les 5 d'aujourd'hui",
   revueKicker: (jour: string) => `Revue · les 5 du jour · ${jour}`,
-  format: (questions: number, _minutes?: number) => `${questions} questions de cours · 2 min environ`,
-  rules: (questions: number, minutes: number): [string, string][] => [
-    [`${questions} questions de cours`, ", sans calcul : la même série pour tout le monde."],
-    ["Deux minutes suffisent", ` (${minutes} min au plus), une seule copie.`],
-    ["Réponses définitives", " ; la correction s'ouvre dès ta copie rendue."],
-  ],
   tuile: {
     ...DEFI.tuile,
     label: "Défi éclair",
@@ -239,9 +210,6 @@ export const ECLAIR = {
   rendue: "Série rendue",
   encore: "Encore 5",
   retour: "S'entraîner",
-  xp: (n: number) => (n > 0 ? `+${nombre(n)} XP` : "XP déjà acquis sur ces questions"),
-  cinqAFaire: "Les 5 du jour ne sont pas encore joués",
-  cinqAFaireSous: "Les mêmes 5 questions pour tout le monde, avec un classement.",
   soonTitle: "Les séries éclair arrivent bientôt.",
   soonText: "5 questions de cours, sans calcul, à enchaîner autant que tu veux.",
   erreurTitre: "La série ne s'ouvre pas.",

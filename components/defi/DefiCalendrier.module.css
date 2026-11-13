@@ -689,6 +689,9 @@
   }
 }
 .entoureCase {
+  /* le cercle de la case déborde sur l'ébène : la --pal-1 de la glace (bleu nuit) s'y perdrait ;
+     la --pal-2 (bleu glacier) tient sur l'ébène comme sur l'ivoire */
+  --cercle: var(--pal-2, #b4412f);
   left: -7px;
   top: -7px;
   width: calc(100% + 14px);

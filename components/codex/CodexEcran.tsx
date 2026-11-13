@@ -36,7 +36,7 @@ import j from "./Aujourdhui.module.css";
 // ébène, la récompense posée comme un objet, « Y aller » à l'encre, les quêtes qui suivent grisées),
 // puis l'arbre seul (ArbreCodex sur ordinateur, les chemins sur téléphone). Dessous, deux replis :
 //   Aujourd'hui    « À récupérer », le fil (la séance du jour en étapes) et les replis d'une ligne
-//                  (components/codex/Aujourdhui.tsx) ; ouvert d'office s'il y a quelque chose à récupérer ;
+//                  (components/codex/Aujourdhui.tsx) ; ouvert d'office s'il y avait à récupérer à l'arrivée ;
 //   Tout le Codex  Parcours, Matières, Objectifs longs, Exploits, « Ta semaine » (ToutLeCodex.tsx) ;
 //                  « Voir la carte » y ramène à l'arbre.
 // ?vue=tout (et les anciens segments) ouvre « Tout le Codex » ; ?vue=carte n'ouvre rien de plus.
@@ -60,6 +60,9 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
     setVue(depart);
     setOuverte((o) => (o ? (retrouver(depart, o) ?? o) : o));
   }, [depart]);
+  // « Aujourd'hui » s'ouvre d'office s'il y avait à récupérer à l'arrivée : décidé une fois au montage,
+  // pour que le rafraîchissement après « Tout récupérer » ne referme pas le repli en plein geste
+  const [recupererAuDepart] = useState(() => depart.aRecuperer.length > 0);
   const [acte, setActe] = useState<VueActe | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   // « Voir le Codex » le jour J
@@ -169,7 +172,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
 
       {/* le calendrier (V3 §7.1) passe avant tout : la veillée, la malle, le lendemain, le verdict */}
       {moment === "veillee" && vue.tampons && <Veillee tampons={vue.tampons} />}
-      {moment === "veillee" && <p className={e.replique}>{PALIER.plusRien}</p>}
+      {moment === "veillee" && <p className="t-small m-0">{PALIER.plusRien}</p>}
       {moment === "malle" && vue.malle && <Malle coches={vue.malle.coches} veille={veille} demo={demo} plein={!(avecSeance && vue.seance?.blocs.length) && !nRecuperer} onVue={setVue} />}
       {moment === "lendemain" && vue.recap && <PoseLePinceau recap={vue.recap} />}
       {vue.rythme?.verdict && <Verdict verdict={vue.rythme.verdict} demo={demo} onVue={setVue} />}
@@ -197,7 +200,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
 
       {/* le reste derrière deux replis : « Aujourd'hui » (Récupérer, la séance du jour) et « Tout le Codex » */}
       <div className={c.replis} data-leonard={plaque ? undefined : "prochaine"}>
-        <Repli id="aujourdhui" titre={PALIER.aujourdhui} compte={nRecuperer ? PALIER.aRecuperer(nRecuperer) : undefined} ouvert={nRecuperer > 0 || (!plaque && segmentDe(segmentUrl) === "aujourdhui" && !!segmentUrl)}>
+        <Repli id="aujourdhui" titre={PALIER.aujourdhui} compte={nRecuperer ? PALIER.aRecuperer(nRecuperer) : undefined} ouvert={recupererAuDepart || (!plaque && segmentDe(segmentUrl) === "aujourdhui" && !!segmentUrl)}>
           <div className={c.page}>
             {/* un seul bouton plein : celui du fil ou « Tout récupérer » s'ils sont là ; masqué s'il mène où mène déjà le palier */}
             <Aujourdhui vue={vue} fil={avecSeance} demo={demo} onQuete={ouvrir} onVue={setVue} hrefPalier={plaque ? vue.prochaine?.ligne.destination?.href : undefined} />

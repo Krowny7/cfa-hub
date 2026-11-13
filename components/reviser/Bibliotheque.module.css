@@ -1,0 +1,797 @@
+/* /courses (Théo, 2026-11-13) : la bibliothèque à deux étages, chaque livre sort du rayon et pivote en
+   3D au survol (comme chez Stripe Press : la tranche, puis la couverture qui se découvre) ; à côté, la
+   grande platine qui joue l'audio sur place, la matière choisie dessous. Les matières (ébène, or, crème)
+   ont des couleurs FIXES : elles restent les mêmes la nuit, avec un liseré clair à la place de l'ombre. */
+
+.salle {
+  --ebene: #1a120b;
+  --ebene-2: #2a1d13;
+  --or: #c9a45c;
+  --creme: #efe3c8;
+  --ep: 84px; /* l'épaisseur d'un livre (sa tranche) */
+  --h: 252px; /* sa hauteur */
+  --cv: 176px; /* la largeur de sa couverture */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-items: center;
+  gap: 34px 52px;
+  width: 100%;
+  min-width: 0;
+}
+@media (min-width: 1040px) {
+  .salle {
+    grid-template-columns: auto minmax(0, 540px);
+    justify-content: center;
+  }
+}
+
+/* ——— la bibliothèque : un meuble d'ébène, deux étages ——— */
+.bibliotheque {
+  position: relative;
+  display: grid;
+  padding: 0 14px;
+  border: 12px solid #24180f;
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 228, 180, 0.07), transparent 60%),
+    linear-gradient(180deg, #0d0805, #150e08 55%, #0d0805);
+  box-shadow:
+    inset 0 0 34px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(201, 164, 92, 0.2),
+    0 26px 44px -26px rgba(0, 0, 0, 0.65);
+}
+.etage {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 26px 4px 14px;
+  list-style: none;
+}
+/* l'ombre que l'étage du dessus pose au fond du rayon */
+.etage::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  right: -14px;
+  top: 0;
+  height: 26px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent);
+  pointer-events: none;
+}
+/* la planche : les livres sont posés dessus */
+.etage::after {
+  content: "";
+  position: absolute;
+  left: -14px;
+  right: -14px;
+  bottom: 0;
+  height: 14px;
+  background: linear-gradient(180deg, #4a3420 0, #2e2014 22%, #1f150d 70%, #170f09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 170, 0.22),
+    0 7px 10px -5px rgba(0, 0, 0, 0.75);
+  z-index: 2;
+}
+
+.place {
+  position: relative;
+  flex: 0 0 var(--ep);
+  height: var(--h);
+  perspective: 700px;
+  perspective-origin: 50% 35%;
+  z-index: 1;
+}
+/* le livre qui rentre reste devant pendant son retour (0,5 s), puis repasse dans le rang */
+.place {
+  transition: z-index 0.5s linear;
+}
+.place:hover,
+.place:focus-within {
+  z-index: 5;
+  transition: none;
+}
+.livre {
+  position: absolute;
+  inset: 0;
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+  transform-style: preserve-3d;
+  transform-origin: 50% 100%;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* le livre sort du rayon, puis se tourne : la couverture se découvre */
+@media (hover: hover) and (pointer: fine) {
+  .place:hover .livre {
+    transform: translateY(-6px) translateZ(64px) rotateY(-34deg);
+  }
+}
+.livre:focus-visible {
+  transform: translateY(-6px) translateZ(64px) rotateY(-34deg);
+}
+.livre:focus-visible .tranche {
+  outline: 2px solid var(--or);
+  outline-offset: 3px;
+}
+
+/* la tranche : ce qu'on voit au rayon */
+.tranche,
+.couverture {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  overflow: hidden;
+  backface-visibility: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 240, 210, 0.07), transparent 30%),
+    var(--fond, var(--ebene));
+}
+/* (sélecteurs « purs » : un module CSS exige une classe locale dans chaque sélecteur) */
+.tranche[data-ton="1"],
+.couverture[data-ton="1"] {
+  --fond: #13201f;
+}
+.tranche[data-ton="2"],
+.couverture[data-ton="2"] {
+  --fond: #241311;
+}
+.tranche {
+  left: 0;
+  width: 100%;
+  border-radius: 2px 3px 3px 2px;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.5),
+    inset 7px 0 10px -6px rgba(0, 0, 0, 0.55);
+}
+/* les nervures du dos, en or sobre */
+.tranche::before,
+.tranche::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: rgba(201, 164, 92, 0.4);
+}
+.tranche::before {
+  top: 21%;
+}
+.tranche::after {
+  bottom: 15%;
+}
+.code {
+  position: absolute;
+  top: 6%;
+  left: 0;
+  right: 0;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(201, 164, 92, 0.9);
+}
+.code small {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: rgba(239, 227, 200, 0.62);
+}
+/* le titre en or sobre, écrit de bas en haut comme sur un dos de livre (aucun mot coupé) */
+.titre {
+  position: absolute;
+  top: 25%;
+  bottom: 19%;
+  left: 50%;
+  margin: 0;
+  writing-mode: vertical-rl;
+  transform: translateX(-50%) rotate(180deg);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--or);
+  overflow: hidden;
+  text-align: center;
+}
+/* une encoche par module le long du bord, dorée une fois écouté */
+.encoches {
+  position: absolute;
+  top: 24%;
+  bottom: 18%;
+  left: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  width: 4px;
+}
+.encoches i {
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(239, 227, 200, 0.16);
+}
+.encoches i[data-fait] {
+  background: var(--or);
+  box-shadow: 0 0 4px rgba(201, 164, 92, 0.5);
+}
+.compte {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 5%;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--creme);
+}
+
+/* la couverture : rangée de profil dans le rayon, elle se découvre quand le livre pivote */
+.couverture {
+  left: 100%;
+  width: var(--cv);
+  display: grid;
+  align-content: space-between;
+  padding: 18px 16px 16px;
+  border-radius: 0 4px 4px 0;
+  transform-origin: 0 50%;
+  transform: rotateY(90deg);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
+    inset 10px 0 14px -8px rgba(0, 0, 0, 0.6);
+}
+.couvCode {
+  font-family: var(--font-brand), "Dela Gothic One", sans-serif;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--or);
+}
+.couvTitre {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-wrap: balance;
+  color: var(--creme);
+}
+.couvPied {
+  display: grid;
+  gap: 8px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(239, 227, 200, 0.6);
+}
+.couvPied::before {
+  content: "";
+  height: 1px;
+  background: rgba(201, 164, 92, 0.45);
+}
+
+/* pas encore de cours : la place reste, grisée */
+.place[data-indispo] .tranche {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+
+/* le signe « conseillé » : le cercle tracé à la main, à l'encre de la palette (#rl-cercle-main) ;
+   il s'efface quand le livre sort du rayon */
+.entoure {
+  position: absolute;
+  inset: -12px -11px -8px -12px;
+  width: calc(100% + 23px);
+  height: calc(100% + 20px);
+  overflow: visible;
+  fill: none;
+  stroke: var(--pal-2, var(--creme));
+  stroke-width: 2.4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  z-index: 4;
+  transition: opacity 0.25s ease;
+}
+:global(html[data-theme="nuit"]) .entoure {
+  stroke: color-mix(in srgb, var(--pal-2, #f1e9d4) 45%, #f1e9d4);
+}
+@media (hover: hover) and (pointer: fine) {
+  .place:hover .entoure {
+    opacity: 0;
+  }
+}
+.place:focus-within .entoure {
+  opacity: 0;
+}
+
+/* ——— la platine : grande, elle ne sert qu'à écouter ——— */
+.platine {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: 540px;
+  padding: 22px 22px 20px;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 240, 210, 0.07), transparent 30%),
+    var(--ebene);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
+    inset -1px -2px 0 rgba(0, 0, 0, 0.55),
+    0 26px 44px -24px rgba(0, 0, 0, 0.65);
+  color: var(--creme);
+}
+.plinthe {
+  position: relative;
+  aspect-ratio: 4 / 3;
+}
+/* le plateau : le disque EST le bouton de lecture */
+.plateau {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #0b0806;
+  box-shadow:
+    inset 0 0 0 2px rgba(201, 164, 92, 0.2),
+    0 12px 20px -10px rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.plateau:disabled {
+  cursor: default;
+}
+.plateau:focus-visible {
+  outline: 2px solid var(--or);
+  outline-offset: 4px;
+}
+.disque {
+  position: absolute;
+  inset: 3.5%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 33%, rgba(255, 255, 255, 0.05) 33.5%, transparent 34.5%),
+    radial-gradient(circle, transparent 0 66%, rgba(255, 255, 255, 0.04) 66.5%, transparent 67.5%),
+    conic-gradient(from 20deg, rgba(255, 255, 255, 0.08), transparent 12%, transparent 48%, rgba(255, 255, 255, 0.07) 56%, transparent 66%),
+    repeating-radial-gradient(circle, #141414 0 1.4px, #1c1c1c 1.4px 2.8px);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.85);
+  will-change: transform;
+}
+.etiquette {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--ebene) 0 4px, transparent 5px),
+    radial-gradient(circle, transparent 0 62%, rgba(26, 18, 11, 0.25) 62.5%, transparent 64%),
+    var(--or);
+  font-family: var(--font-brand), "Dela Gothic One", sans-serif;
+  font-size: clamp(14px, 1.6vw, 20px);
+  line-height: 1;
+  color: var(--ebene);
+}
+/* le code en haut de l'étiquette, au-dessus de l'icône de lecture */
+.etiquette span {
+  position: absolute;
+  top: 8%;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+/* lecture / pause, posé au centre : il ne tourne pas avec le disque */
+.icone {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(14, 10, 6, 0.8);
+  color: var(--or);
+  box-shadow:
+    0 0 0 1px rgba(201, 164, 92, 0.55),
+    0 6px 14px -6px rgba(0, 0, 0, 0.8);
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+  pointer-events: none;
+}
+.plateau:hover .icone {
+  transform: translate(-50%, -50%) scale(1.06);
+}
+/* pendant l'écoute, l'icône s'efface : elle revient au survol ou au focus */
+.platine[data-joue] .icone {
+  opacity: 0;
+}
+.platine[data-joue] .plateau:hover .icone,
+.platine[data-joue] .plateau:focus-visible .icone {
+  opacity: 1;
+}
+/* le bras : au repos hors du disque, il se pose sur le sillon pendant l'écoute */
+.bras {
+  position: absolute;
+  top: 6%;
+  right: 7%;
+  width: 7px;
+  height: 74%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #8a6a2a, #e0be78 45%, #8a6a2a);
+  transform: rotate(6deg);
+  transform-origin: 50% 0;
+  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1);
+  box-shadow: 4px 6px 8px -4px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+.bras::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #3a2a1b 0 6px, #2c2016 7px);
+  box-shadow: inset 0 0 0 2px rgba(201, 164, 92, 0.45);
+  transform: translateX(-50%);
+}
+.bras i {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  width: 16px;
+  height: 24px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #2c2016, #0f0a06);
+  box-shadow: inset 0 0 0 1px rgba(201, 164, 92, 0.5);
+  transform: translateX(-50%) rotate(-14deg);
+}
+.platine[data-joue] .bras {
+  transform: rotate(30deg);
+}
+/* deux molettes de vitesse, pour le meuble */
+.molettes {
+  position: absolute;
+  right: 5%;
+  bottom: 3%;
+  display: flex;
+  gap: 10px;
+  pointer-events: none;
+}
+.molettes i {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4a3826, #1a120b 70%);
+  box-shadow: inset 0 0 0 1px rgba(201, 164, 92, 0.4);
+}
+
+/* les dix matières, sous le disque */
+.matieres {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+.matiere {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 6px 7px;
+  border: 1px solid rgba(201, 164, 92, 0.24);
+  border-radius: 8px;
+  background: rgba(239, 227, 200, 0.05);
+  color: rgba(239, 227, 200, 0.72);
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.12s ease;
+}
+.matiere b {
+  font-weight: 700;
+}
+.matiere:disabled {
+  cursor: default;
+}
+@media (hover: hover) and (pointer: fine) {
+  .matiere:not([data-on]):not(:disabled):hover {
+    border-color: rgba(201, 164, 92, 0.6);
+    color: var(--creme);
+  }
+}
+.matiere:focus-visible {
+  outline: 2px solid var(--or);
+  outline-offset: 2px;
+}
+.matiere[data-on] {
+  border-color: var(--or);
+  background: var(--or);
+  color: var(--ebene);
+}
+.part {
+  position: relative;
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(239, 227, 200, 0.14);
+  overflow: hidden;
+}
+.part i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--part, 0) * 100%);
+  background: var(--or);
+}
+.matiere[data-on] .part {
+  background: rgba(26, 18, 11, 0.22);
+}
+.matiere[data-on] .part i {
+  background: var(--ebene);
+}
+
+/* le module, la barre, trois commandes */
+.ecoute {
+  display: grid;
+  gap: 8px;
+}
+.module {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+}
+.module span {
+  flex: none;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--or);
+}
+.module b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--creme);
+}
+.barre {
+  position: relative;
+  height: 22px;
+}
+.piste {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(239, 227, 200, 0.14);
+  overflow: hidden;
+  transform: translateY(-50%);
+}
+.piste i {
+  display: block;
+  height: 100%;
+  background: var(--or);
+}
+.cran {
+  position: absolute;
+  top: 50%;
+  width: 1.5px;
+  height: 4px;
+  background: var(--ebene);
+  transform: translate(-50%, -50%);
+}
+.curseur {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--creme);
+  box-shadow: 0 0 0 3px rgba(201, 164, 92, 0.45);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+/* au clavier, le curseur montre le focus de la barre (l'input est invisible) */
+.barre:has(input:focus-visible) .curseur {
+  box-shadow:
+    0 0 0 2px var(--ebene),
+    0 0 0 4px var(--or);
+}
+.barre input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.commandes {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.temps {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(239, 227, 200, 0.6);
+}
+.temps:last-child {
+  justify-self: end;
+}
+.commande {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(201, 164, 92, 0.3);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--creme);
+  cursor: pointer;
+}
+.commande:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.commande:focus-visible {
+  outline: 2px solid var(--or);
+  outline-offset: 2px;
+}
+.vitesse {
+  width: 58px;
+  border-radius: 21px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.panne {
+  margin: 0;
+  font-size: 12.5px;
+  color: #f0c0ac;
+}
+.panne a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ce qui dépend de l'appareil reste invisible (sa place gardée) tant qu'il n'est pas lu */
+.attente {
+  visibility: hidden;
+}
+.revele {
+  animation: reveler 0.25s ease both;
+}
+@keyframes reveler {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ——— la nuit : les matières gardent leurs couleurs, un liseré clair remplace l'ombre ——— */
+:global(html[data-theme="nuit"]) .bibliotheque {
+  box-shadow:
+    inset 0 0 34px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(239, 227, 200, 0.22);
+}
+:global(html[data-theme="nuit"]) .platine {
+  box-shadow:
+    0 0 0 1px rgba(239, 227, 200, 0.2),
+    inset 1px 1px 0 rgba(255, 236, 200, 0.12);
+}
+
+/* ——— téléphone : le meuble se resserre, cinq livres par étage tiennent dans la largeur ——— */
+@media (max-width: 560px) {
+  .salle {
+    --ep: 54px;
+    --h: 196px;
+    --cv: 128px;
+  }
+  .bibliotheque {
+    padding: 0 8px;
+    border-width: 9px;
+  }
+  .etage {
+    gap: 6px;
+    padding-top: 20px;
+  }
+  .etage::before,
+  .etage::after {
+    left: -8px;
+    right: -8px;
+  }
+  .code {
+    font-size: 9px;
+  }
+  .code small {
+    display: none;
+  }
+  .titre {
+    font-size: 10.5px;
+  }
+  .compte {
+    font-size: 9.5px;
+  }
+  .encoches {
+    left: 3px;
+    width: 3px;
+  }
+  .couverture {
+    padding: 12px 10px;
+  }
+  .couvCode {
+    font-size: 24px;
+  }
+  .couvTitre {
+    font-size: 12px;
+  }
+  .platine {
+    padding: 16px 14px 14px;
+    gap: 14px;
+  }
+  .icone {
+    width: 44px;
+    height: 44px;
+  }
+  .matieres {
+    gap: 6px;
+  }
+  .matiere {
+    padding: 7px 2px 6px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .livre,
+  .bras,
+  .icone,
+  .entoure,
+  .matiere {
+    transition: none;
+  }
+  .revele {
+    animation: none;
+  }
+}

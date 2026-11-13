@@ -1,4 +1,13 @@
-// Vidéos résumé : un cours filmé (voix « Rémy » des cours complets, écran façon one-pager, formules en KaTeX).
+// Les vidéos du site (page /videos, la télé : components/videos/VideosView). Trois rangements, qui sont les trois
+// chaînes de la télé (Théo, 2026-11-13) :
+//  1. « intro » (Introduction) : le déblayage d'un sujet, des vidéos moyennement courtes qui donnent le point de
+//     vue global sans entrer dans le détail ;
+//  2. « cours » (Cours) : les cours vraiment complets, dans le détail, plus nombreux ;
+//  3. « resume » (Résumé) : la synthèse de tout, pour les jours qui précèdent l'examen (les trois vidéos d'une heure).
+// Ajouter une vidéo = ajouter une entrée à VIDEOS avec sa `categorie` ; une chaîne sans vidéo en ligne montre
+// « bientôt » à l'écran.
+//
+// Une vidéo est un cours filmé (voix « Rémy » des cours complets, écran façon one-pager, formules en KaTeX).
 // Chaque vidéo est une suite de parties (un sujet de 4 à 6 min par fichier, sous la limite d'envoi de Supabase),
 // jouées à la suite comme un seul film. Fichiers dans le bucket privé "courses" sous `<fichier>.mp4` et
 // `<fichier>.jpg` (affiche) ; envoi : scripts/upload-video.mjs. Fabrication hors dépôt (atelier cfa-work/videos,
@@ -13,9 +22,14 @@ export type PartieVideo = {
   secondes: number;
   chapitres: ChapitreVideo[];
 };
+/** Le rangement d'une vidéo, c'est-à-dire sa chaîne sur la télé de /videos. */
+export type CategorieVideo = "intro" | "cours" | "resume";
+
 export type VideoResume = {
   slug: string;
-  /** numéro de la vidéo d'une heure */
+  /** la chaîne : intro (déblayage), cours (complet), resume (synthèse avant l'examen) */
+  categorie: CategorieVideo;
+  /** numéro de la vidéo dans sa chaîne */
   numero: number;
   titre: string;
   matieres: string[];
@@ -26,6 +40,7 @@ export type VideoResume = {
 export const VIDEOS: VideoResume[] = [
   {
     slug: "video-1",
+    categorie: "resume",
     numero: 1,
     titre: "Éthique, quantitatif, économie",
     matieres: ["Ethics", "Quantitative Methods", "Economics"],
@@ -227,6 +242,7 @@ export const VIDEOS: VideoResume[] = [
   },
   {
     slug: "video-2",
+    categorie: "resume",
     numero: 2,
     titre: "États financiers, entreprises, actions",
     matieres: ["Financial Statement Analysis", "Corporate Issuers", "Equity"],
@@ -442,6 +458,7 @@ export const VIDEOS: VideoResume[] = [
   },
   {
     slug: "video-3",
+    categorie: "resume",
     numero: 3,
     titre: "Taux, dérivés, alternatifs, portefeuille",
     matieres: ["Fixed Income", "Derivatives", "Alternative Investments", "Portfolio Management"],
@@ -643,6 +660,33 @@ export const VIDEOS: VideoResume[] = [
 
 export const dureeVideo = (v: VideoResume): number => v.parties.reduce((t, p) => t + p.secondes, 0);
 export const videosEnLigne = (): VideoResume[] => VIDEOS.filter((v) => v.etat === "en-ligne" && v.parties.length > 0);
+
+/** Les trois chaînes de la télé, dans l'ordre des touches (1, 2, 3). */
+export const CHAINES: { categorie: CategorieVideo; numero: number }[] = [
+  { categorie: "intro", numero: 1 },
+  { categorie: "cours", numero: 2 },
+  { categorie: "resume", numero: 3 },
+];
+export const estCategorie = (x: unknown): x is CategorieVideo => x === "intro" || x === "cours" || x === "resume";
+export const numeroDeChaine = (c: CategorieVideo): number => CHAINES.find((x) => x.categorie === c)?.numero ?? 0;
+/** Toutes les vidéos d'une chaîne (en ligne ou à venir), dans l'ordre de leur numéro. */
+export const videosDeChaine = (c: CategorieVideo): VideoResume[] => VIDEOS.filter((v) => v.categorie === c).sort((a, b) => a.numero - b.numero);
+/** Les vidéos d'une chaîne qu'on peut regarder. */
+export const videosEnLigneDeChaine = (c: CategorieVideo): VideoResume[] => videosDeChaine(c).filter((v) => v.etat === "en-ligne" && v.parties.length > 0);
+/** La chaîne ouverte d'office : la première qui a une vidéo en ligne (le Résumé tant que les autres sont vides). */
+export const chaineParDefaut = (): CategorieVideo => CHAINES.find((c) => videosEnLigneDeChaine(c.categorie).length > 0)?.categorie ?? "resume";
+
+/**
+ * Ce que la télé montre pour une adresse : ?v=<slug> joue cette vidéo (et règle sa chaîne) ; ?chaine=… ouvre la
+ * première vidéo de la chaîne ; sinon, la chaîne par défaut. `choix` dit ce qui a été demandé : la page peut ensuite,
+ * après le montage, passer à la dernière vidéo regardée sur l'appareil (jamais quand une vidéo est demandée).
+ */
+export function choisirVideo(v?: string, c?: string): { chaine: CategorieVideo; video: VideoResume | null; choix: "video" | "chaine" | "auto" } {
+  const demandee = videosEnLigne().find((x) => x.slug === v) ?? null;
+  if (demandee) return { chaine: demandee.categorie, video: demandee, choix: "video" };
+  const chaine = estCategorie(c) ? c : chaineParDefaut();
+  return { chaine, video: videosEnLigneDeChaine(chaine)[0] ?? null, choix: estCategorie(c) ? "chaine" : "auto" };
+}
 
 /** La matière d'une partie, lue dans le nom de son fichier (`videos/v1-q2-…` : q = Quantitative Methods). */
 const MATIERES: Record<string, string> = {

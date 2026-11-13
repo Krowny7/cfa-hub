@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { ActionEncre } from "@/components/ui/SousPage";
 import { Compte } from "@/components/revoir/Pile";
@@ -107,7 +107,12 @@ function Action({ suite }: { suite: SuiteCarte }) {
 export function MainQcm({ cartes, depart, suites, enCours = null }: { cartes: CarteMatiere[]; depart: number; suites: Record<string, SuiteCarte | null>; enCours?: string | null }) {
   const [haut, setHaut] = useState(depart);
   const [calme, setCalme] = useState(false);
-  useEffect(() => setCalme(dejaVu("qcm")), []);
+  // la première réponse gardée dans une ref : le double effet du mode strict ne relit pas la page « vue »
+  const vuRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (vuRef.current === null) vuRef.current = dejaVu("qcm");
+    setCalme(vuRef.current);
+  }, []);
   const id = "main" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const n = cartes.length;
   const levee = cartes[haut] ?? cartes[0];

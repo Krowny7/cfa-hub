@@ -94,18 +94,12 @@ export const SOUS_AFFRONTER = {
   },
   examens: {
     titre: "Examens blancs",
-    prochain: "Le prochain examen",
-    ouvrir: "Ouvrir un examen",
     vide: "Aucun examen blanc au calendrier.",
-    classement: "Le classement",
-    classementVide: "Personne au classement pour l'instant.",
     toi: "Toi",
-    elo: (elo: number) => `${elo} ELO`,
     // /mock-exams/[id]
     classementExamen: "Le classement",
     pct: (pct: number) => `${pct} %`,
     inscription: "Réserve ta place",
-    clos: "Cet examen est clos.",
     // le pack scellé (direction « le lieu, puis l'objet », lot 4 du 2026-11-13) : l'état écrit sur le pack
     packKicker: "Examen blanc",
     dansJours: (j: number) => (j <= 1 ? "demain" : `dans ${j} j`),
@@ -116,8 +110,6 @@ export const SOUS_AFFRONTER = {
     manque: "Manqué",
     preparation: "En préparation",
     format: (q: number, min: number) => `${q} Q · ${Math.floor(min / 60) > 0 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${String(min % 60).padStart(2, "0")}` : ""}` : `${min} min`}`,
-    enjeuProchain: (titre: string, quand: string) => `${titre} · ${quand}`,
-    enjeuOuvert: (titre: string) => `${titre} · ouvert`,
     seFerme: (h: number) => `Se ferme dans ${h} h`,
     ouvrirExamen: (titre: string) => `Ouvrir ${titre}`,
     revoirCopie: (titre: string) => `Revoir ta copie de ${titre}`,
@@ -163,9 +155,7 @@ export const SOUS_AFFRONTER = {
     ligneEtat: (miennes: number, aRejoindre: number) =>
       [miennes > 0 ? (miennes > 1 ? `${miennes} salles à toi` : "1 salle à toi") : "Aucune salle à toi", aRejoindre > 0 ? `${aRejoindre} à rejoindre` : null].filter(Boolean).join(" · "),
     choisir: "Choisis ta salle",
-    ouvrir: "Ouvrir une salle",
     aucune: "Aucune salle pour l'instant. Crée la première.",
-    rejoindreOuCreer: "Rejoindre ou créer",
     // la rangée des portes (lot 4 du 2026-11-13) : le moment écrit sur chaque porte
     enDirect: "En direct",
     enDirectN: (n: number) => (n > 1 ? `${n} parties en direct` : "En direct"),

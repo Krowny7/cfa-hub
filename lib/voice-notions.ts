@@ -3,7 +3,6 @@
 const s = (n: number) => (n > 1 ? "s" : "");
 
 export const NOTIONS_CHOIX = {
-  parMatiere: "Par matière",
   parNotion: "Par notion",
   recherche: "Chercher une notion, un concept, un mot…",
   chargement: "Les notions arrivent…",

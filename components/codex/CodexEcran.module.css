@@ -1,15 +1,11 @@
-/* L'écran /codex : le titre, les deux segments, puis « Aujourd'hui »
-   (components/codex/Aujourdhui.module.css) ou la carte (ordinateur) et les
-   chemins (téléphone). Les jetons --c-* viennent de Encre.module.css (.carnet). */
+/* L'écran /codex : la porte, le prochain palier, la carte (ordinateur) ou les
+   chemins (téléphone), puis les replis « Aujourd'hui »
+   (components/codex/Aujourdhui.module.css) et « Tout le Codex ». Les jetons --c-* viennent de Encre.module.css (.carnet). */
 
 .page {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-/* les deux segments : toute la largeur sur téléphone, une largeur de lecture au-delà */
-.segments {
-  max-width: 460px;
 }
 .surOrdi {
   display: none;

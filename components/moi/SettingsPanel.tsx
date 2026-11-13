@@ -50,7 +50,8 @@ export function SettingsPanel({
       <Filet etiquette={D.compte}>
         <ProfileSettings />
         <div>
-          <Repli titre={D.apparence}>
+          {/* la dernière étape de la visite de Léonard vise ce repli : fermé, sa ligne reste éclairable */}
+          <Repli titre={D.apparence} leonard="reglages">
             <div className="flex flex-col">
               <AppearanceSwitches />
               <ModeSobre initial={sobre} />

@@ -74,15 +74,6 @@ export function useAvancement(id: string): Avancement {
   );
 }
 
-/** Le nombre de cas bouclés (toutes leurs questions terminées), relu du navigateur ; 0 au rendu serveur et à l'hydratation. */
-export function useCasBoucles(cas: { id: string; etapes: string[] }[]): number {
-  return useSyncExternalStore(
-    abonner,
-    () => cas.filter((c) => c.etapes.length > 0 && c.etapes.every((e) => lire(c.id).etapes[e])).length,
-    () => 0,
-  );
-}
-
 /**
  * Les questions terminées de chaque cas, relues du navigateur, dans l'ordre des cas ; des zéros au
  * rendu serveur et à l'hydratation. L'instantané est une chaîne (« 3,0,12 ») : stable d'un appel à

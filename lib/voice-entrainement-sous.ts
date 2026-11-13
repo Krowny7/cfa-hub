@@ -11,8 +11,6 @@ export const RETOUR_ENTRAINEMENT = { href: "/entrainement", label: "S'entraîner
 export const SOUS_ENTRAINEMENT = {
   practice: {
     titre: "Entraînement ciblé",
-    composer: "Compose ta séance",
-    dernieres: "Tes dernières séances",
     copies: "Tes copies",
     /** la sélection façon choix de niveau (2026-11-13) : l'étiquette de la scène, ses réglages, le lancement */
     matieres: "Tes matières",
@@ -57,12 +55,7 @@ export const SOUS_ENTRAINEMENT = {
   },
   qcm: {
     titre: "QCM par thème",
-    ligne: "L'XP se gagne une fois par question, à ta première bonne réponse.",
-    choisir: "Choisis ta matière",
-    ouvrir: "Ouvrir une matière",
-    reprendre: "À reprendre",
     reussies: (fait: number, total: number | null) => `${nombre(fait)}/${total === null ? "?" : nombre(total)}`,
-    legendeTotal: (total: number) => `questions réussies sur ${nombre(total)}`,
     communaute: "Communauté",
     lesQcm: (matiere: string) => `Les QCM · ${matiere}`,
     /** l'éventail (2026-11-13) : la main des 10 matières, la carte tirée */
@@ -78,7 +71,6 @@ export const SOUS_ENTRAINEMENT = {
     pastille: (titre: string, fait: number, total: number | null) => `${titre} · ${nombre(fait)}/${total === null ? "?" : nombre(total)}`,
     reprendreAction: "Reprendre",
     ouvrirAction: "Ouvrir",
-    drills: "Quiz des fiches",
     /** la ligne qui regroupe les quiz des fiches d'une matière */
     fiches: "Fiches",
     /** une fiche dans la rangée de petits carrés (lecture) */
@@ -132,10 +124,6 @@ export const SOUS_ENTRAINEMENT = {
     niveaux: (tenus: number) => `${nombre(tenus)} sur 3 niveaux tenus`,
   },
   officiels: {
-    choisir: "Choisis ta session",
-    ouvrir: "Ouvrir une session",
-    scores: "Tes scores",
-    pasEncore: "—",
     complete: (n: number) => `Passer la session complète · ${pluriel(n, "question", "questions")}`,
     /** les packs scellés (2026-11-13) */
     heros: (n: number) => (n > 1 ? "scellés" : "scellé"),
@@ -144,7 +132,6 @@ export const SOUS_ENTRAINEMENT = {
     /** la ligne d'état de la porte */
     etat: (sessions: number, ouvertes: number, jours: number | null) =>
       `${pluriel(sessions, "session", "sessions")} · ${ouvertes === 0 ? "aucune ouverte" : pluriel(ouvertes, "ouverte", "ouvertes")}${jours === null ? "" : jours <= 0 ? " · la dernière aujourd'hui" : jours === 1 ? " · la dernière hier" : ` · la dernière il y a ${nombre(jours)}${NBSP}j`}`,
-    nQuestions: (n: number) => pluriel(n, "question", "questions"),
     /** une tuile de matière sous le pack ouvert */
     tuileQ: (n: number) => `${nombre(n)}${NBSP}Q`,
     variantes: "Variantes",
@@ -152,25 +139,6 @@ export const SOUS_ENTRAINEMENT = {
     variantesCourt: "VAR",
     /** la lecture d'un pack (lecteur d'écran) */
     lecture: (nom: string, n: number, pct: number | null) => `${nom}, ${pluriel(n, "question", "questions")}, ${pct === null ? "scellé" : `meilleure copie ${nombre(pct)}${NBSP}%`}`,
-  },
-  cas: {
-    choisir: "Choisis ton dossier",
-    ouvrir: "Ouvrir un dossier",
-    ouEnEs: "Où tu en es",
-    boucles: (total: number) => (total > 1 ? "dossiers bouclés" : "dossier bouclé"),
-  },
-  defi: {
-    jour: "Le défi du jour",
-    classement: "Le classement du jour",
-    joursPasses: "Les jours passés",
-    serie: "Ta série",
-    /** la légende du chiffre de la série d'encre : ce qui manque aujourd'hui, ou le jour qui compte déjà */
-    serieLegende: (jours: number, fait: boolean, reste: number) =>
-      `${jours > 1 ? "jours d'encre" : "jour d'encre"}${fait ? ", aujourd'hui compris" : reste > 0 ? ` · encore ${pluriel(reste, "question", "questions")} aujourd'hui` : ""}`,
-    toi: "toi",
-  },
-  eclair: {
-    lancer: "Lance ta série",
   },
   seance: {
     titre: "Séance libre",
@@ -180,13 +148,6 @@ export const SOUS_ENTRAINEMENT = {
     interrupteur: "Mode examen",
     examenOui: "Chrono, et aucune correction avant la fin.",
     examenNon: "Corrigée à chaque question.",
-  },
-  atelier: {
-    notion: "La notion du jour",
-    registre: "Ton registre",
-    ratures: "Ratures en cours",
-    marquees: "Questions marquées",
-    ateliers: "Ateliers passés",
   },
   terminal: {
     titre: "Le Terminal",

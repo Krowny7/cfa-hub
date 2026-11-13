@@ -1,6 +1,6 @@
 /* Les rayons de Réviser B (direction « le lieu, puis l'objet », 2026-11-13) : la rangée de carnets de
-   /fiches et la rangée de livrets de /courses, posées sur une même ligne de sol, le carnet ou le livret
-   conseillé avancé d'un cran et entouré à la main ; la platine au bout des livrets ; le rayon des vidéos.
+   /fiches, posée sur une ligne de sol, le carnet conseillé avancé d'un cran et entouré à la main ; le mur
+   des one-pagers. (/courses a sa bibliothèque : Bibliotheque.module.css ; les vidéos ont leur page.)
    Les matières (ébène, papier, or) ont des couleurs FIXES : elles restent les mêmes la nuit, avec un
    liseré clair à la place de l'ombre. */
 
@@ -372,356 +372,16 @@
   margin-bottom: 26px;
 }
 
-/* ——— le livret (cours) : debout comme chez Stripe Press, couverture sombre, titre or sobre, encoches des modules sur le dos ——— */
-.livret {
-  aspect-ratio: 100 / 250;
-  border-radius: 2px 5px 5px 2px;
-  background:
-    linear-gradient(180deg, rgba(255, 240, 210, 0.06), transparent 30%),
-    var(--fond, var(--ebene));
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
-    inset -1px -1px 0 rgba(0, 0, 0, 0.5),
-    0 14px 22px -14px rgba(0, 0, 0, 0.55);
-}
-.livret[data-ton="1"] {
-  --fond: #13201f;
-}
-.livret[data-ton="2"] {
-  --fond: #241311;
-}
-.dos {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 13%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  align-items: center;
-  padding: 10px 0;
-  background: rgba(0, 0, 0, 0.32);
-  border-right: 1px solid rgba(201, 164, 92, 0.18);
-}
-.dos i {
-  width: 52%;
-  height: 2px;
-  border-radius: 1px;
-  background: rgba(239, 227, 200, 0.16);
-}
-.dos i[data-fait] {
-  background: var(--or);
-  box-shadow: 0 0 4px rgba(201, 164, 92, 0.5);
-}
-.livretHaut {
-  position: absolute;
-  top: 6%;
-  left: 21%;
-  right: 8%;
-  display: grid;
-  gap: 3px;
-  margin: 0;
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(239, 227, 200, 0.5);
-}
-.livretHaut b {
-  font-weight: 600;
-  color: rgba(201, 164, 92, 0.85);
-}
-/* le titre en or sobre, écrit de bas en haut comme sur un dos de livre (aucun mot coupé) */
-.livretTitre {
-  position: absolute;
-  top: 25%;
-  bottom: 21%;
-  left: 21%;
-  margin: 0;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: clamp(12px, 1.05vw, 14px);
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-  color: var(--or);
-  overflow: hidden;
-}
-.filet {
-  position: absolute;
-  left: 21%;
-  right: 9%;
-  bottom: 17%;
-  height: 1px;
-  background: rgba(201, 164, 92, 0.35);
-}
-.livretBas {
-  position: absolute;
-  left: 21%;
-  right: 9%;
-  bottom: 7%;
-  margin: 0;
-  display: flex;
-  justify-content: space-between;
-  gap: 4px;
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 10.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: rgba(239, 227, 200, 0.62);
-}
-.livretBas b {
-  font-weight: 600;
-  color: var(--creme);
-}
-
-/* ——— la platine, au bout de la rangée ——— */
-.placePlatine {
-  flex: 2.3 1 0;
-  max-width: 236px;
-}
-.platine {
-  aspect-ratio: 236 / 250;
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(255, 240, 210, 0.07), transparent 40%),
-    var(--ebene);
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
-    inset -1px -2px 0 rgba(0, 0, 0, 0.55),
-    0 16px 24px -14px rgba(0, 0, 0, 0.6);
-}
-.plateau {
-  position: absolute;
-  top: 7%;
-  left: 7%;
-  width: 70%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #0b0806;
-  box-shadow: inset 0 0 0 2px rgba(201, 164, 92, 0.18);
-}
-.disque {
-  position: absolute;
-  inset: 4%;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, transparent 0 31%, rgba(255, 255, 255, 0.05) 31.5%, transparent 32.5%),
-    conic-gradient(from 20deg, rgba(255, 255, 255, 0.07), transparent 12%, transparent 48%, rgba(255, 255, 255, 0.06) 56%, transparent 66%),
-    repeating-radial-gradient(circle, #141414 0 1.6px, #1c1c1c 1.6px 3.2px);
-  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.8);
-  will-change: transform;
-}
-.label {
-  display: grid;
-  place-items: center;
-  width: 36%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--ebene) 0 3px, var(--or) 4px);
-  font-family: var(--font-brand), "Dela Gothic One", sans-serif;
-  font-size: clamp(9px, 0.9vw, 12px);
-  line-height: 1;
-  color: var(--ebene);
-}
-.label span {
-  transform: translateY(-11px);
-}
-.bras {
-  position: absolute;
-  top: 6%;
-  right: 9%;
-  width: 5px;
-  height: 52%;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #e0be78, #8a6a2a);
-  transform: rotate(18deg);
-  transform-origin: top center;
-  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.2, 1);
-}
-.bras::before {
-  content: "";
-  position: absolute;
-  top: -6px;
-  left: -5px;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: #2c2016;
-  box-shadow: inset 0 0 0 2px rgba(201, 164, 92, 0.45);
-}
-@media (hover: hover) and (pointer: fine) {
-  .lien:hover .bras {
-    transform: rotate(26deg);
-  }
-}
-.platineBas {
-  position: absolute;
-  left: 7%;
-  right: 7%;
-  bottom: 6%;
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: rgba(239, 227, 200, 0.62);
-  font-variant-numeric: tabular-nums;
-}
-.platineBas b {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-geist, system-ui), sans-serif;
-  font-size: 12.5px;
-  letter-spacing: 0;
-  color: var(--creme);
-}
-.barre {
-  position: relative;
-  height: 2px;
-  margin-top: 5px;
-  border-radius: 1px;
-  background: rgba(239, 227, 200, 0.16);
-  overflow: hidden;
-}
-.barre i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: calc(var(--part, 0) * 100%);
-  background: var(--or);
-}
-
-/* ce qui dépend de l'appareil reste invisible (sa place gardée) tant qu'il n'est pas lu */
-.attente {
-  visibility: hidden;
-}
-.revele {
-  animation: reveler 0.25s ease both;
-}
-/* le dos d'un livret reste ; seules ses encoches attendent */
-.dos.attente {
-  visibility: visible;
-}
-.dos.attente i {
-  visibility: hidden;
-}
-.dos.revele {
-  animation: none;
-}
-.dos.revele i {
-  animation: reveler 0.25s ease both;
-}
-@keyframes reveler {
-  from {
-    opacity: 0;
-  }
-}
-
 /* ——— l'action, sous la rangée ——— */
 .action {
   display: grid;
   justify-items: center;
   gap: 8px;
 }
-.compteAction {
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 0.86em;
-  font-weight: 600;
-  opacity: 0.82;
-}
-
-/* ——— le rayon des vidéos ——— */
-.rayonVideos {
-  display: grid;
-  gap: 14px;
-  width: 100%;
-  margin-top: 18px;
-}
-.videos {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(12px, 1.6vw, 22px);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.video {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 16px;
-  min-height: 112px;
-  padding: 16px 18px;
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(255, 240, 210, 0.06), transparent 50%),
-    var(--ebene);
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 236, 200, 0.12),
-    0 14px 22px -16px rgba(0, 0, 0, 0.55);
-  color: var(--creme);
-}
-.videoNum {
-  font-family: var(--font-brand), "Dela Gothic One", sans-serif;
-  font-size: 46px;
-  line-height: 1;
-  color: var(--or);
-}
-.videoCorps {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-}
-.videoTitre {
-  margin: 0;
-  font-size: 14.5px;
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--creme);
-}
-.videoEtat {
-  margin: 0;
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: rgba(239, 227, 200, 0.62);
-  font-variant-numeric: tabular-nums;
-}
-.videoEtat[data-vue] {
-  color: var(--or);
-}
-.videoBarre {
-  position: relative;
-  height: 2px;
-  border-radius: 1px;
-  background: rgba(239, 227, 200, 0.14);
-  overflow: hidden;
-}
-.videoBarre i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: calc(var(--part, 0) * 1%);
-  background: var(--or);
-}
-.video[data-avenir] {
-  opacity: 0.4;
-  filter: grayscale(1);
-}
 
 /* ——— la nuit : les matières gardent leurs couleurs, un liseré clair remplace l'ombre ——— */
 :global(html[data-theme="nuit"]) .carnet,
-:global(html[data-theme="nuit"]) .livret,
-:global(html[data-theme="nuit"]) .platine,
-:global(html[data-theme="nuit"]) .mur,
-:global(html[data-theme="nuit"]) .video {
+:global(html[data-theme="nuit"]) .mur {
   box-shadow:
     0 0 0 1px rgba(239, 227, 200, 0.2),
     inset 1px 1px 0 rgba(255, 236, 200, 0.12);
@@ -769,9 +429,6 @@
   .placeMur {
     flex-basis: 166px;
   }
-  .placePlatine {
-    flex-basis: 206px;
-  }
   .code {
     font-size: 18px;
   }
@@ -781,12 +438,6 @@
   .avance b {
     font-size: 30px;
   }
-  .livretTitre {
-    font-size: 12.5px;
-  }
-  .label {
-    font-size: 11px;
-  }
   .rangee[data-legende] {
     margin-bottom: 8px;
     padding-bottom: 44px;
@@ -794,30 +445,15 @@
   .rangee[data-legende]::after {
     bottom: 43px;
   }
-  .videos {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .place,
-  .revele {
+  .place {
     animation: none;
   }
   .objet,
   .reflet,
-  .bras,
   .entoure {
     transition: none;
-  }
-}
-
-/* les vidéos : un survol plus sobre (une boîte large ne s'incline pas) */
-.placeVideo {
-  min-width: 0;
-}
-@media (hover: hover) and (pointer: fine) {
-  .placeVideo .lien:hover .objet {
-    transform: translateY(-4px);
   }
 }

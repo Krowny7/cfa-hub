@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Zap } from "lucide-react";
+import { ArrowLeft, Zap } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { PageHero } from "@/components/ui/Titles";
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
@@ -8,19 +8,13 @@ import { Avatar } from "@/components/classement/Avatar";
 import { clock } from "@/lib/duels";
 import {
   DAILY_QUESTIONS,
-  DAILY_REVIEW_DAYS,
-  dayHref,
   dayLabel,
-  daysBetween,
-  reviewHref,
-  reviewLeftLabel,
   timeLeftLabel,
   type DailyBoard,
   type DailyBoardRow,
-  type DailyHistoryEntry,
   type FormatDefi,
 } from "@/lib/daily";
-import { DEFI, joueurs, rangOrdinal, raturesOuPropre, voixDefi } from "@/lib/voice-z2c";
+import { DEFI, joueurs, rangOrdinal, voixDefi } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
 
 // Pièces partagées des pages du défi du jour. Sans état : utilisables depuis
@@ -301,122 +295,6 @@ export function DefiBoard({
         <p className="t-micro m-0 mt-2 px-2.5">{DEFI.autres(rows.length - shown.length)}</p>
       )}
       {foot && <p className="t-micro m-0 mt-4 border-t border-line pt-3">{foot}</p>}
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Jours passés : les plus récents, puis « Voir plus » (la revue reste ouverte
-// au-delà des 14 jours ; la fenêtre « à revoir » est rappelée sur chaque ligne)
-
-function HistoryRow({ e, today, nowIso, format }: { e: DailyHistoryEntry; today: string; nowIso: string; format: FormatDefi }) {
-  const played = !!e.finishedAt;
-  const open = !!e.startedAt && !e.finishedAt;
-  const total = e.total ?? e.questionCount;
-  const errors = played && e.score !== null ? total - e.score : null;
-  const left = played && e.finishedAt ? reviewLeftLabel(e.finishedAt, nowIso) : null;
-  // Ligne courte (mobile), complétée sur ordinateur
-  const [main, extra] = played
-    ? [
-        [e.rank !== null && e.players > 1 ? `${rangOrdinal(e.rank)} sur ${e.players}` : null, errors !== null ? raturesOuPropre(errors) : null]
-          .filter(Boolean)
-          .join(" · "),
-        left ? DEFI.revue(left) : null,
-      ]
-    : open
-      ? [DEFI.copieEnCours, null]
-      : [DEFI.pasDeCopie(e.players), e.topScore !== null ? DEFI.meilleur(e.topScore, e.questionCount) : null];
-
-  return (
-    <li className="flex items-center gap-3 py-1">
-      <Link
-        href={dayHref(e.day, format)}
-        className="rl-row grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 rounded-[12px] px-2 py-2.5"
-        aria-label={`${dayLabel(e.day, "long", today)} : ${played ? `${e.score} sur ${total}, ` : ""}${main}`}
-      >
-        <span className="min-w-0">
-          <span className="block truncate text-[14.5px] font-semibold first-letter:uppercase">{dayLabel(e.day, "short", today)}</span>
-          <span className={"t-micro block truncate " + (open ? "font-semibold text-white" : "")}>
-            {main}
-            {extra && <span className="hidden sm:inline"> · {extra}</span>}
-          </span>
-        </span>
-        {played && (
-          <span className="text-right font-mono text-[14px] font-semibold tabular-nums">
-            {e.score}
-            <span className="font-normal text-muted">/{total}</span>
-            <PctScore justes={e.score} total={total} className="hidden sm:inline" />
-            <PctScore justes={e.score} total={total} sep={false} className="block text-[11px] leading-tight sm:hidden" />
-          </span>
-        )}
-      </Link>
-      {played ? (
-        <Link href={reviewHref(e.day, undefined, format)} className="btn btn-sm btn-secondary shrink-0" aria-label={`Revoir ta copie du ${dayLabel(e.day, "day", today)}`}>
-          {DEFI.revoirCourt}
-        </Link>
-      ) : open ? (
-        <Link href={dayHref(e.day, format)} className="btn btn-sm btn-primary shrink-0">
-          {DEFI.reprendreCourt}
-        </Link>
-      ) : (
-        <span className="w-[72px] shrink-0" aria-hidden />
-      )}
-    </li>
-  );
-}
-
-export function DefiHistory({
-  entries,
-  today,
-  nowIso,
-  visible = 6,
-  format = "trente",
-  entete = true,
-}: {
-  entries: DailyHistoryEntry[];
-  today: string;
-  nowIso: string;
-  format?: FormatDefi;
-  /** jours affichés avant « Voir plus » */
-  visible?: number;
-  /** false : sans titre (dans un cadre annexe qui porte déjà « Les jours passés ») */
-  entete?: boolean;
-}) {
-  const past = entries.filter((e) => e.day < today);
-  const shown = past.slice(0, visible);
-  const more = past.slice(visible);
-  const toReview = past.filter((e) => e.finishedAt && daysBetween(e.day, today) <= DAILY_REVIEW_DAYS).length;
-
-  return (
-    <section className="rl-section" aria-label={DEFI.joursPasses}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        {entete && <h2 className="t-h2 m-0">{DEFI.joursPasses}</h2>}
-        <span className="t-micro">{toReview > 0 ? DEFI.aRevoir(toReview, DAILY_REVIEW_DAYS) : DEFI.seRevoit(DAILY_REVIEW_DAYS)}</span>
-      </div>
-      {past.length === 0 ? (
-        <p className="t-small m-0">{DEFI.historyEmpty}</p>
-      ) : (
-        <div>
-          <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none divide-y divide-line p-0">
-            {shown.map((e) => (
-              <HistoryRow key={e.day} e={e} today={today} nowIso={nowIso} format={format} />
-            ))}
-          </ul>
-          {more.length > 0 && (
-            <details className="group mt-2">
-              <summary className="t-small flex w-fit cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 font-semibold hover:text-white [&::-webkit-details-marker]:hidden">
-                {DEFI.voirPlus(more.length)}
-                <ArrowRight size={13} className="transition-transform group-open:rotate-90" aria-hidden />
-              </summary>
-              <ul className="m-0 mt-1 grid grid-cols-[minmax(0,1fr)] list-none divide-y divide-line p-0">
-                {more.map((e) => (
-                  <HistoryRow key={e.day} e={e} today={today} nowIso={nowIso} format={format} />
-                ))}
-              </ul>
-            </details>
-          )}
-        </div>
-      )}
     </section>
   );
 }

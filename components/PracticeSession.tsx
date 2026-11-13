@@ -122,13 +122,20 @@ const rangMatiere = (cle: string) => {
 
 const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 
+/** une copie qui a valu l'or (même règle que la Salle des trophées) */
+const estOr = (x: Pick<PastSession, "score" | "total" | "topics" | "completed_at">) => palierCiblee(x.score, x.total, x.topics.length, x.completed_at) === 3;
+
 export function PracticeSession({
   pastSessions: initialPast,
+  bilan: bilanInitial,
   mastery = {},
   traitsJour = null,
   demo,
 }: {
+  /** les 20 dernières copies (l'annexe) */
   pastSessions: PastSession[];
+  /** toutes les copies rendues et leurs trophées d'or (la ligne d'état) ; absent : comptés sur pastSessions */
+  bilan?: { copies: number; ors: number };
   /** maîtrise par matière (clé → %, null si pas assez de réponses) */
   mastery?: Record<string, number | null>;
   /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
@@ -190,6 +197,7 @@ export function PracticeSession({
   // traits posés par la copie rendue (l'anneau du jour sous la copie)
   const [ajoutes, setAjoutes] = useState(demo?.phase === "done" ? demo?.total ?? 0 : 0);
   const [pastSessions, setPastSessions] = useState<PastSession[]>(initialPast);
+  const [bilan, setBilan] = useState(() => bilanInitial ?? { copies: initialPast.length, ors: initialPast.filter(estOr).length });
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(demo?.expandedHistoryId ?? null);
   const [historyReviews, setHistoryReviews] = useState<Record<string, ReviewQuestion[]>>(demo?.historyReviews ?? {});
   const [historyErrors, setHistoryErrors] = useState<Record<string, string>>({});
@@ -261,8 +269,13 @@ export function PracticeSession({
   // les matières qui recevront des questions (une petite séance aux poids officiels peut en laisser une de côté)
   const previewMatieres = parNotions ? infoChoix.topics.length : partsTaille ? matieresServies(partsTaille).length : selected.size;
   // l'arrivée (cercles tracés) ne se joue qu'à la première visite de la session
+  // (la réponse est gardée dans une ref : le double effet du mode strict ne relit pas la page « vue »)
   const [calme, setCalme] = useState(false);
-  useEffect(() => setCalme(dejaVu("practice")), []);
+  const vuRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (vuRef.current === null) vuRef.current = dejaVu("practice");
+    setCalme(vuRef.current);
+  }, []);
 
   const pret = parNotions ? !choixVide(choix) : selected.size > 0;
 
@@ -326,14 +339,24 @@ export function PracticeSession({
       const cles = [...topics];
       let qs: ActiveQuestion[];
       let servies = cles;
-      if (n === null) {
+      if (n === null && melange) {
         const { data, error: rpcError } = await supabase.rpc("generate_practice_session", {
           p_topics: cles,
           p_format: fmt,
         });
         if (rpcError) throw new Error(rpcError.message);
-        qs = (data ?? []) as ActiveQuestion[];
-        if (melange) qs = melanger(qs).map((q, i) => ({ ...q, position: i }));
+        qs = melanger((data ?? []) as ActiveQuestion[]).map((q, i) => ({ ...q, position: i }));
+      } else if (n === null) {
+        // sans mélange : la base rend les matières déjà mêlées (et sans leur matière) ; chacune est
+        // donc tirée à part, au même format (même part que l'appel unique), puis rangée dans l'ordre du programme
+        const lus = await Promise.all(cles.map((t) => supabase.rpc("generate_practice_session", { p_topics: [t], p_format: fmt })));
+        const rate = lus.find((r) => r.error);
+        if (rate?.error) throw new Error(rate.error.message);
+        qs = cles
+          .map((t, i) => [t, (lus[i].data ?? []) as ActiveQuestion[]] as const)
+          .sort((a, b) => rangMatiere(a[0]) - rangMatiere(b[0]))
+          .flatMap(([, l]) => l)
+          .map((q, i) => ({ ...q, position: i }));
       } else {
         // une taille demandée : chaque matière tirée à part, au format complet
         // (sa plus grande réserve), puis la part de chacune, mêlées
@@ -422,10 +445,9 @@ export function PracticeSession({
       const n = Number(data?.total ?? 0) || 0;
       setAjoutes(n);
       poserTrait(n);
-      setPastSessions((prev) => [
-        { id: data?.id ?? crypto.randomUUID(), topics: topicsArr, format, question_count: data?.total ?? 0, score: data?.score ?? 0, total: data?.total ?? 0, duration_seconds: duration, completed_at: new Date().toISOString() },
-        ...prev,
-      ]);
+      const rendue: PastSession = { id: data?.id ?? crypto.randomUUID(), topics: topicsArr, format, question_count: data?.total ?? 0, score: data?.score ?? 0, total: data?.total ?? 0, duration_seconds: duration, completed_at: new Date().toISOString() };
+      setPastSessions((prev) => [rendue, ...prev]);
+      setBilan((b) => ({ copies: b.copies + 1, ors: b.ors + (estOr(rendue) ? 1 : 0) }));
       setPhase("done");
     } catch (e: unknown) {
       setError(friendlyError(e, "Erreur lors de la soumission"));
@@ -495,8 +517,8 @@ export function PracticeSession({
     // (la plus fragile reste à la planche, entourée : rien de répété entre la porte et l'objet)
     const derniere = pastSessions[0];
     const heros = derniere && derniere.total > 0 ? { valeur: `${pctOf(derniere.score, derniere.total)}${NBSP}%`, legende: P.heros } : null;
-    const ors = pastSessions.filter((x) => palierCiblee(x.score, x.total, x.topics.length, x.completed_at) === 3).length;
-    const ligne = P.etat(pastSessions.length, ors);
+    // toutes les copies (bilan), pas seulement les 20 de l'annexe
+    const ligne = P.etat(bilan.copies, bilan.ors);
 
     const lignes: LigneNiveau[] = TOPICS.map((t, i) => {
       const m = mastery[t.key];

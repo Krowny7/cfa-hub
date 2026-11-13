@@ -27,7 +27,7 @@ export function PortesSalles({ portes }: { portes: PorteSalle[] }) {
   const conseil = portes.find((p) => p.enCours)?.id ?? null;
   return (
     <section className={s.vitrine} aria-label={S.choisir}>
-      <ArriveeUneFois className={s.arrivee}>
+      <ArriveeUneFois cle="salles" className={s.arrivee}>
         <ul className={s.rangee}>
           {portes.map((p, i) => {
             const moment = p.enCours ? "direct" : p.presents > 0 ? "salon" : "vide";

@@ -1,13 +1,12 @@
-// Textes de la page Vidéos résumé (app/videos).
+// Textes de la page Vidéos (app/videos) : la télé et ses trois chaînes (lib/videos : CHAINES).
+import type { CategorieVideo } from "@/lib/videos";
+
 const virgule = (n: number) => String(n).replace(".", ",");
+const s = (n: number) => (n > 1 ? "s" : "");
 
 export const VIDEOS_TXT = {
-  retour: "Réviser",
-  titre: "Vidéos résumé",
-  sous: "Trois heures de cours filmé pour repasser les 10 matières avant l'examen.",
-  lesVideos: "Les trois vidéos",
+  titre: "Vidéos",
   serie: (n: number) => `Vidéo ${n}`,
-  enPreparation: "En préparation",
   pasCommencee: "Pas commencée",
   vue: (pct: number) => (pct >= 100 ? "Vue en entier" : `Vue à ${pct} %`),
   reste: (duree: string) => `encore ${duree}`,
@@ -18,13 +17,70 @@ export const VIDEOS_TXT = {
   suivante: "Partie suivante",
   vitesse: (r: number) => `${virgule(r)}×`,
   vitesseAide: (r: number) => `Vitesse de lecture : ${virgule(r)}×. Appuie pour changer.`,
-  reprise: (h: string) => `Reprise à ${h}, là où tu t'étais arrêté.`,
-  /** dans la ligne d'état de la porte */
+  /** dans la ligne d'état de la porte et dans le guide */
   repriseCourte: (h: string) => `reprise à ${h}`,
   partieVue: "Vue",
   indisponible: "La vidéo ne se charge pas pour le moment. Réessaie dans un instant.",
+
+  /** la télé */
+  tele: "La télé",
+  chaines: "Les chaînes",
+  chaine: (n: number, nom: string) => `Chaîne ${n} : ${nom}`,
+  /** l'incrustation en haut de l'écran : « 3 · RÉSUMÉ » */
+  incrustation: (n: number, court: string) => `${n} · ${court}`,
+  bientot: "Bientôt",
+  compteur: "Position dans la vidéo",
+  compteurVide: "--:--",
+
+  /** le guide des programmes de la chaîne, à côté de la télé */
+  guide: (n: number, nom: string) => `Chaîne ${n} · ${nom}`,
+  aLEcran: "À l'écran",
+  enPreparation: "En préparation",
+  guideVide: "Rien à l'antenne pour l'instant.",
+
+  /** la ligne d'état de la porte (lue sur l'appareil, après le montage) */
+  nbVideos: (n: number) => `${n} vidéo${s(n)}`,
+  entamees: (n: number) => `${n} entamée${s(n)}`,
+  vues: (n: number) => `${n} vue${s(n)} en entier`,
+  aucuneCommencee: (n: number) => (n > 1 ? "aucune commencée" : "pas commencée"),
+  /** une chaîne vide : où sont les vidéos en ligne */
+  ailleurs: (n: number, chaine: number) => `${n} vidéo${s(n)} à l'antenne sur la ${chaine}`,
   aucune: "Les vidéos arrivent bientôt.",
+
+  /** le chiffre-héros de la porte : ce qu'il reste à voir sur la chaîne (ou sa durée si rien n'est commencé) */
+  herosReste: "restantes",
+  herosNeuve: "à voir",
+  herosVue: "vues en entier",
+  herosVueUne: "vue en entier",
+  /** « 2 H 21 » : le chiffre-héros en capitales */
+  heures: (minutes: number) => {
+    const t = Math.max(0, Math.round(minutes));
+    const h = Math.floor(t / 60);
+    const m = t % 60;
+    return h > 0 ? `${h} H ${String(m).padStart(2, "0")}` : `${m} MIN`;
+  },
+  /** tout est vu : « 3/3 » */
+  herosFini: (n: number) => `${n}/${n}`,
 } as const;
+
+/** Les trois chaînes : leur nom, leur nom court sur la touche, et ce qu'elles diffusent (dit sur l'écran tant qu'elles sont vides). */
+export const CHAINES_TXT: Record<CategorieVideo, { nom: string; court: string; promesse: string }> = {
+  intro: {
+    nom: "Introduction",
+    court: "Intro",
+    promesse: "Le tour de chaque sujet : la vue d'ensemble, sans le détail.",
+  },
+  cours: {
+    nom: "Cours",
+    court: "Cours",
+    promesse: "Les cours complets, filmés dans le détail.",
+  },
+  resume: {
+    nom: "Résumé",
+    court: "Résumé",
+    promesse: "La synthèse des 10 matières, pour les derniers jours.",
+  },
+};
 
 export const minutesDe = (secondes: number): number => Math.max(1, Math.round(secondes / 60));
 
