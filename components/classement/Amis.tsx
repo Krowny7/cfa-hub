@@ -78,7 +78,7 @@ export function Amis({ rows }: { rows: AmiRow[] | null | undefined }) {
       <div className={s.amisVide}>
         <h3 className="font-brand">{AMIS.videTitre}</h3>
         <p className={s.sous}>{AMIS.videTexte}</p>
-        <Bouton href="/people">
+        <Bouton href="/duel">
           <Search size={17} aria-hidden /> {AMIS.chercher}
         </Bouton>
       </div>
@@ -104,7 +104,7 @@ export function Amis({ rows }: { rows: AmiRow[] | null | undefined }) {
             </>
           )}
         </p>
-        <Link href="/people" className={s.lien}>
+        <Link href="/duel" className={s.lien}>
           {AMIS.ajouter}
         </Link>
       </div>

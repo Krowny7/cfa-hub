@@ -64,8 +64,11 @@ import s from "./Podium.module.css";
 const PAR_DEFAUT = ["/illustrations/classement-lice.webp", "/illustrations/joueurs-seigneurie.webp", "/illustrations/classement-grande-salle.webp"];
 const fondParDefaut = (userId: string) => PAR_DEFAUT[[...userId].reduce((n, c) => n + c.charCodeAt(0), 0) % PAR_DEFAUT.length];
 
-/** Incline les cartes d'un podium (données dans data-holo) : sous le pointeur, ou en balancement doux au repos. */
-function useInclinaison(racine: RefObject<HTMLElement | null>) {
+/**
+ * Incline les cartes d'un podium (données dans data-holo) : sous le pointeur, ou en balancement doux au repos.
+ * `repos` à false : pas de balancement (aucune boucle) ; la carte suit le pointeur et revient à plat quand il part.
+ */
+function useInclinaison(racine: RefObject<HTMLElement | null>, repos = true) {
   useEffect(() => {
     const root = racine.current;
     if (!root) return;
@@ -104,7 +107,7 @@ function useInclinaison(racine: RefObject<HTMLElement | null>) {
         remet();
         return;
       }
-      if (visible && !document.hidden && !raf) raf = requestAnimationFrame(boucle);
+      if (repos && visible && !document.hidden && !raf) raf = requestAnimationFrame(boucle);
     };
 
     const fins: Array<() => void> = [];
@@ -118,6 +121,8 @@ function useInclinaison(racine: RefObject<HTMLElement | null>) {
       };
       const lache = () => {
         c.actif = false;
+        // sans balancement, la carte revient à plat
+        if (!repos) for (const v of ["--rx", "--ry", "--mx", "--my"]) c.el.style.removeProperty(v);
       };
       c.el.addEventListener("pointermove", suit);
       c.el.addEventListener("pointerdown", suit);
@@ -152,7 +157,7 @@ function useInclinaison(racine: RefObject<HTMLElement | null>) {
       document.removeEventListener("visibilitychange", relance);
       for (const f of fins) f();
     };
-  }, [racine]);
+  }, [racine, repos]);
 }
 
 /** Le fond d'une bannière composée qui n'a pas le sien : l'image de bannière du profil du joueur, sinon sa peinture du Classement. */
@@ -225,7 +230,7 @@ const taillePseudo = (nom: string) => Math.min(8, (LARGE_CADRE * 1.05) / (Math.m
  * de débordement comprise), un petit pied (la place et l'insigne), et, caché
  * derrière elle, le volet de son panneau, qui sort au survol (voir l'en-tête).
  */
-function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 | 3; composition: Composition }) {
+function BanniereCompose({ r, place, composition }: { r: BoardRow; place: number | null; composition: Composition }) {
   const first = place === 1;
   const rk = rankFor(r.elo, r.mastery, r.rank);
   const tier = rk.tierIndex;
@@ -334,7 +339,7 @@ function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 
         className={s.composee}
         data-holo=""
         data-composee=""
-        aria-label={`${PODIUM.place(place)} : ${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
+        aria-label={`${place !== null ? `${PODIUM.place(place)} : ` : ""}${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
         aria-expanded={ouvert}
         aria-controls={idVolet}
       >
@@ -371,7 +376,16 @@ function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 
   );
 }
 
-function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
+/**
+ * Un long pseudo de fanion tient sur une ligne : sa taille baisse avec sa longueur (84 % de la largeur ; Dela Gothic :
+ * ~0,78 em par lettre), 11 px au moins. Un pseudo court garde la taille du CSS (10,5 cqw, 13 px au moins) : pas de style.
+ */
+function taillePseudoFanion(nom: string): CSSProperties | undefined {
+  const cqw = 84 / (Math.max(1, [...nom].length) * 0.78);
+  return cqw < 10.5 ? { fontSize: `max(11px, ${cqw.toFixed(2)}cqw)` } : undefined;
+}
+
+function Banniere({ r, place }: { r: BoardRow; place: number | null }) {
   // la bannière composée du joueur, si elle est enregistrée : elle remplace le fanion
   if (r.banniere) return <BanniereCompose r={r} place={place} composition={r.banniere} />;
   const first = place === 1;
@@ -399,7 +413,7 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
       style={style}
       data-holo=""
       data-ornement={r.ornement || "filet"}
-      aria-label={`${PODIUM.place(place)} : ${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
+      aria-label={`${place !== null ? `${PODIUM.place(place)} : ` : ""}${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
     >
       {/* le cadre : le vrai liquide du rang, ou de la couleur choisie (EncreVive ; la texture, immobile, en repli) */}
       <span aria-hidden className={"rl-encre " + s.cadre} data-palette={pal ? pal.key : "rang"}>
@@ -424,7 +438,9 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
       {/* sur le podium, l'insigne reste en couleur même en placement (palier de l'ELO actuel) */}
       <img className={s.insigne} src={`/ranks/v2/petit-${tier}-128.png`} width={128} height={128} alt="" draggable={false} />
       <span className={s.bas}>
-        <span className={s.pseudo + " font-brand"}>{r.isMe ? PODIUM.toi : r.name}</span>
+        <span className={s.pseudo + " font-brand"} style={taillePseudoFanion(r.isMe ? PODIUM.toi : r.name)}>
+          {r.isMe ? PODIUM.toi : r.name}
+        </span>
         <TitrePorte titre={r.titre} className="-mt-[1cqw] text-[length:max(10px,5.4cqw)] [color:rgba(255,255,255,0.86)] [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]" />
         <span className={s.rang}>
           <span>{nomRang}</span>
@@ -471,6 +487,24 @@ function BanniereLibre({ place }: { place: 1 | 2 | 3 }) {
       </span>
       <span aria-hidden className={s.reflet} />
     </Link>
+  );
+}
+
+/**
+ * Une bannière seule, hors du podium (le face-à-face de /duel) : la même carte (fanion ou bannière composée, volet,
+ * contour, insigne, chiffres), qui s'incline de la même façon. `place` : sa place au classement (null : pas encore
+ * classé, rien ne s'écrit dans le coin) ; `className` : la boîte qui lui donne sa largeur (data-perso="1" : un
+ * personnage de fanion dépasse du haut, la boîte lui garde la place) ; `repos` à false : elle suit le pointeur
+ * mais ne se balance pas au repos (aucune boucle : /duel).
+ */
+export function BanniereSeule({ r, place, className, repos = true }: { r: BoardRow; place: number | null; className?: string; repos?: boolean }) {
+  const racine = useRef<HTMLDivElement | null>(null);
+  useHorsEcran(racine);
+  useInclinaison(racine, repos);
+  return (
+    <div ref={racine} className={className} data-perso={r.perso && !r.banniere ? "1" : "0"}>
+      <Banniere r={r} place={place} />
+    </div>
   );
 }
 

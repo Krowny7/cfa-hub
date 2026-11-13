@@ -219,6 +219,17 @@
   padding: 6px 0 4px;
   background: radial-gradient(60% 260px at 50% 0, color-mix(in srgb, var(--ink) 3.5%, transparent), transparent 75%);
 }
+/* la scène qui suit la porte commence juste dessous (« le lieu, puis l'objet ») : l'écart des grandes
+   sections de .rl-page (40 puis 64 px) se resserre à 24 px, une fois pour toutes les sous-pages
+   (ajout du 2026-11-13, venu des calculs) */
+.cadre + .scene {
+  margin-top: -16px;
+}
+@media (min-width: 768px) {
+  .cadre + .scene {
+    margin-top: -40px;
+  }
+}
 .sceneTete {
   display: flex;
   flex-wrap: wrap;
@@ -470,5 +481,26 @@
     margin: 0 calc(-1 * var(--pad-x)) calc(-1 * var(--pad-b)) 0;
     padding: 22px 26px 26px;
     border-radius: 0 0 24px 0;
+  }
+}
+
+/* le chargement : la peinture attendue, avec le même bord en touches */
+@media (min-width: 820px) {
+  .peintureVide {
+    -webkit-mask-image: url(/peinture/touches.svg), linear-gradient(90deg, transparent 0 30%, #000 30%);
+    mask-image: url(/peinture/touches.svg), linear-gradient(90deg, transparent 0 30%, #000 30%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 31% 100%, 100% 100%;
+    mask-size: 31% 100%, 100% 100%;
+  }
+}
+
+/* téléphone : la peinture est coupée en biais en bas (80 % de sa hauteur à droite) ; le chiffre-héros
+   remonte au-dessus de la coupe pour que sa légende ne soit pas rognée (ajout du 2026-11-13, calculs) */
+@media (max-width: 819px) {
+  .image .heros {
+    bottom: 20%;
+    padding-bottom: 4px;
   }
 }

@@ -132,7 +132,7 @@ export function Leaderboard({ board, meRow, totalPlayers, sobre = false }: { boa
       <div id="joueurs" data-leonard="joueurs" className="max-w-[560px] scroll-mt-24">
         <p className="t-h3">{CLASSEMENT.vide}</p>
         <p className="t-small mt-1">{CLASSEMENT.videTexte}</p>
-        <Link href="/people" className="ink-link mt-4 inline-flex items-center gap-1.5">
+        <Link href="/duel" className="ink-link mt-4 inline-flex items-center gap-1.5">
           <Search size={14} aria-hidden /> {CLASSEMENT.chercher}
         </Link>
       </div>
@@ -151,7 +151,7 @@ export function Leaderboard({ board, meRow, totalPlayers, sobre = false }: { boa
         {!sobre && (
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-2 sm:px-3">
             <span className="t-micro">{joueursDomaine(count, CURRENT_DOMAIN.name)}</span>
-            <Link href="/people" className="ink-link inline-flex items-center gap-1.5 text-[13px]">
+            <Link href="/duel" className="ink-link inline-flex items-center gap-1.5 text-[13px]">
               <Search size={13} aria-hidden /> {CLASSEMENT.chercher}
             </Link>
           </div>

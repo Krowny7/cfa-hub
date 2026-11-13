@@ -36,7 +36,7 @@ export function PlayerHeader({ p }: { p: PlayerHeaderData }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/people" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-muted hover:text-white">
+      <Link href="/duel" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-muted hover:text-white">
         <ArrowLeft size={14} aria-hidden /> {JOUEURS.retour}
       </Link>
 

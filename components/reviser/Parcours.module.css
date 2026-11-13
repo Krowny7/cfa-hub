@@ -2010,6 +2010,25 @@ button.onde {
   font-size: 30px;
   line-height: 1.1;
 }
+/* « À revoir aujourd'hui » : le compte mène à /revoir (flèche des lignes-liens) */
+.apercuLien {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  color: inherit;
+}
+.apercuLien::after {
+  content: "→";
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--acc);
+  transition: transform var(--dur-2) var(--ease-out);
+}
+@media (hover: hover) {
+  .apercuLien:hover::after {
+    transform: translateX(3px);
+  }
+}
 .apercuListe {
   display: grid;
   gap: 8px;

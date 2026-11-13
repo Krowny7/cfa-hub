@@ -167,6 +167,7 @@ export function ActionEncre({
   disabled,
   children,
   label,
+  autoFocus,
 }: {
   href?: string;
   onClick?: () => void;
@@ -174,18 +175,20 @@ export function ActionEncre({
   disabled?: boolean;
   children: React.ReactNode;
   label?: string;
+  /** l'action prend le focus à l'arrivée (Entrée la déclenche) */
+  autoFocus?: boolean;
 }) {
   const p = usePaletteDePage();
   const cls = "rl-encre " + s.action + " " + s.encre;
   if (href)
     return (
-      <Link href={href} className={cls} data-palette={p.key} aria-label={label}>
+      <Link href={href} className={cls} data-palette={p.key} aria-label={label} autoFocus={autoFocus}>
         <EncreVive tons={p.liquide} />
         <span className={s.texte}>{children}</span>
       </Link>
     );
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={cls} data-palette={p.key} aria-label={label}>
+    <button type={type} onClick={onClick} disabled={disabled} className={cls} data-palette={p.key} aria-label={label} autoFocus={autoFocus}>
       <EncreVive tons={p.liquide} />
       <span className={s.texte}>{children}</span>
     </button>

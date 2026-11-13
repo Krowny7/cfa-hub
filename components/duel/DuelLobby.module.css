@@ -1,0 +1,799 @@
+/* /duel, le face-à-face (components/duel/DuelLobby.tsx). Les vraies bannières du podium
+   (BanniereSeule : components/classement/PodiumBannieres.tsx), « VS » tamponné au centre, l'ELO en
+   jeu en Mono, l'arc électrique seulement face à quelqu'un ; la rangée de portraits sous l'adversaire,
+   l'action à l'encre au centre ; dessous, deux annexes courtes. Les couleurs de l'espace arrivent par
+   --pal-1..5 (florence). Téléphone : les deux bannières réduites côte à côte, VS sur la jonction,
+   le bouton pleine largeur. Nuit : les bannières gardent leurs couleurs fixes, un liseré clair les
+   détache du fond. Les deux bannières se tournent l'une vers l'autre (±9°, ±6° au téléphone) ; l'arc est
+   figé (un SVG en trois couches). Mouvement : l'arrivée une fois (les bannières des deux bords, le tampon,
+   l'éclair de l'arc), le survol, la pression ; rien en boucle, rien en mouvement réduit. */
+
+.arene {
+  --arc-lueur: var(--pal-3, #a8c0d6);
+  --arc-coeur: color-mix(in srgb, var(--pal-3, #a8c0d6) 52%, #1d3247);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 256px) minmax(260px, 340px) minmax(0, 256px);
+  grid-template-areas:
+    "moi vs adv"
+    "moi mise adv"
+    ". action choix";
+  grid-template-rows: auto auto auto;
+  justify-content: center;
+  column-gap: 0;
+  row-gap: 0;
+  margin: -18px auto 0;
+  padding: 10px 0 8px;
+}
+/* deux lumières, une par camp (la terre cuite chez toi, le bleu pâle chez lui) : des halos sans aucun bord */
+.arene::before {
+  content: "";
+  position: absolute;
+  inset: -40px -8% 0;
+  z-index: -1;
+  background:
+    radial-gradient(28% 46% at 31% 40%, color-mix(in srgb, var(--pal-1, #a94d31) 9%, transparent), transparent 70%),
+    radial-gradient(28% 46% at 69% 40%, color-mix(in srgb, var(--pal-3, #a8c0d6) 16%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+/* le chiffre-héros de la porte (ton ELO) : écrit d'un bloc, comme un score de jeu (« 1169 », pas « 1 169 ») ; les
+   chiffres proportionnels pour que le « 1 » ne laisse pas un trou */
+.eloHeros {
+  font: inherit;
+  font-variant-numeric: proportional-nums;
+  letter-spacing: -0.01em;
+}
+
+.cote {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-width: 0;
+  perspective: 1100px;
+}
+/* le face-à-face : chacun tourné vers l'autre (la propriété rotate, à part de transform : l'arrivée ne l'écrase pas) */
+.cote > .place {
+  rotate: y 9deg;
+  transition: rotate 0.18s cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+.cote[data-cote="adv"] > .place {
+  rotate: y -9deg;
+}
+@media (hover: hover) {
+  .cote:hover > .place {
+    rotate: y 3.6deg;
+  }
+  .cote[data-cote="adv"]:hover > .place {
+    rotate: y -3.6deg;
+  }
+}
+/* le volet d'une bannière composée ouvert : sa bannière se met de face et passe devant le VS et l'arc */
+.cote:has([data-ouvert="1"]) {
+  z-index: 6;
+}
+.cote:has([data-ouvert="1"]) > .place {
+  rotate: none;
+}
+.cote[data-cote="moi"] {
+  grid-area: moi;
+  animation: entreG 0.62s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.cote[data-cote="adv"] {
+  grid-area: adv;
+}
+.cote[data-cote="adv"] > .place {
+  animation: entreD 0.62s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+/* le sol : l'ombre de contact sous chaque bannière */
+.cote::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: -18px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.22), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* la boîte d'une bannière : elle prend toute la largeur de sa colonne (le podium la fixe à 30 %) */
+.place {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  perspective: 1000px;
+}
+.place > [data-holo],
+.place > [data-hote] {
+  flex: 0 0 100%;
+  max-width: none;
+  order: 0;
+}
+/* le halo électrique du n° 1 autour de son insigne tourne en boucle (souffle, graines du bruit) : ici l'arc figé
+   entre les deux bannières suffit ; masqué, il se met aussi en pause (hors écran pour son IntersectionObserver) */
+.place [data-arc] {
+  display: none;
+}
+/* un personnage de fanion dépasse du haut : sa tête garde sa place (20 % de la hauteur de la carte) */
+.place[data-perso="1"] {
+  padding-top: 28%;
+}
+/* nuit : la bannière garde ses couleurs, un liseré clair la détache du fond */
+:global(html[data-theme="nuit"]) .place > [data-holo] {
+  filter: drop-shadow(0 0 0.8px rgba(255, 255, 255, 0.55)) drop-shadow(0 22px 28px rgba(0, 0, 0, 0.55));
+}
+:global(html[data-theme="nuit"]) .place [data-composee] {
+  filter: drop-shadow(0 0 0.8px rgba(255, 255, 255, 0.45));
+}
+
+/* pas encore d'adversaire : la place, en creux */
+.libre {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 9 / 12.75;
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 50% 100%, 0 88%);
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 7%, transparent) 0 2px, transparent 2px 11px), var(--paper-2);
+  color: var(--ink-3);
+  font-size: 64px;
+}
+
+/* ── le centre : VS tamponné, l'arc, l'ELO en jeu ── */
+/* le VS : un tampon sur une pastille de papier qui coupe l'arc */
+.vs {
+  grid-area: vs;
+  align-self: end;
+  justify-self: center;
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 136px;
+  height: 104px;
+  margin-bottom: 4px;
+  background: radial-gradient(closest-side, var(--paper) 72%, transparent 100%);
+  pointer-events: none;
+}
+.tampon {
+  display: inline-block;
+  padding: 2px 18px 6px;
+  border: 5px solid currentColor;
+  border-radius: 16px;
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 66px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--pal-1, #a94d31);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  transform: rotate(-7deg);
+  /* l'encre du tampon : du grain, pas un aplat */
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3.2 2.45'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3.2 2.45'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+  -webkit-mask-size: 180px 180px;
+  mask-size: 180px 180px;
+  animation: tampon 0.42s 0.38s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+:global(html[data-theme="nuit"]) .tampon {
+  color: var(--pal-2, #d8a186);
+  background: color-mix(in srgb, #0e0e10 72%, transparent);
+}
+/* personne en face : le tampon au milieu de la hauteur */
+.arene[data-face="0"] .vs {
+  grid-row: 1 / span 2;
+  align-self: center;
+  margin-bottom: 0;
+}
+/* l'arc électrique figé : il sort du cadre de l'un, passe sous le VS et entre dans le cadre de l'autre (sous les bannières) */
+.arc {
+  grid-area: vs;
+  align-self: end;
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: calc(100% + 128px);
+  height: 80px;
+  margin: 0 0 16px -64px;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 0 7px var(--arc-lueur)) drop-shadow(0 0 2px var(--arc-lueur));
+  animation: eclair 0.5s 0.62s ease-out backwards;
+}
+.arc path {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.arc [data-c="l"] path {
+  stroke: var(--arc-lueur);
+  stroke-width: 12;
+  opacity: 0.5;
+}
+.arc [data-c="c"] path {
+  stroke: var(--arc-coeur);
+  stroke-width: 3;
+}
+.arc [data-c="c"] path + path {
+  stroke-width: 1.8;
+}
+.arc [data-c="b"] path {
+  stroke: #fff;
+  stroke-width: 1.1;
+}
+:global(html[data-theme="nuit"]) .arene {
+  --arc-coeur: var(--pal-3, #a8c0d6);
+}
+
+.mise {
+  grid-area: mise;
+  align-self: start;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin: 4px 0 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.mise b {
+  display: inline-block;
+  min-width: 3ch;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.mise b[data-gain] {
+  color: var(--pal-1, #a94d31);
+}
+:global(html[data-theme="nuit"]) .mise b[data-gain] {
+  color: var(--pal-2, #d8a186);
+}
+
+/* ── changer d'adversaire : la rangée de portraits, sous sa bannière ── */
+.choix {
+  grid-area: choix;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 30px;
+}
+.portraits {
+  display: flex;
+  /* en haut : la rangée garde sous elle la place de l'ombre du portrait choisi ; les flèches à hauteur des portraits */
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+}
+.rangee {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  gap: 0;
+  min-width: 0;
+  margin: 0 0 -18px;
+  padding: 8px 4px 24px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.rangee::-webkit-scrollbar {
+  display: none;
+}
+.rangee > li {
+  flex: none;
+  scroll-snap-align: center;
+}
+.portrait {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transform: scale(0.74);
+  opacity: 0.78;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+/* le sceau d'initiales prend la forme ronde de l'anneau, comme une photo */
+.portrait > span {
+  border-radius: 50%;
+  overflow: hidden;
+}
+.portrait[data-ami="1"] {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pal-2, #d8a186) 80%, transparent);
+}
+.portrait[aria-pressed="true"] {
+  transform: none;
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--pal-1, #a94d31),
+    0 8px 18px rgba(0, 0, 0, 0.2);
+}
+@media (hover: hover) {
+  .portrait:hover {
+    opacity: 1;
+    transform: scale(0.84);
+  }
+  .portrait[aria-pressed="true"]:hover {
+    transform: none;
+  }
+}
+.portrait:active {
+  transform: scale(0.7) translateY(2px);
+}
+.portrait:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 2px;
+}
+.fleche {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 18px;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.fleche:hover {
+  color: var(--ink);
+  border-color: var(--ink-3);
+}
+.recherche {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 10px;
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.effacer {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.personne {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+/* ── l'action, au centre ── */
+.action {
+  grid-area: action;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 8px;
+  margin-top: 30px;
+  padding: 0 8px;
+  text-align: center;
+}
+.action > :first-child {
+  max-width: 100%;
+  padding-block: 8px;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
+}
+.format {
+  margin: 2px 0 0;
+  white-space: nowrap;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.hasard {
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.hasard:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+.hasard:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.erreur {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--pen);
+}
+
+/* ── les annexes : tes duels en cours, les joueurs ── */
+.annexes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 22px 44px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.annexe {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.lignes {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line-2);
+}
+.lignes > li {
+  border-bottom: 1px solid var(--line);
+}
+.ligne {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  color: var(--ink);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .ligne:hover {
+    background: color-mix(in srgb, var(--ink) 3.5%, transparent);
+  }
+  .ligne:hover .suite {
+    color: var(--ink);
+  }
+}
+.qui {
+  display: grid;
+  min-width: 0;
+}
+.qui b,
+.quiLien b {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.qui small,
+.quiLien small {
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ligne[data-urgent="1"] .qui b::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 7px 1px 0;
+  border-radius: 50%;
+  background: var(--pen);
+  vertical-align: middle;
+}
+.suite {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.ligne[data-urgent="1"] .suite {
+  color: var(--pen);
+}
+.plus {
+  justify-self: start;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.plus:hover {
+  color: var(--ink);
+}
+
+/* tes amis, en lignes compactes sous le champ (le point de présence sur la photo) */
+.amis {
+  display: grid;
+  gap: 6px;
+}
+.ami {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 4px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.ami > b {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+@media (hover: hover) {
+  .ami:hover {
+    background: color-mix(in srgb, var(--ink) 3.5%, transparent);
+  }
+  .ami:hover .suite {
+    color: var(--ink);
+  }
+}
+.cherche {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.loupe {
+  position: absolute;
+  left: 12px;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.champ {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 42px;
+  padding: 0 46px 0 36px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14.5px;
+}
+.champ:focus-visible {
+  outline: 2px solid var(--pal-2, var(--ink));
+  outline-offset: 1px;
+}
+.ok {
+  position: absolute;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+.demande {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 9px 4px;
+}
+.quiLien {
+  display: flex;
+  flex: 1 1 160px;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.quiLien > span {
+  display: grid;
+  min-width: 0;
+}
+
+/* ── arrivée : une fois ── */
+@keyframes entreG {
+  from {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes entreD {
+  from {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes eclair {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes tampon {
+  from {
+    opacity: 0;
+    transform: rotate(-14deg) scale(1.7);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-7deg) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cote[data-cote="moi"],
+  .cote[data-cote="adv"] > .place,
+  .tampon,
+  .arc {
+    animation: none;
+  }
+  .portrait,
+  .cote > .place {
+    transition: none;
+  }
+}
+:global(html[data-rl-motion="off"]) .cote[data-cote="moi"],
+:global(html[data-rl-motion="off"]) .cote[data-cote="adv"] > .place,
+:global(html[data-rl-motion="off"]) .tampon,
+:global(html[data-rl-motion="off"]) .arc {
+  animation: none;
+}
+
+/* ── tablette étroite : un peu moins large ; l'action puis la rangée passent dessous, sur toute la largeur ── */
+@media (max-width: 900px) {
+  .arene {
+    grid-template-columns: minmax(0, 220px) minmax(180px, 230px) minmax(0, 220px);
+    grid-template-areas:
+      "moi vs adv"
+      "moi mise adv"
+      "action action action"
+      "choix choix choix";
+  }
+  .tampon {
+    font-size: 54px;
+  }
+  .vs {
+    width: 120px;
+    height: 92px;
+  }
+  /* centré sur le tampon : 4 + 92 / 2 = 50 px au-dessus du bas de la rangée */
+  .arc {
+    width: calc(100% + 96px);
+    margin-left: -48px;
+    margin-bottom: 10px;
+  }
+  .choix {
+    margin-top: 14px;
+  }
+}
+
+/* ── téléphone : les deux bannières côte à côte, VS sur la jonction, le bouton pleine largeur ── */
+@media (max-width: 680px) {
+  .arene {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "moi adv"
+      "mise mise"
+      "choix choix"
+      "action action";
+    column-gap: 12px;
+    margin-top: -10px;
+    padding-top: 8px;
+  }
+  .arene::before {
+    inset: -20px -4% 0;
+    background:
+      radial-gradient(40% 36% at 26% 26%, color-mix(in srgb, var(--pal-1, #a94d31) 9%, transparent), transparent 70%),
+      radial-gradient(40% 36% at 74% 26%, color-mix(in srgb, var(--pal-3, #a8c0d6) 16%, transparent), transparent 70%);
+  }
+  .cote > .place {
+    rotate: y 6deg;
+  }
+  .cote[data-cote="adv"] > .place {
+    rotate: y -6deg;
+  }
+  /* le VS se pose sur la jonction des deux bannières */
+  .vs {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    align-self: center;
+    justify-self: center;
+    width: auto;
+    height: auto;
+    margin: 0 0 18%;
+    padding: 6px 7px;
+    border-radius: 16px;
+    background: var(--paper);
+    box-shadow: 0 0 0 1px var(--line), 0 10px 18px -10px rgba(0, 0, 0, 0.45);
+  }
+  :global(html[data-theme="nuit"]) .vs {
+    background: #161619;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 10px 18px -10px rgba(0, 0, 0, 0.7);
+  }
+  .arc {
+    display: none;
+  }
+  .tampon {
+    padding: 1px 8px 4px;
+    border-width: 3.5px;
+    border-radius: 10px;
+    font-size: 34px;
+    background: transparent;
+  }
+  .mise {
+    grid-auto-flow: column;
+    gap: 14px;
+    margin-top: 26px;
+    font-size: 12px;
+  }
+  .choix {
+    margin-top: 14px;
+  }
+  .action {
+    margin-top: 14px;
+    padding: 0;
+    justify-items: stretch;
+  }
+  .action > :first-child {
+    width: 100%;
+    justify-content: center;
+  }
+  .hasard {
+    justify-self: center;
+  }
+  .annexes {
+    margin-top: -8px;
+  }
+}

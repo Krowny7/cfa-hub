@@ -225,6 +225,13 @@ export const ILLUSTRATIONS = {
     emplacement: "/calculs : carte « lieu » L'Abaque, 16:10 sur ordinateur, vignette portrait 88×110 px sur téléphone (cadrée sur les deux samouraïs, vers 74 % de la largeur) ; /calculs/[matiere] la reprend en médaillon de bande. /entrainement : moitié gauche du diptyque (Calculs), cadrée 30% 50% pour que les samouraïs restent à droite du texte.",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : la table de travail d'une école d'abaque florentine vers 1500, dans l'univers de Léonard de Vinci. Un abaque à jetons de laiton, des tablettes de cire, un compas, des feuillets couverts de colonnes de chiffres, et à côté un mécanisme de calcul en bois à roues dentées inspiré du Codex Madrid. Une fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, terre de Sienne, brun, ivoire, reflets de laiton, touches de vert sauge). Vue en légère plongée, sujet au centre, haut de l'image plus calme. Sans personnage, sans texte ni chiffres lisibles, sans cadre. Format paysage 16:10, 1600×1000.",
   },
+  "calculs-abaque-porte": {
+    src: "/illustrations/calculs-abaque-porte.webp",
+    alt: "Les anneaux d'une sphère armillaire de bronze sur un plateau de montagne, la nuit ; deux samouraïs assis regardent les sommets",
+    credit: "Recadrage de « L'observatoire des étoiles » (calculs-abaque), peint pour Ranked Lobby (Gemini, 2026-11-02).",
+    emplacement: "La porte de /calculs et /calculs/[matiere] (2026-11-13) : calculs-abaque recadrée (30 à 100 % en largeur, 37 à 86 % en hauteur), les anneaux de la sphère à gauche, les deux samouraïs au milieu, le rocher sombre à droite sous le chiffre-héros. Un fichier recadré plutôt qu'object-view-box, que Safari, Firefox et l'iPhone ignorent.",
+    prompt: "Aucun : recadrage de calculs-abaque (même prompt).",
+  },
   "calculs-poulies": {
     src: "/illustrations/calculs-poulies.webp",
     alt: "Trois poulies reliées par une corde, dessinées par Léonard",
@@ -252,6 +259,13 @@ export const ILLUSTRATIONS = {
     credit: "Image peinte pour Ranked Lobby (Gemini, 2026-11-05), d'après le prompt ci-dessous, avec la peinture des 30 du jour jointe comme référence de décor ; choisie par Théo.",
     emplacement: "/reviser : la carte à droite des one-pagers, environ 820×280 px sur ordinateur.",
     prompt: "Utilise l'image jointe comme référence de décor et d'ambiance uniquement. Peinture à l'huile au couteau, décor de jeu vidéo. Deux samouraïs ninjas pêchent ensemble, tranquillement, assis côte à côte sur une large pierre plate au bord d'une rivière turquoise, de dos, presque entièrement noirs, l'un à capuche et écharpe vermillon, l'autre à chignon, avec une canne en bambou chacun, leurs sabres posés à côté d'eux, un panier en osier et une tasse de thé fumante. Format panoramique 3:1, personnages bien visibles au centre droit, aucun texte.",
+  },
+  "reviser-peche-pecheurs": {
+    src: "/illustrations/reviser-peche-pecheurs.webp",
+    alt: "Deux samouraïs pêchent côte à côte sur une pierre plate, au bord d'une rivière turquoise",
+    credit: "La peinture de la pêche (reviser-peche), recadrée sur les deux pêcheurs (2026-11-13) pour la porte de /revoir.",
+    emplacement: "/revoir : la porte de la sous-page (EnTeteSousPage), environ 640×192 px sur ordinateur ; les pêcheurs au centre gauche, le chiffre-héros en bas à droite.",
+    prompt: "Recadrage de reviser-peche (x 520 à 1792, y 120 à 592 sur 1792×592) : le refaire depuis cette image si elle change.",
   },
   "practice-studiolo": {
     src: "/illustrations/practice-studiolo.webp",

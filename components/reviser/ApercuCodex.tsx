@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { plafonnerAvecReprise, FILET_CARTES_MS } from "@/components/accueil/lobby/plafond";
 import { codexDisponible } from "@/lib/codex/disponible";
 import type { Panneau } from "@/lib/codex/panneau";
 import { lirePanneau, lireXpTotal } from "@/lib/codex/serveur";
 import { levelInfoFromXp } from "@/lib/leveling";
+import { REVOIR_HREF } from "@/lib/revisions";
 import { createClient } from "@/lib/supabase/server";
 import { nombre } from "@/lib/voice";
 import { RV } from "@/lib/voice-reviser";
@@ -55,7 +57,12 @@ export function ContenuApercuCodex({ p, xp }: { p: Panneau; xp: number | null })
         <dl className={s.apercuChiffres}>
           <div>
             <dt>{RV.codexRevoir}</dt>
-            <dd className="t-num">{nombre(p.revoir?.aujourdhui ?? 0)}</dd>
+            {/* le chemin vers /revoir (rangée sous Réviser, qui n'avait pas d'autre lien vers elle) */}
+            <dd className="t-num">
+              <Link href={REVOIR_HREF} className={s.apercuLien} aria-label={`${RV.codexRevoir} · ${nombre(p.revoir?.aujourdhui ?? 0)}`}>
+                {nombre(p.revoir?.aujourdhui ?? 0)}
+              </Link>
+            </dd>
           </div>
           <div>
             <dt>{RV.codexFaitJour}</dt>

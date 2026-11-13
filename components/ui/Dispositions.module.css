@@ -1,560 +1,440 @@
-/* Les quatre autres dispositions de la zone de gauche (components/ui/Dispositions.tsx) : le pavé,
-   l'éventail, la sélection, le tableau noir. Les objets gardent leur papier de jour comme de nuit ; le
-   boîtier du pavé et le tableau gardent des couleurs fixes (--noir devient clair la nuit). */
+/* Le tableau noir des calculs (components/ui/Dispositions.tsx) : ardoise bleu nuit grainée et ses
+   traces d'effacement, cadre d'ébène biseauté à liseré d'or sobre, rebord avec craie, bout de craie
+   jaune et brosse ; tout s'y écrit à la craie. Les matières gardent des couleurs fixes, jour comme
+   nuit ; la nuit, un liseré clair détache le cadre du fond. La mise en page suit la largeur du
+   tableau (container query), pas celle de la fenêtre. */
 
-/* ───────── le pavé ───────── */
-.boitier {
-  display: grid;
-  gap: 16px;
+.tableau {
+  --craie: #eef2f3;
+  --craie-or: #f3d57e;
+  --craie-glace: #9fe0dc;
+  --ardoise-fond: #15213d;
+  container: tableau / inline-size;
+  position: relative;
   width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 26px;
-  background: linear-gradient(180deg, #2a1f16, #1a120b);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 22px 34px -22px rgba(0, 0, 0, 0.7);
-}
-@media (min-width: 900px) {
-  .boitier {
-    gap: 18px;
-    padding: 20px 22px 22px;
-  }
-}
-.ecran {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  min-width: 0;
-  margin: 0;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: #e6e1d3;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
-  color: #1a120b;
-}
-.ecranNum {
-  flex: none;
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 13px;
-  font-weight: 600;
-  opacity: 0.6;
-}
-.ecranNom {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-brand), system-ui, sans-serif;
-  font-size: clamp(18px, 2.2vw, 26px);
-  line-height: 1.1;
-}
-.touches {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-@media (min-width: 900px) {
-  .touches {
-    gap: 14px;
-  }
-}
-.touches li {
-  position: relative;
   min-width: 0;
 }
-.touche {
-  position: relative;
-  display: grid;
-  place-items: center;
-  aspect-ratio: 1 / 0.92;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff, #ece6da);
-  box-shadow:
-    inset 0 -6px 0 rgba(0, 0, 0, 0.16),
-    0 6px 0 -2px #0d0906,
-    0 10px 14px -8px rgba(0, 0, 0, 0.8);
-  color: #4a3120;
-  transition:
-    transform 0.12s ease,
-    box-shadow 0.12s ease;
-}
-a.touche:hover,
-a.touche:focus-visible {
-  transform: translateY(3px);
-  box-shadow:
-    inset 0 -3px 0 rgba(0, 0, 0, 0.16),
-    0 3px 0 -2px #0d0906,
-    0 6px 10px -8px rgba(0, 0, 0, 0.8);
-  outline: none;
-}
-a.touche:active {
-  transform: translateY(5px);
-  box-shadow:
-    inset 0 -1px 0 rgba(0, 0, 0, 0.16),
-    0 1px 0 -1px #0d0906;
-}
-.touche[data-indispo] {
-  opacity: 0.4;
-}
-.toucheNum {
-  position: absolute;
-  top: 7px;
-  left: 9px;
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 10px;
-  font-weight: 600;
-  color: #6b6458;
-}
-.toucheCode {
-  font-family: var(--font-brand), system-ui, sans-serif;
-  font-weight: 400;
-  font-size: clamp(14px, 2.3vw, 26px);
-  line-height: 1;
-}
-/* le voyant de la touche conseillée */
-.touches li[data-conseil] .touche::after {
-  content: "";
-  position: absolute;
-  top: 8px;
-  right: 9px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #d24a32;
-  box-shadow: 0 0 8px 1px rgba(210, 74, 50, 0.7);
-}
-
-/* ───────── l'éventail ───────── */
-.eventail {
-  --carte: 76px;
-  --haut: calc(var(--carte) * 1.4);
-  /* l'écart maximal entre deux cartes, l'ouverture à droite de la carte levée, la rotation, la chute de l'arc */
-  --dxmax: 30px;
-  --ouvre: 34px;
-  --a: 4deg;
-  --dy: 1.6px;
-  container-type: inline-size;
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-.eventail[data-forme="tuile"] {
-  --haut: calc(var(--carte) * 1.2);
-}
-@media (min-width: 640px) {
-  .eventail {
-    --carte: 104px;
-    --dxmax: 50px;
-    --ouvre: 50px;
-    --a: 4.5deg;
-    --dy: 2.4px;
-  }
-}
-@media (min-width: 900px) {
-  .eventail {
-    --carte: 124px;
-    --dxmax: 62px;
-    --ouvre: 62px;
-    --a: 5deg;
-    --dy: 3px;
-  }
-}
-.main {
-  --n: 10;
-  /* --n vient de la main (posé en ligne) : l'écart se calcule ici */
-  --dx: min(var(--dxmax), calc((100cqw - var(--carte) - var(--ouvre) - 12px) / (var(--n) - 1)));
-  position: relative;
-  height: calc(var(--haut) + 40px + 20 * var(--dy) + 24px);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.place {
-  --pousse: calc(var(--ouvre) / -2);
-  position: absolute;
-  top: 40px;
-  left: 50%;
-  width: var(--carte);
-  height: var(--haut);
-  margin-left: calc(var(--carte) / -2);
-  transform: translateX(calc(var(--k) * var(--dx) + var(--pousse))) translateY(calc(var(--k) * var(--k) * var(--dy))) rotate(calc(var(--k) * var(--a)));
-  transition: transform 0.3s cubic-bezier(0.2, 0.85, 0.25, 1.15);
-}
-.place[data-droite] {
-  --pousse: calc(var(--ouvre) / 2);
-}
-.place[data-haut] {
-  transform: translateX(calc(var(--k) * var(--dx) + var(--pousse))) translateY(calc(var(--k) * var(--k) * var(--dy))) rotate(calc(var(--k) * var(--a))) translateY(-30px);
-}
-.carte {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  place-items: center;
-  padding: 9px;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  border-radius: 12px;
-  background: #fbf8f2;
-  color: #4a3120;
-  box-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.08),
-    -6px 14px 22px -14px rgba(0, 0, 0, 0.55);
-  outline: none;
-}
-.carte::after {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(180, 65, 47, 0.35);
-  border-radius: 8px;
-  pointer-events: none;
-}
-.eventail[data-forme="tuile"] .carte {
-  border-radius: 20px;
-  background: linear-gradient(180deg, #ffffff, #ece6da);
-  box-shadow:
-    inset 0 -6px 0 rgba(0, 0, 0, 0.12),
-    -6px 14px 22px -14px rgba(0, 0, 0, 0.55);
-}
-.eventail[data-forme="tuile"] .carte::after {
-  display: none;
-}
-.carte[data-indispo] {
-  background: #ece8e0;
-  color: #9a9286;
-}
-.carte:focus-visible {
-  box-shadow:
-    0 0 0 2px var(--pal-2, var(--ink)),
-    -6px 14px 22px -14px rgba(0, 0, 0, 0.55);
-}
-.coin,
-.coinBas {
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b6458;
-}
-.coin {
-  justify-self: start;
-  display: grid;
-  justify-items: center;
-  line-height: 1.1;
-}
-.coinCode {
-  font-family: var(--font-brand), system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  color: #4a3120;
-}
-@media (min-width: 900px) {
-  .coinCode {
-    font-size: 14px;
-  }
-}
-.coinBas {
-  justify-self: end;
-  transform: rotate(180deg);
-}
-.enseigne {
-  margin-left: 3px;
-  color: #b4412f;
-}
-.code {
-  font-family: var(--font-brand), system-ui, sans-serif;
-  font-weight: 400;
-  font-size: calc(var(--carte) * 0.24);
-  line-height: 1;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-/* le grand code ne se lit que sur la carte levée ; les autres montrent leur coin */
-.place[data-haut] .code {
-  opacity: 1;
-}
-.nom {
-  margin: 0;
-  text-align: center;
-  font-family: var(--font-brand), system-ui, sans-serif;
-  font-size: 24px;
-  line-height: 1.15;
-  color: var(--ink);
-  text-wrap: balance;
-}
-
-/* ───────── la sélection ───────── */
-.niveaux {
-  display: grid;
-  gap: 8px 22px;
-  margin: 0;
-  padding: 0 0 0 18px;
-  list-style: none;
-}
-@media (min-width: 700px) {
-  .niveaux {
-    grid-auto-flow: column;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(var(--lignes), auto);
-  }
-}
-.niveaux li {
-  position: relative;
-  min-width: 0;
-}
-.niveau {
-  position: relative;
-  display: grid;
-  grid-template-columns: 22px 44px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  min-height: 50px;
-  padding: 6px 14px 6px 10px;
-  overflow: hidden;
-  border-radius: 12px;
-  color: var(--ink);
-  transition:
-    transform 0.18s cubic-bezier(0.2, 0.85, 0.25, 1.15),
-    background-color 0.18s ease,
-    color 0.18s ease;
-}
-.niveau[data-indispo] {
-  opacity: 0.42;
-}
-/* le curseur du choix, dans la marge */
-.niveau::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: -18px;
-  border: 6px solid transparent;
-  border-left: 8px solid var(--ink);
-  transform: translateY(-50%);
-  opacity: 0;
-}
-.niveauNum {
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-3);
-}
-.niveauCode {
-  display: grid;
-  place-items: center;
-  height: 34px;
-  border-radius: 9px;
-  background: linear-gradient(180deg, #ffffff, #ece6da);
-  box-shadow:
-    inset 0 -3px 0 rgba(0, 0, 0, 0.14),
-    0 0 0 1px rgba(0, 0, 0, 0.1);
-  color: #4a3120;
-  font-family: var(--font-brand), system-ui, sans-serif;
-  font-weight: 400;
-  font-size: 13px;
-}
-.niveauNom {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 15.5px;
-  font-weight: 650;
-}
-.niveauPct {
-  font-family: var(--font-geist-mono, ui-monospace), monospace;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
-}
-.jauge {
-  position: absolute;
-  left: 10px;
-  bottom: 0;
-  height: 3px;
-  max-width: calc(100% - 20px);
-  border-radius: 2px;
-  background: var(--ink-3);
-}
-/* la ligne choisie : l'aplat (noir le jour, clair la nuit), le curseur dans la marge ; elle suit le
-   survol et le clavier, et revient sur la ligne conseillée au repos */
-.niveaux li[data-choisi] .niveau,
-.niveaux li:hover a.niveau,
-.niveaux a.niveau:focus-visible {
-  transform: translateX(6px);
-  background: var(--ink);
-  color: var(--paper);
-  outline: none;
-}
-.niveaux:hover li[data-choisi]:not(:hover) .niveau,
-.niveaux:focus-within li[data-choisi]:not(:focus-within) .niveau {
-  transform: none;
-  background: transparent;
-  color: var(--ink);
-}
-.niveaux li[data-choisi] .niveau::before,
-.niveaux li:hover a.niveau::before,
-.niveaux a.niveau:focus-visible::before {
-  opacity: 1;
-}
-.niveaux:hover li[data-choisi]:not(:hover) .niveau::before,
-.niveaux:focus-within li[data-choisi]:not(:focus-within) .niveau::before {
-  opacity: 0;
-}
-.niveaux li[data-choisi] .niveauNum,
-.niveaux li[data-choisi] .niveauPct,
-.niveaux li:hover a.niveau .niveauNum,
-.niveaux li:hover a.niveau .niveauPct,
-.niveaux a.niveau:focus-visible .niveauNum,
-.niveaux a.niveau:focus-visible .niveauPct {
-  color: inherit;
-  opacity: 0.7;
-}
-.niveaux li[data-choisi] .jauge,
-.niveaux li:hover a.niveau .jauge,
-.niveaux a.niveau:focus-visible .jauge {
-  background: var(--paper);
-}
-.niveaux:hover li[data-choisi]:not(:hover) .niveauNum,
-.niveaux:hover li[data-choisi]:not(:hover) .niveauPct {
-  color: var(--ink-3);
-  opacity: 1;
-}
-.niveaux:hover li[data-choisi]:not(:hover) .jauge {
-  background: var(--ink-3);
-}
-
-/* ───────── le tableau noir ───────── */
 .defs {
   position: absolute;
   width: 0;
   height: 0;
   overflow: hidden;
 }
-/* la mise en page suit la largeur du tableau (la zone de gauche se partage dès 980 px de fenêtre) */
-.tableau {
-  container: tableau / inline-size;
-  width: 100%;
-  margin: 0 auto;
-  padding: 12px 12px 0;
-  border-radius: 14px;
+
+/* le cadre : quatre faces taillées à 45° (bordures translucides sur l'ébène), le liseré d'or au bord intérieur */
+.cadre {
+  position: relative;
+  border: 10px solid;
+  border-color: rgba(255, 255, 255, 0.17) rgba(0, 0, 0, 0.34) rgba(0, 0, 0, 0.58) rgba(255, 255, 255, 0.085);
+  border-radius: 8px;
   background:
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 9px),
-    linear-gradient(180deg, #8a5f3b, #66432a);
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 5px),
+    linear-gradient(160deg, #2c1e12 0%, #1a120b 44%, #100a05 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.3),
-    0 20px 32px -22px rgba(0, 0, 0, 0.7);
+    0 0 0 1px rgba(0, 0, 0, 0.55),
+    0 34px 50px -34px rgba(0, 0, 0, 0.85),
+    0 12px 22px -16px rgba(0, 0, 0, 0.5);
 }
+.cadre::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px rgba(214, 178, 110, 0.2);
+  pointer-events: none;
+}
+@container tableau (min-width: 600px) {
+  .cadre {
+    border-width: 17px;
+    border-radius: 10px;
+  }
+}
+
+/* l'ardoise, en retrait (sa lèvre éclairée par en bas) : le grain, les traces d'effacement, le bleu nuit */
 .ardoise {
   position: relative;
-  padding: 18px 16px 16px 22px;
-  border-radius: 5px;
+  padding: 20px 14px 16px 12px;
+  border: 3px solid;
+  border-color: rgba(0, 0, 0, 0.72) rgba(0, 0, 0, 0.5) rgba(255, 255, 255, 0.1) rgba(0, 0, 0, 0.6);
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.55 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse 42% 30% at 22% 32%, rgba(255, 255, 255, 0.07), transparent 70%),
-    radial-gradient(ellipse 38% 26% at 78% 72%, rgba(255, 255, 255, 0.05), transparent 70%),
-    linear-gradient(180deg, #252e29, #1b221e);
+    linear-gradient(104deg, transparent 8%, rgba(255, 255, 255, 0.035) 14%, transparent 26%),
+    linear-gradient(97deg, transparent 52%, rgba(255, 255, 255, 0.03) 60%, transparent 71%),
+    radial-gradient(ellipse 34% 22% at 18% 26%, rgba(255, 255, 255, 0.065), transparent 70%),
+    radial-gradient(ellipse 30% 18% at 74% 40%, rgba(255, 255, 255, 0.04), transparent 70%),
+    radial-gradient(ellipse 40% 14% at 62% 74%, rgba(255, 255, 255, 0.045), transparent 70%),
+    radial-gradient(ellipse 60% 12% at 40% 100%, rgba(255, 255, 255, 0.07), transparent 75%),
+    linear-gradient(180deg, #1a2843 0%, #132036 55%, #0e182b 100%);
+  background-clip: padding-box;
   box-shadow:
-    inset 0 0 0 2px rgba(0, 0, 0, 0.35),
-    inset 0 8px 20px rgba(0, 0, 0, 0.45);
+    inset 0 12px 24px rgba(0, 0, 0, 0.5),
+    inset 0 0 60px rgba(0, 0, 0, 0.28);
 }
 @container tableau (min-width: 600px) {
   .ardoise {
-    padding: 22px 28px 20px 34px;
+    padding: 26px 30px 22px 28px;
   }
 }
-.craie,
-.basTableau {
-  /* le grain de la craie */
+@container tableau (min-width: 900px) {
+  .ardoise {
+    padding: 30px 46px 24px 44px;
+  }
+}
+
+/* le grain de la craie : tout ce qui s'écrit */
+.craie {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2 1.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2 1.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   -webkit-mask-size: 140px;
   mask-size: 140px;
+  --trait: var(--craie);
+  color: var(--craie);
+  font-family: var(--font-plume), var(--font-geist), cursive;
+  font-weight: 700;
 }
-.craie {
+
+/* ───────── les listes ───────── */
+/* sans sections : une colonne, deux listes côte à côte quand le tableau a la place */
+.colonnes {
   display: grid;
-  gap: 2px 34px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 3px 64px;
+  /* de l'air pour la gélule de la pièce entourée (le masque du grain coupe ce qui déborde) */
+  padding: 12px 0 6px;
+}
+@container tableau (min-width: 880px) {
+  .colonnes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* avec sections : à trois, la première et la troisième à gauche, la deuxième à droite ; à trois, les
+   deux colonnes n'ouvrent qu'à 1060 px de tableau (en dessous, la colonne du nom tombait à 150 px et
+   les noms s'écrivaient sur cinq lignes) : entre 560 et 1060 px, une colonne, la ligne sur quatre cases */
+.listes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 20px 64px;
+}
+@container tableau (min-width: 880px) {
+  .listes[data-n="2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container tableau (min-width: 1060px) {
+  .listes[data-n="3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "a b"
+      "c b";
+    row-gap: 26px;
+  }
+  .listes[data-n="3"] .section[data-zone="0"] {
+    grid-area: a;
+  }
+  .listes[data-n="3"] .section[data-zone="1"] {
+    grid-area: b;
+  }
+  .listes[data-n="3"] .section[data-zone="2"] {
+    grid-area: c;
+  }
+}
+.section {
+  min-width: 0;
+}
+.liste {
+  display: grid;
+  gap: 3px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-@container tableau (min-width: 600px) {
-  .craie {
-    grid-auto-flow: column;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(var(--lignes), auto);
-  }
-}
-.craie li {
+.colonnes li,
+.liste li {
   min-width: 0;
 }
-.ecrit {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto auto;
-  align-items: baseline;
-  gap: 8px;
-  padding: 5px 6px;
-  color: #f2efe6;
-  font-family: var(--font-plume), var(--font-geist), cursive;
+
+/* les titres soulignés d'un trait de craie */
+.titre {
+  position: relative;
+  display: inline-block;
+  margin: 0 0 10px 6px;
+  color: var(--craie);
+  font-family: inherit;
+  font-size: 27px;
   font-weight: 700;
-  font-size: 23px;
-  line-height: 1.3;
+  line-height: 1.1;
+  letter-spacing: 0.005em;
   text-shadow:
-    0 0 1px rgba(242, 239, 230, 0.6),
-    0 0 8px rgba(242, 239, 230, 0.14);
-  opacity: 0.86;
-  outline: none;
-  transition: opacity 0.2s ease;
+    0 0 1px rgba(238, 242, 243, 0.6),
+    0 0 9px rgba(238, 242, 243, 0.16);
+  opacity: 0.92;
 }
-@container tableau (min-width: 660px) {
-  .ecrit {
-    font-size: 26px;
+@container tableau (min-width: 600px) {
+  .titre {
+    font-size: 31px;
   }
+}
+.titre[data-or] {
+  color: var(--craie-or);
+  text-shadow:
+    0 0 1px rgba(243, 213, 126, 0.6),
+    0 0 9px rgba(243, 213, 126, 0.18);
+}
+.titreTrait {
+  position: absolute;
+  left: -5px;
+  bottom: -5px;
+  width: calc(100% + 14px);
+  height: 9px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6px;
+  stroke-linecap: round;
+}
+
+/* une ligne écrite : puce, nom, mention (pastilles ou bâtons), précision ; sur téléphone, la mention
+   et la précision passent sous le nom */
+.ecrit {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "puce nom nom"
+    ". mention pct";
+  align-items: baseline;
+  gap: 6px 8px;
+  padding: 6px 4px;
+  color: var(--craie);
+  font-size: 22px;
+  line-height: 1.06;
+  text-shadow:
+    0 0 1px rgba(238, 242, 243, 0.6),
+    0 0 8px rgba(238, 242, 243, 0.14);
+  opacity: 0.88;
+  outline: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.12s ease;
+}
+@container tableau (min-width: 560px) {
+  .ecrit {
+    grid-template-columns: 28px minmax(0, 1fr) auto 62px;
+    grid-template-areas: "puce nom mention pct";
+    column-gap: 12px;
+    padding: 6px;
+    font-size: 25px;
+  }
+}
+@container tableau (min-width: 1000px) {
+  .colonnes .ecrit {
+    font-size: 27px;
+  }
+}
+.ecritNum {
+  grid-area: puce;
+  font-size: 0.78em;
+  opacity: 0.72;
+}
+.ecritNom {
+  grid-area: nom;
+  position: relative;
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+  text-wrap: balance;
+}
+.insec {
+  white-space: nowrap;
+}
+/* le nom entouré d'un calcul (avec sections) : une mesure courte, pour que la gélule épouse le texte au
+   lieu de s'étirer sur toute la colonne */
+.listes li[data-conseil] .ecritNom {
+  max-width: min(100%, 21ch);
+}
+/* la mention se pose sur la ligne de base de la PREMIÈRE ligne du nom (celle de la lettre de la
+   pastille ; les bâtons, sans texte, se posent sur la ligne d'écriture) */
+.ecritMention {
+  grid-area: mention;
+  display: flex;
+  align-items: center;
+  align-self: baseline;
+  min-height: 1em;
+}
+.ecritPct {
+  grid-area: pct;
+  justify-self: end;
+  font-size: 0.86em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+li[data-or] .ecrit {
+  --trait: var(--craie-or);
+  color: var(--craie-or);
+  text-shadow:
+    0 0 1px rgba(243, 213, 126, 0.6),
+    0 0 8px rgba(243, 213, 126, 0.16);
+}
+/* pas encore mesurée : la ligne garde sa place, à demi effacée ; indisponible : presque effacée */
+li[data-vierge] .ecrit {
+  opacity: 0.5;
+}
+li[data-vierge] .ecritPct {
+  font-size: 0.7em;
+}
+/* la pièce conseillée reste écrite pleinement, même pas encore mesurée : c'est ce qu'on voit d'abord */
+li[data-conseil] .ecrit {
+  opacity: 1;
+}
+li .ecrit[data-indispo] {
+  opacity: 0.26;
+  filter: blur(0.5px);
 }
 a.ecrit:hover,
 a.ecrit:focus-visible {
   opacity: 1;
 }
-.ecrit[data-indispo] {
-  opacity: 0.3;
-  filter: blur(0.5px);
+a.ecrit:active {
+  transform: translateY(2px);
 }
-.ecritNum {
-  font-size: 0.8em;
-  opacity: 0.7;
+
+/* la pièce conseillée : entourée d'une gélule de craie glace, sa raison dessous en petite craie */
+.entoure,
+.souligne {
+  position: absolute;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
 }
-/* un nom long passe à la ligne, comme on écrit au tableau */
-.ecritNom {
-  position: relative;
-  justify-self: start;
-  min-width: 0;
-  max-width: 100%;
-  line-height: 1.08;
+.entoure {
+  inset: -12px -10px -10px -18px;
+  width: calc(100% + 28px);
+  height: calc(100% + 22px);
+  stroke: var(--craie-glace);
+  stroke-width: 2.6px;
+  filter: drop-shadow(0 0 3px rgba(159, 224, 220, 0.35));
 }
-.ecritPct {
-  font-size: 0.85em;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.85;
+@container tableau (min-width: 560px) {
+  .entoure {
+    inset: -13px -10px -11px -17px;
+    width: calc(100% + 27px);
+    height: calc(100% + 24px);
+  }
 }
-.ecritMention {
-  display: flex;
-  align-items: center;
-  min-height: 1em;
+.raison {
+  grid-column: 2 / -1;
+  grid-row: 3;
+  margin: 12px 0 4px;
+  color: var(--craie-glace);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-shadow: 0 0 1px rgba(159, 224, 220, 0.5);
 }
-/* les bâtons de craie, barrés par cinq */
+@container tableau (min-width: 560px) {
+  .raison {
+    grid-row: 2;
+    margin-top: 17px;
+    font-size: 19px;
+  }
+}
+/* au survol (ou au clavier), un trait de craie souligne */
+.souligne {
+  left: -4px;
+  bottom: -4px;
+  width: calc(100% + 10px);
+  height: 9px;
+  stroke: currentColor;
+  stroke-width: 2.4px;
+  clip-path: inset(-6px 100% -6px -6px);
+  transition: clip-path 0.35s ease-out;
+}
+a.ecrit:hover .souligne,
+a.ecrit:focus-visible .souligne,
+a.barre:hover .souligne,
+a.barre:focus-visible .souligne {
+  clip-path: inset(-6px -6px -6px -6px);
+}
+
+/* ───────── les pastilles (F · M · D) : pleine = tenu, entourée = entamé, à peine tracée = pas encore ───────── */
+.pastilles {
+  display: inline-flex;
+  gap: 5px;
+}
+.pastille {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: none;
+}
+@container tableau (min-width: 560px) {
+  .pastille {
+    width: 25px;
+    height: 25px;
+    font-size: 12px;
+  }
+}
+.pastille[data-etat="plein"] {
+  background: var(--trait);
+  color: var(--ardoise-fond);
+  box-shadow: 0 0 7px rgba(238, 242, 243, 0.22);
+}
+.pastille[data-etat="cercle"] {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+.pastille[data-etat="vide"] {
+  opacity: 0.36;
+}
+/* la pastille gagnée depuis la dernière visite se tamponne, une fois */
+/* (l'image 0 % est l'état d'avant, entamé : pendant le délai, la pastille reste comme à la dernière
+   visite au lieu de disparaître) */
+.pastille[data-neuf] {
+  animation: tampon 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.7s both;
+}
+@keyframes tampon {
+  0% {
+    background-color: transparent;
+    color: var(--trait);
+    box-shadow: inset 0 0 0 2px currentColor;
+    transform: none;
+    opacity: 1;
+  }
+  1% {
+    background-color: var(--trait);
+    color: var(--ardoise-fond);
+    box-shadow: 0 0 7px rgba(238, 242, 243, 0.22);
+    transform: scale(2.1) rotate(-16deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.9) rotate(3deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ───────── les bâtons de craie, barrés par cinq ───────── */
 .batons {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  height: 0.8em;
+  gap: 10px;
+  height: 0.82em;
 }
 .groupe {
   position: relative;
@@ -567,8 +447,8 @@ a.ecrit:focus-visible {
   width: 2.6px;
   height: 100%;
   border-radius: 2px;
-  background: #f2efe6;
-  box-shadow: 0 0 3px rgba(242, 239, 230, 0.3);
+  background: var(--trait);
+  box-shadow: 0 0 3px rgba(238, 242, 243, 0.3);
   transform: rotate(4deg);
 }
 .groupe i:nth-child(2) {
@@ -590,211 +470,429 @@ a.ecrit:focus-visible {
   right: -5px;
   height: 2.6px;
   border-radius: 2px;
-  background: #f2efe6;
+  background: var(--trait);
   transform: rotate(-22deg);
 }
-/* les sections du tableau : des titres soulignés, deux colonnes équilibrées */
-.craie[data-sections] {
-  display: block;
+/* le bâton gagné depuis la dernière visite se trace, une fois (de bas en haut ; la barre, de gauche à droite) */
+.groupe i[data-neuf] {
+  animation: trace 0.42s cubic-bezier(0.3, 0.7, 0.3, 1) 0.15s both;
 }
-@container tableau (min-width: 600px) {
-  .craie[data-sections] {
-    column-count: 2;
-    column-gap: 56px;
+.groupe[data-neuf]::after {
+  animation: barre 0.4s cubic-bezier(0.3, 0.7, 0.3, 1) 0.5s both;
+}
+@keyframes trace {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
-/* une section peut passer d'une colonne à l'autre (les colonnes s'équilibrent) ; une ligne, jamais */
-.section {
-  margin-bottom: 14px;
+@keyframes barre {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }
-.section:last-child {
-  margin-bottom: 0;
+
+/* ───────── au bas du tableau : le graphique, barres et seuil tracés à la craie ───────── */
+.filet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 8px;
+  overflow: visible;
+  fill: none;
+  stroke: var(--craie);
+  stroke-width: 1.6px;
+  stroke-linecap: round;
+  stroke-dasharray: 2 9;
+  opacity: 0.38;
 }
-.sectionTitre {
-  display: inline-block;
-  margin: 0 0 4px 6px;
-  padding-bottom: 2px;
-  border-bottom: 2px solid rgba(242, 239, 230, 0.7);
-  color: #f2efe6;
-  font-family: var(--font-plume), var(--font-geist), cursive;
-  font-weight: 700;
-  font-size: 24px;
-  line-height: 1.2;
-  opacity: 0.85;
-  break-after: avoid;
+.graphe {
+  --cols: minmax(0, 1fr) 46px;
+  position: relative;
+  margin-top: 24px;
+  padding-top: 22px;
 }
-.sectionListe {
+@container tableau (min-width: 640px) {
+  .graphe {
+    --cols: minmax(150px, 31%) minmax(0, 1fr) 64px;
+    margin-top: 30px;
+    padding-top: 26px;
+  }
+}
+.grapheTete,
+.barre,
+.axe {
   display: grid;
-  gap: 2px;
+  grid-template-columns: var(--cols);
+  column-gap: 10px;
+}
+@container tableau (min-width: 640px) {
+  .grapheTete,
+  .barre,
+  .axe {
+    column-gap: 22px;
+  }
+}
+/* sur téléphone, le nom passe au-dessus de sa barre : les colonnes vides de la tête et de l'axe s'effacent */
+.grapheTete > span:first-child,
+.axe > span:first-child {
+  display: none;
+}
+@container tableau (min-width: 640px) {
+  .grapheTete > span:first-child,
+  .axe > span:first-child {
+    display: block;
+  }
+}
+.grapheTete {
+  height: 30px;
+}
+.grapheRepere {
+  position: relative;
+}
+.seuilNom {
+  position: absolute;
+  top: 2px;
+  left: var(--seuil);
+  transform: translateX(-50%);
+  color: var(--craie-glace);
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+@container tableau (min-width: 640px) {
+  .seuilNom {
+    font-size: 19px;
+  }
+}
+.barres {
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.sectionListe li {
-  break-inside: avoid;
-}
-@container tableau (min-width: 900px) {
-  .craie[data-sections] .ecrit {
-    font-size: 26px;
-  }
-}
-/* la craie jaune (le Top 5) */
-.craie li[data-or] .ecrit {
-  color: #f1d27a;
-  text-shadow:
-    0 0 1px rgba(241, 210, 122, 0.6),
-    0 0 8px rgba(241, 210, 122, 0.14);
-}
-/* les pastilles à la craie (F · M · D) */
-.pastilles {
-  display: inline-flex;
-  gap: 5px;
-}
-.pastille {
-  display: grid;
-  place-items: center;
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
-  font-family: var(--font-geist), system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1;
-}
-.pastille[data-etat="plein"] {
-  background: #f7f4ec;
-  color: #1b221e;
-  text-shadow: none;
-}
-.pastille[data-etat="cercle"] {
-  box-shadow: inset 0 0 0 2px rgba(242, 239, 230, 0.85);
-}
-.pastille[data-etat="vide"] {
-  opacity: 0.35;
-}
-/* le pied du tableau : la légende, le lien écrit à la craie */
-.basTableau {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px 20px;
-  margin-top: 12px;
-  padding: 8px 6px 0;
-  border-top: 1px dashed rgba(242, 239, 230, 0.18);
-  color: #f2efe6;
-  font-family: var(--font-plume), var(--font-geist), cursive;
-  font-weight: 700;
+.barre {
+  grid-template-rows: auto auto;
+  align-items: center;
+  row-gap: 3px;
+  padding: 5px 0 6px;
+  color: var(--craie);
   font-size: 19px;
-}
-.legendeCraie {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  opacity: 0.6;
-}
-.lienCraie {
-  margin-left: auto;
-  color: inherit;
+  line-height: 1.05;
+  text-shadow: 0 0 1px rgba(238, 242, 243, 0.55);
   opacity: 0.86;
-  text-shadow: 0 0 1px rgba(242, 239, 230, 0.6);
-  text-decoration: underline 2px transparent;
-  text-underline-offset: 5px;
+  outline: none;
   transition:
     opacity 0.2s ease,
-    text-decoration-color 0.2s ease;
+    transform 0.12s ease;
 }
-.lienCraie:hover,
-.lienCraie:focus-visible {
-  opacity: 1;
-  text-decoration-color: rgba(242, 239, 230, 0.8);
-  outline: none;
-}
-@container tableau (min-width: 660px) {
-  .basTableau {
+@container tableau (min-width: 640px) {
+  .barre {
+    grid-template-rows: auto;
+    padding: 5px 0;
     font-size: 21px;
   }
 }
-/* toute la largeur du cadre : la craie s'écrit plus grand */
-@container tableau (min-width: 900px) {
-  .ecrit {
-    font-size: 29px;
-  }
-  .ardoise {
-    padding: 26px 40px 20px 44px;
-  }
-  .craie {
-    column-gap: 70px;
+a.barre:hover,
+a.barre:focus-visible {
+  opacity: 1;
+}
+a.barre:active {
+  transform: translateY(2px);
+}
+.barreNom {
+  position: relative;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: start;
+  text-wrap: balance;
+}
+@container tableau (min-width: 640px) {
+  .barreNom {
+    grid-column: 1;
+    justify-self: end;
+    text-align: right;
   }
 }
-.entoure,
-.souligne {
+.piste {
+  position: relative;
+  grid-column: 1;
+  grid-row: 2;
+  height: 18px;
+}
+@container tableau (min-width: 640px) {
+  .piste {
+    grid-column: 2;
+    grid-row: 1;
+    height: 22px;
+  }
+}
+/* l'axe des zéros et le seuil se tracent sur chaque piste : une ligne continue d'une barre à l'autre */
+.piste::before {
+  content: "";
   position: absolute;
-  pointer-events: none;
+  top: -6px;
+  bottom: -7px;
+  left: -1px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--craie);
+  opacity: 0.55;
+}
+.piste::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  bottom: -7px;
+  left: var(--seuil);
+  border-left: 2.5px dashed var(--craie-glace);
+  opacity: 0.9;
+}
+/* la barre : contour de craie et hachures, comme remplie à la main */
+.piste i {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: var(--p);
+  border: 2px solid currentColor;
+  border-left: 0;
+  border-radius: 1px 6px 3px 1px / 1px 3px 6px 1px;
+  background: repeating-linear-gradient(118deg, currentColor 0 1.6px, transparent 1.6px 6px);
+  opacity: 0.82;
+  transition: opacity 0.2s ease;
+}
+a.barre:hover .piste i,
+a.barre:focus-visible .piste i {
+  opacity: 1;
+}
+.barrePct {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  font-size: 0.92em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@container tableau (min-width: 640px) {
+  .barrePct {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+.axe {
+  height: 26px;
+  margin-top: 6px;
+}
+.axe em {
+  position: absolute;
+  top: 2px;
+  transform: translateX(-50%);
+  font-style: normal;
+  font-size: 16px;
+  opacity: 0.5;
+  white-space: nowrap;
+}
+.axe em:first-child {
+  transform: none;
+}
+.axe em:last-child {
+  transform: translateX(-80%);
+}
+.reste {
+  margin: 6px 0 0;
+  font-size: 18px;
+  opacity: 0.6;
+}
+
+/* ───────── le pied : la légende, et l'action écrite à la craie avec sa flèche ───────── */
+.pied {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 28px;
+  margin-top: 22px;
+  padding: 18px 2px 0;
+}
+@container tableau (min-width: 600px) {
+  .pied {
+    padding: 20px 6px 0;
+  }
+}
+.legende {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 16.5px;
+  opacity: 0.58;
+}
+@container tableau (min-width: 600px) {
+  .legende {
+    font-size: 19px;
+  }
+}
+.legende .pastille {
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+}
+.cle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.action {
+  position: relative;
+  margin-left: auto;
+  padding: 2px 58px 8px 4px;
+  color: var(--craie);
+  font-size: 30px;
+  line-height: 1;
+  text-shadow:
+    0 0 1px rgba(238, 242, 243, 0.7),
+    0 0 10px rgba(238, 242, 243, 0.18);
+  outline: none;
+  transition: transform 0.12s ease;
+}
+@container tableau (min-width: 600px) {
+  .action {
+    padding-right: 70px;
+    font-size: 34px;
+  }
+}
+.fleche {
+  position: absolute;
+  left: 2px;
+  bottom: -6px;
+  width: calc(100% - 2px);
+  height: 18px;
   overflow: visible;
   fill: none;
-  stroke: #f2efe6;
+  stroke: var(--craie);
+  stroke-width: 2.6px;
   stroke-linecap: round;
   stroke-linejoin: round;
+  transform-origin: left center;
+  transition: transform 0.25s ease;
 }
-/* la matière conseillée, entourée */
-.entoure {
-  inset: -9px -20px -7px -16px;
-  width: calc(100% + 36px);
-  height: calc(100% + 16px);
-  stroke-width: 2.4px;
+.action:hover .fleche,
+.action:focus-visible .fleche {
+  transform: scaleX(1.06);
 }
-/* le trait de craie au survol */
-.souligne {
-  left: -4px;
-  right: -6px;
-  bottom: -3px;
-  width: calc(100% + 10px);
-  height: 9px;
-  stroke-width: 2.6px;
-  clip-path: inset(-6px 100% -6px -6px);
-  transition: clip-path 0.35s ease-out;
+.action:focus-visible {
+  text-shadow:
+    0 0 1px rgba(238, 242, 243, 0.9),
+    0 0 14px rgba(159, 224, 220, 0.6);
 }
-a.ecrit:hover .souligne,
-a.ecrit:focus-visible .souligne {
-  clip-path: inset(-6px -6px -6px -6px);
+.action:active {
+  transform: translateY(2px);
 }
-/* le rebord, sa craie et sa brosse */
+
+/* ───────── le rebord d'ébène, sa craie blanche, son bout de craie jaune et sa brosse ───────── */
 .rebord {
   position: relative;
   height: 12px;
-  margin: 8px -12px 0;
-  border-radius: 0 0 14px 14px;
-  background: linear-gradient(180deg, #a2774f, #6f4a2d);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  margin: -3px -7px 0;
+  border-radius: 3px 3px 10px 10px;
+  background: linear-gradient(180deg, #3a291b 0%, #1d140c 45%, #0e0905 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.4),
+    0 14px 18px -12px rgba(0, 0, 0, 0.7);
 }
-.baton {
-  position: absolute;
-  bottom: 9px;
-  left: 16%;
-  width: 44px;
-  height: 8px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #ffffff, #dcd7cb);
-  transform: rotate(-3deg);
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
+@container tableau (min-width: 600px) {
+  .rebord {
+    height: 15px;
+    margin: -4px -12px 0;
+  }
 }
+.baton,
+.bout,
 .brosse {
   position: absolute;
-  bottom: 9px;
-  right: 12%;
-  width: 76px;
-  height: 18px;
-  border-radius: 4px 4px 2px 2px;
-  background: linear-gradient(180deg, #b48b5a 0 52%, #3b3a38 52%);
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+  display: block;
+}
+.baton {
+  bottom: 8px;
+  left: 13%;
+  width: 38px;
+  height: 7px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #ffffff, #d8dde1);
+  transform: rotate(-3deg);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4);
+}
+.bout {
+  bottom: 8px;
+  left: calc(13% + 50px);
+  width: 17px;
+  height: 7px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fbefc4, #d9c58c);
+  transform: rotate(8deg);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4);
+}
+.brosse {
+  bottom: 8px;
+  right: 11%;
+  width: 62px;
+  height: 16px;
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, #2e2014 0 50%, #50565e 50% 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 2px 3px rgba(0, 0, 0, 0.45);
+}
+@container tableau (min-width: 600px) {
+  .baton {
+    bottom: 11px;
+    width: 48px;
+    height: 8px;
+  }
+  .bout {
+    bottom: 11px;
+    left: calc(13% + 62px);
+  }
+  .brosse {
+    bottom: 11px;
+    width: 80px;
+    height: 19px;
+  }
+}
+
+/* nuit : les matières restent les mêmes ; un liseré clair détache le cadre et le rebord du fond sombre */
+:global(html[data-theme="nuit"]) .cadre {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.11),
+    0 34px 50px -34px #000;
+}
+:global(html[data-theme="nuit"]) .rebord {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.07);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .touche,
-  .place,
-  .niveau,
-  .souligne {
+  .pastille[data-neuf],
+  .groupe i[data-neuf],
+  .groupe[data-neuf]::after {
+    animation: none;
+  }
+  .ecrit,
+  .barre,
+  .souligne,
+  .fleche,
+  .action {
     transition: none;
   }
 }

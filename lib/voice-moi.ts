@@ -77,13 +77,6 @@ export const SOUS_MOI = {
   },
   historique: "Ton historique",
   reglages: { compte: "Ton compte", examen: "Ton examen" },
-  revoir: {
-    /** la zone de gauche de l'écran de départ (le titre de la page dit déjà « À revoir ») */
-    zone: "À revoir aujourd'hui",
-    dues: "Dues aujourd'hui",
-    /** sous le chiffre des dues : « questions · demain 22 » */
-    legende: (n: number, demain: number) => [`question${s(n)}`, demain > 0 ? `demain${NBSP}${nombre(demain)}` : null].filter(Boolean).join(" · "),
-  },
 };
 
 // ── La page Moi « La synthèse » (maquette D) ──────────────────────────────

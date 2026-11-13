@@ -91,7 +91,7 @@ export function RechercheJoueur() {
   const montrer = ouvert && q.trim().length >= 2 && !(cherche && res.length === 0);
 
   return (
-    <form ref={zone} action="/people" method="get" role="search" className={s.recherche}>
+    <form ref={zone} action="/duel" method="get" role="search" className={s.recherche}>
       <input
         ref={champ}
         name="q"

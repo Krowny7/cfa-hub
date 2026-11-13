@@ -26,6 +26,6 @@ export async function actionAmi(autre: string, op: Operation): Promise<AmiResult
   }
   const relation = (await relationAvec(supabase, moi, autre)) ?? "aucune";
   revalidatePath(`/people/${autre}`);
-  revalidatePath("/people");
+  revalidatePath("/duel");
   return { ok: true, relation };
 }

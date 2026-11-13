@@ -194,11 +194,8 @@ export async function repondreRevoir(supabase: SupabaseClient, serieId: string, 
 /** Les textes de /revoir. */
 export const REVOIR = {
   nom: "À revoir",
-  promesse: "Tes ratures sèches d'abord, puis ce qu'il est temps de te rappeler. 25 au plus par jour.",
   enTete: (i: number, n: number) => `À revoir · ${i}/${n}`,
   question: (i: number, n: number, matiere: string) => `Question ${i} sur ${n} · ${matiere}`,
-  lancer: (n: number) => `Revoir ${nombre(n)} question${n > 1 ? "s" : ""}`,
-  reprendre: (n: number) => `Reprendre ma séance · ${nombre(n)} à faire`,
   justes: "justes",
   xp: (n: number) => `+${nombre(n)} XP`,
   depart: (r: Pick<Revisions, "aujourdhui" | "ratures" | "rappels">) =>
@@ -222,15 +219,12 @@ export const REVOIR = {
     [`${nombre(revues)} revue${revues > 1 ? "s" : ""}`, `${nombre(justes)} juste${justes > 1 ? "s" : ""}`, demain !== null && demain > 0 ? `demain${NBSP}${nombre(demain)}` : null].filter(Boolean).join(" · "),
   assez: "C'est assez pour aujourd'hui",
   rendue: "Séance rendue",
-  videTitre: "Rien à revoir pour l'instant.",
   videTexte: (aujourdhui: number, demain: number) =>
     aujourdhui > 0
       ? `${nombre(aujourdhui)} seulement : trop peu pour une séance, garde-les pour demain.${demain > 0 ? ` Demain, ${nombre(demain)}.` : ""}`
       : demain > 0
         ? `Tout est à jour. Demain, ${nombre(demain)} à revoir.`
         : "Tout est à jour. Les prochaines reviendront d'elles-mêmes.",
-  soonTitre: "« À revoir » arrive bientôt.",
-  soonTexte: "En attendant, tes ratures t'attendent dans le carnet.",
   miseAuPropre: "Mettre au propre",
   erreurTitre: "La séance ne s'ouvre pas.",
   reessayer: "Réessayer",

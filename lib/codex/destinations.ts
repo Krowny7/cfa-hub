@@ -314,7 +314,7 @@ function cibleCompteur(o: Extract<Objectif, { k: "compteur" }>, q: Quete, params
     case "palier_atteint": return DUEL;
     case "jour_encre": return { ...CINQ, duree: 10 };
     case "question_marquee": return CINQ;
-    case "ami_ajoute": return { href: "/people", duree: 3, outil: "classement" };
+    case "ami_ajoute": return { href: "/duel", duree: 3, outil: "classement" };
     // une séance juste (V3 §8.5) : ce qui coince, sur du neuf ou du dû
     case "seance_juste": return coince(ctx, 20);
     // le débrief : la liste des blancs ; codex_mesures_v3 n'en rend que le compte, pas la référence
@@ -372,7 +372,7 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
       return DUEL;
     case "jour_j_fixe": return { href: "/moi?onglet=reglages#objectif", duree: 1, outil: "profil" };
     case "visite_vue": return { href: "/dashboard?visite=1", duree: 3, outil: "codex" };
-    case "amis": return { href: "/people", duree: 3, outil: "classement" };
+    case "amis": return { href: "/duel", duree: 3, outil: "classement" };
     case "sceau": {
       const cle = f?.cle;
       if (!cle) return null;

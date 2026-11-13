@@ -19,7 +19,7 @@ import type { AmisLobby } from "./types";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 const ID = "lobby-amis-titre";
-const LISTE = "/people?view=amis";
+const LISTE = "/duel";
 
 export function TesAmis({ amis, seule, className }: { amis: AmisLobby; seule?: boolean; className?: string }) {
   const aucun = amis.total <= 0;
@@ -44,7 +44,7 @@ export function TesAmis({ amis, seule, className }: { amis: AmisLobby; seule?: b
               {PARC.amis.demandes(amis.demandes)}
             </Link>
           )}
-          <Link href="/people" className={cx(l.lien, p.basLien)}>
+          <Link href="/duel" className={cx(l.lien, p.basLien)}>
             {PARC.amis.trouver} →
           </Link>
         </>

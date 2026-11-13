@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { ArrowRight, Check, RotateCcw, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
@@ -13,10 +12,10 @@ import { duelTopicLabel } from "@/lib/duels";
 import { finishEclair, type EclairFinish } from "@/lib/eclair";
 import { verdictCopie } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
-import { Chiffre } from "@/components/ui/Decors";
-import { CadreZones, ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
-import { nombre } from "@/lib/voice";
-import { SOUS_MOI } from "@/lib/voice-moi";
+import { ActionContour, ActionEncre, ColonneSeance, EnTeteSousPage, SousPage } from "@/components/ui/SousPage";
+import { Compte, NotePile, TableRevoir, previsionRevoir, type JourVue, type MatiereDue } from "@/components/revoir/Pile";
+import { NBSP, nombre } from "@/lib/voice";
+import { PILE } from "@/lib/voice-revoir";
 import {
   REVOIR,
   lancerRevoir,
@@ -35,15 +34,45 @@ import {
 // réussie se raye sous les yeux, ou reste à l'encre fraîche si elle a été
 // manquée il y a moins de 24 h. Le bilan dit combien reviendront demain, puis
 // « C'est assez pour aujourd'hui ».
-// Sur le modèle des sous-pages validé par Théo (2026-11-12) : l'écran de départ
-// (et ses états : rien à revoir, erreur) a l'en-tête commun (retour à Moi) et le
-// cadre à zones : à gauche « À revoir aujourd'hui » (ce qui attend, le bouton), à
-// droite « Dues aujourd'hui » (le chiffre). Pendant la séance, pas d'en-tête : la
-// barre de progression, puis la colonne des questions (ColonneSeance).
+// Direction « le lieu, puis l'objet » (validée par Théo le 2026-11-13) : l'écran de départ a la
+// porte de Réviser (la pêche, recadrée sur les deux pêcheurs ; le chiffre-héros : la part juste en
+// revue, sinon la file entière) puis la pile des questions dues, la petite pile de demain et
+// « Lancer » à l'encre (components/revoir/Pile). Table vide : la trace de la pile et le tampon
+// « RIEN JUSQU'À DEMAIN » (« TOUT EST À JOUR » si rien ne revient demain). Pendant la séance, pas
+// d'en-tête : la barre de progression, puis la colonne des questions (ColonneSeance). Le bilan
+// garde la porte, sa ligne d'état dit le résumé, et l'action est à l'encre comme au départ.
 
-/** L'en-tête de /revoir (aussi posé par la page tant que la section §3b manque). */
-export function EnTeteRevoir() {
-  return <EnTeteSousPage retour={SOUS_MOI.retour} titre={REVOIR.nom} ligne={REVOIR.promesse} illustration={{ nom: "cinq-depart" }} />;
+/** Ce que la page lit en plus de la file (app/revoir/page.tsx) : répartition, part juste, jours. */
+export type VueRevoir = {
+  /** les matières des questions dues aujourd'hui, la plus chargée d'abord */
+  matieres: MatiereDue[];
+  /** les séances « À revoir » rendues des 30 derniers jours : justes / revues */
+  retenues: { justes: number; total: number } | null;
+  /** aujourd'hui (index 0) puis demain, jour de Paris */
+  jours: JourVue[];
+};
+
+type Heros = { valeur: string; legende: string } | null;
+
+/** Le chiffre-héros : la part juste en revue (5 réponses au moins), sinon la file entière quand elle dépasse la pile. */
+export function herosRevoir(file: Pick<Revisions, "aujourdhui" | "ratures" | "rappels">, retenues: VueRevoir["retenues"]): Heros {
+  if (retenues && retenues.total >= 5) return { valeur: `${Math.round((100 * retenues.justes) / retenues.total)}${NBSP}%`, legende: PILE.heros.retenues };
+  const file_ = file.ratures + file.rappels;
+  if (file_ > file.aujourdhui) return { valeur: nombre(file_), legende: PILE.heros.file };
+  return null;
+}
+
+/** L'en-tête de /revoir (aussi posé par la page tant que la section §3b manque) : la porte de Réviser. */
+export function EnTeteRevoir({ heros = null, ligne }: { heros?: Heros; ligne?: React.ReactNode }) {
+  return (
+    <EnTeteSousPage
+      retour={PILE.retour}
+      titre={REVOIR.nom}
+      ligne={ligne}
+      illustration={{ nom: "reviser-peche-pecheurs", position: "50% 70%" }}
+      heros={heros}
+    />
+  );
 }
 
 const LETTERS = ["A", "B", "C", "D", "E"];
@@ -55,7 +84,7 @@ type Phase = "depart" | "loading" | "play" | "finishing" | "done" | "vide" | "er
 type Question = QuestionRevoir & { effet?: EffetRature };
 type Resultat = EclairFinish & { marks: TickMark[]; demain: number | null; depuis: string };
 
-export function RevoirRunner({ taille, file, destination }: { taille: number; file: Revisions; destination: string }) {
+export function RevoirRunner({ taille, file, destination, vue }: { taille: number; file: Revisions; destination: string; vue: VueRevoir }) {
   const supabase = useMemo(() => createClient(), []);
   const [phase, setPhase] = useState<Phase>("depart");
   const [serie, setSerie] = useState<{ id: string; startedAt: string } | null>(null);
@@ -201,28 +230,45 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
 
   // ---------------------------------------------------------------------------
 
+  const heros = herosRevoir(file, vue.retenues);
+  const prevision = previsionRevoir(file);
+  const table = {
+    matieres: vue.matieres,
+    date: vue.jours[0]?.carte ?? "",
+    jours: vue.jours.slice(1),
+  };
+  /** la composition du jour, lue dans la file (ratures sèches d'abord) */
+  const raturesDuJour = file.items.length > 0 ? file.items.filter((x) => x.genre === "rature").length : Math.min(file.ratures, file.aujourdhui);
+  const rappelsDuJour = file.items.length > 0 ? file.items.filter((x) => x.genre === "rappel").length : Math.max(0, file.aujourdhui - raturesDuJour);
+
   if (phase === "depart") {
     const enCours = questions.length > 0;
     const aFaire = enCours ? questions.filter((x) => x.selectedIndex === null).length : Math.min(taille, file.aujourdhui);
-    const quoi = enCours ? "" : REVOIR.depart(file);
+    const peutLancer = enCours || file.aujourdhui >= MIN_SEANCE;
+    // rien de dû et pas de séance en cours : la table vide tout de suite (la sonde peut encore trouver une séance à reprendre)
+    const vide0 = !enCours && file.aujourdhui === 0;
+    const ligne = enCours ? PILE.enCours(aFaire) : !peutLancer ? PILE.fini(file.aujourdhui, file.demain) : PILE.ligne(raturesDuJour, rappelsDuJour);
     return (
-      <SousPage entete={<EnTeteRevoir />}>
-        <CadreZones
-          gauche={{
-            titre: SOUS_MOI.revoir.zone,
-            contenu: (
-              <div data-depart className="grid justify-items-start gap-4">
-                {quoi && <p className="t-num m-0 text-[17px]">{quoi}</p>}
-                {(enCours || file.aujourdhui >= MIN_SEANCE) && (
-                  <button type="button" className="btn btn-primary min-h-[44px] w-full sm:w-fit" onClick={() => void start()} autoFocus>
-                    {enCours ? REVOIR.reprendre(aFaire) : REVOIR.lancer(aFaire)}
-                    <ArrowRight size={16} aria-hidden />
-                  </button>
-                )}
-              </div>
-            ),
-          }}
-          droite={{ titre: SOUS_MOI.revoir.dues, contenu: <Chiffre valeur={nombre(file.aujourdhui)} legende={SOUS_MOI.revoir.legende(file.aujourdhui, file.demain)} /> }}
+      <SousPage entete={<EnTeteRevoir heros={heros} ligne={ligne} />}>
+        <TableRevoir
+          etat={vide0 ? "fini" : "pile"}
+          n={enCours ? Math.max(file.aujourdhui, aFaire) : file.aujourdhui}
+          demain={file.demain}
+          prevision={prevision}
+          {...table}
+          action={
+            peutLancer ? (
+              // autoFocus : Entrée lance la séance, qui se joue ensuite tout au clavier (1/2/3, Entrée)
+              <ActionEncre onClick={() => void start()} label={enCours ? PILE.reprendreAria(aFaire) : PILE.lancerAria(aFaire)} autoFocus>
+                {enCours ? PILE.reprendre : PILE.lancer}
+                {(enCours || aFaire < file.aujourdhui) && <Compte>{nombre(aFaire)}</Compte>}
+                <ArrowRight size={17} aria-hidden />
+              </ActionEncre>
+            ) : (
+              // trop peu pour une séance : la sortie tout de suite (la sonde peut encore trouver une séance à reprendre)
+              <ActionContour href={destination}>{REVOIR.assez}</ActionContour>
+            )
+          }
         />
       </SousPage>
     );
@@ -230,20 +276,15 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
 
   if (phase === "vide") {
     return (
-      <SousPage entete={<EnTeteRevoir />}>
-        <CadreZones
-          gauche={{
-            titre: SOUS_MOI.revoir.zone,
-            contenu: (
-              <div className="grid justify-items-start gap-3">
-                <p className="m-0 text-[17px] font-semibold">{REVOIR.videTitre}</p>
-                <p className="t-body m-0 text-muted">{REVOIR.videTexte(vide.aujourdhui, vide.demain)}</p>
-                <Link href={destination} className="btn btn-secondary min-h-[44px] w-full sm:w-fit">
-                  {REVOIR.assez}
-                </Link>
-              </div>
-            ),
-          }}
+      <SousPage entete={<EnTeteRevoir heros={heros} ligne={PILE.fini(vide.aujourdhui, vide.demain)} />}>
+        <TableRevoir
+          etat={vide.aujourdhui > 0 ? "pile" : "fini"}
+          n={vide.aujourdhui}
+          demain={vide.demain}
+          // une seule source : la réponse fraîche de revoir_lancer (pas l'instantané de la page)
+          prevision={previsionRevoir({ ...file, demain: vide.demain })}
+          {...table}
+          action={<ActionContour href={destination}>{REVOIR.assez}</ActionContour>}
         />
       </SousPage>
     );
@@ -251,24 +292,20 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
 
   if (phase === "error") {
     return (
-      <SousPage entete={<EnTeteRevoir />}>
-        <CadreZones
-          gauche={{
-            titre: SOUS_MOI.revoir.zone,
-            contenu: (
-              <div className="grid justify-items-start gap-4">
-                <p className="m-0 text-[17px] font-semibold">{REVOIR.erreurTitre}</p>
-                {error && (
-                  <p role="alert" className="t-small m-0 text-muted">
-                    {error}
-                  </p>
-                )}
-                <button type="button" className="btn btn-primary min-h-[44px] w-fit" onClick={() => void start()}>
-                  {REVOIR.reessayer}
-                </button>
-              </div>
-            ),
-          }}
+      <SousPage entete={<EnTeteRevoir heros={heros} ligne={REVOIR.erreurTitre} />}>
+        <TableRevoir
+          etat={file.aujourdhui > 0 ? "pile" : "fini"}
+          n={file.aujourdhui}
+          demain={file.demain}
+          prevision={prevision}
+          {...table}
+          action={
+            <ActionEncre onClick={() => void start()}>
+              {REVOIR.reessayer}
+              <ArrowRight size={17} aria-hidden />
+            </ActionEncre>
+          }
+          note={error ? <NotePile alerte>{error}</NotePile> : null}
         />
       </SousPage>
     );
@@ -276,7 +313,7 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
 
   if (phase === "done" && result)
     return (
-      <SousPage entete={<EnTeteRevoir />}>
+      <SousPage entete={<EnTeteRevoir ligne={REVOIR.resume(result.total || result.marks.length, result.score, result.demain)} />}>
         <ColonneSeance>
           <Bilan result={result} destination={destination} />
         </ColonneSeance>
@@ -288,7 +325,7 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
     <SousPage entete={null}>
       <ColonneSeance>
         {/* La barre : « À revoir · 7/15 », les justes, puis les coches */}
-        <header className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-4 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
+        <header title={REVOIR.regle} className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-4 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 truncate text-[14px] font-bold md:text-[16px]">
@@ -386,8 +423,7 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
               </div>
             </section>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[13px] text-muted">
-              <span>{REVOIR.regle}</span>
+            <div className="flex flex-wrap items-center justify-end gap-2 px-1 text-[13px] text-muted">
               {questions.some((x) => x.selectedIndex !== null) && !questions.every((x) => x.selectedIndex !== null) && serie && (
                 <button type="button" onClick={() => void finish(serie.id, serie.startedAt, questions)} className="min-h-[44px] font-semibold transition-colors hover:text-white">
                   {REVOIR.arreter}
@@ -449,7 +485,7 @@ function Corrigee({ q }: { q: Question }) {
   );
 }
 
-/** Le bilan : « 15 revues · 13 justes · demain 22 », l'XP, les trophées, et « C'est assez pour aujourd'hui ». */
+/** Le bilan (sous la porte qui dit « 15 revues · 13 justes · demain 22 ») : le verdict, l'XP, les trophées, et « C'est assez pour aujourd'hui ». */
 function Bilan({ result, destination }: { result: Resultat; destination: string }) {
   const total = result.total || result.marks.length;
   return (
@@ -469,16 +505,14 @@ function Bilan({ result, destination }: { result: Resultat; destination: string 
           </p>
         </div>
         <Ticks marks={result.marks} label="Ta séance" />
-        <p className="t-small m-0 font-mono">
-          {REVOIR.resume(total, result.score, result.demain)}
-          {result.xpAwarded > 0 ? ` · ${REVOIR.xp(result.xpAwarded)}` : ""}
-        </p>
+        {/* le résumé (revues · justes · demain) est la ligne d'état de la porte : ici, l'XP seule */}
+        {result.xpAwarded > 0 && <p className="t-small m-0 font-mono">{REVOIR.xp(result.xpAwarded)}</p>}
         <AnnonceTrophee depuis={result.depuis} />
         <div className="flex flex-wrap items-center gap-2.5">
-          <Link href={destination} className="btn btn-primary min-h-[44px]" autoFocus>
+          <ActionEncre href={destination} autoFocus>
             {REVOIR.assez}
-            <ArrowRight size={16} aria-hidden />
-          </Link>
+            <ArrowRight size={17} aria-hidden />
+          </ActionEncre>
         </div>
       </section>
     </div>

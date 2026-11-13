@@ -1,120 +1,75 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState } from "react";
+import { createContext, useContext, useId } from "react";
 import type { Piece } from "@/components/ui/Presentoir";
+import { NBSP } from "@/lib/voice";
 import s from "./Dispositions.module.css";
 
-// Quatre autres façons de poser les matières dans la zone de gauche du cadre à zones (CadreZones),
-// à la place du carrousel (demande de Théo, 2026-11-12, pour les calculs ou l'entraînement ciblé) :
-// le pavé (les touches d'une calculatrice et son écran), l'éventail (une main de cartes), la
-// sélection (une liste façon choix de niveau) et le tableau noir (la liste écrite à la craie).
-// Toutes prennent les mêmes pièces que le carrousel ; `depart` est la pièce conseillée (voyant du
-// pavé, carte levée de l'éventail, ligne choisie, matière entourée au tableau).
-// Sans mouvement réduit : rien ne bouge.
+// Le tableau noir des calculs (direction « le lieu, puis l'objet », validée par Théo le 2026-11-13) :
+// l'ardoise bleu nuit grainée, ses traces d'effacement, le cadre d'ébène biseauté à liseré d'or sobre,
+// le rebord avec sa craie blanche, son bout de craie jaune et sa brosse. Tout ce qui s'y écrit est à
+// la craie (la main du site, Caveat, grainée) : les lignes, les pastilles F · M · D, les bâtons, le
+// graphique des points faibles et l'action du pied. Les matières gardent des couleurs fixes, jour
+// comme nuit (--noir devient clair la nuit) ; un liseré clair les détache du fond sombre.
+// Le pavé, l'éventail et la sélection ont été retirés le 2026-11-13 : aucune page ne les utilisait.
 
-type Props = { pieces: Piece[]; action: string; depart?: number };
+/** l'identifiant des tracés de craie du tableau (cercle, trait, flèche), pour les `<use href>` des pièces écrites dessus */
+const CraieId = createContext("craie");
 
-/** le lien d'une pièce disponible, sinon une pièce en filigrane */
-function Lien({ p, className, children, onVoir }: { p: Piece; className: string; children: React.ReactNode; onVoir?: () => void }) {
-  const voir = onVoir ? { onMouseEnter: onVoir, onFocus: onVoir } : {};
+/** Une pièce du tableau : `or`, écrite à la craie jaune (ex. le Top 5) ; `puce`, à la place du numéro (★, –) ; `raison`, sous la pièce entourée, en petite craie. */
+export type PieceTableau = Piece & { or?: boolean; puce?: string; raison?: React.ReactNode };
+
+/** un mot à trait d'union ne se coupe pas à la ligne (« écart-type ») ; « : », « ; », « ! », « ? » restent collés au mot d'avant */
+function insecable(titre: string): React.ReactNode {
+  const net = titre.replace(/ ([:;!?])/g, NBSP + "$1");
+  const morceaux = net.split(/(\S+-\S+)/);
+  return morceaux.length < 2 ? net : morceaux.map((m, i) => (i % 2 ? <span key={i} className={s.insec}>{m}</span> : m));
+}
+
+/** le lien d'une pièce disponible, sinon une pièce à moitié effacée ; `label` : sa lecture (sinon `aria`, sinon le titre) */
+function Lien({ p, className, label, children }: { p: Piece; className: string; label?: string; children: React.ReactNode }) {
   return p.href ? (
-    <Link href={p.href} className={className} aria-label={p.aria ?? p.titre} {...voir}>
+    <Link href={p.href} className={className} aria-label={label ?? p.aria ?? p.titre}>
       {children}
     </Link>
   ) : (
-    <span className={className} aria-disabled="true" aria-label={p.titre} data-indispo="1" {...(onVoir ? { onMouseEnter: onVoir } : {})}>
+    <span className={className} aria-disabled="true" aria-label={p.titre} data-indispo="1">
       {children}
     </span>
   );
 }
 
-/** Le pavé : les matières en touches de calculatrice ; l'écran du haut montre celle qu'on survole. */
-export function Pave({ pieces, action, depart = 0 }: Props) {
-  const [vu, setVu] = useState<number | null>(null);
-  const montre = pieces[vu ?? depart];
-  if (!pieces.length) return null;
+/** Un trait de craie (titre souligné, survol, filet pointillé). */
+export function TraitCraie({ className }: { className: string }) {
+  const id = useContext(CraieId);
   return (
-    <div className={s.boitier}>
-      <p className={s.ecran} aria-live="polite">
-        <span className={s.ecranNum}>{montre?.numero}</span>
-        <span className={s.ecranNom}>{montre?.titre}</span>
-      </p>
-      <ul className={s.touches} aria-label={action} onMouseLeave={() => setVu(null)}>
-        {pieces.map((p, i) => (
-          <li key={p.cle} data-conseil={i === depart ? "1" : undefined}>
-            <Lien p={p} className={s.touche} onVoir={() => setVu(i)}>
-              <span className={s.toucheNum}>{p.numero}</span>
-              <b className={s.toucheCode}>{p.code}</b>
-            </Lien>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <svg className={className} viewBox="0 0 240 10" preserveAspectRatio="none" aria-hidden>
+      <use href={`#${id}-trait`} />
+    </svg>
   );
 }
 
-/** L'éventail : les matières en main, comme des cartes ; celle qu'on survole se lève. */
-export function Eventail({ pieces, action, depart = 0, forme = "cartes" }: Props & { forme?: "cartes" | "tuile" }) {
-  const [vu, setVu] = useState<number | null>(null);
-  const n = pieces.length;
-  const haut = vu ?? depart;
-  if (!n) return null;
+/** Un titre écrit à la craie, souligné d'un trait (`or` : craie jaune). */
+export function TitreCraie({ children, or }: { children: React.ReactNode; or?: boolean }) {
   return (
-    <div className={s.eventail} data-forme={forme}>
-      <ul className={s.main} aria-label={action} onMouseLeave={() => setVu(null)} style={{ "--n": n } as React.CSSProperties}>
-        {pieces.map((p, i) => (
-          // la main s'ouvre à droite de la carte levée : elle reste entière, sa voisine montre son coin
-          <li key={p.cle} className={s.place} data-haut={i === haut ? "1" : undefined} data-droite={i > haut ? "1" : undefined} style={{ "--k": i - (n - 1) / 2 } as React.CSSProperties}>
-            <Lien p={p} className={s.carte} onVoir={() => setVu(i)}>
-              <span className={s.coin}>
-                <span className={s.coinCode}>{p.code}</span>
-                {forme === "cartes" ? <span className={s.enseigne}>♠</span> : p.numero}
-              </span>
-              <b className={s.code}>{p.code}</b>
-              <span className={s.coinBas}>{p.numero}</span>
-            </Lien>
-          </li>
-        ))}
-      </ul>
-      <p className={s.nom} aria-live="polite">
-        {pieces[haut]?.titre}
-      </p>
-    </div>
+    <h3 className={s.titre} data-or={or ? "1" : undefined}>
+      {children}
+      <TraitCraie className={s.titreTrait} />
+    </h3>
   );
 }
-
-/** La sélection : la liste des matières façon choix de niveau ; la ligne survolée passe sur l'aplat. */
-export function Niveaux({ pieces, action, depart = 0 }: Props) {
-  if (!pieces.length) return null;
-  return (
-    <ol className={s.niveaux} aria-label={action} style={{ "--lignes": Math.ceil(pieces.length / 2) } as React.CSSProperties}>
-      {pieces.map((p, i) => (
-        <li key={p.cle} data-choisi={i === depart ? "1" : undefined}>
-          <Lien p={p} className={s.niveau}>
-            <span className={s.niveauNum}>{p.numero}</span>
-            <b className={s.niveauCode}>{p.code}</b>
-            <span className={s.niveauNom}>{p.titre}</span>
-            {p.pct != null && <span className={s.niveauPct}>{Math.round(p.pct)} %</span>}
-            {p.pct != null && <i className={s.jauge} style={{ width: `${Math.max(0, Math.min(100, p.pct))}%` }} aria-hidden />}
-          </Lien>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/** Une pièce du tableau : `or`, écrite à la craie jaune (ex. le Top 5) ; `puce`, à la place du numéro (★, –). */
-export type PieceTableau = Piece & { or?: boolean; puce?: string };
 
 /**
- * Le tableau noir : les matières écrites à la craie (la main du site, Caveat, grainée), cadre de bois,
- * rebord avec sa craie et sa brosse. La pièce conseillée (`depart`, -1 : aucune) est entourée ; au
- * survol, un trait de craie la souligne. Une pièce indisponible est à moitié effacée. Le `pied` d'une
- * pièce s'écrit entre son nom et son pourcentage (ex. les bâtons des calculs maîtrisés) ; `vide`
- * remplace un pourcentage pas encore mesuré ; `bas` : une ligne au pied du tableau (légende à gauche,
- * lien à la craie à droite). Avec `sections` (titres et nombres de pièces, dans l'ordre), les pièces se
- * rangent sous des titres soulignés, sur deux colonnes équilibrées quand le tableau a la place.
+ * Le tableau noir. Les pièces s'écrivent en lignes (puce ou numéro, nom, `pied` : pastilles ou bâtons,
+ * pourcentage ; `vide` remplace un pourcentage pas encore mesuré). La pièce conseillée (`depart`, -1 :
+ * aucune) est entourée d'une gélule de craie glace, sa `raison` dessous ; au survol, un trait de craie
+ * souligne. Une pièce indisponible est à moitié effacée, une pièce pas encore mesurée à demi.
+ * `sections` (titres, nombres de pièces dans l'ordre, `or`) : les pièces se rangent sous des titres
+ * soulignés ; à trois sections, la première et la troisième à gauche, la deuxième à droite quand le
+ * tableau a la place. Sans sections, deux colonnes. `dessous` : ce qui s'écrit au bas du tableau
+ * (ex. le graphique des points faibles, GrapheCraie) ; `bas` : la légende à gauche, l'action écrite à
+ * la craie à droite, avec sa flèche.
  */
 export function Tableau({
   pieces,
@@ -123,100 +78,191 @@ export function Tableau({
   vide = "–",
   bas,
   sections,
+  dessous,
 }: {
   pieces: PieceTableau[];
   action: string;
   depart?: number;
   vide?: string;
   bas?: { legende?: React.ReactNode; lien?: { titre: string; href: string } };
-  sections?: { titre: string; nombre: number }[];
+  sections?: { titre: string; nombre: number; or?: boolean }[];
+  dessous?: React.ReactNode;
 }) {
   const id = "craie" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
   if (!pieces.length) return null;
 
-  const ligne = (p: PieceTableau, i: number) => (
-    <li key={p.cle} data-conseil={i === depart ? "1" : undefined} data-or={p.or ? "1" : undefined}>
-      <Lien p={p} className={s.ecrit}>
-        <span className={s.ecritNum}>{p.puce ?? `${Number(p.numero)}.`}</span>
-        <span className={s.ecritNom}>
-          {p.titre}
-          {i === depart && (
-            <svg className={s.entoure} viewBox="0 0 240 60" preserveAspectRatio="none" aria-hidden>
-              <use href={`#${id}-cercle`} />
-            </svg>
-          )}
-          <svg className={s.souligne} viewBox="0 0 240 10" preserveAspectRatio="none" aria-hidden>
-            <use href={`#${id}-trait`} />
-          </svg>
-        </span>
-        <span className={s.ecritMention}>{p.pied}</span>
-        <span className={s.ecritPct}>{p.pct != null ? `${Math.round(p.pct)} %` : p.href ? vide : ""}</span>
-      </Lien>
-    </li>
-  );
+  const ligne = (p: PieceTableau, i: number) => {
+    const conseil = i === depart;
+    // la raison écrite sous la pièce entourée est l'information principale : le lecteur d'écran la lit aussi
+    const label = conseil && typeof p.raison === "string" ? [p.aria ?? p.titre, p.raison].join(", ") : undefined;
+    return (
+      <li key={p.cle} data-conseil={conseil ? "1" : undefined} data-or={p.or ? "1" : undefined} data-vierge={p.pct == null ? "1" : undefined}>
+        <Lien p={p} className={s.ecrit} label={label}>
+          <span className={s.ecritNum}>{p.puce ?? `${Number(p.numero)}.`}</span>
+          <span className={s.ecritNom}>
+            {insecable(p.titre)}
+            {conseil && (
+              <svg className={s.entoure} viewBox="0 0 240 60" preserveAspectRatio="none" aria-hidden>
+                <use href={`#${id}-cercle`} />
+              </svg>
+            )}
+            <TraitCraie className={s.souligne} />
+          </span>
+          <span className={s.ecritMention}>{p.pied}</span>
+          <span className={s.ecritPct}>{p.pct != null ? `${Math.round(p.pct)}${NBSP}%` : p.href ? vide : ""}</span>
+          {conseil && p.raison && <span className={s.raison}>{p.raison}</span>}
+        </Lien>
+      </li>
+    );
+  };
+
+  const moitie = Math.ceil(pieces.length / 2);
 
   // les sections : des tranches successives de la liste
   let debut = 0;
   const tranches = (sections ?? [])
     .map((x) => {
-      const t = { titre: x.titre, debut, items: pieces.slice(debut, debut + x.nombre) };
+      const t = { ...x, debut, items: pieces.slice(debut, debut + x.nombre) };
       debut += x.nombre;
       return t;
     })
     .filter((x) => x.items.length);
 
   return (
-    <div className={s.tableau}>
-      <svg width="0" height="0" className={s.defs} aria-hidden>
-        <defs>
-          <path id={`${id}-cercle`} vectorEffect="non-scaling-stroke" d="M18 34C10 18 62 6 128 7c62 1 108 9 106 25-2 17-58 24-118 22C58 52 10 46 9 30 8 17 40 9 72 8" />
-          <path id={`${id}-trait`} vectorEffect="non-scaling-stroke" d="M3 7C40 4 92 3 140 5c38 1 70 3 95 1" />
-        </defs>
-      </svg>
-      <div className={s.ardoise}>
-        {tranches.length ? (
-          <div className={s.craie} data-sections="1" aria-label={action}>
-            {tranches.map((x) => (
-              <section key={x.titre} className={s.section}>
-                <h3 className={s.sectionTitre}>{x.titre}</h3>
-                <ol className={s.sectionListe}>{x.items.map((p, j) => ligne(p, x.debut + j))}</ol>
-              </section>
-            ))}
-          </div>
-        ) : (
-          <ol className={s.craie} aria-label={action} style={{ "--lignes": Math.ceil(pieces.length / 2) } as React.CSSProperties}>
-            {pieces.map(ligne)}
-          </ol>
-        )}
-        {bas && (
-          <div className={s.basTableau}>
-            <span className={s.legendeCraie}>{bas.legende}</span>
-            {bas.lien && (
-              <Link href={bas.lien.href} className={s.lienCraie}>
-                {bas.lien.titre} →
-              </Link>
+    <CraieId.Provider value={id}>
+      <div className={s.tableau}>
+        <svg width="0" height="0" className={s.defs} aria-hidden>
+          <defs>
+            <path id={`${id}-cercle`} vectorEffect="non-scaling-stroke" d="M26 8C74 3 172 3 222 7c12 1 15 9 15 22 0 14-4 22-17 24-52 5-150 6-198 2C10 54 4 46 4 31 4 17 9 10 26 7 62 3 112 4 152 5" />
+            <path id={`${id}-trait`} vectorEffect="non-scaling-stroke" d="M3 7C40 4 92 3 140 5c38 1 70 3 95 1" />
+            <path id={`${id}-fleche`} vectorEffect="non-scaling-stroke" d="M4 9c40-3 96-4 150-3 30 0 52 1 72 0M212 2c6 3 12 5 16 7-5 2-10 4-15 8" />
+          </defs>
+        </svg>
+        <div className={s.cadre}>
+          <div className={s.ardoise}>
+            {tranches.length ? (
+              <div className={s.craie + " " + s.listes} data-n={tranches.length} aria-label={action}>
+                {tranches.map((x, k) => (
+                  <section key={x.titre} className={s.section} data-zone={k}>
+                    <TitreCraie or={x.or}>{x.titre}</TitreCraie>
+                    <ol className={s.liste}>{x.items.map((p, j) => ligne(p, x.debut + j))}</ol>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              // deux listes indépendantes : la raison écrite sous la pièce entourée ne décale pas l'autre colonne
+              <div className={s.craie + " " + s.colonnes} aria-label={action}>
+                <ol className={s.liste}>{pieces.slice(0, moitie).map((p, i) => ligne(p, i))}</ol>
+                <ol className={s.liste} start={moitie + 1}>
+                  {pieces.slice(moitie).map((p, i) => ligne(p, moitie + i))}
+                </ol>
+              </div>
+            )}
+            {dessous}
+            {bas && (
+              <div className={s.craie + " " + s.pied}>
+                <TraitCraie className={s.filet} />
+                <span className={s.legende}>{bas.legende}</span>
+                {bas.lien && (
+                  <Link href={bas.lien.href} className={s.action}>
+                    {bas.lien.titre}
+                    <svg className={s.fleche} viewBox="0 0 232 20" preserveAspectRatio="none" aria-hidden>
+                      <use href={`#${id}-fleche`} />
+                    </svg>
+                  </Link>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
+        <div className={s.rebord} aria-hidden>
+          <i className={s.baton} />
+          <i className={s.bout} />
+          <i className={s.brosse} />
+        </div>
       </div>
-      <div className={s.rebord} aria-hidden>
-        <i className={s.baton} />
-        <i className={s.brosse} />
-      </div>
-    </div>
+    </CraieId.Provider>
   );
 }
 
-/** Des bâtons de craie (|||| barrés par cinq) : un compte qu'on lit d'un coup d'œil. */
-export function Batons({ n, titre }: { n: number; titre?: string }) {
+/** Une clé de la légende du pied (un signe, puis ce qu'il veut dire). */
+export function CleCraie({ signe, children }: { signe?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className={s.cle}>
+      {signe}
+      {children}
+    </span>
+  );
+}
+
+export type BarreCraie = { cle: string; nom: string; pct: number; href: string; detail: string; aria: string };
+
+/**
+ * Le graphique écrit au bas du tableau (les points faibles d'une matière) : un filet, le titre, puis
+ * une barre de craie hachurée par ligne (le nom à gauche, le pourcentage à droite), le seuil en
+ * pointillé de craie glace avec son nom, l'axe des zéros et ses repères. Le détail au survol (title)
+ * et au lecteur d'écran ; chaque barre mène à sa page. `reste` : une ligne sous le graphique.
+ */
+export function GrapheCraie({ titre, barres, seuil, seuilNom, reste }: { titre: string; barres: BarreCraie[]; seuil: number; seuilNom: string; reste?: string | null }) {
+  if (!barres.length) return null;
+  return (
+    <section className={s.craie + " " + s.graphe} style={{ "--seuil": `${seuil}%` } as React.CSSProperties} aria-label={titre}>
+      <TraitCraie className={s.filet} />
+      <TitreCraie>{titre}</TitreCraie>
+      <div className={s.grapheTete} aria-hidden>
+        <span />
+        <span className={s.grapheRepere}>
+          <b className={s.seuilNom}>{seuilNom}</b>
+        </span>
+        <span />
+      </div>
+      <ol className={s.barres}>
+        {barres.map((b) => (
+          <li key={b.cle}>
+            <Link href={b.href} className={s.barre} title={b.detail} aria-label={b.aria}>
+              <span className={s.barreNom}>
+                {insecable(b.nom)}
+                <TraitCraie className={s.souligne} />
+              </span>
+              <span className={s.piste}>
+                <i style={{ "--p": `${Math.max(1.5, Math.min(100, b.pct))}%` } as React.CSSProperties} />
+              </span>
+              <span className={s.barrePct}>
+                {Math.round(b.pct)}
+                {NBSP}%
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+      <div className={s.axe} aria-hidden>
+        <span />
+        <span className={s.grapheRepere}>
+          <em style={{ left: "0%" }}>0</em>
+          <em style={{ left: "50%" }}>50</em>
+          <em style={{ left: "100%" }}>100{NBSP}%</em>
+        </span>
+        <span />
+      </div>
+      {reste && <p className={s.reste}>{reste}</p>}
+    </section>
+  );
+}
+
+/**
+ * Des bâtons de craie (|||| barrés par cinq) : un compte qu'on lit d'un coup d'œil. Les `neufs`
+ * derniers (gagnés depuis la dernière visite) se tracent une fois.
+ */
+export function Batons({ n, titre, neufs = 0 }: { n: number; titre?: string; neufs?: number }) {
   if (n <= 0) return null;
+  const depuis = n - Math.max(0, Math.min(n, neufs));
   const groupes = Array.from({ length: Math.ceil(n / 5) }, (_, g) => Math.min(5, n - g * 5));
   return (
     <span className={s.batons} title={titre} aria-hidden>
       {groupes.map((k, g) => (
-        <span key={g} className={s.groupe} data-barre={k === 5 ? "1" : undefined}>
+        <span key={g} className={s.groupe} data-barre={k === 5 ? "1" : undefined} data-neuf={k === 5 && g * 5 + 4 >= depuis ? "1" : undefined}>
           {Array.from({ length: Math.min(k, 4) }, (_, j) => (
-            <i key={j} />
+            <i key={j} data-neuf={g * 5 + j >= depuis ? "1" : undefined} />
           ))}
         </span>
       ))}
@@ -224,12 +270,12 @@ export function Batons({ n, titre }: { n: number; titre?: string }) {
   );
 }
 
-/** Des pastilles écrites à la craie (ex. F · M · D) : pleine, entourée, ou à peine tracée. */
-export function Pastilles({ items, titre }: { items: { lettre: string; etat: "plein" | "cercle" | "vide" }[]; titre?: string }) {
+/** Des pastilles écrites à la craie (ex. F · M · D) : pleine (tenu), entourée (entamé), ou à peine tracée ; `neuf` : se tamponne une fois. */
+export function Pastilles({ items, titre }: { items: { lettre: string; etat: "plein" | "cercle" | "vide"; neuf?: boolean }[]; titre?: string }) {
   return (
     <span className={s.pastilles} title={titre} aria-hidden>
       {items.map((x, i) => (
-        <span key={i} className={s.pastille} data-etat={x.etat}>
+        <span key={i} className={s.pastille} data-etat={x.etat} data-neuf={x.neuf ? "1" : undefined}>
           {x.lettre}
         </span>
       ))}

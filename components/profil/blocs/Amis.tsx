@@ -83,7 +83,7 @@ function amisDe(d: DonneesBlocs, f: Format): React.ReactNode {
   const bulle = place !== null ? R.bulleCercle(d.nom, place, taille) : undefined;
   const tries = parElo(amis.amis);
   const gerer = (
-    <Link href="/people?view=amis" className="ink-link font-semibold">
+    <Link href="/duel" className="ink-link font-semibold">
       {R.gerer}
     </Link>
   );
@@ -101,7 +101,7 @@ function amisDe(d: DonneesBlocs, f: Format): React.ReactNode {
       <Coque f={f} label={T.amis}>
         <Etiquette f={f} icone={<Users size={17} aria-hidden />} titre={T.amis} />
         <p className="t-small m-0">{mot}</p>
-        {moi && <Lien href="/people?view=amis">{T.gererAmis}</Lien>}
+        {moi && <Lien href="/duel">{T.gererAmis}</Lien>}
       </Coque>
     );
   }
@@ -133,7 +133,7 @@ function amisDe(d: DonneesBlocs, f: Format): React.ReactNode {
     </div>
   );
   const etiquette = <Etiquette f={f} icone={<Users size={17} aria-hidden />} titre={T.amis} />;
-  const lien = moi ? <Lien href="/people?view=amis">{T.gererAmis}</Lien> : null;
+  const lien = moi ? <Lien href="/duel">{T.gererAmis}</Lien> : null;
 
   if (f === "colonne") {
     // deux rangées de cinq, la seconde décalée ; la pastille ferme la seconde
