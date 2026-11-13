@@ -12,8 +12,8 @@ import type { AllProgress } from "./engine";
 export const MIN_TENTATIVES_CALCUL = 5;
 /** Combien de types le volet en montre. */
 export const MAX_CALCULS = 4;
-/** La ligne repère : sous ce pourcentage, le type est à reprendre. */
-export const SEUIL_CALCUL = 70;
+/** La ligne repère : sous ce pourcentage, le type est à reprendre (= « tenu » : 4 justes sur 5, partout sur le site, choix de Théo du 2026-11-13). */
+export const SEUIL_CALCUL = 80;
 
 /** Un type de calcul de la carte : réussite sur toutes ses réponses, tous niveaux confondus. */
 export type LigneCalcul = {

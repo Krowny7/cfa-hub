@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { EncreVive } from "@/components/nav/EncreVive";
 import { Illustration } from "@/components/ui/Illustration";
-import type { IllustrationNom } from "@/lib/illustrations";
+import { porteDe, type IllustrationNom } from "@/lib/illustrations";
 import { PALETTES, paletteDeChemin, styleDePalette, type Palette } from "@/lib/palettes";
+import { SPACES, activeSpace } from "@/lib/nav";
 import s from "./SousPage.module.css";
 
 // Le gabarit commun des sous-pages (chantier du 2026-11-12, plan validé par Théo) :
@@ -59,35 +60,104 @@ export function LienRetour({ retour, className }: { retour: Retour; className?: 
   );
 }
 
+/** Le kicker par défaut : l'espace, puis la page parente quand ce n'est pas l'espace lui-même (« S'ENTRAÎNER · CALCULS »). */
+function kickerDe(chemin: string, retour: Retour): string | null {
+  const espace = SPACES.find((x) => x.key === activeSpace(chemin));
+  if (!espace) return retour.label;
+  return retour.href === espace.href ? espace.label : `${espace.label} · ${retour.label}`;
+}
+
 /**
- * Le début de toutes les sous-pages : un cadre (choix de Théo, 2026-11-12) avec le retour, le titre et
- * une ligne à gauche, l'illustration du lieu à droite. Aucun bouton dans le cadre, hormis le retour.
+ * Le début de toutes les sous-pages, « la porte » (direction de l'équipe validée par Théo, 2026-11-13) :
+ * le cadre bas, avec à gauche le retour, le kicker (espace · page parente, en capitales Mono), le titre
+ * plein et une ligne d'état ; à droite la peinture de la carte qu'on vient de cliquer (série au
+ * couteau), son bord gauche en grosses touches de couteau (public/peinture/touches.svg) ; sur la
+ * peinture, sur un voile sombre, UN chiffre-héros en Dela (`heros`). `enjeu` : une étiquette rouge en
+ * capitales, seulement quand elle est vraie (« SE FIGE DANS 5 H », « EN DIRECT »). Aucun bouton hormis
+ * le retour.
  */
 export function EnTeteSousPage({
   retour,
   titre,
   ligne,
   illustration,
+  kicker,
+  heros,
+  enjeu,
 }: {
   retour: Retour;
   titre: React.ReactNode;
   ligne?: React.ReactNode;
   illustration?: { nom: IllustrationNom; position?: string };
+  /** remplace le kicker calculé (null : aucun) */
+  kicker?: React.ReactNode | null;
+  heros?: { valeur: React.ReactNode; legende: React.ReactNode } | null;
+  enjeu?: React.ReactNode | null;
 }) {
+  const chemin = usePathname() ?? "/";
+  const k = kicker === undefined ? kickerDe(chemin, retour) : kicker;
+  const chiffre = heros ? (
+    <p className={s.heros}>
+      <b>{heros.valeur}</b>
+      <span>{heros.legende}</span>
+    </p>
+  ) : null;
   return (
     <header className={s.cadre} data-illustre={illustration ? "1" : undefined}>
       <div className={s.contenu}>
         <LienRetour retour={retour} />
-        <h1 className={"t-h1 rl-in " + s.titre}>{titre}</h1>
-        {ligne && <p className={s.ligne}>{ligne}</p>}
+        <div className={s.titres}>
+          {k && <p className={s.kicker}>{k}</p>}
+          <h1 className={"rl-in " + s.titre}>{titre}</h1>
+          {ligne && <p className={s.ligne}>{ligne}</p>}
+          {enjeu && (
+            <p className={s.enjeu}>
+              <i aria-hidden />
+              {enjeu}
+            </p>
+          )}
+        </div>
+        {!illustration && chiffre}
       </div>
       {illustration && (
         <div className={s.image}>
-          <Illustration nom={illustration.nom} position={illustration.position} decorative eager />
+          {/* une image provisoire de maître ancien cède la place à la peinture de la série (son cadrage ne vaut plus) */}
+          <Illustration
+            nom={porteDe(illustration.nom)}
+            position={porteDe(illustration.nom) === illustration.nom ? illustration.position : "50% 62%"}
+            decorative
+            eager
+          />
+          {chiffre}
         </div>
       )}
     </header>
   );
+}
+
+/**
+ * La scène (direction du 2026-11-13) : l'objet-héros d'une sous-page posé sur le fond classique, sans
+ * cadre ni bande, une lumière qui tombe d'en haut ; `etiquette` la nomme en petites capitales Mono
+ * (au lieu de la bande noire des titres). `sol` : l'ombre de contact sous l'objet.
+ */
+export function Scene({ etiquette, droite, children, sol = false, className }: { etiquette?: React.ReactNode; droite?: React.ReactNode; children: React.ReactNode; sol?: boolean; className?: string }) {
+  return (
+    <section className={[s.scene, className].filter(Boolean).join(" ")} aria-label={typeof etiquette === "string" ? etiquette : undefined}>
+      {(etiquette || droite) && (
+        <div className={s.sceneTete}>
+          {etiquette && <h2 className={s.etiquette}>{etiquette}</h2>}
+          {droite}
+        </div>
+      )}
+      {children}
+      {sol && <div className={s.sol} aria-hidden />}
+    </section>
+  );
+}
+
+/** Une petite étiquette Mono en capitales, qui nomme une zone. */
+export function Etiquette({ children, as: Tag = "p" }: { children: React.ReactNode; as?: "p" | "h2" | "h3" }) {
+  return <Tag className={s.etiquette}>{children}</Tag>;
 }
 
 export function ActionEncre({

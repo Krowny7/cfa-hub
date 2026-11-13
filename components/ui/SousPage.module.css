@@ -5,8 +5,8 @@
   position: relative;
 }
 
-/* le cadre de l'en-tête : contenu à gauche, illustration du lieu à droite ; bas (choix de
-   Théo : peu de hauteur, l'illustration large) */
+/* la porte (2026-11-13) : le cadre bas, le texte à gauche, la peinture de la carte cliquée à droite,
+   son bord gauche en grosses touches de couteau ; sur la peinture, le chiffre-héros sur un voile */
 .cadre {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -19,36 +19,69 @@
 }
 @media (min-width: 820px) {
   .cadre[data-illustre="1"] {
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    min-height: 192px;
   }
 }
 .contenu {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
   align-items: flex-start;
-  gap: 6px;
+  gap: 14px;
   min-width: 0;
-  padding: 16px 20px;
+  padding: 16px 20px 18px;
 }
 @media (min-width: 820px) {
   .contenu {
-    padding: 16px 30px;
+    padding: 18px 30px 22px;
   }
+}
+.titres {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.kicker {
+  margin: 0 0 6px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.enjeu {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pen);
+}
+.enjeu i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .image {
   position: relative;
-  min-height: 104px;
+  min-height: 132px;
   overflow: hidden;
   background: var(--surface);
   order: -1;
   /* sur téléphone l'image est au-dessus : la diagonale passe en bas */
-  clip-path: polygon(0 0, 100% 0, 100% 78%, 0 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
 }
 @media (min-width: 820px) {
   .image {
-    min-height: 118px;
+    min-height: 0;
     order: 0;
     clip-path: none;
   }
@@ -61,20 +94,70 @@
   object-fit: cover;
 }
 
-/* le bord gauche de l'illustration se défait en touches de peinture à l'huile, comme les jambes
-   du ninja de l'intro : des coups de brosse en diagonale, striés et secs au bout, de plus en
-   plus clairsemés vers le texte (public/peinture/bord.svg, sur le tiers gauche ; le reste
-   est plein). Fixe : rien ne bouge. */
+/* le bord gauche de la peinture : 5 à 7 grosses touches de couteau, coupées en biais (public/peinture/
+   touches.svg, sur le tiers gauche ; le reste est plein). Fixe : rien ne bouge. */
 @media (min-width: 820px) {
   .image > img {
-    -webkit-mask-image: url(/peinture/bord.svg), linear-gradient(90deg, transparent 0 33%, #000 33%);
-    mask-image: url(/peinture/bord.svg), linear-gradient(90deg, transparent 0 33%, #000 33%);
+    -webkit-mask-image: url(/peinture/touches.svg), linear-gradient(90deg, transparent 0 30%, #000 30%);
+    mask-image: url(/peinture/touches.svg), linear-gradient(90deg, transparent 0 30%, #000 30%);
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
-    -webkit-mask-size: 36% 100%, 100% 100%;
-    mask-size: 36% 100%, 100% 100%;
+    -webkit-mask-size: 31% 100%, 100% 100%;
+    mask-size: 31% 100%, 100% 100%;
     -webkit-mask-position: 0 0, 0 0;
     mask-position: 0 0, 0 0;
+  }
+}
+
+/* le chiffre-héros : en Dela, blanc sur un voile sombre en bas à droite de la peinture */
+.heros {
+  display: grid;
+  justify-items: end;
+  margin: 0;
+  text-align: right;
+}
+.image .heros {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: 40px 22px 16px 80px;
+  background: radial-gradient(ellipse at 100% 100%, rgba(10, 8, 6, 0.66), transparent 70%);
+  color: #fff;
+}
+.heros b {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: clamp(38px, 4.4vw, 60px);
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+.image .heros b {
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.5);
+}
+.heros span {
+  margin-top: 4px;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.image .heros span {
+  color: rgba(255, 255, 255, 0.88);
+}
+.contenu > .heros b {
+  color: var(--pal-2, var(--ink));
+}
+.contenu > .heros span {
+  color: var(--ink-2);
+}
+@media (max-width: 819px) {
+  .image .heros {
+    padding: 28px 14px 18px 60px;
+  }
+  .image .heros b {
+    font-size: 34px;
   }
 }
 
@@ -110,17 +193,60 @@
   outline-offset: 3px;
 }
 /* le titre du cadre : un cran sous celui des pages principales, et bas */
+/* le titre plein, à l'échelle des pages principales */
 .titre {
   margin: 0;
   text-wrap: balance;
-  font-size: clamp(26px, 2.6vw, 34px);
+  font-size: clamp(30px, 3.4vw, 42px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.036em;
 }
 .ligne {
-  margin: 0;
+  margin: 8px 0 0;
   max-width: 58ch;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.45;
   color: var(--ink-2);
+}
+
+/* la scène : l'objet posé sur le fond classique, une lumière qui tombe d'en haut */
+.scene {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 6px 0 4px;
+  background: radial-gradient(60% 260px at 50% 0, color-mix(in srgb, var(--ink) 3.5%, transparent), transparent 75%);
+}
+.sceneTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 18px;
+}
+.etiquette {
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sol {
+  justify-self: center;
+  width: 78%;
+  height: 22px;
+  margin-top: -18px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.2), transparent);
+  filter: blur(2px);
+  pointer-events: none;
+}
+:global(html[data-theme="nuit"]) .sol {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.6), transparent);
 }
 /* les boutons : l'action principale à l'encre de l'espace, la secondaire à contour */
 .action {

@@ -2559,3 +2559,19 @@ html:not([data-discreet="1"]) .rl-encre-on {
     animation: none !important;
   }
 }
+
+/* La pression (direction des sous-pages, 2026-11-13) : un objet cliquable s'enfonce de 2 px quand on
+   appuie, partout pareil. */
+.rl-presse {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.rl-presse:active {
+  transform: translateY(2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rl-presse {
+    transition: none;
+  }
+}

@@ -291,3 +291,36 @@ export const ILLUSTRATIONS = {
 } as const satisfies Record<string, Illustration>;
 
 export type IllustrationNom = keyof typeof ILLUSTRATIONS;
+
+/**
+ * La porte des sous-pages ne montre que la série peinte au couteau (direction du 2026-11-13, validée
+ * par Théo) : une image provisoire de maître ancien y est remplacée par la peinture de la série la
+ * plus proche du lieu. Les cartes qui gardent encore leur image provisoire ne sont pas touchées.
+ */
+const PORTE_REMPLACE: Partial<Record<IllustrationNom, IllustrationNom>> = {
+  "accueil-bandeau": "accueil-trente-du-jour",
+  "accueil-duel": "classement-duels",
+  "joueurs-seigneurie": "classement-duels",
+  "duel-echecs": "classement-duels",
+  "mock-grande-salle": "classement-grande-salle",
+  "reviser-casier": "accueil-cascade",
+  "reviser-casier-medaillon": "accueil-cascade",
+  "reviser-carnets": "reviser-bibliotheque",
+  "reviser-pupitre": "reviser-peche",
+  "moi-cabinet": "accueil-cascade",
+  "moi-cabinet-curiosites": "accueil-cascade",
+  "moi-carnet": "accueil-cascade",
+  "moi-marquees": "accueil-cascade",
+  "defi-pupitre": "accueil-trente-du-jour",
+  "cinq-depart": "accueil-trente-du-jour",
+  "defi-eclair": "classement-lice",
+  "eclair-depart": "classement-lice",
+  "calculs-poulies": "calculs-abaque",
+  "calculs-volant": "calculs-abaque",
+  "practice-corrige": "practice-studiolo",
+  "exams-sceau": "practice-studiolo",
+  "qcm-machines": "qcm-bibliotheque",
+};
+
+/** La peinture de la série à montrer dans une porte de sous-page (elle-même si elle en fait partie). */
+export const porteDe = (nom: IllustrationNom): IllustrationNom => PORTE_REMPLACE[nom] ?? nom;

@@ -134,8 +134,12 @@
   border-radius: 50%;
   background: radial-gradient(circle, #1a120b 0 4px, #d6a13f 5px);
 }
+/* le disque tourne au survol et s'arrête là où il est (plus de retour sec à 0°) */
+.disque {
+  animation: tourner 2.4s linear infinite paused;
+}
 .platine:hover .disque {
-  animation: tourner 2.4s linear infinite;
+  animation-play-state: running;
 }
 @keyframes tourner {
   to {
@@ -163,6 +167,7 @@
   .feuille {
     transition: none;
   }
+  .disque,
   .platine:hover .disque {
     animation: none;
   }

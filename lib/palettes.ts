@@ -85,7 +85,7 @@ const ROUTES: { palette: PaletteCle; prefixes: string[] }[] = [
   { palette: "florence", prefixes: ["/classement", "/people", "/duel", "/defi", "/mock-exams", "/eclair", "/salles"] },
   { palette: "glace", prefixes: ["/entrainement", "/calculs", "/practice", "/qcm", "/official-exams"] },
   { palette: "atelier", prefixes: ["/atelier"] },
-  { palette: "studiolo", prefixes: ["/reviser", "/fiches", "/courses", "/flashcards"] },
+  { palette: "studiolo", prefixes: ["/reviser", "/fiches", "/courses", "/flashcards", "/revoir", "/page-blanche", "/videos"] },
   { palette: "carnet", prefixes: ["/codex"] },
   { palette: "jade", prefixes: ["/moi"] },
   { palette: "graphite", prefixes: ["/dashboard"] },
