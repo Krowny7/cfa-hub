@@ -8,19 +8,18 @@ import { PlatineEcoute, SIGNAL_ECOUTE } from "@/components/reviser/PlatineEcoute
 import { lireEcoute, SANS_ECOUTE, type EcouteCours } from "@/lib/course-ecoute";
 import { ETAGERE } from "@/lib/voice-reviser-b";
 import type { Course } from "@/lib/courses";
-import b from "./Bibliotheque.module.css";
+import b from "./Cours.module.css";
 
-// L'objet-héros de /courses. Direction « le lieu, puis l'objet » (2026-11-13), puis les retours de Théo
-// le soir même : « les livres sur deux étages ; quand on reste dessus avec la souris, qu'il sorte de la
-// bibliothèque et se tourne légèrement, en 3D ; que le vinyle prenne plus de place, mais ne serve qu'à
-// lancer directement les audios (on sélectionne en dessous la matière) » ; et plus de vidéos ici (elles
-// ont leur page, /videos). Donc : la bibliothèque d'ébène à deux étages de cinq livres (la tranche : code,
-// titre en or, une encoche par module, dorée une fois écoutée ; la couverture se découvre quand le livre
-// pivote), le livre à reprendre entouré ; chaque livre ouvre son cours (le deck et l'audio). À côté, la
-// grande platine (components/reviser/PlatineEcoute) qui joue l'audio sur place.
+// /courses, version classique (Théo, 2026-11-14 : « revenir à quelque chose de plus classique, dans
+// notre DA, des éléments simplifiés pour que ce soit compréhensible pour tout le monde, avec notre
+// disposition actuelle »). À gauche « Ouvrir un cours » : les dix cours en cartes simples sur deux
+// rangées (code, nom, durée et modules, barre des modules écoutés, « À reprendre » sur celui du moment) ;
+// chaque carte ouvre son cours (le deck et l'audio). À droite « Jouer juste l'audio » : le lecteur
+// (components/reviser/PlatineEcoute) qui joue l'audio sur place. Avant : une bibliothèque en 3D et une
+// platine (jugées « too much »).
 // L'écoute est gardée sur l'appareil (localStorage) : lue après le montage seulement, et relue à chaque
-// signal de la platine. Tant qu'elle n'est pas lue (rendu serveur, hydratation), tout ce qui en dépend
-// (encoches, « n/19 », cercle, disque, chiffre-héros) garde sa place mais reste invisible.
+// signal du lecteur. Tant qu'elle n'est pas lue (rendu serveur, hydratation), tout ce qui en dépend
+// (avancement, « À reprendre », lecteur, chiffre-héros) garde sa place mais reste invisible.
 
 const SLUGS = COURS_PROGRAMME.map((c) => c.slug);
 /** l'écoute de l'appareil, après le montage, relue quand la platine change quelque chose (null : pas encore lue) */
@@ -77,94 +76,74 @@ export function LigneCours({ apercu }: { apercu?: EcouteCours | null }) {
   return <>{ETAGERE.ligne(COURS_PROGRAMME.length, av.filter((a) => !a.fini && a.position > 5).length, av.filter((a) => a.fini).length)}</>;
 }
 
-/** Les deux tons des reliures, en plus de l'ébène (le même livre garde toujours le sien). */
-const TON = (i: number) => (i % 3 === 1 ? "1" : i % 3 === 2 ? "2" : undefined);
-/** l'épaisseur et la hauteur de chaque livre, autour de la moyenne : une vraie rangée n'est jamais au cordeau */
-const EPAISSEUR = [1.04, 0.92, 1, 0.95, 1.08, 0.97, 1.06, 0.93, 1, 0.96];
-const HAUTEUR = [1, 0.95, 0.98, 0.93, 1, 0.97, 1, 0.94, 0.98, 0.96];
-const gabarit = (i: number) => ({ ["--k" as string]: EPAISSEUR[i] ?? 1, ["--j" as string]: HAUTEUR[i] ?? 1 });
-/** les deux étages : cinq matières chacun, dans l'ordre du programme */
-const ETAGES = [SUBJECTS.slice(0, 5), SUBJECTS.slice(5)];
-
 export function EtagereCours({ apercu, sources = {} }: { apercu?: EcouteCours | null; sources?: Record<string, string | null> }) {
   const e = useEcoute(apercu);
   const lu = e !== null;
   const carte = carteCours(e ?? SANS_ECOUTE);
   /** invisible (place gardée) tant que l'appareil n'est pas lu, puis révélé en fondu */
   const cache = lu ? b.revele : b.attente;
-  const parts = Object.fromEntries(COURS_PROGRAMME.map((c) => [c.slug, avancement(c, e ?? SANS_ECOUTE).position / (c.minutes * 60)]));
   return (
     <div className={b.salle}>
-      <div className={b.bibliotheque} role="group" aria-label={ETAGERE.bibliotheque}>
-        {ETAGES.map((rang, k) => (
-          <ul key={k} className={b.etage}>
-            {rang.map((m, j) => {
-              const i = k * 5 + j;
-              const c = COURS_PROGRAMME.find((x) => x.slug === m.course) ?? null;
-              if (!c)
-                return (
-                  <li key={m.key} className={b.place} style={gabarit(i)} data-indispo="1">
-                    <span className={b.livre} title={m.name} data-ton={TON(i)}>
-                      <span className={b.tranche}>
-                        <span className={b.code}>
-                          {m.code}
-                          <small>{ETAGERE.bientot}</small>
-                        </span>
-                        <span className={b.titre}>{m.name}</span>
-                      </span>
-                    </span>
-                  </li>
-                );
-              const av = avancement(c, e ?? SANS_ECOUTE);
-              const conseil = lu && carte?.slug === c.slug;
+      <section className={b.colonne} aria-labelledby="cours-ouvrir">
+        <h2 id="cours-ouvrir" className={b.titre}>
+          {ETAGERE.ouvrirTitre}
+        </h2>
+        <ul className={b.grille}>
+          {SUBJECTS.map((m) => {
+            const c = COURS_PROGRAMME.find((x) => x.slug === m.course) ?? null;
+            if (!c)
               return (
-                <li key={m.key} className={b.place} style={gabarit(i)} data-conseil={conseil ? "1" : undefined}>
-                  <Link href={`/courses/${c.slug}`} className={b.livre} data-ton={TON(i)} aria-label={ETAGERE.livretAria(c.title, av.modules, c.chapters.length, conseil)} title={c.title}>
-                    <span className={b.tranche}>
-                      <span className={b.encoches + " " + cache} aria-hidden>
-                        {c.chapters.map((_, n) => (
-                          <i key={n} data-fait={n < av.modules ? "1" : undefined} />
-                        ))}
-                      </span>
-                      <span className={b.code}>
-                        {m.code}
-                        <small>{ETAGERE.minutes(c.minutes)}</small>
-                      </span>
-                      <span className={b.titre}>{c.title}</span>
-                      <span className={b.compte + " " + cache}>
-                        {av.modules}/{c.chapters.length}
-                      </span>
-                      <span className={b.eclat} aria-hidden />
+                <li key={m.key}>
+                  <div className={b.carte} data-indispo="1">
+                    <span className={b.haut}>
+                      <span className={b.code}>{m.code}</span>
                     </span>
-                    {/* le volume : le plat (il se découvre quand le livre pivote), le contre-plat, la tête des pages */}
-                    <span className={b.plat} aria-hidden>
-                      <span className={b.couvCode}>{m.code}</span>
-                      <span className={b.couvTitre}>{c.title}</span>
-                      <span className={b.couvPied}>
-                        {ETAGERE.modules(c.chapters.length)} · {ETAGERE.minutes(c.minutes)}
-                      </span>
-                    </span>
-                    <span className={b.contrePlat} aria-hidden />
-                    <span className={b.tete} aria-hidden />
-                  </Link>
-                  {conseil && (
-                    <svg className={b.entoure} viewBox="0 0 120 160" preserveAspectRatio="none" aria-hidden>
-                      <use href="#rl-cercle-main" />
-                    </svg>
-                  )}
+                    <p className={b.nom}>{m.name}</p>
+                    <span className={b.meta}>{ETAGERE.bientot}</span>
+                  </div>
                 </li>
               );
-            })}
-          </ul>
-        ))}
-      </div>
+            const av = avancement(c, e ?? SANS_ECOUTE);
+            const conseil = lu && carte?.slug === c.slug;
+            return (
+              <li key={m.key}>
+                <Link
+                  href={`/courses/${c.slug}`}
+                  className={b.carte}
+                  data-conseil={conseil ? "1" : undefined}
+                  aria-label={ETAGERE.livretAria(c.title, av.modules, c.chapters.length, conseil)}
+                >
+                  <span className={b.haut}>
+                    <span className={b.code}>{m.code}</span>
+                    {conseil && <span className={b.tag}>{ETAGERE.aReprendre}</span>}
+                  </span>
+                  <p className={b.nom}>{c.title}</p>
+                  <span className={b.bas}>
+                    <span className={b.meta}>
+                      {ETAGERE.minutes(c.minutes)} · {ETAGERE.modules(c.chapters.length)}
+                    </span>
+                    <span className={b.avance + " " + cache} aria-hidden>
+                      <span className={b.jauge}>
+                        <i style={{ width: `${Math.round((av.modules / Math.max(1, c.chapters.length)) * 100)}%` }} />
+                      </span>
+                      <span className={b.compte}>
+                        {av.modules}/{c.chapters.length}
+                      </span>
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
-      {/* au-dessus de la platine, ce qu'elle fait, en titre comme « Cours complets » (Théo) ; la colonne
-          prend la hauteur de la bibliothèque : le titre en haut, la platine jusqu'en bas */}
-      <div className={b.colonnePlatine}>
-        <h2 className={b.titrePlatine}>{ETAGERE.platineTitre}</h2>
-        <PlatineEcoute sources={sources} depart={lu ? (carte?.slug ?? null) : null} pret={lu} parts={parts} positions={e?.positions} />
-      </div>
+      <section className={b.colonne} aria-labelledby="cours-audio">
+        <h2 id="cours-audio" className={b.titre}>
+          {ETAGERE.platineTitre}
+        </h2>
+        <PlatineEcoute sources={sources} depart={lu ? (carte?.slug ?? null) : null} pret={lu} positions={e?.positions} />
+      </section>
     </div>
   );
 }

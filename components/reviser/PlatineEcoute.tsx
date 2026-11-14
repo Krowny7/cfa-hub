@@ -5,18 +5,17 @@ import { useEffect, useRef, useState } from "react";
 import { FastForward, Pause, Play, Rewind } from "lucide-react";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { COURS_PROGRAMME, mmss } from "@/components/reviser/parcours";
-import { DisqueTournant } from "@/components/ui/DisqueTournant";
 import { codexNoter } from "@/lib/codex/actions";
 import { POS_PREFIX, noterCoursFini, noterDernierCours } from "@/lib/course-ecoute";
 import { createClient } from "@/lib/supabase/browser";
 import { ETAGERE } from "@/lib/voice-reviser-b";
-import b from "./Bibliotheque.module.css";
+import b from "./Cours.module.css";
 
-// La platine de /courses (Théo, 2026-11-13 : « que le vinyle prenne plus de place, mais ne serve qu'à
-// lancer directement les audios ; on sélectionne en dessous la matière »). Le disque EST le bouton :
-// un appui lance l'audio du cours posé, sur place, sans quitter la page (le livre, lui, ouvre le cours
-// entier : le deck et l'audio). Dessous, les dix matières : en choisir une change le disque (l'écoute
-// en cours passe au nouveau disque). Puis le module, la barre et trois commandes (−15 s, vitesse, +15 s).
+// Le lecteur de /courses, « Jouer juste l'audio » (Théo, 2026-11-13 : « ne serve qu'à lancer directement
+// les audios ; on sélectionne en dessous la matière » ; version classique le 2026-11-14 : plus de platine).
+// Les dix matières en pastilles, le cours choisi et son module, un gros bouton de lecture, la barre et
+// trois commandes (−15 s, vitesse, +15 s). En choisir une autre change de cours (l'écoute en cours passe
+// au nouveau cours). L'audio joue sur place : le cours entier (le deck et l'audio) s'ouvre par sa carte.
 // L'écoute suit les mêmes règles que le lecteur d'un cours (components/CourseAudioPlayer) : même position
 // gardée sur l'appareil (rl_course_pos:<slug>), même vitesse (rl_audio_rate), dernier cours écouté noté
 // au démarrage, cours fini noté à la fin, minutes comptées pour le Codex, lien signé renouvelé s'il
@@ -57,7 +56,6 @@ export function PlatineEcoute({
   sources,
   depart,
   pret,
-  parts,
   positions = {},
 }: {
   /** l'audio signé de chaque cours (null : pas de lien) */
@@ -66,8 +64,6 @@ export function PlatineEcoute({
   depart: string | null;
   /** l'appareil est lu */
   pret: boolean;
-  /** la part écoutée de chaque cours (0 à 1), sous chaque matière */
-  parts: Record<string, number>;
   /** les positions lues avec la bibliothèque (le même appareil) : la reprise si le stockage ne répond pas */
   positions?: Record<string, number>;
 }) {
@@ -350,28 +346,8 @@ export function PlatineEcoute({
   const aide = !pret ? ETAGERE.platine : joue ? ETAGERE.pause(cours.title) : t > 5 ? ETAGERE.reprendreA(cours.title, mmss(t)) : ETAGERE.ecouter(cours.title);
 
   return (
-    <section className={b.platine} aria-label={ETAGERE.platine} data-joue={joue ? "1" : undefined}>
+    <div className={b.lecteur} data-joue={joue ? "1" : undefined}>
       <audio ref={audio} src={pret && src ? src : undefined} preload="metadata" />
-
-      <div className={b.plinthe}>
-        <button type="button" className={b.plateau} onClick={basculer} aria-label={aide} title={aide} disabled={!pret}>
-          <DisqueTournant className={b.disque} tourne={joue} hote="aucun">
-            <span className={b.etiquette}>
-              <span className={voile}>{code}</span>
-            </span>
-          </DisqueTournant>
-          <span className={b.icone + (voile ? " " + voile : "")} aria-hidden>
-            {joue ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" className="translate-x-[2px]" />}
-          </span>
-        </button>
-        <span className={b.bras} aria-hidden>
-          <i />
-        </span>
-        <span className={b.molettes} aria-hidden>
-          <i />
-          <i />
-        </span>
-      </div>
 
       <div className={b.matieres} role="group" aria-label={ETAGERE.matieres}>
         {COURS_PROGRAMME.map((c) => {
@@ -381,28 +357,33 @@ export function PlatineEcoute({
             <button
               key={c.slug}
               type="button"
-              className={b.matiere + " rl-presse"}
+              className={b.pastille + " rl-presse"}
               aria-pressed={on}
-              data-on={on ? "1" : undefined}
               onClick={() => choisir(c.slug)}
               disabled={!pret}
               title={c.title}
               aria-label={`${codeM} · ${c.title}`}
             >
-              <b>{codeM}</b>
-              <span className={b.part} style={{ ["--part" as string]: pret ? (parts[c.slug] ?? 0) : 0 }} aria-hidden>
-                <i />
-              </span>
+              {codeM}
             </button>
           );
         })}
       </div>
 
+      <div className={b.enCours}>
+        <button type="button" className={b.lecture} onClick={basculer} aria-label={aide} title={aide} disabled={!pret}>
+          {joue ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" className="translate-x-[2px]" />}
+        </button>
+        <div className={b.titres + (voile ? " " + voile : "")}>
+          <p className={b.coursTitre}>{cours.title}</p>
+          <p className={b.module}>
+            <span>{ETAGERE.moduleDe(i + 1, cours.chapters.length)}</span>
+            <b>{module?.title ?? cours.title}</b>
+          </p>
+        </div>
+      </div>
+
       <div className={b.ecoute + (voile ? " " + voile : "")}>
-        <p className={b.module}>
-          <span>{ETAGERE.moduleDe(i + 1, cours.chapters.length)}</span>
-          <b>{module?.title ?? cours.title}</b>
-        </p>
         <div className={b.barre}>
           <span className={b.piste} aria-hidden>
             <i style={{ width: `${pct}%` }} />
@@ -441,6 +422,6 @@ export function PlatineEcoute({
           </p>
         )}
       </div>
-    </section>
+    </div>
   );
 }
