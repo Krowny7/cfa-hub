@@ -50,8 +50,9 @@ export const RV = {
   fcCarteTete: "À RETENIR",
   pbTitre: "La page blanche",
   pbSous: "Récite tes formules sur papier",
-  videosTitre: "Vidéos résumé",
-  videosSous: "Une matière en quelques minutes",
+  // la porte de /videos (la télé à trois chaînes) ; tant que seule la chaîne 3 (Résumé) est à l'antenne, la tuile le dit
+  videosTitre: "Vidéos",
+  videosSous: "3 résumés d'une heure, pour les derniers jours",
   videosEtiquette: "Nouveau",
   codexTitre: "Le Codex",
   codexSous: "Tes quêtes, tes sceaux et tout ce qui reste à conquérir.",

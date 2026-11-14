@@ -253,6 +253,18 @@ export const ILLUSTRATIONS = {
     emplacement: "/ (accueil) : à droite de la carte « Tes meilleurs scores », environ 505×535 px sur ordinateur.",
     prompt: "Peinture à l'huile au couteau, décor de jeu vidéo : une gigantesque cascade tombe dans un bassin vert jade, au cœur d'une forêt de bambous, tôt le matin. Au pied de la chute, deux ninjas minuscules, tout en noir, méditent en tailleur sur deux rochers plats et encaissent l'eau sans bouger ; l'un porte une écharpe vermillon. Format carré 1:1.",
   },
+  "reviser-salon": {
+    // provisoire : la peinture de la Bibliothèque, cadrée sur sa voûte ; la peinture définitive (prompt ci-dessous) va
+    // dans public/illustrations/reviser-salon.webp, et `src` passe alors à ce fichier, `alt` à « Un salon sombre éclairé
+    // par un poste cathodique ; deux samouraïs assis le regardent »
+    src: "/illustrations/reviser-bibliotheque.webp",
+    alt: "La voûte peinte et dorée d'une grande salle de lecture",
+    credit: "Provisoire (2026-11-14) : reviser-bibliotheque, en attendant la peinture du salon.",
+    emplacement:
+      "La porte de /videos (la télé à trois chaînes) : à droite de l'en-tête, environ 660×146 px sur ordinateur, bande pleine largeur au téléphone, le chiffre-héros posé en bas à droite. Format panoramique 3:1, 2400×800 px au moins.",
+    prompt:
+      "Reprends exactement la technique, la lumière et le style de la peinture jointe (huile au couteau, empâtements, décor de jeu vidéo). Un salon sombre et chaleureux, le soir : un vieux poste de télévision cathodique sur pieds, dans un meuble de bois sombre laqué, son écran bombé allumé jette une lueur bleutée et froide dans la pièce ; un tapis, une lampe basse éteinte, une fenêtre ouverte sur la nuit. Deux samouraïs ninjas, presque entièrement noirs, l'un à capuche et écharpe vermillon, l'autre à chignon, assis par terre de dos ou de trois quarts dos, regardent l'écran, leurs sabres posés à côté d'eux, une tasse de thé fumante. Personnages bien visibles, peu de zoom. Palette : brun, ébène, or sombre, le bleu glacé de l'écran. Format panoramique 3:1 ; le poste et les deux samouraïs au centre gauche, le tiers droit calme et sombre (le chiffre-héros s'y pose). Aucun texte, aucune image lisible sur l'écran, aucun logo, pas de cadre.",
+  },
   "reviser-peche": {
     src: "/illustrations/reviser-peche.webp",
     alt: "Deux samouraïs pêchent côte à côte sur une pierre plate, au bord d'une rivière turquoise, entre de hauts pitons de roche",

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type SyntheticEvent } from "react";
 import { Check, SkipBack, SkipForward } from "lucide-react";
 import { CHAINES, dureeVideo, groupesDeMatiere, numeroDeChaine, type CategorieVideo, type VideoResume } from "@/lib/videos";
 import { CHAINES_TXT, VIDEOS_TXT as T, dureeTexte, horodatage } from "@/lib/voice-videos";
@@ -13,16 +13,18 @@ import s from "./Videos.module.css";
 export type SourceVideo = { src: string | null; affiche: string | null };
 
 // La page des vidéos (direction « le lieu, puis l'objet », 2026-11-13) : une télé cathodique, et ses trois chaînes
-// (lib/videos : 1 Introduction, 2 Cours, 3 Résumé). Le lecteur joue dans le verre bombé de l'écran ; sur le meuble,
-// le compteur de la vidéo entière, les touches des chaînes, les trois boutons ronds (partie précédente, vitesse,
-// partie suivante) et la grille du haut-parleur ; sous l'écran, la frise de la vidéo, matière par matière. À côté
-// (dessous au téléphone), le guide des programmes de la chaîne, puis le programme de la vidéo à l'écran (ses
-// parties rangées par matière, la partie en cours ouverte sur ses chapitres). Une chaîne vide montre une neige
-// fixe et ce qu'elle diffusera.
+// (lib/videos : 1 Introduction, 2 Cours, 3 Résumé). Le lecteur joue dans le verre bombé de l'écran ; sous l'écran, sur
+// le meuble : la plaque (la partie à l'écran et son titre), la frise de la vidéo matière par matière, puis la console
+// (le compteur de la vidéo entière, les touches des chaînes, les trois boutons ronds : partie précédente, vitesse,
+// partie suivante ; la grille du haut-parleur sur grand écran). Sous la télé, le guide des programmes de la chaîne ;
+// à droite (dessous au téléphone), le programme de la vidéo à l'écran (ses parties rangées par matière, la partie en
+// cours ouverte sur ses chapitres). Une chaîne vide montre une neige fixe et ce qu'elle diffusera ; la colonne de
+// droite y montre le guide de la chaîne qui a des vidéos.
 // Une vidéo est une suite de parties jouées à la suite : à la fin d'une partie, la suivante démarre seule.
 // L'appareil garde, pour chaque vidéo, l'endroit où on s'est arrêté et ce qu'on a déjà vu (rl_video_<slug>), la
 // vitesse (rl_video_vitesse) et la dernière vidéo lancée (rl_video_derniere) ; tout est lu après le montage (le
-// serveur rend la page sans historique). L'écran s'allume une fois à l'arrivée (en CSS, sans attendre le script).
+// serveur rend la page sans historique). L'écran s'allume une fois à l'arrivée, comme un tube (en CSS, sans attendre
+// le script), et s'éteint dès qu'on zappe (touche, fiche du guide), le temps que la page suivante arrive.
 
 const VITESSES = [1, 1.25, 1.5, 1.75, 2];
 const CLE_VITESSE = "rl_video_vitesse";
@@ -69,6 +71,9 @@ function repriseDe(v: VideoResume, x: Suivi | null): number | null {
 }
 
 const partieVue = (vu: number, secondes: number) => vu >= secondes * 0.9;
+const mouvementReduit = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** un clic simple (pas d'ouverture dans un autre onglet) : la page va vraiment changer ici */
+const clicSimple = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 
 export function VideosView({
   videos,
@@ -93,6 +98,7 @@ export function VideosView({
   const router = useRouter();
   const ref = useRef<HTMLVideoElement>(null);
   const liste = useRef<HTMLOListElement>(null);
+  const tele = useRef<HTMLDivElement>(null);
   const derniere = useRef(0);
   const dernierT = useRef<number | null>(null);
   const [partie, setPartie] = useState(0);
@@ -107,6 +113,8 @@ export function VideosView({
   const [derniereVue, setDerniereVue] = useState<string | null>(null);
   /** la télé passe à une autre vidéo (la dernière lancée) : l'écran reste noir le temps du changement */
   const [zappe, setZappe] = useState(false);
+  /** la vidéo joue : les effets du verre s'effacent à moitié, pour lire les formules */
+  const [enLecture, setEnLecture] = useState(false);
 
   const n = video?.parties.length ?? 0;
   const p = video?.parties[partie] ?? null;
@@ -125,7 +133,8 @@ export function VideosView({
       const r = Number(localStorage.getItem(CLE_VITESSE));
       if (VITESSES.includes(r)) setVitesse(r);
     } catch {}
-    setEtats(Object.fromEntries(programmes.filter(enLigne).map((v) => {
+    // toutes les vidéos en ligne : celles de la chaîne, et celles du guide montré à côté d'une chaîne vide
+    setEtats(Object.fromEntries(videos.filter(enLigne).map((v) => {
       const x = lireSuivi(v);
       return [v.slug, { pct: x ? partVue(v, x.vu) : 0, reprise: repriseDe(v, x) }] as [string, Etat];
     })));
@@ -191,22 +200,37 @@ export function VideosView({
     if (!el) return;
     const haut = el.offsetTop;
     if (haut >= ol.scrollTop + 8 && haut + el.offsetHeight <= ol.scrollTop + ol.clientHeight - 8) return;
-    ol.scrollTo({ top: Math.max(0, haut - 44), behavior: "smooth" });
+    ol.scrollTo({ top: Math.max(0, haut - 44), behavior: mouvementReduit() ? "auto" : "smooth" });
   }, [partie]);
 
-  function allerA(i: number, debut: number, jouer = true) {
+  /** `depuisListe` : l'appel vient du programme ; au téléphone (programme sous la télé), la télé revient à l'écran */
+  function allerA(i: number, debut: number, jouer = true, depuisListe = false) {
     setReprise(null);
     dernierT.current = null;
     if (i !== partie) {
       setPartie(i);
       setT(debut);
       setSaut({ t: debut, jouer });
+      setEnLecture(false);
     } else if (ref.current) {
       ref.current.currentTime = debut;
       setT(debut);
       if (jouer) void ref.current.play().catch(() => {});
     }
+    const el = tele.current;
+    if (depuisListe && el && window.matchMedia("(max-width: 979px)").matches) {
+      const r = el.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > window.innerHeight) el.scrollIntoView({ block: "start", behavior: mouvementReduit() ? "auto" : "smooth" });
+    }
   }
+
+  /** zapper (touche d'une autre chaîne, fiche d'une autre vidéo) : l'écran s'éteint et le son se coupe tout de suite
+   *  (la pause garde l'endroit) ; le remontage de la vue rallume l'écran */
+  const zapper = (e: MouseEvent) => {
+    if (!clicSimple(e)) return;
+    ref.current?.pause();
+    setZappe(true);
+  };
 
   // le temps regardé : l'écart entre deux mises à jour pendant la lecture (un saut remet le compteur à zéro)
   function surTemps(e: SyntheticEvent<HTMLVideoElement>) {
@@ -248,7 +272,7 @@ export function VideosView({
   const total = video ? dureeVideo(video) : 0;
   // l'appareil lu (le suivi arrive après le montage) : avant, le chiffre-héros, la ligne et les parts vues restent invisibles
   const lu = etats !== null && (!video || vu.length > 0);
-  const voile = { fontStyle: "normal" as const, opacity: lu ? 1 : 0, transition: "opacity 0.25s ease" };
+  const voile = { className: s.voile, style: { opacity: lu ? 1 : 0 } };
   const etatDe = (v: VideoResume): Etat | null => (v.slug === video?.slug ? (lu ? { pct, reprise: null } : null) : (etats?.[v.slug] ?? null));
 
   // la chaîne entière : ce qu'il en reste à voir, combien de vidéos entamées et vues
@@ -264,32 +288,82 @@ export function VideosView({
       : entamees + vues > 0
         ? { valeur: T.heures(resteChaine / 60), legende: T.herosReste }
         : { valeur: T.heures(dureeChaine / 60), legende: T.herosNeuve };
-  const ailleurs = CHAINES.find((c) => c.categorie !== chaine && videos.some((v) => v.categorie === c.categorie && enLigne(v)));
-  const nbAilleurs = ailleurs ? videos.filter((v) => v.categorie === ailleurs.categorie && enLigne(v)).length : 0;
+  // une chaîne vide : la chaîne qui a des vidéos, dont le guide remplit la colonne de droite
+  const ailleurs = video ? undefined : CHAINES.find((c) => c.categorie !== chaine && videos.some((v) => v.categorie === c.categorie && enLigne(v)));
+  const programmesAilleurs = ailleurs ? videos.filter((v) => v.categorie === ailleurs.categorie).sort((a, b) => a.numero - b.numero) : [];
+  // la ligne d'état : la chaîne à l'écran (l'endroit où reprendre est sur le compteur de la télé, pas ici) ; une chaîne
+  // vide n'en a pas (l'écran dit « Bientôt », la colonne de droite montre ce qui est à l'antenne ailleurs)
   const ligne = aLAntenne.length ? (
-    <i style={voile}>
+    <i {...voile}>
       {[
         T.nbVideos(aLAntenne.length),
         entamees + vues === 0 ? T.aucuneCommencee(aLAntenne.length) : null,
         entamees > 0 ? T.entamees(entamees) : null,
         // tout vu : le chiffre-héros le dit déjà (« 3/3 »)
         vues > 0 && vues < aLAntenne.length ? T.vues(vues) : null,
-        reprise !== null ? T.repriseCourte(horodatage(reprise)) : null,
       ]
         .filter(Boolean)
         .join(" · ")}
     </i>
-  ) : ailleurs ? (
-    T.ailleurs(nbAilleurs, ailleurs.numero)
-  ) : (
-    T.aucune
-  );
-  // la touche d'une chaîne : tout droit à la dernière vidéo lancée si elle y est, sinon la chaîne
+  ) : null;
+  // la touche d'une autre chaîne : tout droit à la dernière vidéo lancée si elle y est, sinon la chaîne (la touche
+  // allumée n'est pas un lien : elle ne change jamais le programme)
   const lienChaine = (c: CategorieVideo) => {
     const d = derniereVue ? videos.find((v) => v.slug === derniereVue) : undefined;
     return d && d.categorie === c ? `${base}?v=${d.slug}` : `${base}?chaine=${c}`;
   };
   const position = video ? (decalages[partie] ?? 0) + t : 0;
+  const lecteur = !!(video && source?.src);
+
+  // une fiche du guide : la vidéo à l'écran n'est pas un lien (rien à recharger) ; les autres zappent
+  const fiche = (v: VideoResume) => {
+    const courante = v.slug === video?.slug;
+    const e = etatDe(v);
+    const dv = dureeVideo(v);
+    // deux lignes : la durée et la part vue, puis ce qu'il en reste (à l'écran) ou l'endroit où reprendre
+    const vueTxt = e && e.pct > 0 ? ` · ${T.vue(e.pct)}` : "";
+    const suite = !e ? null : courante ? (e.pct > 0 && e.pct < 100 ? T.reste(dureeTexte(dv * (1 - e.pct / 100))) : null) : e.reprise !== null ? T.repriseCourte(horodatage(e.reprise)) : null;
+    const corps = (
+      <>
+        <span className={s.emNum}>{v.numero}</span>
+        <span className={s.emCorps}>
+          <span className={s.emTitre}>{v.titre}</span>
+          <span className={s.emMeta}>
+            {enLigne(v) ? dureeTexte(dv) : T.enPreparation}
+            <i {...voile}>{vueTxt}</i>
+          </span>
+          {suite && (
+            <span className={s.emMeta} data-suite="1">
+              <i {...voile}>{suite}</i>
+            </span>
+          )}
+          {enLigne(v) && (
+            <span className={s.emBarre} aria-hidden>
+              <i style={{ "--part": lu ? (e?.pct ?? 0) : 0 } as CSSProperties} />
+            </span>
+          )}
+        </span>
+        {courante && <span className={s.antenne}>{T.aLEcran}</span>}
+      </>
+    );
+    return (
+      <li key={v.slug}>
+        {courante ? (
+          <span className={s.emission} data-actif="1" aria-current="page">
+            {corps}
+          </span>
+        ) : enLigne(v) ? (
+          <Link href={`${base}?v=${v.slug}`} scroll={false} className={s.emission + " rl-presse"} onClick={zapper}>
+            {corps}
+          </Link>
+        ) : (
+          <span className={s.emission} data-avenir="1">
+            {corps}
+          </span>
+        )}
+      </li>
+    );
+  };
 
   return (
     <SousPage
@@ -297,10 +371,10 @@ export function VideosView({
       entete={
         <EnTeteSousPage
           retour={RETOUR.reviser}
-          illustration={{ nom: "reviser-bibliotheque", position: "50% 92%" }}
+          illustration={{ nom: "reviser-salon", position: "50% 30%" }}
           titre={T.titre}
           ligne={ligne}
-          heros={heros ? { valeur: <i style={voile}>{heros.valeur}</i>, legende: <i style={voile}>{heros.legende}</i> } : null}
+          heros={heros ? { valeur: <i {...voile}>{heros.valeur}</i>, legende: <i {...voile}>{heros.legende}</i> } : null}
         />
       }
     >
@@ -308,11 +382,11 @@ export function VideosView({
         <div className={s.salon}>
           <div className={s.gauche}>
             {/* ——— la télé ——— */}
-            <div className={s.poste}>
+            <div ref={tele} className={s.poste}>
               <section className={s.meuble} aria-label={T.tele}>
                 <div className={s.masque}>
-                  <div className={s.verre} data-zappe={zappe ? "1" : undefined}>
-                    {video && source?.src ? (
+                  <div className={s.verre} data-ecran={lecteur ? "video" : "neige"} data-lecture={enLecture ? "1" : undefined} data-zappe={zappe ? "1" : undefined}>
+                    {lecteur && source?.src ? (
                       <video
                         ref={ref}
                         key={source.src}
@@ -326,6 +400,9 @@ export function VideosView({
                           e.currentTarget.playbackRate = vitesse;
                         }}
                         onPlay={() => {
+                          setEnLecture(true);
+                          // relancée : le compteur ne dit plus « reprise »
+                          setReprise(null);
                           try {
                             if (video) localStorage.setItem(CLE_DERNIERE, video.slug);
                           } catch {}
@@ -333,9 +410,13 @@ export function VideosView({
                         onTimeUpdate={surTemps}
                         onSeeking={() => (dernierT.current = null)}
                         onPause={(e) => {
+                          setEnLecture(false);
                           if (video && vu.length) ecrireSuivi(video.slug, { i: partie, t: e.currentTarget.currentTime, vu });
                         }}
-                        onEnded={surFin}
+                        onEnded={() => {
+                          setEnLecture(false);
+                          surFin();
+                        }}
                       />
                     ) : (
                       <div className={s.neige}>
@@ -345,7 +426,7 @@ export function VideosView({
                         </p>
                       </div>
                     )}
-                    {video && source?.src && (
+                    {lecteur && (
                       <span className={s.incruste} aria-hidden>
                         {T.incrustation(numero, nomChaine.court)}
                       </span>
@@ -355,27 +436,52 @@ export function VideosView({
                   </div>
                 </div>
 
+                {/* la plaque : ce qui passe, écrit sur le meuble */}
+                <p className={s.plaque}>
+                  {video && p ? (
+                    <>
+                      <b>{T.partieCourte(partie + 1, n)}</b>
+                      <span title={p.titre}>{p.titre}</span>
+                    </>
+                  ) : (
+                    <>
+                      <b>{T.chaineCourte(numero)}</b>
+                      <span>{nomChaine.nom}</span>
+                    </>
+                  )}
+                </p>
+
                 <div className={s.panneau}>
-                  <p className={s.cadran} aria-label={T.compteur}>
+                  <div className={s.cadran} role="group" aria-label={T.compteur}>
                     <b>{video ? horodatage(position) : T.compteurVide}</b>
-                    <span>{video ? `${String(partie + 1).padStart(2, "0")}/${String(n).padStart(2, "0")} · ${horodatage(total)}` : nomChaine.court}</span>
-                  </p>
+                    <span data-reprise={video && reprise !== null ? "1" : undefined}>
+                      {video ? (reprise !== null ? T.cadranReprise : T.cadranTotal(horodatage(total))) : T.cadranTotalVide}
+                    </span>
+                  </div>
                   <nav className={s.touches} aria-label={T.chaines}>
                     {CHAINES.map((c) => {
-                      const actif = c.categorie === chaine;
-                      return (
+                      const contenu = (
+                        <>
+                          <i className={s.lampe} aria-hidden />
+                          <b>{c.numero}</b>
+                          <span>{CHAINES_TXT[c.categorie].court}</span>
+                        </>
+                      );
+                      return c.categorie === chaine ? (
+                        <span key={c.categorie} className={s.touche} aria-current="page" title={T.chaine(c.numero, CHAINES_TXT[c.categorie].nom)}>
+                          {contenu}
+                        </span>
+                      ) : (
                         <Link
                           key={c.categorie}
                           href={lienChaine(c.categorie)}
                           scroll={false}
                           className={s.touche}
-                          aria-current={actif ? "page" : undefined}
+                          onClick={zapper}
                           aria-label={T.chaine(c.numero, CHAINES_TXT[c.categorie].nom)}
                           title={CHAINES_TXT[c.categorie].nom}
                         >
-                          <i className={s.lampe} aria-hidden />
-                          <b>{c.numero}</b>
-                          <span>{CHAINES_TXT[c.categorie].court}</span>
+                          {contenu}
                         </Link>
                       );
                     })}
@@ -423,69 +529,32 @@ export function VideosView({
                   )}
                 </div>
               </section>
+              {/* quatre pieds de console, évasés : les deux de derrière, plus courts et dans l'ombre */}
               <div className={s.pieds} aria-hidden>
+                <i data-pied="arriere" />
+                <i data-pied="arriere" />
                 <i />
                 <i />
               </div>
             </div>
 
-            {/* ——— sous la télé, le guide des programmes de la chaîne ——— */}
-            <section className={s.zone} aria-label={T.guide(numero, nomChaine.nom)}>
-              <Etiquette as="h2">{T.guide(numero, nomChaine.nom)}</Etiquette>
-              {programmes.length ? (
-                <ol className={s.guide}>
-                  {programmes.map((v) => {
-                    const courante = v.slug === video?.slug;
-                    const e = etatDe(v);
-                    const dv = dureeVideo(v);
-                    // deux lignes : la durée et la part vue, puis ce qu'il en reste (à l'écran) ou l'endroit où reprendre
-                    const vueTxt = e && e.pct > 0 ? ` · ${T.vue(e.pct)}` : "";
-                    const suite = !e ? null : courante ? (e.pct > 0 && e.pct < 100 ? T.reste(dureeTexte(dv * (1 - e.pct / 100))) : null) : e.reprise !== null ? T.repriseCourte(horodatage(e.reprise)) : null;
-                    const corps = (
-                      <>
-                        <span className={s.emNum}>{v.numero}</span>
-                        <span className={s.emCorps}>
-                          <span className={s.emTitre}>{v.titre}</span>
-                          <span className={s.emMeta}>
-                            {enLigne(v) ? dureeTexte(dv) : T.enPreparation}
-                            <i style={voile}>{vueTxt}</i>
-                          </span>
-                          {suite && (
-                            <span className={s.emMeta} data-suite="1">
-                              <i style={voile}>{suite}</i>
-                            </span>
-                          )}
-                          {enLigne(v) && (
-                            <span className={s.emBarre} aria-hidden>
-                              <i style={{ "--part": lu ? (e?.pct ?? 0) : 0 } as CSSProperties} />
-                            </span>
-                          )}
-                        </span>
-                        {courante && <span className={s.antenne}>{T.aLEcran}</span>}
-                      </>
-                    );
-                    return (
-                      <li key={v.slug}>
-                        {enLigne(v) ? (
-                          <Link href={`${base}?v=${v.slug}`} scroll={false} className={s.emission + " rl-presse"} data-actif={courante ? "1" : undefined} aria-current={courante ? "page" : undefined}>
-                            {corps}
-                          </Link>
-                        ) : (
-                          <span className={s.emission} data-avenir="1">
-                            {corps}
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ol>
-              ) : (
-                <p className={s.guideVide}>{T.guideVide}</p>
-              )}
-            </section>
+            {/* ——— sous la télé, le guide des programmes de la chaîne (rien pour une chaîne sans programme) ——— */}
+            {programmes.length > 0 && (
+              <section className={s.zone} aria-label={T.guide(numero, nomChaine.nom)}>
+                <Etiquette as="h2">{T.guide(numero, nomChaine.nom)}</Etiquette>
+                <ol className={s.guide}>{programmes.map(fiche)}</ol>
+              </section>
+            )}
           </div>
 
-          {/* ——— à droite (dessous au téléphone), le programme de la vidéo à l'écran ——— */}
+          {/* ——— à droite (dessous au téléphone), le programme de la vidéo à l'écran ; sur une chaîne vide, le guide
+                de la chaîne qui a des vidéos (la télé ne bouge pas quand on zappe) ——— */}
+          {!video && ailleurs && (
+            <section className={s.zone} aria-label={T.guide(ailleurs.numero, CHAINES_TXT[ailleurs.categorie].nom)}>
+              <Etiquette as="h2">{T.guide(ailleurs.numero, CHAINES_TXT[ailleurs.categorie].nom)}</Etiquette>
+              <ol className={s.guide + " " + s.guideColonne}>{programmesAilleurs.map(fiche)}</ol>
+            </section>
+          )}
           {video && (
             <section className={s.zone + " " + s.colonne} aria-label={T.programme}>
               <Etiquette as="h2">{T.programme}</Etiquette>
@@ -502,7 +571,7 @@ export function VideosView({
                         const vue = partieVue(vu[i] ?? 0, q.secondes);
                         return (
                           <li key={i} data-partie={i}>
-                            <button type="button" className={s.ligne} data-actif={courante ? "1" : undefined} aria-current={courante ? "true" : undefined} onClick={() => allerA(i, 0)}>
+                            <button type="button" className={s.ligne} data-actif={courante ? "1" : undefined} aria-current={courante ? "true" : undefined} onClick={() => allerA(i, 0, true, true)}>
                               <span className={s.num} data-vue={vue && !courante ? "1" : undefined}>
                                 {vue && !courante ? <Check size={13} strokeWidth={3} aria-label={T.partieVue} /> : String(i + 1).padStart(2, "0")}
                               </span>
@@ -513,7 +582,7 @@ export function VideosView({
                               <ol className={s.chapitres}>
                                 {q.chapitres.map((c, k) => (
                                   <li key={k}>
-                                    <button type="button" className={s.chapitre} data-actif={k === chapActif ? "1" : undefined} aria-current={k === chapActif ? "true" : undefined} onClick={() => allerA(i, c.debut)}>
+                                    <button type="button" className={s.chapitre} data-actif={k === chapActif ? "1" : undefined} aria-current={k === chapActif ? "true" : undefined} onClick={() => allerA(i, c.debut, true, true)}>
                                       <span className={s.heure}>{horodatage(decalages[i] + c.debut)}</span>
                                       <span className="min-w-0 flex-1">{c.titre}</span>
                                     </button>

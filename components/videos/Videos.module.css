@@ -1,12 +1,13 @@
 /* Page Vidéos (components/videos/VideosView) : la télé cathodique et ses trois chaînes, le guide des programmes et
-   le programme de la vidéo. La télé (meuble d'ébène laqué, filet d'or, écran bombé) a des couleurs FIXES, de jour
-   comme de nuit (un liseré clair la nuit) ; le guide et le programme, posés sur le papier, suivent les jetons du thème. */
+   le programme de la vidéo. La télé (meuble d'ébène laqué vu d'un peu au-dessus, filet d'or, tube bombé dans un masque
+   en pente, console sous l'écran, quatre pieds évasés) a des couleurs FIXES, de jour comme de nuit (un liseré clair la
+   nuit) ; le guide et le programme, posés sur le papier, suivent les jetons du thème. */
 
 .page {
   --piste: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
-/* ——— la mise en place : la télé, et à droite (dessous au téléphone) le guide puis le programme ——— */
+/* ——— la mise en place : la télé (et son guide dessous), à droite (dessous au téléphone) le programme ——— */
 .salon {
   display: grid;
   gap: 30px;
@@ -14,10 +15,16 @@
 }
 @media (min-width: 980px) {
   .salon {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 370px);
+    grid-template-columns: minmax(0, 1fr) 340px;
     align-items: start;
     gap: 40px;
   }
+}
+
+/* l'apparition progressive des données lues sur l'appareil (chiffre-héros, ligne, parts vues) */
+.voile {
+  font-style: normal;
+  transition: opacity 0.25s ease;
 }
 
 /* ——————————————————————— la télé ——————————————————————— */
@@ -29,44 +36,87 @@
   --creme: #efe3c8;
   --creme-2: rgba(239, 227, 200, 0.64);
   position: relative;
+  /* l'ordre des couches (dessus, meuble, pieds) reste à l'intérieur du poste, sous la barre du haut */
+  isolation: isolate;
   min-width: 0;
-  padding-top: 4px;
+  padding-top: 9px;
+  /* ramenée à l'écran depuis le programme (téléphone) : sous la barre du haut */
+  scroll-margin-top: 76px;
+}
+/* le dessus du meuble, vu d'un peu au-dessus : l'arête du fond dépasse au-dessus de la façade, un peu plus étroite
+   (la perspective), arrondie comme elle ; entre les deux, le plateau qui prend la lumière */
+.poste::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 1.6%;
+  left: 1.6%;
+  height: 90px;
+  border-radius: 22px 22px 0 0 / 20px 20px 0 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.3), transparent 9%, transparent 91%, rgba(0, 0, 0, 0.36)),
+    linear-gradient(180deg, #4e3826, #35261a 9px, #1d140d 14px);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 200, 0.22);
+  pointer-events: none;
+}
+@media (min-width: 640px) {
+  .poste {
+    padding-top: 11px;
+  }
+  .poste::before {
+    border-radius: 28px 28px 0 0 / 24px 24px 0 0;
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.3), transparent 9%, transparent 91%, rgba(0, 0, 0, 0.36)),
+      linear-gradient(180deg, #4e3826, #35261a 11px, #1d140d 16px);
+  }
 }
 /* l'ombre du poste sur le sol, sous les pieds */
 .poste::after {
   content: "";
   display: block;
-  width: 82%;
-  height: 20px;
-  margin: -10px auto 0;
+  width: 84%;
+  height: 22px;
+  margin: -14px auto 0;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.24), transparent);
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.26), transparent);
   filter: blur(2px);
   pointer-events: none;
+}
+:global(html[data-theme="nuit"]) .poste::before {
+  box-shadow:
+    inset 0 1px 0 rgba(239, 227, 200, 0.34),
+    0 -1px 0 rgba(239, 227, 200, 0.12);
 }
 :global(html[data-theme="nuit"]) .poste::after {
   background: radial-gradient(closest-side, rgba(0, 0, 0, 0.7), transparent);
 }
 
-/* le meuble : l'ébène laqué, la lumière d'en haut, un filet d'or incrusté à quelques millimètres du bord */
+/* le meuble : l'ébène laqué, la lumière d'en haut, un reflet de laque en biais, un filet d'or incrusté à quelques
+   millimètres du bord. Au téléphone : l'écran, la plaque, la console (touches puis compteur et boutons), la frise ;
+   dès 640 px : l'écran, la plaque, la frise, puis la console (en bandeau dès 760 px, comme les postes des années 70). */
 .meuble {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "ecran" "panneau" "frise";
-  gap: 14px;
+  grid-template-areas: "ecran" "plaque" "panneau" "frise";
+  gap: 12px;
   padding: 14px 14px 12px;
   border-radius: 22px;
   background:
-    linear-gradient(180deg, rgba(255, 240, 210, 0.075), transparent 26%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.2), transparent 7%, transparent 93%, rgba(0, 0, 0, 0.24)),
+    linear-gradient(105deg, transparent 35%, rgba(255, 240, 210, 0.07) 47%, transparent 58%),
+    linear-gradient(180deg, rgba(255, 240, 210, 0.08), transparent 22%, transparent 80%, rgba(0, 0, 0, 0.22)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.24), transparent 6%, transparent 94%, rgba(0, 0, 0, 0.28)),
     var(--ebene);
   box-shadow:
-    inset 1px 1px 0 rgba(255, 236, 200, 0.14),
-    inset -1px -2px 0 rgba(0, 0, 0, 0.55),
-    0 28px 44px -26px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 236, 200, 0.2),
+    inset 1px 0 0 rgba(255, 236, 200, 0.07),
+    inset -1px 0 0 rgba(0, 0, 0, 0.5),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.45),
+    0 30px 46px -26px rgba(0, 0, 0, 0.62),
     0 8px 14px -8px rgba(0, 0, 0, 0.32);
   color: var(--creme);
+  /* au-dessus du haut des pieds, qui rentrent sous le meuble */
+  z-index: 1;
 }
 .meuble::before {
   content: "";
@@ -78,60 +128,61 @@
 }
 @media (min-width: 640px) {
   .meuble {
-    grid-template-columns: minmax(0, 1fr) 148px;
-    grid-template-areas: "ecran panneau" "frise panneau";
-    gap: 14px 22px;
-    padding: 24px 24px 18px;
+    grid-template-areas: "ecran" "plaque" "frise" "panneau";
+    gap: 12px;
+    padding: 18px 18px 16px;
     border-radius: 28px;
   }
   .meuble::before {
-    inset: 9px;
-    border-radius: 20px;
+    inset: 8px;
+    border-radius: 21px;
   }
 }
 :global(html[data-theme="nuit"]) .meuble {
   box-shadow:
     0 0 0 1px rgba(239, 227, 200, 0.2),
-    inset 1px 1px 0 rgba(255, 236, 200, 0.14),
-    inset -1px -2px 0 rgba(0, 0, 0, 0.55),
-    0 28px 44px -26px rgba(0, 0, 0, 0.85);
+    inset 0 1px 0 rgba(255, 236, 200, 0.2),
+    inset 1px 0 0 rgba(255, 236, 200, 0.07),
+    inset -1px 0 0 rgba(0, 0, 0, 0.5),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.45),
+    0 30px 46px -26px rgba(0, 0, 0, 0.85);
 }
 
-/* le masque autour du tube : un creux sombre, cerclé d'une bague d'or */
+/* le masque autour du tube : un entonnoir sombre qui descend vers le verre (le haut dans l'ombre, le bas qui prend la
+   lumière), bordé d'une bague d'or */
 .masque {
   grid-area: ecran;
   position: relative;
   min-width: 0;
-  padding: 8px;
-  border-radius: 20px / 24px;
-  background: linear-gradient(180deg, #0b0705, #130d09 55%, #0a0604);
+  padding: 9px;
+  border-radius: 9% / 14%;
+  background:
+    linear-gradient(180deg, #0b0705 0%, #150e09 45%, #2a1d13 100%);
   box-shadow:
     0 0 0 1px rgba(201, 164, 92, 0.46),
-    0 0 0 4px #20160e,
-    0 0 0 5px rgba(201, 164, 92, 0.12),
-    inset 0 3px 9px rgba(0, 0, 0, 0.9),
-    inset 0 -1px 0 rgba(255, 236, 200, 0.07);
+    0 0 0 4px #21170f,
+    0 0 0 5px rgba(201, 164, 92, 0.1),
+    inset 0 2px 1px rgba(255, 236, 200, 0.14),
+    inset 0 -2px 2px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 5px rgba(0, 0, 0, 0.3);
 }
 @media (min-width: 640px) {
   .masque {
-    padding: 13px;
-    border-radius: 28px / 34px;
+    padding: 14px;
   }
 }
 
-/* le verre bombé : la vidéo dessous, puis (sans capter le clic) le reflet, les lignes de balayage, la vignette */
+/* le verre bombé : la vidéo dessous, puis (sans capter le clic) le galbe du tube et son reflet. Coins arrondis comme un
+   tube cathodique (moins en bas, où sont les commandes du lecteur) ; le masque CSS force la découpe sur Safari, qui
+   ne coupe pas toujours une <video> avec overflow seul. */
 .verre {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   aspect-ratio: 16 / 9;
-  border-radius: 14px / 18px;
+  border-radius: 7% 7% 4.5% 4.5% / 11% 11% 7% 7%;
   background: #0d0b09;
-}
-@media (min-width: 640px) {
-  .verre {
-    border-radius: 18px / 24px;
-  }
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
 .verre video {
   position: absolute;
@@ -141,30 +192,51 @@
   height: 100%;
   background: #0d0b09;
 }
-.vitre {
+/* le galbe : les bords du tube plus sombres, l'arête du verre, l'ombre du masque sur le haut de l'image */
+.verre::after {
+  content: "";
   position: absolute;
   z-index: 2;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 50%, transparent 52%, rgba(0, 0, 0, 0.55) 100%);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.07),
+    inset 0 14px 22px -10px rgba(0, 0, 0, 0.8);
+  transition: opacity 0.4s ease;
+}
+/* le reflet du verre : une tache de lumière en haut à gauche, et l'arc qui suit la courbe du tube */
+.vitre {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
   background:
-    /* le reflet du verre bombé : une tache douce en haut à gauche, et l'arc de lumière qui suit la courbe */
-    radial-gradient(70% 58% at 24% 8%, rgba(255, 255, 255, 0.1), transparent 64%),
-    radial-gradient(150% 120% at 50% 112%, transparent 74%, rgba(255, 255, 255, 0.045) 79%, transparent 84%),
-    linear-gradient(168deg, rgba(255, 255, 255, 0.035), transparent 34%),
-    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px),
-    radial-gradient(130% 125% at 50% 44%, transparent 58%, rgba(0, 0, 0, 0.48) 100%);
+    radial-gradient(48% 36% at 28% 16%, rgba(255, 250, 235, 0.22), rgba(255, 250, 235, 0.06) 45%, transparent 70%),
+    radial-gradient(130% 80% at 50% -38%, transparent 63%, rgba(255, 250, 235, 0.14) 65.5%, transparent 69%);
+  transition: opacity 0.4s ease;
+}
+/* une vraie vidéo : le galbe s'allège (le cours reste lisible jusque dans les coins, et les commandes du lecteur
+   aussi) ; pendant la lecture, le reflet et le galbe s'effacent à moitié */
+.verre[data-ecran="video"]::after {
+  background: radial-gradient(125% 115% at 50% 50%, transparent 72%, rgba(0, 0, 0, 0.3) 100%);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    inset 0 0 26px 3px rgba(0, 0, 0, 0.55);
+    inset 0 0 14px rgba(0, 0, 0, 0.35);
 }
+.verre[data-lecture] .vitre,
+.verre[data-lecture]::after {
+  opacity: 0.45;
+}
+
 /* l'incrustation de la chaîne, en haut à gauche, à l'arrivée (puis elle s'efface) */
 .incruste {
   position: absolute;
   z-index: 1;
-  top: 7%;
-  left: 5%;
+  top: 8%;
+  left: 6%;
   font-family: var(--font-geist-mono, ui-monospace), monospace;
   font-size: 13px;
   font-weight: 700;
@@ -186,23 +258,48 @@
     opacity: 0;
   }
 }
-/* l'écran s'allume une fois, à l'arrivée (et à chaque changement de vidéo ou de chaîne) ; il s'éteint le temps de
-   passer à la dernière vidéo lancée */
+
+/* l'allumage du tube, une fois à l'arrivée (et à chaque changement de vidéo ou de chaîne) : un point blanc s'étire
+   en trait, le trait s'ouvre sur tout l'écran pendant que le noir s'efface. Quand on zappe, l'écran s'éteint d'un
+   coup, le temps que la page suivante arrive. */
 .noir {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   inset: 0;
   background: #0a0806;
   opacity: 0;
   pointer-events: none;
-  animation: allumage 0.6s ease 0.1s backwards;
+  animation: allumage 0.42s ease-out 0.12s backwards;
+}
+.noir::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent, rgba(255, 250, 238, 0.55) 30%, #fffaf0 44%, #fffaf0 56%, rgba(255, 250, 238, 0.55) 70%, transparent);
+  opacity: 0;
+  animation: trait 0.42s ease-out 0.12s backwards;
 }
 @keyframes allumage {
-  from {
+  0%,
+  32% {
     opacity: 1;
   }
-  to {
+  100% {
     opacity: 0;
+  }
+}
+@keyframes trait {
+  0% {
+    opacity: 1;
+    transform: scale(0.04, 0.012);
+  }
+  32% {
+    opacity: 1;
+    transform: scale(1, 0.012);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1, 1);
   }
 }
 .verre[data-zappe] .noir {
@@ -210,8 +307,12 @@
   animation: none;
   transition: opacity 0.15s ease;
 }
+.verre[data-zappe] .noir::after {
+  animation: none;
+}
 
-/* la neige d'une chaîne vide (ou d'une vidéo qui ne se charge pas) : fixe, grise, et son carton */
+/* la neige d'une chaîne vide (ou d'une vidéo qui ne se charge pas) : fixe, grise, les lignes de balayage, et son
+   carton */
 .neige {
   position: absolute;
   inset: 0;
@@ -219,6 +320,7 @@
   place-items: center;
   padding: 6%;
   background:
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 3px),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.25 -0.42'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")
       0 0 / 170px 170px,
     radial-gradient(90% 85% at 50% 42%, #34302a, #14110e 78%);
@@ -261,8 +363,39 @@
   }
 }
 
-/* le panneau du meuble : le compteur, les touches des chaînes, les boutons ronds, la grille du haut-parleur.
-   Au téléphone, sous l'écran : les touches sur une ligne, puis le compteur et les boutons. */
+/* la plaque, sous l'écran : la partie à l'écran et son titre (une chaîne vide : son numéro et son nom) */
+.plaque {
+  grid-area: plaque;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  margin: 2px 0 0;
+  padding: 0 6px;
+}
+.plaque b {
+  flex: none;
+  font-family: var(--font-geist-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--or-clair);
+}
+.plaque span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--creme);
+}
+
+/* la console du meuble : le compteur, les touches des chaînes, les boutons ronds, la grille du haut-parleur.
+   Au téléphone : les touches sur une ligne, puis le compteur et les boutons. Dès 760 px : un bandeau sur une ligne,
+   creusé dans le meuble ; la grille du haut-parleur au bout quand la télé est assez large pour que les touches gardent
+   leur nom (dès 1240 px, la télé à côté du programme). */
 .panneau {
   grid-area: panneau;
   display: grid;
@@ -273,18 +406,28 @@
   min-width: 0;
   padding: 2px 2px 0;
 }
-@media (min-width: 640px) {
+@media (min-width: 760px) {
   .panneau {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto minmax(0, 1fr);
-    grid-template-areas: "cadran" "touches" "boutons" "grille";
-    align-items: stretch;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "cadran touches boutons";
     gap: 16px;
-    padding: 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.26), rgba(0, 0, 0, 0.1));
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.55),
+      inset 0 0 0 1px rgba(201, 164, 92, 0.14),
+      0 1px 0 rgba(255, 236, 200, 0.07);
+  }
+}
+@media (min-width: 1240px) {
+  .panneau {
+    grid-template-columns: auto minmax(0, 1fr) auto 104px;
+    grid-template-areas: "cadran touches boutons grille";
   }
 }
 
-/* le compteur de la vidéo entière (la partie et sa durée dessous), en chiffres d'or sur fond noir */
+/* le compteur de la vidéo entière (sa durée dessous), en chiffres d'or sur fond noir */
 .cadran {
   grid-area: cadran;
   display: grid;
@@ -300,6 +443,11 @@
     0 1px 0 rgba(255, 236, 200, 0.06);
   font-family: var(--font-geist-mono, ui-monospace), monospace;
   font-variant-numeric: tabular-nums;
+}
+@media (min-width: 760px) {
+  .cadran {
+    min-width: 104px;
+  }
 }
 .cadran b {
   font-size: 19px;
@@ -319,6 +467,9 @@
   white-space: nowrap;
   color: rgba(233, 199, 127, 0.55);
 }
+.cadran span[data-reprise] {
+  color: rgba(233, 199, 127, 0.8);
+}
 
 /* les touches des chaînes : enfoncée et sa lampe allumée pour la chaîne à l'écran */
 .touches {
@@ -326,11 +477,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-}
-@media (min-width: 640px) {
-  .touches {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  min-width: 0;
 }
 .touche {
   display: flex;
@@ -354,9 +501,9 @@
 }
 @media (min-width: 640px) {
   .touche {
-    gap: 10px;
+    gap: 9px;
     min-height: 42px;
-    padding: 0 12px;
+    padding: 0 11px;
   }
 }
 .touche b {
@@ -385,11 +532,11 @@
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
 }
 @media (hover: hover) and (pointer: fine) {
-  .touche:hover {
+  a.touche:hover {
     color: var(--creme);
   }
 }
-.touche:active,
+a.touche:active,
 .touche[aria-current] {
   transform: translateY(2px);
   background: linear-gradient(180deg, #1b130c, #261a11);
@@ -400,6 +547,7 @@
 }
 .touche[aria-current] {
   color: var(--creme);
+  cursor: default;
 }
 .touche[aria-current] .lampe {
   background: var(--or-clair);
@@ -469,12 +617,27 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* la grille du haut-parleur, percée de petits trous (ordinateur) */
+/* dans le bandeau, les touches se serrent un peu pour garder leur nom en entier */
+@media (min-width: 760px) {
+  .touche {
+    gap: 7px;
+    padding: 0 9px;
+  }
+  .touche span {
+    letter-spacing: 0.06em;
+  }
+  .boutons {
+    gap: 8px;
+  }
+}
+
+/* la grille du haut-parleur, percée de petits trous (au bout de la console, dès 1240 px) */
 .grille {
   grid-area: grille;
   display: none;
-  min-height: 56px;
-  border-radius: 10px;
+  align-self: stretch;
+  min-height: 44px;
+  border-radius: 9px;
   background:
     radial-gradient(circle, #060403 1.3px, transparent 1.9px) 2px 2px / 7px 7px,
     linear-gradient(180deg, #2a1d13, #1c130c);
@@ -483,13 +646,13 @@
     inset 0 0 0 1px rgba(201, 164, 92, 0.16),
     0 1px 0 rgba(255, 236, 200, 0.06);
 }
-@media (min-width: 640px) {
+@media (min-width: 1240px) {
   .grille {
     display: block;
   }
 }
 
-/* la frise, sous l'écran : la vidéo entière, une case par partie, rangées par matière */
+/* la frise, sous la plaque : la vidéo entière, une case par partie, rangées par matière */
 .frise {
   --piste: rgba(239, 227, 200, 0.13);
   grid-area: frise;
@@ -573,28 +736,54 @@
   background: repeating-linear-gradient(90deg, rgba(239, 227, 200, 0.16) 0 6px, transparent 6px 12px);
 }
 
-/* les pieds du meuble, fuselés, bagués d'or */
+/* les pieds de console : quatre fuseaux évasés bagués d'or ; ceux de derrière, plus courts, plus rentrés et dans
+   l'ombre, donnent la profondeur du meuble */
 .pieds {
-  display: flex;
-  justify-content: space-between;
-  height: 16px;
-  padding: 0 13%;
+  position: relative;
+  height: 44px;
+  margin: -3px 0 0;
 }
 .pieds i {
-  position: relative;
-  width: 18px;
-  height: 16px;
-  background: linear-gradient(90deg, #0c0805, #2e2117 45%, #0c0805);
-  clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+  position: absolute;
+  top: 0;
+  width: 14px;
+  height: 44px;
+  background: linear-gradient(90deg, #0d0906, #3d2c1e 42%, #1b130c 70%, #0d0906);
+  clip-path: polygon(0 0, 100% 0, 74% 100%, 26% 100%);
+  transform-origin: 50% 0;
 }
+/* la bague d'or au bout du pied */
 .pieds i::after {
   content: "";
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
-  height: 3px;
-  background: var(--or);
+  height: 5px;
+  background: linear-gradient(90deg, #8a6a32, var(--or-clair) 45%, #8a6a32);
+}
+.pieds i:nth-child(3) {
+  left: 10%;
+  transform: rotate(9deg);
+}
+.pieds i:nth-child(4) {
+  right: 10%;
+  transform: rotate(-9deg);
+}
+.pieds i[data-pied="arriere"] {
+  height: 30px;
+  filter: brightness(0.5);
+}
+.pieds i:nth-child(1) {
+  left: 21%;
+  transform: rotate(6deg);
+}
+.pieds i:nth-child(2) {
+  right: 21%;
+  transform: rotate(-6deg);
+}
+:global(html[data-theme="nuit"]) .pieds {
+  filter: drop-shadow(0 0 0.6px rgba(239, 227, 200, 0.55));
 }
 
 /* —————————— sous la télé, le guide des programmes ; à droite, le programme (sur le papier) —————————— */
@@ -753,14 +942,11 @@ a.emission:focus-visible {
   border-radius: 50%;
   background: var(--ink);
 }
-.guideVide {
-  margin: 0;
-  padding: 22px 16px;
-  border: 1px dashed var(--line-2);
-  border-radius: 12px;
-  text-align: center;
-  font-size: 13.5px;
-  color: var(--ink-3);
+/* le guide d'une autre chaîne, dans la colonne de droite (à côté d'une chaîne vide) : une fiche par ligne */
+@media (min-width: 980px) {
+  .guideColonne {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* le programme : les parties de la vidéo rangées par matière, la partie en cours ouverte sur ses chapitres */
@@ -856,6 +1042,7 @@ a.emission:focus-visible {
 .ligneTitre {
   flex: 1;
   min-width: 0;
+  text-wrap: pretty;
 }
 .heure {
   flex: 0 0 auto;
@@ -899,12 +1086,17 @@ a.emission:focus-visible {
   color: var(--ink);
 }
 
-/* sans mouvement : l'écran s'allume d'un coup, l'incrustation ne s'affiche pas sur une vidéo */
+/* sans mouvement : l'écran s'allume d'un coup (ni trait ni fondu), l'incrustation ne s'affiche pas sur une vidéo
+   (la plaque du meuble dit ce qui passe), rien ne glisse */
 @media (prefers-reduced-motion: reduce) {
-  .noir {
+  .noir,
+  .noir::after {
     animation: none;
   }
   .verre[data-zappe] .noir,
+  .verre::after,
+  .vitre,
+  .voile,
   .touche,
   .rond,
   .emBarre i {

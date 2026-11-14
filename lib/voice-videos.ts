@@ -6,8 +6,6 @@ const s = (n: number) => (n > 1 ? "s" : "");
 
 export const VIDEOS_TXT = {
   titre: "Vidéos",
-  serie: (n: number) => `Vidéo ${n}`,
-  pasCommencee: "Pas commencée",
   vue: (pct: number) => (pct >= 100 ? "Vue en entier" : `Vue à ${pct} %`),
   reste: (duree: string) => `encore ${duree}`,
   programme: "Le programme",
@@ -17,7 +15,7 @@ export const VIDEOS_TXT = {
   suivante: "Partie suivante",
   vitesse: (r: number) => `${virgule(r)}×`,
   vitesseAide: (r: number) => `Vitesse de lecture : ${virgule(r)}×. Appuie pour changer.`,
-  /** dans la ligne d'état de la porte et dans le guide */
+  /** dans le guide, sous une vidéo entamée */
   repriseCourte: (h: string) => `reprise à ${h}`,
   partieVue: "Vue",
   indisponible: "La vidéo ne se charge pas pour le moment. Réessaie dans un instant.",
@@ -31,21 +29,25 @@ export const VIDEOS_TXT = {
   bientot: "Bientôt",
   compteur: "Position dans la vidéo",
   compteurVide: "--:--",
+  /** la 2e ligne du compteur : la durée de la vidéo entière (« SUR 1:04:31 ») ; « REPRISE » tant qu'on n'a pas relancé
+   *  (le compteur montre alors l'endroit où l'on s'était arrêté) */
+  cadranTotal: (h: string) => `sur ${h}`,
+  cadranReprise: "reprise",
+  cadranTotalVide: "-:--:--",
+  /** la plaque du meuble, sous l'écran : « PARTIE 05/12 » puis le titre de la partie ; une chaîne vide : « CHAÎNE 1 » et son nom */
+  partieCourte: (i: number, n: number) => `Partie ${String(i).padStart(2, "0")}/${String(n).padStart(2, "0")}`,
+  chaineCourte: (n: number) => `Chaîne ${n}`,
 
   /** le guide des programmes de la chaîne, à côté de la télé */
   guide: (n: number, nom: string) => `Chaîne ${n} · ${nom}`,
   aLEcran: "À l'écran",
   enPreparation: "En préparation",
-  guideVide: "Rien à l'antenne pour l'instant.",
 
   /** la ligne d'état de la porte (lue sur l'appareil, après le montage) */
   nbVideos: (n: number) => `${n} vidéo${s(n)}`,
   entamees: (n: number) => `${n} entamée${s(n)}`,
   vues: (n: number) => `${n} vue${s(n)} en entier`,
   aucuneCommencee: (n: number) => (n > 1 ? "aucune commencée" : "pas commencée"),
-  /** une chaîne vide : où sont les vidéos en ligne */
-  ailleurs: (n: number, chaine: number) => `${n} vidéo${s(n)} à l'antenne sur la ${chaine}`,
-  aucune: "Les vidéos arrivent bientôt.",
 
   /** le chiffre-héros de la porte : ce qu'il reste à voir sur la chaîne (ou sa durée si rien n'est commencé) */
   herosReste: "restantes",
