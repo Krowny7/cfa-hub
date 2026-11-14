@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { COURS_PROGRAMME, carteCours } from "@/components/reviser/parcours";
 import { PlatineEcoute, SIGNAL_ECOUTE } from "@/components/reviser/PlatineEcoute";
-import { Etiquette } from "@/components/ui/SousPage";
 import { lireEcoute, SANS_ECOUTE, type EcouteCours } from "@/lib/course-ecoute";
 import { ETAGERE } from "@/lib/voice-reviser-b";
 import type { Course } from "@/lib/courses";
@@ -160,9 +159,10 @@ export function EtagereCours({ apercu, sources = {} }: { apercu?: EcouteCours | 
         ))}
       </div>
 
-      {/* au-dessus de la platine, ce qu'elle fait (Théo : « un titre genre : jouer juste l'audio ») */}
+      {/* au-dessus de la platine, ce qu'elle fait, en titre comme « Cours complets » (Théo) ; la colonne
+          prend la hauteur de la bibliothèque : le titre en haut, la platine jusqu'en bas */}
       <div className={b.colonnePlatine}>
-        <Etiquette as="h2">{ETAGERE.platineTitre}</Etiquette>
+        <h2 className={b.titrePlatine}>{ETAGERE.platineTitre}</h2>
         <PlatineEcoute sources={sources} depart={lu ? (carte?.slug ?? null) : null} pret={lu} parts={parts} positions={e?.positions} />
       </div>
     </div>

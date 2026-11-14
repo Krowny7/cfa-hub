@@ -13,7 +13,7 @@
   --or: #c9a45c;
   --creme: #efe3c8;
   --ep: clamp(78px, 8vw, 114px); /* l'épaisseur moyenne d'un livre (son dos) */
-  --h: clamp(236px, 23vw, 330px); /* sa hauteur moyenne */
+  --h: clamp(220px, 19vw, 276px); /* sa hauteur moyenne */
   --cv: clamp(168px, 15vw, 216px); /* sa profondeur : la largeur de ses plats */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .93 0 0 0 0 .82 .22 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   display: grid;
@@ -25,12 +25,23 @@
   min-width: 0;
 }
 /* la bibliothèque prend la plus grande part (environ 60 %), la platine le reste */
+/* et les deux parts ont la même hauteur : le haut du meuble au niveau du titre de la platine, le bas
+   au niveau du bas de la platine (la plus courte des deux s'étire) */
 @media (min-width: 1040px) {
   .salle {
     grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr);
+    align-items: stretch;
   }
   .bibliotheque {
     justify-self: stretch;
+    grid-template-rows: 1fr 1fr;
+  }
+  .platine {
+    height: 100%;
+    grid-template-rows: 1fr auto auto;
+  }
+  .plinthe {
+    align-self: center;
   }
 }
 
@@ -467,10 +478,21 @@
 /* la colonne de la platine : son étiquette au-dessus, alignée sur son bord */
 .colonnePlatine {
   display: grid;
-  gap: 12px;
+  grid-template-rows: auto 1fr;
+  gap: 14px;
   width: 100%;
   max-width: 480px;
   justify-self: center;
+}
+/* le titre de la platine : la taille et la police du titre de la page (« Cours complets ») */
+.titrePlatine {
+  margin: 0;
+  text-wrap: balance;
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.036em;
+  color: var(--ink);
 }
 .platine {
   position: relative;
@@ -562,8 +584,10 @@
   top: 50%;
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
+  /* à la mesure du disque : il ne couvre jamais le code de l'étiquette */
+  width: clamp(38px, 15%, 54px);
+  height: auto;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: rgba(14, 10, 6, 0.8);
   color: var(--or);
@@ -934,10 +958,7 @@
     padding: 16px 14px 14px;
     gap: 14px;
   }
-  .icone {
-    width: 44px;
-    height: 44px;
-  }
+
   .matieres {
     gap: 6px;
   }
